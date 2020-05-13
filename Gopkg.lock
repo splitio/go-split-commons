@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:e17320223c7c866dfbec405efe8abc8e383ccad131fb76ca7ff70580dafb9067"
+  digest = "1:2c0d38c0cc63b8e16067daffdfe05be8546a3c47b89c3de97f34e3314541f4cf"
   name = "github.com/go-redis/redis"
   packages = [
     ".",
@@ -13,13 +13,12 @@
     "internal/proto",
     "internal/util",
   ]
-  pruneopts = "UT"
+  pruneopts = ""
   revision = "99cd690a7019656b0b67c6664453f27a6d8a658e"
   version = "v6.15.7"
 
 [[projects]]
-  branch = "modularization"
-  digest = "1:9c1281c68daaac07ce381ee89eb263ba3f23df41083bfbbb5e1e227198f028ac"
+  digest = "1:edfe9156a54cd2607ef0a0977a33ee50620b5bb4b90d4cd3eca1e2a1d02e945a"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "datastructures/set",
@@ -29,8 +28,8 @@
     "redis/helpers",
     "redis/mocks",
   ]
-  pruneopts = "UT"
-  revision = "362aa5bcce903efcf92b9a4501d5d2da2f876ba1"
+  pruneopts = ""
+  revision = "b3b0f86e735a9db5ced273c272cbb2f84ba8ffdf"
 
 [solve-meta]
   analyzer-name = "dep"
