@@ -14,6 +14,7 @@ const (
 	redisImpressionsQueue = "SPLITIO.impressions"                                                // impressions LIST key
 	redisImpressionsTTL   = 60                                                                   // impressions default TTL
 	redisTrafficType      = "SPLITIO.trafficType.{trafficType}"                                  // traffic Type fetch
+	redisHash             = "SPLITIO.hash"
 )
 
 const (

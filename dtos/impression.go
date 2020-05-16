@@ -16,3 +16,19 @@ type ImpressionQueueObject struct {
 	Metadata   Metadata   `json:"m"`
 	Impression Impression `json:"i"`
 }
+
+// ImpressionDTO struct to map an impression
+type ImpressionDTO struct {
+	KeyName      string `json:"keyName"`
+	Treatment    string `json:"treatment"`
+	Time         int64  `json:"time"`
+	ChangeNumber int64  `json:"changeNumber"`
+	Label        string `json:"label"`
+	BucketingKey string `json:"bucketingKey,omitempty"`
+}
+
+// ImpressionsDTO struct mapping impressions to post
+type ImpressionsDTO struct {
+	TestName       string          `json:"testName"`
+	KeyImpressions []ImpressionDTO `json:"keyImpressions"`
+}

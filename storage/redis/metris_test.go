@@ -59,7 +59,7 @@ func TestIncLatency(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
+				ResultCall: func() (int64, error) { return 0, nil },
 			}
 		},
 	}
@@ -89,7 +89,7 @@ func TestIncCounter(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
+				ResultCall: func() (int64, error) { return 0, nil },
 			}
 		},
 	}

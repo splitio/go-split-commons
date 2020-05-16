@@ -2,13 +2,17 @@ package redis
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
 	"github.com/splitio/go-toolkit/redis"
+	"github.com/splitio/split-synchronizer/log"
 )
+
+const impressionsTTLRefresh = time.Duration(3600) * time.Second
 
 // ImpressionStorage is a redis-based implementation of split storage
 type ImpressionStorage struct {
@@ -41,13 +45,13 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 	}
 
 	if len(impressionsToStore) > 0 {
-		return r.Push(impressionsToStore)
+		return r.push(impressionsToStore)
 	}
 	return nil
 }
 
-// Push stores impressions in redis
-func (r *ImpressionStorage) Push(impressions []dtos.ImpressionQueueObject) error {
+// push stores impressions in redis
+func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error {
 	var impressionsJSON []interface{}
 	for _, impression := range impressions {
 		iJSON, err := json.Marshal(impression)
@@ -80,9 +84,36 @@ func (r *ImpressionStorage) Push(impressions []dtos.ImpressionQueueObject) error
 
 // PopN return N elements from 0 to N
 func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
+	toReturn := make([]dtos.Impression, 0, 0)
+
+	/*
+		lrange, err := r.fetchImpressionsFromQueueWithLock(n)
+		if err != nil {
+			return nil, err
+		}
+
+		//JSON unmarshal
+		for _, se := range lrange {
+			storedImpression := dtos.ImpressionQueueObject{}
+			err := json.Unmarshal([]byte(se), &storedImpression)
+			if err != nil {
+				r.logger.Error("Error decoding impression JSON", err.Error())
+				continue
+			}
+			if storedImpression.Metadata.MachineIP == r.metadataMessage.MachineIP &&
+				storedImpression.Metadata.MachineName == r.metadataMessage.MachineName &&
+				storedImpression.Metadata.SDKVersion == r.metadataMessage.SDKVersion {
+				toReturn = append(toReturn, storedImpression.Impression)
+			}
+		}
+	*/
+
+	return toReturn, nil
+}
+
+func (r *ImpressionStorage) fetchImpressionsFromQueueWithLock(n int64) ([]string, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	toReturn := make([]dtos.Impression, 0)
 
 	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
 	if err != nil {
@@ -104,20 +135,97 @@ func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
 		return nil, err
 	}
 
-	//JSON unmarshal
-	for _, se := range lrange {
-		storedImpression := dtos.ImpressionQueueObject{}
-		err := json.Unmarshal([]byte(se), &storedImpression)
+	// This operation will simply do nothing if the key no longer exists (queue is empty)
+	// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
+	// popped correctly. This will result in impressions getting lost but will prevent the queue from taking
+	// a huge amount of memory.
+	r.client.Expire(r.redisKey, impressionsTTLRefresh)
+	return lrange, nil
+}
+
+func toImpressionsDTO(impressionsMap map[string][]dtos.ImpressionDTO) ([]dtos.ImpressionsDTO, error) {
+	if impressionsMap == nil {
+		return nil, fmt.Errorf("Impressions map cannot be null")
+	}
+
+	toReturn := make([]dtos.ImpressionsDTO, 0)
+	for feature, impressions := range impressionsMap {
+		toReturn = append(toReturn, dtos.ImpressionsDTO{
+			TestName:       feature,
+			KeyImpressions: impressions,
+		})
+	}
+	return toReturn, nil
+}
+
+// fetchImpressionsFromQueue retrieves impressions from a redis list acting as a queue.
+func (r *ImpressionStorage) fetchImpressionsFromQueue(count int64) (map[dtos.Metadata][]dtos.ImpressionsDTO, error) {
+	impressionsRawList, err := r.fetchImpressionsFromQueueWithLock(count)
+	if err != nil {
+		return nil, err
+	}
+
+	// grouping the information by instanceID/instanceIP, and then by feature name
+	collectedData := make(map[dtos.Metadata]map[string][]dtos.ImpressionDTO)
+
+	for _, rawImpression := range impressionsRawList {
+		var impression dtos.ImpressionQueueObject
+		err := json.Unmarshal([]byte(rawImpression), &impression)
 		if err != nil {
-			r.logger.Error("Error decoding impression JSON", err.Error())
+			log.Error.Println("Error decoding impression JSON", err.Error())
 			continue
 		}
-		if storedImpression.Metadata.MachineIP == r.metadataMessage.MachineIP &&
-			storedImpression.Metadata.MachineName == r.metadataMessage.MachineName &&
-			storedImpression.Metadata.SDKVersion == r.metadataMessage.SDKVersion {
-			toReturn = append(toReturn, storedImpression.Impression)
+
+		_, instanceExists := collectedData[impression.Metadata]
+		if !instanceExists {
+			collectedData[impression.Metadata] = make(map[string][]dtos.ImpressionDTO)
+		}
+
+		_, featureExists := collectedData[impression.Metadata][impression.Impression.FeatureName]
+		if !featureExists {
+			collectedData[impression.Metadata][impression.Impression.FeatureName] = make([]dtos.ImpressionDTO, 0)
+		}
+
+		collectedData[impression.Metadata][impression.Impression.FeatureName] = append(
+			collectedData[impression.Metadata][impression.Impression.FeatureName],
+			dtos.ImpressionDTO{
+				BucketingKey: impression.Impression.BucketingKey,
+				ChangeNumber: impression.Impression.ChangeNumber,
+				KeyName:      impression.Impression.KeyName,
+				Label:        impression.Impression.Label,
+				Time:         impression.Impression.Time,
+				Treatment:    impression.Impression.Treatment,
+			},
+		)
+	}
+
+	toReturn := make(map[dtos.Metadata][]dtos.ImpressionsDTO)
+	for metadata, impsForMetadata := range collectedData {
+		toReturn[metadata], err = toImpressionsDTO(impsForMetadata)
+		if err != nil {
+			log.Error.Printf("Unable to write impressions for metadata %v", metadata)
+			continue
 		}
 	}
 
 	return toReturn, nil
+}
+
+// RetrieveImpressions returns impressions stored in redis
+func (r *ImpressionStorage) RetrieveImpressions(count int64) (map[dtos.Metadata][]dtos.ImpressionsDTO, error) {
+	impressions, err := r.fetchImpressionsFromQueue(count)
+	if err != nil {
+		return nil, err
+	}
+
+	return impressions, nil
+}
+
+// Size returns the size of the impressions queue
+func (r *ImpressionStorage) Size() int64 {
+	val, err := r.client.LLen(r.redisKey)
+	if err != nil {
+		return 0
+	}
+	return val
 }

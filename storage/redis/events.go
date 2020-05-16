@@ -97,10 +97,14 @@ func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
 
 // Count returns the number of items in the redis list
 func (r *EventsStorage) Count() int64 {
-	return r.client.LLen(r.redisKey)
+	val, err := r.client.LLen(r.redisKey)
+	if err != nil {
+		return 0
+	}
+	return val
 }
 
 // Empty returns true if redis list is zero length
 func (r *EventsStorage) Empty() bool {
-	return r.client.LLen(r.redisKey) == 0
+	return r.Count() == 0
 }

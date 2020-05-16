@@ -5,35 +5,56 @@ import (
 	"github.com/splitio/go-toolkit/datastructures/set"
 )
 
+/*
+SplitCache
+Put(split)
+PutMany(splits []dtos.SplitDTO, changeNumber int64) // ADDED
+Remove(name)
+Split(name)
+FetchMany(names)
+All()
+ChangeNumnber()
+SetChangeNumber(changeNumber)
+SplitNames()
+TrafficTypeExists(trafficTypeName)
+Clear()
+SegmentNames() *set.ThreadUnsafeSet // ADDED
+*/
+
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
-	PutMany(splits []dtos.SplitDTO, changeNumber int64)
+	PutMany(splits []dtos.SplitDTO, changeNumber int64) // Maybe Move Put to this....Doesn't exist in spec
 	Remove(splitname string)
-	Till() int64
+	ChangeNumber() (int64, error)
+	SetChangeNumber(changeNumber int64) error
 	Clear()
+	Put(split []byte) error // Maybe Split Directly
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
 type SplitStorageConsumer interface {
-	Get(splitName string) *dtos.SplitDTO
+	Split(splitName string) *dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
+	All() []dtos.SplitDTO
 	SplitNames() []string
-	SegmentNames() *set.ThreadUnsafeSet
-	GetAll() []dtos.SplitDTO
 	TrafficTypeExists(trafficType string) bool
+	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
 }
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
 type SegmentStorageProducer interface {
-	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64)
-	Till(segmentName string) int64
-	Remove(segmentName string)
+	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) // Move to Update instead of Put
+	Update(segmentName string, toAdd []string, toRemove []string, till int64) error
+	ChangeNumber(segmentName string) (int64, error)
+	SetChangeNumber(segmentName string, till int64) error
+	Remove(segmentName string) // Not Here
 	Clear()
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
-	Get(segmentName string) *set.ThreadUnsafeSet
+	Get(segmentName string) *set.ThreadUnsafeSet // Should be replaced for IsInSegment
+	// MISSING IsInSegment(name, key)
 }
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions
