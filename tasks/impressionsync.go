@@ -1,49 +1,20 @@
 package tasks
 
 import (
-	"errors"
-
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-split-commons/synchronizer"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
 )
 
-func submitImpressions(
-	impressionStorage storage.ImpressionStorageConsumer,
-	impressionRecorder service.ImpressionsRecorder,
-	logger logging.LoggerInterface,
-	bulkSize int64,
-) error {
-	queuedImpressions, err := impressionStorage.PopN(bulkSize)
-	if err != nil {
-		logger.Error("Error reading impressions queue", err)
-		return errors.New("Error reading impressions queue")
-	}
-
-	if len(queuedImpressions) == 0 {
-		logger.Debug("No impressions fetched from queue. Nothing to send")
-		return nil
-	}
-
-	return impressionRecorder.Record(queuedImpressions)
-}
-
 // NewRecordImpressionsTask creates a new splits fetching and storing task
 func NewRecordImpressionsTask(
-	impressionStorage storage.ImpressionStorageConsumer,
-	impressionRecorder service.ImpressionsRecorder,
+	synchronizer *synchronizer.ImpressionSynchronizer,
 	period int,
 	logger logging.LoggerInterface,
 	bulkSize int64,
 ) *asynctask.AsyncTask {
 	record := func(logger logging.LoggerInterface) error {
-		return submitImpressions(
-			impressionStorage,
-			impressionRecorder,
-			logger,
-			bulkSize,
-		)
+		return synchronizer.SynchronizeImpressions(bulkSize)
 	}
 
 	onStop := func(logger logging.LoggerInterface) {

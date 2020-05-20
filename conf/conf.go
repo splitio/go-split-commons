@@ -1,7 +1,5 @@
 package conf
 
-import impressionlistener "github.com/splitio/go-client/splitio/impressionListener"
-
 // RedisConfig struct is used to cofigure the redis parameters
 type RedisConfig struct {
 	Host     string `json:"host" split-default-value:"localhost" split-cli-option:"redis-host" split-cli-description:"Redis server hostname"`
@@ -71,7 +69,6 @@ type TaskPeriods struct {
 // - SegmentQueueSize - How many segments can be queued for updating (should be >= # segments the user has)
 // - SegmentWorkers - How many workers will be used when performing segments sync.
 type AdvancedConfig struct {
-	ImpressionListener   impressionlistener.ImpressionListener
 	HTTPTimeout          int
 	SegmentQueueSize     int
 	SegmentWorkers       int
