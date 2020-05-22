@@ -19,7 +19,7 @@ func NewRecordImpressionsTask(
 
 	onStop := func(logger logging.LoggerInterface) {
 		// All this function does is flush impressions which will clear the storage
-		record(logger)
+		synchronizer.FlushImpressions(bulkSize)
 	}
 
 	return asynctask.NewAsyncTask("SubmitImpressions", record, period, nil, onStop, logger)

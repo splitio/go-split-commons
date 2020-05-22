@@ -9,11 +9,11 @@ import (
 
 // SplitAPI struct for fetchers and recorders
 type SplitAPI struct {
-	SplitFetcher       *api.HTTPSplitFetcher
-	SegmentFetcher     *api.HTTPSegmentFetcher
-	ImpressionRecorder *api.HTTPImpressionRecorder
-	EventRecorder      *api.HTTPEventsRecorder
-	MetricRecorder     *api.HTTPMetricsRecorder
+	SplitFetcher       SplitFetcher
+	SegmentFetcher     SegmentFetcher
+	ImpressionRecorder ImpressionsRecorder
+	EventRecorder      EventsRecorder
+	MetricRecorder     MetricsRecorder
 }
 
 // NewSplitAPI creates new splitAPI

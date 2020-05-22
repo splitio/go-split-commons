@@ -32,19 +32,19 @@ func (r *SegmentStorage) Put(name string, segment *set.ThreadUnsafeSet, till int
 }
 
 // ChangeNumber returns the changeNumber for a particular segment
-func (r *SegmentStorage) ChangeNumber(segmentName string) int64 {
+func (r *SegmentStorage) ChangeNumber(segmentName string) (int64, error) {
 	segmentKey := strings.Replace(redisSegmentTill, "{segment}", segmentName, 1)
 	tillStr, err := r.client.Get(segmentKey)
 	if err != nil {
-		return -1
+		return -1, err
 	}
 
 	asInt, err := strconv.ParseInt(tillStr, 10, 64)
 	if err != nil {
 		r.logger.Error("Error retrieving till. Returning -1: ", err.Error())
-		return -1
+		return -1, err
 	}
-	return asInt
+	return asInt, nil
 }
 
 // SetChangeNumber sets the till value belong to segmentName

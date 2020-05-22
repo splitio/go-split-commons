@@ -108,7 +108,7 @@ func TestSegmentTillError(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := segmentStorage.ChangeNumber("someSegment")
+	till, _ := segmentStorage.ChangeNumber("someSegment")
 	if till != -1 {
 		t.Error("Unexpected till")
 	}
@@ -134,7 +134,7 @@ func TestSegmentTill(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := segmentStorage.ChangeNumber("someSegment")
+	till, _ := segmentStorage.ChangeNumber("someSegment")
 	if till != 123456789 {
 		t.Error("Unexpected till")
 	}

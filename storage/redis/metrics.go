@@ -71,6 +71,21 @@ func (r *MetricsStorage) IncCounter(metric string) {
 	}
 }
 
+// PopGauges some
+func (r *MetricsStorage) PopGauges() []dtos.GaugeDTO {
+	return make([]dtos.GaugeDTO, 0)
+}
+
+// PopLatencies some
+func (r *MetricsStorage) PopLatencies() []dtos.LatenciesDTO {
+	return make([]dtos.LatenciesDTO, 0)
+}
+
+// PopCounters some
+func (r *MetricsStorage) PopCounters() []dtos.CounterDTO {
+	return make([]dtos.CounterDTO, 0)
+}
+
 // GaugeDataBulk metrics
 type GaugeDataBulk struct {
 	data map[string]map[string]map[string]float64

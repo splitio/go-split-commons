@@ -229,3 +229,8 @@ func (r *ImpressionStorage) Size() int64 {
 	}
 	return val
 }
+
+// Empty returns true if redis list is zero length
+func (r *ImpressionStorage) Empty() bool {
+	return r.Size() == 0
+}

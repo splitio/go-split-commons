@@ -3,7 +3,7 @@ package synchronizer
 import (
 	"errors"
 
-	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -11,14 +11,14 @@ import (
 // ImpressionSynchronizer struct for impression sync
 type ImpressionSynchronizer struct {
 	impressionStorage  storage.ImpressionStorage
-	impressionRecorder *api.HTTPImpressionRecorder
+	impressionRecorder service.ImpressionsRecorder
 	logger             logging.LoggerInterface
 }
 
 // NewImpressionSynchronizer creates new impression synchronizer for posting impressions
 func NewImpressionSynchronizer(
 	impressionStorage storage.ImpressionStorage,
-	impressionRecorder *api.HTTPImpressionRecorder,
+	impressionRecorder service.ImpressionsRecorder,
 	logger logging.LoggerInterface,
 ) *ImpressionSynchronizer {
 	return &ImpressionSynchronizer{
@@ -42,4 +42,15 @@ func (i *ImpressionSynchronizer) SynchronizeImpressions(bulkSize int64) error {
 	}
 
 	return i.impressionRecorder.Record(queuedImpressions)
+}
+
+// FlushImpressions flushes impressions
+func (i *ImpressionSynchronizer) FlushImpressions(bulkSize int64) error {
+	for !i.impressionStorage.Empty() {
+		err := i.SynchronizeImpressions(bulkSize)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

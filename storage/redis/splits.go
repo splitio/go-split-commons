@@ -136,23 +136,12 @@ func (r *SplitStorage) remove(keys ...string) error {
 }
 
 // Remove removes split item from redis
-func (r *SplitStorage) Remove(split []byte) error {
-	r.mutext.Lock()
-	defer r.mutext.Unlock()
-
-	splitName, trafficType, err := r.getValues(split)
+func (r *SplitStorage) Remove(splitName string) {
+	keyToDelete := strings.Replace(redisSplit, "{split}", splitName, 1)
+	_, err := r.client.Del(keyToDelete)
 	if err != nil {
-		r.logger.Error("Split Name & TrafficType couldn't be fetched", err)
-		return err
+		r.logger.Error(fmt.Sprintf("Error deleting split \"%s\".", splitName))
 	}
-
-	existing := r.Split(splitName)
-	if existing == nil {
-		r.logger.Info("Tried to delete split " + splitName + " which doesn't exist. ignoring")
-		return nil
-	}
-	r.decr(trafficType)
-	return r.remove(splitName)
 }
 
 // Split fetches a feature in redis and returns a pointer to a split dto

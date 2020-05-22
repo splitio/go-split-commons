@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
@@ -15,7 +15,7 @@ import (
 type SegmentSynchronizer struct {
 	splitStorage   storage.SplitStorage
 	segmentStorage storage.SegmentStorage
-	segmentFetcher *api.HTTPSegmentFetcher
+	segmentFetcher service.SegmentFetcher
 	logger         logging.LoggerInterface
 }
 
@@ -23,7 +23,7 @@ type SegmentSynchronizer struct {
 func NewSegmentSynchronizer(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
-	segmentFetcher *api.HTTPSegmentFetcher,
+	segmentFetcher service.SegmentFetcher,
 	logger logging.LoggerInterface,
 ) *SegmentSynchronizer {
 	return &SegmentSynchronizer{
@@ -76,6 +76,7 @@ func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) (bool
 
 // SynchronizeSegments syncs segments at once
 func (s *SegmentSynchronizer) SynchronizeSegments() (bool, error) {
+	// @TODO: add delays
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
 	wg := sync.WaitGroup{}

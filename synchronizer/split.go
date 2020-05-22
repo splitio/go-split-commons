@@ -2,20 +2,20 @@ package synchronizer
 
 import (
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 )
 
 // SplitSynchronizer struct for split sync
 type SplitSynchronizer struct {
 	splitStorage storage.SplitStorage
-	splitFetcher *api.HTTPSplitFetcher
+	splitFetcher service.SplitFetcher
 }
 
 // NewSplitSynchronizer creates new split synchronizer for processing split updates
 func NewSplitSynchronizer(
 	splitStorage storage.SplitStorage,
-	splitFetcher *api.HTTPSplitFetcher,
+	splitFetcher service.SplitFetcher,
 ) *SplitSynchronizer {
 	return &SplitSynchronizer{
 		splitStorage: splitStorage,
@@ -45,6 +45,7 @@ func (s *SplitSynchronizer) processUpdate(splits *dtos.SplitChangesDTO) {
 
 // SynchronizeSplits syncs splits
 func (s *SplitSynchronizer) SynchronizeSplits(till *int64) (bool, error) {
+	// @TODO: add delays
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
 		if changeNumber == 0 {

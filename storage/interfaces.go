@@ -64,6 +64,7 @@ type ImpressionStorageProducer interface {
 
 // ImpressionStorageConsumer interface should be implemented by structs that offer popping impressions
 type ImpressionStorageConsumer interface {
+	Empty() bool
 	PopN(n int64) ([]dtos.Impression, error)
 }
 

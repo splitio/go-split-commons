@@ -3,20 +3,20 @@ package synchronizer
 import (
 	"errors"
 
-	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 )
 
 // MetricSynchronizer struct for metric sync
 type MetricSynchronizer struct {
 	metricStorage  storage.MetricsStorage
-	metricRecorder *api.HTTPMetricsRecorder
+	metricRecorder service.MetricsRecorder
 }
 
 // NewMetricSynchronizer creates new metric synchronizer for posting metrics
 func NewMetricSynchronizer(
 	metricStorage storage.MetricsStorage,
-	metricRecorder *api.HTTPMetricsRecorder,
+	metricRecorder service.MetricsRecorder,
 ) *MetricSynchronizer {
 	return &MetricSynchronizer{
 		metricStorage:  metricStorage,
