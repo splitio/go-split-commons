@@ -13,8 +13,8 @@ import (
 // Synchronizer interface for syncing data to and from splits servers
 type Synchronizer interface {
 	SyncAll() error
-	SynchronizeSplits(till *int64) (bool, error)
-	SynchronizeSegment(segmentName string, till *int64) (bool, error)
+	SynchronizeSplits(till *int64) error
+	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()
 	StopPeriodicFetching()
 	StartPeriodicDataRecording()
@@ -141,13 +141,11 @@ func (s *SynchronizerImpl) dataFlusher() {
 
 // SyncAll syncs splits and segments
 func (s *SynchronizerImpl) SyncAll() error {
-	_, err := s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
+	err := s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
 	if err != nil {
 		return err
 	}
-	_, err = s.synchronizers.segmentSynchronizer.SynchronizeSegments()
-
-	return err
+	return s.synchronizers.segmentSynchronizer.SynchronizeSegments()
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -185,11 +183,11 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SynchronizerImpl) SynchronizeSplits(till *int64) (bool, error) {
+func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
 	return s.synchronizers.splitSynchronizer.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
-func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) (bool, error) {
+func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 	return s.synchronizers.segmentSynchronizer.SynchronizeSegment(name, till)
 }

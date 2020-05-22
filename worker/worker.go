@@ -8,11 +8,11 @@ import (
 type SegmentWorker struct {
 	name        string
 	failureTime int64
-	toExecute   func(name string, till *int64) (bool, error)
+	toExecute   func(name string, till *int64) error
 }
 
 // NewSegmentWorker some
-func NewSegmentWorker(name string, failureTime int64, toExecute func(name string, till *int64) (bool, error)) *SegmentWorker {
+func NewSegmentWorker(name string, failureTime int64, toExecute func(name string, till *int64) error) *SegmentWorker {
 	return &SegmentWorker{
 		name:        name,
 		failureTime: failureTime,
@@ -37,8 +37,7 @@ func (w *SegmentWorker) DoWork(msg interface{}) error {
 		return errors.New("segment name popped from queue is not a string")
 	}
 
-	_, err := w.toExecute(segmentName, nil)
-	return err
+	return w.toExecute(segmentName, nil)
 }
 
 // OnError callback does nothing

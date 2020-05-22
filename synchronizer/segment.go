@@ -56,7 +56,7 @@ func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesD
 }
 
 // SynchronizeSegment syncs segment
-func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) (bool, error) {
+func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) error {
 	for {
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {
@@ -65,17 +65,19 @@ func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) (bool
 
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		s.processUpdate(segmentChanges)
 
-		return segmentChanges.Since == segmentChanges.Till, nil
+		if segmentChanges.Since == segmentChanges.Till {
+			return nil
+		}
 	}
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *SegmentSynchronizer) SynchronizeSegments() (bool, error) {
+func (s *SegmentSynchronizer) SynchronizeSegments() error {
 	// @TODO: add delays
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
@@ -93,7 +95,7 @@ func (s *SegmentSynchronizer) SynchronizeSegments() (bool, error) {
 			ready := false
 			var err error
 			for !ready {
-				ready, err = s.SynchronizeSegment(segmentName, nil)
+				err = s.SynchronizeSegment(segmentName, nil)
 				if err != nil {
 					failedSegments = append(failedSegments, segmentName)
 					return
@@ -104,10 +106,10 @@ func (s *SegmentSynchronizer) SynchronizeSegments() (bool, error) {
 	wg.Wait()
 
 	if len(failedSegments) > 0 {
-		return false, fmt.Errorf("The following segments failed to be fetched %v", failedSegments)
+		return fmt.Errorf("The following segments failed to be fetched %v", failedSegments)
 	}
 
-	return true, nil
+	return nil
 }
 
 // SegmentNames returns all segments

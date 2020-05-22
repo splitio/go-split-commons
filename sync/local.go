@@ -37,8 +37,7 @@ func NewLocalSynchronizerImpl(
 
 // SyncAll syncs splits and segments
 func (s *LocalSynchronizerImpl) SyncAll() error {
-	_, err := s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
-	return err
+	return s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -60,11 +59,11 @@ func (s *LocalSynchronizerImpl) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *LocalSynchronizerImpl) SynchronizeSplits(till *int64) (bool, error) {
+func (s *LocalSynchronizerImpl) SynchronizeSplits(till *int64) error {
 	return s.synchronizers.splitSynchronizer.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
-func (s *LocalSynchronizerImpl) SynchronizeSegment(name string, till *int64) (bool, error) {
-	return true, nil
+func (s *LocalSynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
+	return nil
 }

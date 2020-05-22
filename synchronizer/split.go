@@ -44,7 +44,7 @@ func (s *SplitSynchronizer) processUpdate(splits *dtos.SplitChangesDTO) {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SplitSynchronizer) SynchronizeSplits(till *int64) (bool, error) {
+func (s *SplitSynchronizer) SynchronizeSplits(till *int64) error {
 	// @TODO: add delays
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
@@ -54,11 +54,11 @@ func (s *SplitSynchronizer) SynchronizeSplits(till *int64) (bool, error) {
 
 		splits, err := s.splitFetcher.Fetch(changeNumber)
 		if err != nil {
-			return false, err
+			return err
 		}
 		s.processUpdate(splits)
 		if splits.Till == splits.Since || (till != nil && *till > splits.Till) {
-			return true, nil
+			return nil
 		}
 	}
 }
