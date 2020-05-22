@@ -18,29 +18,66 @@
   version = "v6.15.7"
 
 [[projects]]
-  digest = "1:edfe9156a54cd2607ef0a0977a33ee50620b5bb4b90d4cd3eca1e2a1d02e945a"
+  digest = "1:b45d54ca892362a1c618b2b77c3e7319f0b8851a15de86aedd3dc41dc84f6a4e"
+  name = "github.com/splitio/go-client"
+  packages = ["splitio"]
+  pruneopts = ""
+  revision = "0c07e2d81588c13c9115d0743474c54041ca0d91"
+  version = "5.1.3"
+
+[[projects]]
+  branch = "modularization"
+  digest = "1:f3f0b6a41fc1e37703829336f6616d7cd90d073d72b3e5361e8fb6a8a77a1694"
   name = "github.com/splitio/go-toolkit"
   packages = [
+    "asynctask",
     "datastructures/set",
     "deepcopy",
     "logging",
     "redis",
     "redis/helpers",
     "redis/mocks",
+    "workerpool",
   ]
   pruneopts = ""
-  revision = "b3b0f86e735a9db5ced273c272cbb2f84ba8ffdf"
+  revision = "6605353b46d189546822213c50dd88906811357a"
+
+[[projects]]
+  digest = "1:25767798b44837eea0f7b801d327ccd3136dfade65e780b8ed94b606fbaea65a"
+  name = "github.com/splitio/split-synchronizer"
+  packages = [
+    "appcontext",
+    "conf",
+    "log",
+    "splitio",
+  ]
+  pruneopts = ""
+  revision = "1e7b3999d26aa75d4f2443357a79e98a76c95e44"
+  version = "2.0.0"
+
+[[projects]]
+  digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = ""
+  revision = "0b1645d91e851e735d3e23330303ce81f70adbe3"
+  version = "v2.3.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/splitio/go-client/splitio",
+    "github.com/splitio/go-toolkit/asynctask",
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/deepcopy",
     "github.com/splitio/go-toolkit/logging",
     "github.com/splitio/go-toolkit/redis",
     "github.com/splitio/go-toolkit/redis/helpers",
     "github.com/splitio/go-toolkit/redis/mocks",
+    "github.com/splitio/go-toolkit/workerpool",
+    "github.com/splitio/split-synchronizer/log",
+    "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
