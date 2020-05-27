@@ -1,8 +1,13 @@
-
 language: go
 
 go:
   - 1.x
+
+before_install:
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+
+install:
+  - dep ensure
 
 script:
   - go test -v -cover $(go list ./... | grep -v /vendor/)
