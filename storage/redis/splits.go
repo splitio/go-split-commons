@@ -69,37 +69,6 @@ func (r *SplitStorage) getValues(split []byte) (string, string, error) {
 	return key, trafficTypeName, nil
 }
 
-// Put an split object
-func (r *SplitStorage) Put(split []byte) error {
-	r.mutext.Lock()
-	defer r.mutext.Unlock()
-
-	splitName, trafficType, err := r.getValues(split)
-	if err != nil {
-		r.logger.Error("Split Name & TrafficType couldn't be fetched", err)
-		return err
-	}
-
-	existing := r.Split(splitName)
-	if existing != nil {
-		// If it's an update, we decrement the traffic type count of the existing split,
-		// and then add the updated one (as part of the normal flow), in case it's different.
-		r.decr(existing.TrafficTypeName)
-	}
-
-	r.incr(trafficType)
-
-	key := strings.Replace(redisSplit, "{split}", splitName, 1)
-	err = r.client.Set(key, string(split), 0)
-	if err != nil {
-		r.logger.Error("Error saving item", splitName, "in Redis:", err)
-	} else {
-		r.logger.Verbose("Item saved at key:", splitName)
-	}
-
-	return err
-}
-
 // PutMany bulk stores splits in redis
 func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 	for _, split := range splits {

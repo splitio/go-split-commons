@@ -57,11 +57,6 @@ func (m *MMSplitStorage) decreaseTrafficTypeCount(trafficType string) {
 	}
 }
 
-// Put put
-func (m *MMSplitStorage) Put(split []byte) error {
-	return nil
-}
-
 // PutMany bulk inserts splits into the in-memory storage
 func (m *MMSplitStorage) PutMany(splits []dtos.SplitDTO, till int64) {
 	m.mutex.Lock()

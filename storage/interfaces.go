@@ -28,7 +28,6 @@ type SplitStorageProducer interface {
 	ChangeNumber() (int64, error)
 	SetChangeNumber(changeNumber int64) error
 	Clear()
-	Put(split []byte) error // Maybe Split Directly
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
@@ -43,12 +42,10 @@ type SplitStorageConsumer interface {
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
 type SegmentStorageProducer interface {
-	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) // Move to Update instead of Put
-	Update(segmentName string, toAdd []string, toRemove []string, till int64) error
 	ChangeNumber(segmentName string) (int64, error)
-	SetChangeNumber(segmentName string, till int64) error
-	Remove(segmentName string) // Not Here
 	Clear()
+	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) // Move to Update instead of Put
+	SetChangeNumber(segmentName string, till int64) error
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
@@ -89,9 +86,9 @@ type EventStorageProducer interface {
 
 // EventStorageConsumer interface should be implemented by structs that offer popping impressions
 type EventStorageConsumer interface {
-	PopN(n int64) ([]dtos.EventDTO, error)
-	Empty() bool
 	Count() int64
+	Empty() bool
+	PopN(n int64) ([]dtos.EventDTO, error)
 }
 
 // --- Wide Interfaces

@@ -162,6 +162,7 @@ func TestPostMetricsLatency(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
+		"1.0.0",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
@@ -229,6 +230,7 @@ func TestPostMetricsCounters(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
+		"1.0.0",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
@@ -291,6 +293,7 @@ func TestPostMetricsGauge(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
+		"1.0.0",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,

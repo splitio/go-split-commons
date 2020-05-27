@@ -1,0 +1,191 @@
+package synchronizer
+
+import (
+	"errors"
+	"sync/atomic"
+	"testing"
+
+	"github.com/splitio/go-split-commons/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
+	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/storage/mutexmap"
+)
+
+func TestSplitSynchronizerError(t *testing.T) {
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return -1, nil
+		},
+	}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			if changeNumber != -1 {
+				t.Error("Wrong changenumber passed")
+			}
+			return nil, errors.New("Some")
+		},
+	}
+
+	splitSync := NewSplitSynchronizer(
+		splitMockStorage,
+		splitMockFetcher,
+	)
+
+	err := splitSync.SynchronizeSplits(nil)
+	if err == nil {
+		t.Error("It should return err")
+	}
+}
+
+func TestSplitSynchronizer(t *testing.T) {
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
+	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
+	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
+
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return -1, nil
+		},
+		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 3 {
+				t.Error("Wrong changenumber")
+			}
+			if len(splits) != 2 {
+				t.Error("Wrong length of passed splits")
+			}
+			s1 := splits[0]
+			if s1.Name != "split1" || s1.Killed {
+				t.Error("split1 stored/retrieved incorrectly")
+				t.Error(s1)
+			}
+			s2 := splits[1]
+			if s2.Name != "split2" || !s2.Killed {
+				t.Error("split2 stored/retrieved incorrectly")
+				t.Error(s2)
+			}
+		},
+		RemoveCall: func(splitname string) {
+			if splitname != "split3" {
+				t.Error("It should remove split3")
+			}
+		},
+	}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			if changeNumber != -1 {
+				t.Error("Wrong changenumber passed")
+			}
+			return &dtos.SplitChangesDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+				Since:  3,
+				Till:   3,
+			}, nil
+		},
+	}
+
+	splitSync := NewSplitSynchronizer(
+		splitMockStorage,
+		splitMockFetcher,
+	)
+
+	err := splitSync.SynchronizeSplits(nil)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+}
+
+func TestSplitSyncProcess(t *testing.T) {
+	var call int64
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
+	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
+	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
+	mockedSplit4 := dtos.SplitDTO{Name: "split1", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
+	mockedSplit5 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "two"}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			switch call {
+			case 1:
+				if changeNumber != -1 {
+					t.Error("Wrong changenumber passed")
+				}
+				return &dtos.SplitChangesDTO{
+					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+					Since:  3,
+					Till:   3,
+				}, nil
+			case 2:
+				if changeNumber != 3 {
+					t.Error("Wrong changenumber passed")
+				}
+				return &dtos.SplitChangesDTO{
+					Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
+					Since:  3,
+					Till:   3,
+				}, nil
+			default:
+				t.Error("Wrong calls")
+				return nil, errors.New("some")
+			}
+		},
+	}
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+
+	splitSync := NewSplitSynchronizer(
+		splitStorage,
+		splitMockFetcher,
+	)
+
+	err := splitSync.SynchronizeSplits(nil)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if !splitStorage.TrafficTypeExists("one") {
+		t.Error("It should exists")
+	}
+
+	if !splitStorage.TrafficTypeExists("two") {
+		t.Error("It should exists")
+	}
+
+	err = splitSync.SynchronizeSplits(nil)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	s1 := splitStorage.Split("split1")
+	if s1 != nil {
+		t.Error("split1 should have been removed")
+	}
+
+	s2 := splitStorage.Split("split2")
+	if s2 == nil || s2.Name != "split2" || !s2.Killed {
+		t.Error("split2 stored/retrieved incorrectly")
+		t.Error(s2)
+	}
+
+	s3 := splitStorage.Split("split3")
+	if s3 != nil {
+		t.Error("split3 should have been removed")
+	}
+
+	s4 := splitStorage.Split("split4")
+	if s4 == nil || s4.Name != "split4" || s4.Killed {
+		t.Error("split4 stored/retrieved incorrectly")
+		t.Error(s4)
+	}
+
+	if splitStorage.TrafficTypeExists("one") {
+		t.Error("It should not exists")
+	}
+
+	if !splitStorage.TrafficTypeExists("two") {
+		t.Error("It should exists")
+	}
+}

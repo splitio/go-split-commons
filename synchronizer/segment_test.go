@@ -1,0 +1,274 @@
+package synchronizer
+
+import (
+	"errors"
+	"sync/atomic"
+	"testing"
+
+	"github.com/splitio/go-split-commons/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
+	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/storage/mutexmap"
+	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-toolkit/logging"
+)
+
+func TestSegmentsSynchronizerError(t *testing.T) {
+	splitMockStorage := storageMock.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet {
+			segmentNames := set.NewSet()
+			segmentNames.Add("segment1", "segment2")
+			return segmentNames
+		},
+	}
+
+	segmentMockStorage := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return -1, nil
+		},
+	}
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			if name != "segment1" && name != "segment2" {
+				t.Error("Wrong name")
+			}
+			return nil, errors.New("Some")
+		},
+	}
+
+	segmentSync := NewSegmentSynchronizer(
+		splitMockStorage,
+		segmentMockStorage,
+		segmentMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+	)
+
+	err := segmentSync.SynchronizeSegments()
+	if err == nil {
+		t.Error("It should return err")
+	}
+}
+
+func TestSegmentSynchronizer(t *testing.T) {
+	addedS1 := []string{"item1", "item2", "item3", "item4"}
+	addedS2 := []string{"item5", "item6", "item7", "item8"}
+	var s1Requested int64
+	var s2Requested int64
+
+	splitMockStorage := storageMock.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet {
+			segmentNames := set.NewSet()
+			segmentNames.Add("segment1", "segment2")
+			return segmentNames
+		},
+	}
+
+	segmentMockStorage := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			switch segmentName {
+			case "segment1":
+				if s1Requested >= 1 {
+					return 123, nil
+				}
+			case "segment2":
+				if s2Requested >= 1 {
+					return 123, nil
+				}
+			default:
+				t.Error("Wrong case")
+			}
+			return -1, nil
+		},
+		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
+			if segmentName != "segment1" && segmentName != "segment2" {
+				t.Error("Wrong name")
+			}
+			switch segmentName {
+			case "segment1":
+			case "segment2":
+				return nil
+			default:
+				t.Error("Wrong case")
+			}
+			return nil
+		},
+		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
+			switch name {
+			case "segment1":
+				if !segment.Has("item1") {
+					t.Error("Wrong key in segment")
+				}
+				atomic.AddInt64(&s1Requested, 1)
+			case "segment2":
+				if !segment.Has("item5") {
+					t.Error("Wrong key in segment")
+				}
+				atomic.AddInt64(&s2Requested, 1)
+			default:
+				t.Error("Wrong case")
+			}
+		},
+	}
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			if name != "segment1" && name != "segment2" {
+				t.Error("Wrong name")
+			}
+			switch name {
+			case "segment1":
+				atomic.AddInt64(&s1Requested, 1)
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   addedS1,
+					Removed: []string{},
+					Since:   123,
+					Till:    123,
+				}, nil
+			case "segment2":
+				atomic.AddInt64(&s2Requested, 1)
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   addedS2,
+					Removed: []string{},
+					Since:   123,
+					Till:    123,
+				}, nil
+			default:
+				t.Error("Wrong case")
+			}
+			return &dtos.SegmentChangesDTO{}, nil
+		},
+	}
+
+	segmentSync := NewSegmentSynchronizer(
+		splitMockStorage,
+		segmentMockStorage,
+		segmentMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+	)
+
+	err := segmentSync.SynchronizeSegments()
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if s1Requested != 2 {
+		t.Error("Should be called twice")
+	}
+	if s2Requested != 2 {
+		t.Error("Should be called twice")
+	}
+}
+
+func TestSegmentSyncProcess(t *testing.T) {
+	addedS1 := []string{"item1", "item2", "item3", "item4"}
+	addedS2 := []string{"item5", "item6", "item7", "item8"}
+	var s1Requested int64
+	var s2Requested int64
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.PutMany([]dtos.SplitDTO{
+		{
+			Name: "split1",
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "WHITELIST",
+					Label:         "Cond1",
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Combiner: "AND",
+						Matchers: []dtos.MatcherDTO{
+							{
+								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+									SegmentName: "segment1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "split2",
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "WHITELIST",
+					Label:         "Cond1",
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Combiner: "AND",
+						Matchers: []dtos.MatcherDTO{
+							{
+								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+									SegmentName: "segment2",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, 123)
+
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			if name != "segment1" && name != "segment2" {
+				t.Error("Wrong name")
+			}
+			switch name {
+			case "segment1":
+				atomic.AddInt64(&s1Requested, 1)
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   addedS1,
+					Removed: []string{},
+					Since:   123,
+					Till:    123,
+				}, nil
+			case "segment2":
+				atomic.AddInt64(&s2Requested, 1)
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   addedS2,
+					Removed: []string{},
+					Since:   123,
+					Till:    123,
+				}, nil
+			default:
+				t.Error("Wrong case")
+			}
+			return &dtos.SegmentChangesDTO{}, nil
+		},
+	}
+
+	segmentSync := NewSegmentSynchronizer(
+		splitStorage,
+		segmentStorage,
+		segmentMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+	)
+
+	err := segmentSync.SynchronizeSegments()
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	s1 := segmentStorage.Get("segment1")
+	if s1 == nil || !s1.Has("item1") {
+		t.Error("Segment S1 stored/retrieved incorrectly")
+	}
+
+	s2 := segmentStorage.Get("segment2")
+	if s2 == nil || !s2.Has("item5") {
+		t.Error("Segment S2 stored/retrieved incorrectly")
+	}
+
+	if s1Requested != 1 {
+		t.Error("Should be called once")
+	}
+	if s2Requested != 1 {
+		t.Error("Should be called once")
+	}
+}

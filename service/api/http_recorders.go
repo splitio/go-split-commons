@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/splitio/go-client/splitio"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -154,12 +153,13 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO) error {
 // NewHTTPMetricsRecorder instantiates an HTTPMetricsRecorder
 func NewHTTPMetricsRecorder(
 	apikey string,
+	version string,
 	cfg *conf.AdvancedConfig,
 	metadata dtos.Metadata,
 	logger logging.LoggerInterface,
 ) *HTTPMetricsRecorder {
 	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, splitio.Version, logger)
+	client := NewHTTPClient(apikey, cfg, eventsURL, version, logger)
 	return &HTTPMetricsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client:   client,

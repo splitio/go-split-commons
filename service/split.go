@@ -25,9 +25,9 @@ func NewSplitAPI(
 ) *SplitAPI {
 	return &SplitAPI{
 		SplitFetcher:       api.NewHTTPSplitFetcher(apikey, conf, version, logger),
-		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, conf, logger),
+		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, version, conf, logger),
 		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, dtos.Metadata{}, version, logger),
 		EventRecorder:      api.NewHTTPEventsRecorder(apikey, conf, dtos.Metadata{}, version, logger),
-		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, conf, dtos.Metadata{}, logger),
+		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, version, conf, dtos.Metadata{}, logger),
 	}
 }

@@ -98,8 +98,8 @@ func (s *SegmentSynchronizer) SynchronizeSegments() error {
 				err = s.SynchronizeSegment(segmentName, nil)
 				if err != nil {
 					failedSegments = append(failedSegments, segmentName)
-					return
 				}
+				return
 			}
 		}(conv)
 	}

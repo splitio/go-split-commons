@@ -24,11 +24,6 @@ func NewMMSegmentStorage() *MMSegmentStorage {
 	}
 }
 
-// Update updates segment
-func (m *MMSegmentStorage) Update(segmentName string, toAdd []string, toRemove []string, till int64) error {
-	return nil
-}
-
 // Put adds a new segment to the in-memory storage
 func (m *MMSegmentStorage) Put(name string, segment *set.ThreadUnsafeSet, till int64) {
 	m.mutex.Lock()
