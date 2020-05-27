@@ -149,13 +149,19 @@ func TestSynhronizeImpressionSync(t *testing.T) {
 			return
 		}
 
-		if impressions[0].TestName != "someFeature1" && len(impressions[0].KeyImpressions) != 2 {
-			t.Error("Incorrect impressions received")
-		}
-		if impressions[1].TestName != "someFeature2" && len(impressions[0].KeyImpressions) != 1 {
-			t.Error("Incorrect impressions received")
+		result := make(map[string]dtos.ImpressionsDTO, 0)
+		for _, impression := range impressions {
+			result[impression.TestName] = impression
 		}
 
+		imp1, ok := result["someFeature1"]
+		if !ok || len(imp1.KeyImpressions) != 2 {
+			t.Error("Incorrect impressions received")
+		}
+		imp2, ok := result["someFeature2"]
+		if !ok || len(imp2.KeyImpressions) != 1 {
+			t.Error("Incorrect impressions received")
+		}
 	}))
 	defer ts.Close()
 
