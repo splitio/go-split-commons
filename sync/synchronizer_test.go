@@ -309,7 +309,7 @@ func TestPeriodicFetching(t *testing.T) {
 		nil,
 	)
 	syncForTest.StartPeriodicFetching()
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Millisecond * 2200)
 	if splitFetchCalled != 2 {
 		t.Error("It should be called twice")
 		t.Error(splitFetchCalled)
