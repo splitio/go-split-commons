@@ -79,8 +79,8 @@ func setupTasks(
 		splitSyncTask:      tasks.NewFetchSplitsTask(synchronizers.splitSynchronizer, confTask.SplitSync, logger),
 		segmentSyncTask:    tasks.NewFetchSegmentsTask(synchronizers.segmentSynchronizer, confTask.SegmentSync, confAdvanced.SegmentWorkers, confAdvanced.SegmentQueueSize, logger),
 		counterSyncTask:    tasks.NewRecordCountersTask(synchronizers.metricSynchronizer, confTask.CounterSync, logger),
-		latencySyncTask:    tasks.NewRecordCountersTask(synchronizers.metricSynchronizer, confTask.CounterSync, logger),
-		gaugeSyncTask:      tasks.NewRecordCountersTask(synchronizers.metricSynchronizer, confTask.CounterSync, logger),
+		latencySyncTask:    tasks.NewRecordLatenciesTask(synchronizers.metricSynchronizer, confTask.LatencySync, logger),
+		gaugeSyncTask:      tasks.NewRecordGaugesTask(synchronizers.metricSynchronizer, confTask.GaugeSync, logger),
 		impressionSyncTask: tasks.NewRecordImpressionsTask(synchronizers.impressionSynchronizer, confTask.ImpressionSync, logger, confAdvanced.ImpressionsBulkSize),
 		eventSyncTask:      tasks.NewRecordEventsTask(synchronizers.eventSynchronizer, confAdvanced.EventsBulkSize, confTask.EventsSync, logger),
 	}
@@ -176,9 +176,9 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 // StopPeriodicDataRecording stops periodic recorders tasks
 func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	s.splitTasks.impressionSyncTask.Stop(true)
-	s.splitTasks.latencySyncTask.Stop(true)
-	s.splitTasks.gaugeSyncTask.Stop(true)
-	s.splitTasks.counterSyncTask.Stop(true)
+	s.splitTasks.latencySyncTask.Stop(false)
+	s.splitTasks.gaugeSyncTask.Stop(false)
+	s.splitTasks.counterSyncTask.Stop(false)
 	s.splitTasks.eventSyncTask.Stop(true)
 }
 

@@ -123,7 +123,7 @@ func TestLatencySyncTask(t *testing.T) {
 		},
 	}
 
-	metricTask := NewRecordGaugesTask(
+	metricTask := NewRecordLatenciesTask(
 		synchronizer.NewMetricSynchronizer(
 			metricMockStorage,
 			metricMockRecorder,

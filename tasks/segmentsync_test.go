@@ -29,18 +29,6 @@ func TestSegmentSyncTask(t *testing.T) {
 
 	segmentMockStorage := storageMock.MockSegmentStorage{
 		ChangeNumberCall: func(segmentName string) (int64, error) {
-			switch segmentName {
-			case "segment1":
-				if s1Requested >= 1 {
-					return 123, nil
-				}
-			case "segment2":
-				if s2Requested >= 1 {
-					return 123, nil
-				}
-			default:
-				t.Error("Wrong case")
-			}
 			return -1, nil
 		},
 		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
