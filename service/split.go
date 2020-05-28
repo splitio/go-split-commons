@@ -22,12 +22,13 @@ func NewSplitAPI(
 	version string,
 	conf *conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *SplitAPI {
 	return &SplitAPI{
 		SplitFetcher:       api.NewHTTPSplitFetcher(apikey, conf, version, logger),
 		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, version, conf, logger),
-		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, dtos.Metadata{}, version, logger),
-		EventRecorder:      api.NewHTTPEventsRecorder(apikey, conf, dtos.Metadata{}, version, logger),
-		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, version, conf, dtos.Metadata{}, logger),
+		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, metadata, version, logger),
+		EventRecorder:      api.NewHTTPEventsRecorder(apikey, conf, metadata, version, logger),
+		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, version, conf, metadata, logger),
 	}
 }
