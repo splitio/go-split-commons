@@ -10,17 +10,6 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-// Synchronizer interface for syncing data to and from splits servers
-type Synchronizer interface {
-	SyncAll() error
-	SynchronizeSplits(till *int64) error
-	SynchronizeSegment(segmentName string, till *int64) error
-	StartPeriodicFetching()
-	StopPeriodicFetching()
-	StartPeriodicDataRecording()
-	StopPeriodicDataRecording()
-}
-
 // splitTasks struct for tasks
 type splitTasks struct {
 	splitSyncTask      *asynctask.AsyncTask
@@ -86,8 +75,8 @@ func setupTasks(
 	}
 }
 
-// NewSynchronizerImpl creates new SynchronizerImpl
-func NewSynchronizerImpl(
+// NewSynchronizer creates new SynchronizerImpl
+func NewSynchronizer(
 	confTask conf.TaskPeriods,
 	confAdvanced conf.AdvancedConfig,
 	splitAPI *service.SplitAPI,

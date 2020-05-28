@@ -34,7 +34,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 			return -1, nil
 		},
 	}
-	syncForTest := NewSynchronizerImpl(
+	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
@@ -108,7 +108,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			return -1, nil
 		},
 	}
-	syncForTest := NewSynchronizerImpl(
+	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
@@ -202,7 +202,7 @@ func TestSyncAllOk(t *testing.T) {
 			}
 		},
 	}
-	syncForTest := NewSynchronizerImpl(
+	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
@@ -296,7 +296,7 @@ func TestPeriodicFetching(t *testing.T) {
 			}
 		},
 	}
-	syncForTest := NewSynchronizerImpl(
+	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 100, EventsSync: 100, GaugeSync: 100, ImpressionSync: 100, LatencySync: 100, SegmentSync: 10, SplitSync: 2},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
@@ -380,7 +380,7 @@ func TestPeriodicRecording(t *testing.T) {
 			},
 		},
 	}
-	syncForTest := NewSynchronizerImpl(
+	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 100, SplitSync: 100},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
@@ -488,180 +488,3 @@ func TestPeriodicRecording(t *testing.T) {
 		t.Error(latenciesCalled)
 	}
 }
-
-/*
-func TestSyncAll(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-	splitAPI := service.SplitAPI{
-		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
-				if changeNumber != -1 {
-					t.Error("Wrong changenumber passed")
-				}
-				return nil, errors.New("Some")
-			},
-		},
-	}
-	var s1Requested int64
-	var s2Requested int64
-	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
-			if changeNumber != 3 {
-				t.Error("Wrong changenumber")
-			}
-			if len(splits) != 2 {
-				t.Error("Wrong length of passed splits")
-			}
-			s1 := splits[0]
-			if s1.Name != "split1" || s1.Killed {
-				t.Error("split1 stored/retrieved incorrectly")
-				t.Error(s1)
-			}
-			s2 := splits[1]
-			if s2.Name != "split2" || !s2.Killed {
-				t.Error("split2 stored/retrieved incorrectly")
-				t.Error(s2)
-			}
-		},
-		RemoveCall: func(splitname string) {
-			if splitname != "split3" {
-				t.Error("It should remove split3")
-			}
-		},
-	}
-	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			switch segmentName {
-			case "segment1":
-				if s1Requested >= 1 {
-					return 123, nil
-				}
-			case "segment2":
-				if s2Requested >= 1 {
-					return 123, nil
-				}
-			default:
-				t.Error("Wrong case")
-			}
-			return -1, nil
-		},
-		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
-			if segmentName != "segment1" && segmentName != "segment2" {
-				t.Error("Wrong name")
-			}
-			switch segmentName {
-			case "segment1":
-			case "segment2":
-				return nil
-			default:
-				t.Error("Wrong case")
-			}
-			return nil
-		},
-		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
-			switch name {
-			case "segment1":
-				if !segment.Has("item1") {
-					t.Error("Wrong key in segment")
-				}
-				atomic.AddInt64(&s1Requested, 1)
-			case "segment2":
-				if !segment.Has("item5") {
-					t.Error("Wrong key in segment")
-				}
-				atomic.AddInt64(&s2Requested, 1)
-			default:
-				t.Error("Wrong case")
-			}
-		},
-	}
-	metricMockStorage := storageMock.MockMetricStorage{
-		PopLatenciesCall: func() []dtos.LatenciesDTO {
-			toReturn := make([]dtos.LatenciesDTO, 0, 1)
-			toReturn = append(toReturn, dtos.LatenciesDTO{
-				MetricName: "latency",
-				Latencies:  []int64{1, 2, 3},
-			})
-			return toReturn
-		},
-	}
-	var call int64
-	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature1",
-		KeyName:      "someKey1",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment1",
-	}
-	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature2",
-		KeyName:      "someKey2",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment2",
-	}
-	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature3",
-		KeyName:      "someKey3",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment3",
-	}
-	impressionMockStorage := storageMock.MockImpressionStorage{
-		PopNCall: func(n int64) ([]dtos.Impression, error) {
-			atomic.AddInt64(&call, 1)
-			if n != 50 {
-				t.Error("Wrong input parameter passed")
-			}
-			return []dtos.Impression{impression1, impression2, impression3}, nil
-		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
-	}
-	var call2 int64
-	mockedEvent1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey1", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
-	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
-	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
-	eventMockStorage := storageMock.MockEventStorage{
-		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-			atomic.AddInt64(&call2, 1)
-			if n != 50 {
-				t.Error("Wrong input parameter passed")
-			}
-			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
-		},
-		EmptyCall: func() bool {
-			if call2 == 1 {
-				return false
-			}
-			return true
-		},
-	}
-	syncForTest := NewSynchronizerImpl(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
-		splitMockStorage,
-		segmentMockStorage,
-		metricMockStorage,
-		impressionMockStorage,
-		eventMockStorage,
-		logger,
-		nil,
-	)
-	syncForTest.SyncAll()
-}
-*/

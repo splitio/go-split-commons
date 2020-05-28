@@ -8,16 +8,16 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-// LocalSynchronizerImpl implements Synchronizer
-type LocalSynchronizerImpl struct {
+// LocalSynchronizer implements Synchronizer
+type LocalSynchronizer struct {
 	splitTasks          splitTasks
 	synchronizers       synchronizers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
 }
 
-// NewLocalSynchronizerImpl creates new SynchronizerImpl
-func NewLocalSynchronizerImpl(
+// NewLocalSynchronizer creates new SynchronizerImpl
+func NewLocalSynchronizer(
 	period int,
 	splitAPI *service.SplitAPI,
 	splitStorage storage.SplitStorage,
@@ -36,34 +36,34 @@ func NewLocalSynchronizerImpl(
 }
 
 // SyncAll syncs splits and segments
-func (s *LocalSynchronizerImpl) SyncAll() error {
+func (s *LocalSynchronizer) SyncAll() error {
 	return s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
-func (s *LocalSynchronizerImpl) StartPeriodicFetching() {
+func (s *LocalSynchronizer) StartPeriodicFetching() {
 	s.splitTasks.splitSyncTask.Start()
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
-func (s *LocalSynchronizerImpl) StopPeriodicFetching() {
+func (s *LocalSynchronizer) StopPeriodicFetching() {
 	s.splitTasks.splitSyncTask.Stop(false)
 }
 
 // StartPeriodicDataRecording starts periodic recorders tasks
-func (s *LocalSynchronizerImpl) StartPeriodicDataRecording() {
+func (s *LocalSynchronizer) StartPeriodicDataRecording() {
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
-func (s *LocalSynchronizerImpl) StopPeriodicDataRecording() {
+func (s *LocalSynchronizer) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *LocalSynchronizerImpl) SynchronizeSplits(till *int64) error {
+func (s *LocalSynchronizer) SynchronizeSplits(till *int64) error {
 	return s.synchronizers.splitSynchronizer.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
-func (s *LocalSynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
+func (s *LocalSynchronizer) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }
