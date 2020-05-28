@@ -32,6 +32,7 @@ func (s *SynchronizerManager) startPolling() {
 func (s *SynchronizerManager) Start() error {
 	err := s.synchronizer.SyncAll()
 	if err != nil {
+		s.statusChannel <- "ERROR"
 		return err
 	}
 	s.synchronizer.StartPeriodicDataRecording()

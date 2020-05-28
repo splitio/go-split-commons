@@ -26,7 +26,7 @@ func NewLocalSynchronizer(
 	synchronizers := synchronizers{
 		splitSynchronizer: synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher),
 	}
-	return &SynchronizerImpl{
+	return &LocalSynchronizer{
 		splitTasks: splitTasks{
 			splitSyncTask: tasks.NewFetchSplitsTask(synchronizers.splitSynchronizer, period, logger),
 		},
