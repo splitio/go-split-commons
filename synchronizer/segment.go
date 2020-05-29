@@ -42,7 +42,8 @@ func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesD
 		for _, key := range segmentChanges.Added {
 			keys.Add(key)
 		}
-		s.segmentStorage.Update(name, keys, nil, segmentChanges.Till)
+		s.logger.Debug(fmt.Sprintf("Segment [%s] doesn't exist now, it will add (%d) keys", name, keys.Size()))
+		s.segmentStorage.Update(name, keys, set.NewSet(), segmentChanges.Till)
 	} else {
 		toAdd := set.NewSet()
 		toRemove := set.NewSet()
@@ -53,6 +54,7 @@ func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesD
 		for _, key := range segmentChanges.Removed {
 			toRemove.Add(key)
 		}
+		s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", name, toAdd.Size(), toRemove.Size()))
 		s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
 	}
 }
@@ -60,6 +62,7 @@ func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesD
 // SynchronizeSegment syncs segment
 func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) error {
 	for {
+		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {
 			changeNumber = -1

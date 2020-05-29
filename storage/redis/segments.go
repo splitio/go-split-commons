@@ -79,10 +79,10 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 	defer r.mutext.Unlock()
 	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
 	if !toRemove.IsEmpty() {
-		r.client.SRem(segmentKey, toRemove.List())
+		r.client.SRem(segmentKey, toRemove.List()...)
 	}
 	if !toAdd.IsEmpty() {
-		r.client.SAdd(segmentKey, toAdd.List())
+		r.client.SAdd(segmentKey, toAdd.List()...)
 	}
 	r.SetChangeNumber(name, till)
 	return nil

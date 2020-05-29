@@ -19,7 +19,7 @@ func TestMMSegmentStorage(t *testing.T) {
 		for _, item := range segment {
 			setito.Add(item)
 		}
-		segmentStorage.Update(fmt.Sprintf("segmentito_%d", index), setito, nil, 123)
+		segmentStorage.Update(fmt.Sprintf("segmentito_%d", index), setito, set.NewSet(), 123)
 	}
 
 	for i := 0; i < 3; i++ {
