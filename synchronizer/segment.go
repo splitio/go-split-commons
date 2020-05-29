@@ -36,22 +36,24 @@ func NewSegmentSynchronizer(
 
 func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 	name := segmentChanges.Name
-	oldSegment := s.segmentStorage.Get(name)
+	oldSegment := s.segmentStorage.Keys(name)
 	if oldSegment == nil {
 		keys := set.NewSet()
 		for _, key := range segmentChanges.Added {
 			keys.Add(key)
 		}
-		s.segmentStorage.Put(name, keys, segmentChanges.Till)
+		s.segmentStorage.Update(name, keys, nil, segmentChanges.Till)
 	} else {
+		toAdd := set.NewSet()
+		toRemove := set.NewSet()
 		// Segment exists, must add new members and remove old ones
 		for _, key := range segmentChanges.Added {
-			oldSegment.Add(key)
+			toAdd.Add(key)
 		}
 		for _, key := range segmentChanges.Removed {
-			oldSegment.Remove(key)
+			toRemove.Add(key)
 		}
-		s.segmentStorage.Put(name, oldSegment, segmentChanges.Till)
+		s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
 	}
 }
 

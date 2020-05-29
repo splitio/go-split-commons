@@ -190,16 +190,17 @@ func TestSyncAllOk(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) {
 			return -1, nil
 		},
-		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
 			}
 			return nil
 		},
-		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
+			return nil
 		},
 	}
 	syncForTest := NewSynchronizer(
@@ -284,16 +285,17 @@ func TestPeriodicFetching(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) {
 			return -1, nil
 		},
-		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
 			}
 			return nil
 		},
-		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
+			return nil
 		},
 	}
 	syncForTest := NewSynchronizer(

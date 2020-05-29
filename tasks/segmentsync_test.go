@@ -31,7 +31,7 @@ func TestSegmentSyncTask(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) {
 			return -1, nil
 		},
-		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -44,21 +44,22 @@ func TestSegmentSyncTask(t *testing.T) {
 			}
 			return nil
 		},
-		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 			switch name {
 			case "segment1":
-				if !segment.Has("item1") {
+				if !toAdd.Has("item1") {
 					t.Error("Wrong key in segment")
 				}
 				atomic.AddInt64(&s1Requested, 1)
 			case "segment2":
-				if !segment.Has("item5") {
+				if !toAdd.Has("item5") {
 					t.Error("Wrong key in segment")
 				}
 				atomic.AddInt64(&s2Requested, 1)
 			default:
 				t.Error("Wrong case")
 			}
+			return nil
 		},
 	}
 

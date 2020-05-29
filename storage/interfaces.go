@@ -32,25 +32,25 @@ type SplitStorageProducer interface {
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
 type SplitStorageConsumer interface {
-	Split(splitName string) *dtos.SplitDTO
-	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
 	All() []dtos.SplitDTO
+	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
+	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
-	TrafficTypeExists(trafficType string) bool
 	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	TrafficTypeExists(trafficType string) bool
 }
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
 type SegmentStorageProducer interface {
 	ChangeNumber(segmentName string) (int64, error)
 	Clear()
-	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) // Move to Update instead of Put
+	Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
 	SetChangeNumber(segmentName string, till int64) error
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
-	Get(segmentName string) *set.ThreadUnsafeSet // Should be replaced for IsInSegment
+	Keys(segmentName string) *set.ThreadUnsafeSet
 	// MISSING IsInSegment(name, key)
 }
 

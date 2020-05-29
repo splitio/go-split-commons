@@ -80,7 +80,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 			}
 			return -1, nil
 		},
-		GetCall: func(segmentName string) *set.ThreadUnsafeSet {
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -93,21 +93,22 @@ func TestSegmentSynchronizer(t *testing.T) {
 			}
 			return nil
 		},
-		PutCall: func(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 			switch name {
 			case "segment1":
-				if !segment.Has("item1") {
+				if !toAdd.Has("item1") {
 					t.Error("Wrong key in segment")
 				}
 				atomic.AddInt64(&s1Requested, 1)
 			case "segment2":
-				if !segment.Has("item5") {
+				if !toAdd.Has("item5") {
 					t.Error("Wrong key in segment")
 				}
 				atomic.AddInt64(&s2Requested, 1)
 			default:
 				t.Error("Wrong case")
 			}
+			return nil
 		},
 	}
 
@@ -255,12 +256,12 @@ func TestSegmentSyncProcess(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	s1 := segmentStorage.Get("segment1")
+	s1 := segmentStorage.Keys("segment1")
 	if s1 == nil || !s1.Has("item1") {
 		t.Error("Segment S1 stored/retrieved incorrectly")
 	}
 
-	s2 := segmentStorage.Get("segment2")
+	s2 := segmentStorage.Keys("segment2")
 	if s2 == nil || !s2.Has("item5") {
 		t.Error("Segment S2 stored/retrieved incorrectly")
 	}

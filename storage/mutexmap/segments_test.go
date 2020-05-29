@@ -19,12 +19,12 @@ func TestMMSegmentStorage(t *testing.T) {
 		for _, item := range segment {
 			setito.Add(item)
 		}
-		segmentStorage.Put(fmt.Sprintf("segmentito_%d", index), setito, 123)
+		segmentStorage.Update(fmt.Sprintf("segmentito_%d", index), setito, nil, 123)
 	}
 
 	for i := 0; i < 3; i++ {
 		segmentName := fmt.Sprintf("segmentito_%d", i)
-		segment := segmentStorage.Get(segmentName)
+		segment := segmentStorage.Keys(segmentName)
 		if segment == nil {
 			t.Errorf("%s should exist in storage and it doesn't.", segmentName)
 		}
@@ -36,15 +36,16 @@ func TestMMSegmentStorage(t *testing.T) {
 		}
 	}
 
-	segment := segmentStorage.Get("nonexistent_segment")
+	segment := segmentStorage.Keys("nonexistent_segment")
 	if segment != nil {
 		t.Error("Nil expected but segment returned")
 	}
 
-	segmentStorage.Remove("segmentito_1")
+	delete(segmentStorage.data, "segmentito_1")
+	delete(segmentStorage.till, "segmentito_1")
 	for index := 0; index < 3; index++ {
 		segmentName := fmt.Sprintf("segmentito_%d", index)
-		segment := segmentStorage.Get(segmentName)
+		segment := segmentStorage.Keys(segmentName)
 		if index == 1 && segment != nil {
 			t.Error("Segment Should have been removed and is present")
 		}

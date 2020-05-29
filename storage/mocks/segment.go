@@ -6,8 +6,8 @@ import "github.com/splitio/go-toolkit/datastructures/set"
 type MockSegmentStorage struct {
 	ChangeNumberCall    func(segmentName string) (int64, error)
 	ClearCall           func()
-	GetCall             func(segmentName string) *set.ThreadUnsafeSet
-	PutCall             func(name string, segment *set.ThreadUnsafeSet, changeNumber int64)
+	KeysCall            func(segmentName string) *set.ThreadUnsafeSet
+	UpdateCall          func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
 	SetChangeNumberCall func(segmentName string, till int64) error
 }
 
@@ -21,14 +21,14 @@ func (m MockSegmentStorage) Clear() {
 	m.ClearCall()
 }
 
-// Get mock
-func (m MockSegmentStorage) Get(segmentName string) *set.ThreadUnsafeSet {
-	return m.GetCall(segmentName)
+// Keys mock
+func (m MockSegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
+	return m.KeysCall(segmentName)
 }
 
-// Put mock
-func (m MockSegmentStorage) Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) {
-	m.PutCall(name, segment, changeNumber)
+// Update mock
+func (m MockSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+	return m.UpdateCall(name, toAdd, toRemove, changeNumber)
 }
 
 // SetChangeNumber mock
