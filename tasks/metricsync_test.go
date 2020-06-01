@@ -13,7 +13,9 @@ import (
 )
 
 func TestCounterSyncTask(t *testing.T) {
-	var call int64
+	var popCounters int64
+	var popLatency int64
+	var popGauge int64
 
 	metricMockStorage := storageMock.MockMetricStorage{
 		PopCountersCall: func() []dtos.CounterDTO {
@@ -24,43 +26,6 @@ func TestCounterSyncTask(t *testing.T) {
 			})
 			return toReturn
 		},
-	}
-
-	metricMockRecorder := recorderMock.MockMetricRecorder{
-		RecordCountersCall: func(counters []dtos.CounterDTO) error {
-			atomic.AddInt64(&call, 1)
-			return nil
-		},
-	}
-
-	metricTask := NewRecordCountersTask(
-		synchronizer.NewMetricSynchronizer(
-			metricMockStorage,
-			metricMockRecorder,
-		),
-		3,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
-
-	metricTask.Start()
-	if !metricTask.IsRunning() {
-		t.Error("Counter recorder task should be running")
-	}
-
-	metricTask.Stop(false)
-	time.Sleep(time.Second * 1)
-	if call <= 0 {
-		t.Error("Request not received")
-	}
-	if metricTask.IsRunning() {
-		t.Error("Task should be stopped")
-	}
-}
-
-func TestGaugeSyncTask(t *testing.T) {
-	var call int64
-
-	metricMockStorage := storageMock.MockMetricStorage{
 		PopGaugesCall: func() []dtos.GaugeDTO {
 			toReturn := make([]dtos.GaugeDTO, 0, 1)
 			toReturn = append(toReturn, dtos.GaugeDTO{
@@ -69,43 +34,6 @@ func TestGaugeSyncTask(t *testing.T) {
 			})
 			return toReturn
 		},
-	}
-
-	metricMockRecorder := recorderMock.MockMetricRecorder{
-		RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
-			atomic.AddInt64(&call, 1)
-			return nil
-		},
-	}
-
-	metricTask := NewRecordGaugesTask(
-		synchronizer.NewMetricSynchronizer(
-			metricMockStorage,
-			metricMockRecorder,
-		),
-		3,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
-
-	metricTask.Start()
-	if !metricTask.IsRunning() {
-		t.Error("Counter recorder task should be running")
-	}
-
-	metricTask.Stop(false)
-	time.Sleep(time.Second * 1)
-	if call <= 0 {
-		t.Error("Request not received")
-	}
-	if metricTask.IsRunning() {
-		t.Error("Task should be stopped")
-	}
-}
-
-func TestLatencySyncTask(t *testing.T) {
-	var call int64
-
-	metricMockStorage := storageMock.MockMetricStorage{
 		PopLatenciesCall: func() []dtos.LatenciesDTO {
 			toReturn := make([]dtos.LatenciesDTO, 0, 1)
 			toReturn = append(toReturn, dtos.LatenciesDTO{
@@ -117,13 +45,21 @@ func TestLatencySyncTask(t *testing.T) {
 	}
 
 	metricMockRecorder := recorderMock.MockMetricRecorder{
+		RecordCountersCall: func(counters []dtos.CounterDTO) error {
+			atomic.AddInt64(&popCounters, 1)
+			return nil
+		},
+		RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+			atomic.AddInt64(&popGauge, 1)
+			return nil
+		},
 		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
-			atomic.AddInt64(&call, 1)
+			atomic.AddInt64(&popLatency, 1)
 			return nil
 		},
 	}
 
-	metricTask := NewRecordLatenciesTask(
+	metricTask := NewRecordTelemetryTask(
 		synchronizer.NewMetricSynchronizer(
 			metricMockStorage,
 			metricMockRecorder,
@@ -139,8 +75,13 @@ func TestLatencySyncTask(t *testing.T) {
 
 	metricTask.Stop(false)
 	time.Sleep(time.Second * 1)
-
-	if call <= 0 {
+	if popCounters <= 0 {
+		t.Error("Request not received")
+	}
+	if popGauge <= 0 {
+		t.Error("Request not received")
+	}
+	if popLatency <= 0 {
 		t.Error("Request not received")
 	}
 	if metricTask.IsRunning() {

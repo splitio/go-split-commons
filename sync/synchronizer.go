@@ -14,9 +14,7 @@ import (
 type splitTasks struct {
 	splitSyncTask      *asynctask.AsyncTask
 	segmentSyncTask    *asynctask.AsyncTask
-	counterSyncTask    *asynctask.AsyncTask
-	latencySyncTask    *asynctask.AsyncTask
-	gaugeSyncTask      *asynctask.AsyncTask
+	telemetrySyncTask  *asynctask.AsyncTask
 	impressionSyncTask *asynctask.AsyncTask
 	eventSyncTask      *asynctask.AsyncTask
 }
@@ -67,9 +65,7 @@ func setupTasks(
 	return splitTasks{
 		splitSyncTask:      tasks.NewFetchSplitsTask(synchronizers.splitSynchronizer, confTask.SplitSync, logger),
 		segmentSyncTask:    tasks.NewFetchSegmentsTask(synchronizers.segmentSynchronizer, confTask.SegmentSync, confAdvanced.SegmentWorkers, confAdvanced.SegmentQueueSize, logger),
-		counterSyncTask:    tasks.NewRecordCountersTask(synchronizers.metricSynchronizer, confTask.CounterSync, logger),
-		latencySyncTask:    tasks.NewRecordLatenciesTask(synchronizers.metricSynchronizer, confTask.LatencySync, logger),
-		gaugeSyncTask:      tasks.NewRecordGaugesTask(synchronizers.metricSynchronizer, confTask.GaugeSync, logger),
+		telemetrySyncTask:  tasks.NewRecordTelemetryTask(synchronizers.metricSynchronizer, confTask.CounterSync, logger),
 		impressionSyncTask: tasks.NewRecordImpressionsTask(synchronizers.impressionSynchronizer, confTask.ImpressionSync, logger, confAdvanced.ImpressionsBulkSize),
 		eventSyncTask:      tasks.NewRecordEventsTask(synchronizers.eventSynchronizer, confAdvanced.EventsBulkSize, confTask.EventsSync, logger),
 	}
@@ -156,18 +152,14 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 	}
 
 	s.splitTasks.impressionSyncTask.Start()
-	s.splitTasks.latencySyncTask.Start()
-	s.splitTasks.gaugeSyncTask.Start()
-	s.splitTasks.counterSyncTask.Start()
+	s.splitTasks.telemetrySyncTask.Start()
 	s.splitTasks.eventSyncTask.Start()
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
 func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	s.splitTasks.impressionSyncTask.Stop(true)
-	s.splitTasks.latencySyncTask.Stop(false)
-	s.splitTasks.gaugeSyncTask.Stop(false)
-	s.splitTasks.counterSyncTask.Stop(false)
+	s.splitTasks.telemetrySyncTask.Stop(false)
 	s.splitTasks.eventSyncTask.Stop(true)
 }
 

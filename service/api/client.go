@@ -107,7 +107,7 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 
 	c.logger.Verbose("[RESPONSE_BODY]", string(body), "[END_RESPONSE_BODY]")
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return body, nil
 	}
 
@@ -154,7 +154,7 @@ func (c *HTTPClient) Post(service string, body []byte, headers map[string]string
 
 	c.logger.Verbose("[RESPONSE_BODY]", string(respBody), "[END_RESPONSE_BODY]")
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
 

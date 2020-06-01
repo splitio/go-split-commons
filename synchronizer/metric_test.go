@@ -46,34 +46,62 @@ func TestMetricSynchronizerError(t *testing.T) {
 		},
 	}
 
-	metricMockRecorder := recorderMock.MockMetricRecorder{
-		RecordCountersCall: func(counters []dtos.CounterDTO) error {
-			return errors.New("some")
-		},
-		RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
-			return errors.New("some")
-		},
-		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
-			return errors.New("some")
-		},
-	}
-
 	metricSync := NewMetricSynchronizer(
 		metricMockStorage,
-		metricMockRecorder,
+		recorderMock.MockMetricRecorder{
+			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+				return errors.New("some")
+			},
+			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+				return errors.New("some")
+			},
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+				return errors.New("some")
+			},
+		},
 	)
 
-	err := metricSync.SynchronizeCounters()
+	err := metricSync.SynchronizeTelemetry()
 	if err == nil {
 		t.Error("It should return err")
 	}
 
-	err = metricSync.SynchronizeGauges()
+	metricSync2 := NewMetricSynchronizer(
+		metricMockStorage,
+		recorderMock.MockMetricRecorder{
+			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+				return nil
+			},
+			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+				return errors.New("some")
+			},
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+				return errors.New("some")
+			},
+		},
+	)
+
+	err = metricSync2.SynchronizeTelemetry()
 	if err == nil {
 		t.Error("It should return err")
 	}
 
-	err = metricSync.SynchronizeLatencies()
+	metricSync3 := NewMetricSynchronizer(
+		metricMockStorage,
+		recorderMock.MockMetricRecorder{
+			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+				return nil
+			},
+			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+				return nil
+			},
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+				return errors.New("some")
+			},
+		},
+	)
+
+	err = metricSync3.SynchronizeTelemetry()
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -139,17 +167,7 @@ func TestMetricSynchronizer(t *testing.T) {
 		metricMockRecorder,
 	)
 
-	err := metricSync.SynchronizeCounters()
-	if err != nil {
-		t.Error("It should not return err")
-	}
-
-	err = metricSync.SynchronizeGauges()
-	if err != nil {
-		t.Error("It should not return err")
-	}
-
-	err = metricSync.SynchronizeLatencies()
+	err := metricSync.SynchronizeTelemetry()
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -241,17 +259,7 @@ func TestMetricSyncProcess(t *testing.T) {
 		metricRecorder,
 	)
 
-	err := metricSync.SynchronizeCounters()
-	if err != nil {
-		t.Error("It should not return err")
-	}
-
-	err = metricSync.SynchronizeGauges()
-	if err != nil {
-		t.Error("It should not return err")
-	}
-
-	err = metricSync.SynchronizeLatencies()
+	err := metricSync.SynchronizeTelemetry()
 	if err != nil {
 		t.Error("It should not return err")
 	}

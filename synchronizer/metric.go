@@ -24,8 +24,7 @@ func NewMetricSynchronizer(
 	}
 }
 
-// SynchronizeLatencies syncs latencies
-func (m *MetricSynchronizer) SynchronizeLatencies() error {
+func (m *MetricSynchronizer) synchronizeLatencies() error {
 	latencies := m.metricStorage.PopLatencies()
 	if len(latencies) > 0 {
 		err := m.metricRecorder.RecordLatencies(latencies)
@@ -34,8 +33,7 @@ func (m *MetricSynchronizer) SynchronizeLatencies() error {
 	return nil
 }
 
-// SynchronizeGauges syncs gauges
-func (m *MetricSynchronizer) SynchronizeGauges() error {
+func (m *MetricSynchronizer) synchronizeGauges() error {
 	var errs []error
 	for _, gauge := range m.metricStorage.PopGauges() {
 		err := m.metricRecorder.RecordGauge(gauge)
@@ -49,12 +47,24 @@ func (m *MetricSynchronizer) SynchronizeGauges() error {
 	return nil
 }
 
-// SynchronizeCounters syncs counters
-func (m *MetricSynchronizer) SynchronizeCounters() error {
+func (m *MetricSynchronizer) synchronizeCounters() error {
 	counters := m.metricStorage.PopCounters()
 	if len(counters) > 0 {
 		err := m.metricRecorder.RecordCounters(counters)
 		return err
 	}
 	return nil
+}
+
+// SynchronizeTelemetry syncs telemetry
+func (m *MetricSynchronizer) SynchronizeTelemetry() error {
+	err := m.synchronizeGauges()
+	if err != nil {
+		return err
+	}
+	err = m.synchronizeLatencies()
+	if err != nil {
+		return err
+	}
+	return m.synchronizeCounters()
 }
