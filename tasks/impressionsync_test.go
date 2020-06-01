@@ -81,6 +81,18 @@ func TestImpressionSyncTask(t *testing.T) {
 		synchronizer.NewImpressionSynchronizer(
 			impressionMockStorage,
 			impressionMockRecorder,
+			storageMock.MockMetricStorage{
+				IncCounterCall: func(key string) {
+					if key != "testImpressions.status.200" && key != "backend::request.ok" {
+						t.Error("Unexpected counter key to increase")
+					}
+				},
+				IncLatencyCall: func(metricName string, index int) {
+					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
+						t.Error("Unexpected latency key to track")
+					}
+				},
+			},
 			logger,
 		),
 		3,

@@ -33,6 +33,7 @@ func TestSynhronizeEventError(t *testing.T) {
 	eventSync := NewEventSynchronizer(
 		eventMockStorage,
 		eventMockRecorder,
+		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -62,6 +63,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 	eventSync := NewEventSynchronizer(
 		eventMockStorage,
 		eventMockRecorder,
+		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -116,6 +118,18 @@ func TestSynhronizeEvent(t *testing.T) {
 	eventSync := NewEventSynchronizer(
 		eventMockStorage,
 		eventMockRecorder,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "events.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -193,6 +207,18 @@ func TestSynhronizeEventSync(t *testing.T) {
 	eventSync := NewEventSynchronizer(
 		eventStorage,
 		eventRecorder,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "events.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logger,
 	)
 

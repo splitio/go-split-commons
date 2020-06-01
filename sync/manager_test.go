@@ -146,6 +146,9 @@ func TestPolling(t *testing.T) {
 			PopLatenciesCall: func() []dtos.LatenciesDTO {
 				return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
 			},
+			IncLatencyCall: func(metricName string, index int) {},
+			IncCounterCall: func(key string) {},
+			PutGaugeCall:   func(key string, gauge float64) {},
 		},
 		storageMock.MockImpressionStorage{
 			PopNCall: func(n int64) ([]dtos.Impression, error) {

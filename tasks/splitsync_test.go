@@ -66,6 +66,8 @@ func TestSplitSyncTask(t *testing.T) {
 		synchronizer.NewSplitSynchronizer(
 			splitMockStorage,
 			splitMockFetcher,
+			storageMock.MockMetricStorage{},
+			logging.NewLogger(&logging.LoggerOptions{}),
 		),
 		3,
 		logging.NewLogger(&logging.LoggerOptions{}),

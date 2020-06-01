@@ -57,6 +57,18 @@ func TestEventSyncTask(t *testing.T) {
 		synchronizer.NewEventSynchronizer(
 			eventMockStorage,
 			eventMockRecorder,
+			storageMock.MockMetricStorage{
+				IncCounterCall: func(key string) {
+					if key != "events.status.200" && key != "backend::request.ok" {
+						t.Error("Unexpected counter key to increase")
+					}
+				},
+				IncLatencyCall: func(metricName string, index int) {
+					if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
+						t.Error("Unexpected latency key to track")
+					}
+				},
+			},
 			logger,
 		),
 		50,

@@ -99,6 +99,7 @@ func TestSegmentSyncTask(t *testing.T) {
 			splitMockStorage,
 			segmentMockStorage,
 			segmentMockFetcher,
+			storageMock.MockMetricStorage{},
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
 		3,

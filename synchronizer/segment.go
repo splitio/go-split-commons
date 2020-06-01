@@ -2,7 +2,9 @@ package synchronizer
 
 import (
 	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
@@ -11,11 +13,19 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
+const (
+	segmentChangesLatencies        = "segmentChangeFetcher.time"
+	segmentChangesLatenciesBackend = "backend::/api/segmentChanges"
+	segmentChangesCounters         = "segmentChangeFetcher.status.{status}"
+	segmentChangesLocalCounters    = "backend::request.{status}"
+)
+
 // SegmentSynchronizer struct for segment sync
 type SegmentSynchronizer struct {
 	splitStorage   storage.SplitStorage
 	segmentStorage storage.SegmentStorage
 	segmentFetcher service.SegmentFetcher
+	metricStorage  storage.MetricsStorage
 	logger         logging.LoggerInterface
 }
 
@@ -24,12 +34,14 @@ func NewSegmentSynchronizer(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,
+	metricStorage storage.MetricsStorage,
 	logger logging.LoggerInterface,
 ) *SegmentSynchronizer {
 	return &SegmentSynchronizer{
 		splitStorage:   splitStorage,
 		segmentStorage: segmentStorage,
 		segmentFetcher: segmentFetcher,
+		metricStorage:  metricStorage,
 		logger:         logger,
 	}
 }
@@ -68,13 +80,22 @@ func (s *SegmentSynchronizer) SynchronizeSegment(name string, till *int64) error
 			changeNumber = -1
 		}
 
+		before := time.Now()
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
 		if err != nil {
+			if _, ok := err.(*dtos.HTTPError); ok {
+				s.metricStorage.IncCounter(strings.Replace(segmentChangesLocalCounters, "{status}", "error", 1))
+				s.metricStorage.IncCounter(strings.Replace(segmentChangesCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
+			}
 			return err
 		}
 
 		s.processUpdate(segmentChanges)
-
+		elapsed := int(time.Now().Sub(before).Nanoseconds())
+		s.metricStorage.IncLatency(segmentChangesLatencies, elapsed)
+		s.metricStorage.IncLatency(segmentChangesLatenciesBackend, elapsed)
+		s.metricStorage.IncCounter(strings.Replace(segmentChangesLocalCounters, "{status}", "ok", 1))
+		s.metricStorage.IncCounter(strings.Replace(segmentChangesCounters, "{status}", "200", 1))
 		if segmentChanges.Since == segmentChanges.Till {
 			return nil
 		}

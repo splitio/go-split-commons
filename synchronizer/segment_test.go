@@ -41,6 +41,18 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -147,6 +159,18 @@ func TestSegmentSynchronizer(t *testing.T) {
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -248,6 +272,18 @@ func TestSegmentSyncProcess(t *testing.T) {
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 

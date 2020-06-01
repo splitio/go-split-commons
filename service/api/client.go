@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -111,7 +112,11 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 		return body, nil
 	}
 
-	return nil, fmt.Errorf("GET method: Status Code: %d - %s", resp.StatusCode, resp.Status)
+	c.logger.Error(fmt.Sprintf("GET method: Status Code: %d - %s", resp.StatusCode, resp.Status))
+	return nil, &dtos.HTTPError{
+		Code:    resp.StatusCode,
+		Message: resp.Status,
+	}
 }
 
 // Post performs a HTTP POST request
@@ -158,7 +163,11 @@ func (c *HTTPClient) Post(service string, body []byte, headers map[string]string
 		return nil
 	}
 
-	return fmt.Errorf("POST method: Status Code: %d - %s", resp.StatusCode, resp.Status)
+	c.logger.Error(fmt.Sprintf("POST method: Status Code: %d - %s", resp.StatusCode, resp.Status))
+	return &dtos.HTTPError{
+		Code:    resp.StatusCode,
+		Message: resp.Status,
+	}
 }
 
 // ValidateApikey validates apikey

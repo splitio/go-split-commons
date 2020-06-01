@@ -114,7 +114,18 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		&splitAPI,
 		splitMockStorage,
 		segmentMockStorage,
-		storageMock.MockMetricStorage{},
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		storageMock.MockImpressionStorage{},
 		storageMock.MockEventStorage{},
 		logger,
@@ -209,7 +220,18 @@ func TestSyncAllOk(t *testing.T) {
 		&splitAPI,
 		splitMockStorage,
 		segmentMockStorage,
-		storageMock.MockMetricStorage{},
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" && key != "segmentChangeFetcher.status.200" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" && metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		storageMock.MockImpressionStorage{},
 		storageMock.MockEventStorage{},
 		logger,
@@ -304,7 +326,18 @@ func TestPeriodicFetching(t *testing.T) {
 		&splitAPI,
 		splitMockStorage,
 		segmentMockStorage,
-		storageMock.MockMetricStorage{},
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" && key != "segmentChangeFetcher.status.200" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" && metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		storageMock.MockImpressionStorage{},
 		storageMock.MockEventStorage{},
 		logger,
@@ -398,6 +431,9 @@ func TestPeriodicRecording(t *testing.T) {
 			PopLatenciesCall: func() []dtos.LatenciesDTO {
 				return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
 			},
+			IncCounterCall: func(key string) {},
+			IncLatencyCall: func(metricName string, index int) {},
+			PutGaugeCall:   func(key string, gauge float64) {},
 		},
 		storageMock.MockImpressionStorage{
 			PopNCall: func(n int64) ([]dtos.Impression, error) {

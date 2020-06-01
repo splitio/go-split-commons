@@ -48,11 +48,11 @@ func setupSynchronizers(
 	logger logging.LoggerInterface,
 ) synchronizers {
 	return synchronizers{
-		splitSynchronizer:      synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher),
-		segmentSynchronizer:    synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger),
+		splitSynchronizer:      synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
+		segmentSynchronizer:    synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
 		metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder),
-		impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, logger),
-		eventSynchronizer:      synchronizer.NewEventSynchronizer(eventStorage, splitAPI.EventRecorder, logger),
+		impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger),
+		eventSynchronizer:      synchronizer.NewEventSynchronizer(eventStorage, splitAPI.EventRecorder, metricStorage, logger),
 	}
 }
 

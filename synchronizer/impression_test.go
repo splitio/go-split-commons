@@ -33,6 +33,7 @@ func TestSynhronizeImpressionError(t *testing.T) {
 	impressionSync := NewImpressionSynchronizer(
 		impressionMockStorage,
 		impressionMockRecorder,
+		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -57,6 +58,7 @@ func TestSynhronizeImpressionsWithNoEvents(t *testing.T) {
 	impressionSync := NewImpressionSynchronizer(
 		impressionMockStorage,
 		impressionMockRecorder,
+		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -113,6 +115,18 @@ func TestSynhronizeImpression(t *testing.T) {
 	impressionSync := NewImpressionSynchronizer(
 		impressionMockStorage,
 		impressionMockRecorder,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "testImpressions.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -216,6 +230,18 @@ func TestSynhronizeImpressionSync(t *testing.T) {
 	impressionSync := NewImpressionSynchronizer(
 		impressionStorage,
 		impressionRecorder,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "testImpressions.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 

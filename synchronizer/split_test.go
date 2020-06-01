@@ -9,6 +9,7 @@ import (
 	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/storage/mutexmap"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
@@ -30,6 +31,8 @@ func TestSplitSynchronizerError(t *testing.T) {
 	splitSync := NewSplitSynchronizer(
 		splitMockStorage,
 		splitMockFetcher,
+		&mutexmap.MMMetricsStorage{},
+		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	err := splitSync.SynchronizeSplits(nil)
@@ -88,6 +91,19 @@ func TestSplitSynchronizer(t *testing.T) {
 	splitSync := NewSplitSynchronizer(
 		splitMockStorage,
 		splitMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
+		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	err := splitSync.SynchronizeSplits(nil)
@@ -139,6 +155,19 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitSync := NewSplitSynchronizer(
 		splitStorage,
 		splitMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		},
+		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	err := splitSync.SynchronizeSplits(nil)
