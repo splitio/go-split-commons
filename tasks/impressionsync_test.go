@@ -60,7 +60,7 @@ func TestImpressionSyncTask(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.Impression) error {
+		RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
 			if len(impressions) != 3 {
 				t.Error("Wrong length of impressions passed")
 			}
@@ -94,6 +94,7 @@ func TestImpressionSyncTask(t *testing.T) {
 				},
 			},
 			logger,
+			dtos.Metadata{},
 		),
 		3,
 		logger,

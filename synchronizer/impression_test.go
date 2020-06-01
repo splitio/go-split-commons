@@ -35,6 +35,7 @@ func TestSynhronizeImpressionError(t *testing.T) {
 		impressionMockRecorder,
 		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -60,6 +61,7 @@ func TestSynhronizeImpressionsWithNoEvents(t *testing.T) {
 		impressionMockRecorder,
 		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -98,7 +100,7 @@ func TestSynhronizeImpression(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.Impression) error {
+		RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
 			if len(impressions) != 2 {
 				t.Error("Wrong length of impressions passed")
 			}
@@ -128,6 +130,7 @@ func TestSynhronizeImpression(t *testing.T) {
 			},
 		},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -180,19 +183,12 @@ func TestSynhronizeImpressionSync(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	metadata := &dtos.Metadata{
-		SDKVersion:  "go-0.1",
-		MachineIP:   "192.168.0.123",
-		MachineName: "machine1",
-	}
 	impressionRecorder := api.NewHTTPImpressionRecorder(
 		"",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		*metadata,
-		"go-0.1",
 		logger,
 	)
 
@@ -243,6 +239,7 @@ func TestSynhronizeImpressionSync(t *testing.T) {
 			},
 		},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	impressionSync.SynchronizeImpressions(50)

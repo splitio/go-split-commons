@@ -24,6 +24,7 @@ type ImpressionSynchronizer struct {
 	impressionRecorder service.ImpressionsRecorder
 	metricStorage      storage.MetricsStorage
 	logger             logging.LoggerInterface
+	metadata           dtos.Metadata
 }
 
 // NewImpressionSynchronizer creates new impression synchronizer for posting impressions
@@ -32,12 +33,14 @@ func NewImpressionSynchronizer(
 	impressionRecorder service.ImpressionsRecorder,
 	metricStorage storage.MetricsStorage,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *ImpressionSynchronizer {
 	return &ImpressionSynchronizer{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
 		metricStorage:      metricStorage,
 		logger:             logger,
+		metadata:           metadata,
 	}
 }
 
@@ -54,7 +57,7 @@ func (i *ImpressionSynchronizer) SynchronizeImpressions(bulkSize int64) error {
 		return nil
 	}
 	before := time.Now()
-	err = i.impressionRecorder.Record(queuedImpressions)
+	err = i.impressionRecorder.Record(queuedImpressions, i.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
 			i.metricStorage.IncCounter(strings.Replace(testImpressionsLocalCounters, "{status}", "error", 1))

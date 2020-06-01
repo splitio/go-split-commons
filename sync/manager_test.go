@@ -56,7 +56,7 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		EventRecorder: httpMocks.MockEventRecorder{
-			RecordCall: func(events []dtos.EventDTO) error {
+			RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&eventsCalled, 1)
 				if len(events) != 1 {
 					t.Error("Wrong length")
@@ -65,7 +65,7 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression) error {
+			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				if len(impressions) != 1 {
 					t.Error("Wrong length")
@@ -74,21 +74,21 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		MetricRecorder: httpMocks.MockMetricRecorder{
-			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&countersCalled, 1)
 				if len(counters) != 1 {
 					t.Error("Wrong length")
 				}
 				return nil
 			},
-			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+			RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&gaugesCalled, 1)
 				if gauge.MetricName != "gauge" {
 					t.Error("Wrong gauge")
 				}
 				return nil
 			},
-			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&latenciesCalled, 1)
 				if len(latencies) != 1 {
 					t.Error("Wrong length")
@@ -195,6 +195,7 @@ func TestPolling(t *testing.T) {
 		},
 		logger,
 		nil,
+		dtos.Metadata{},
 	)
 
 	readyChannel := make(chan string, 1)

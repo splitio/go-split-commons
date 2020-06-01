@@ -24,6 +24,7 @@ type EventSynchronizer struct {
 	eventRecorder service.EventsRecorder
 	metricStorage storage.MetricsStorage
 	logger        logging.LoggerInterface
+	metadata      dtos.Metadata
 }
 
 // NewEventSynchronizer creates new event synchronizer for posting events
@@ -32,12 +33,14 @@ func NewEventSynchronizer(
 	eventRecorder service.EventsRecorder,
 	metricStorage storage.MetricsStorage,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *EventSynchronizer {
 	return &EventSynchronizer{
 		eventStorage:  eventStorage,
 		eventRecorder: eventRecorder,
 		metricStorage: metricStorage,
 		logger:        logger,
+		metadata:      metadata,
 	}
 }
 
@@ -55,7 +58,7 @@ func (e *EventSynchronizer) SynchronizeEvents(bulkSize int64) error {
 	}
 
 	before := time.Now()
-	err = e.eventRecorder.Record(queuedEvents)
+	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
 			e.metricStorage.IncCounter(strings.Replace(postEventsLocalCounters, "{status}", "error", 1))

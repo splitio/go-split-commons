@@ -30,7 +30,6 @@ func TestSpitChangesFetch(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		"some",
 		logger,
 	)
 
@@ -72,7 +71,6 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		"some",
 		logger,
 	)
 
@@ -92,7 +90,6 @@ func TestSegmentChangesFetch(t *testing.T) {
 
 	segmentFetcher := NewHTTPSegmentFetcher(
 		"",
-		"1.0.0",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
@@ -121,7 +118,6 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 
 	segmentFetcher := NewHTTPSegmentFetcher(
 		"",
-		"1.0.0",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,

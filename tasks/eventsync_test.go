@@ -36,7 +36,7 @@ func TestEventSyncTask(t *testing.T) {
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
-		RecordCall: func(events []dtos.EventDTO) error {
+		RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
 			if len(events) != 3 {
 				t.Error("Wrong length of events passed")
 			}
@@ -70,6 +70,7 @@ func TestEventSyncTask(t *testing.T) {
 				},
 			},
 			logger,
+			dtos.Metadata{},
 		),
 		50,
 		3,

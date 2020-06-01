@@ -35,6 +35,7 @@ func TestSynhronizeEventError(t *testing.T) {
 		eventMockRecorder,
 		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := eventSync.SynchronizeEvents(50)
@@ -54,7 +55,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
-		RecordCall: func(events []dtos.EventDTO) error {
+		RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
 			t.Error("It should not be called")
 			return nil
 		},
@@ -65,6 +66,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 		eventMockRecorder,
 		storageMock.MockMetricStorage{},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := eventSync.SynchronizeEvents(50)
@@ -101,7 +103,7 @@ func TestSynhronizeEvent(t *testing.T) {
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
-		RecordCall: func(events []dtos.EventDTO) error {
+		RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
 			if len(events) != 2 {
 				t.Error("Wrong length of events passed")
 			}
@@ -131,6 +133,7 @@ func TestSynhronizeEvent(t *testing.T) {
 			},
 		},
 		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
 	)
 
 	err := eventSync.SynchronizeEvents(50)
@@ -179,19 +182,12 @@ func TestSynhronizeEventSync(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	metadata := &dtos.Metadata{
-		SDKVersion:  "go-0.1",
-		MachineIP:   "192.168.0.123",
-		MachineName: "machine1",
-	}
 	eventRecorder := api.NewHTTPEventsRecorder(
 		"",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		*metadata,
-		"go-0.1",
 		logger,
 	)
 
@@ -220,6 +216,7 @@ func TestSynhronizeEventSync(t *testing.T) {
 			},
 		},
 		logger,
+		dtos.Metadata{},
 	)
 
 	eventSync.SynchronizeEvents(5)

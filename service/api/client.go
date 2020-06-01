@@ -49,7 +49,6 @@ func NewHTTPClient(
 	apikey string,
 	cfg *conf.AdvancedConfig,
 	endpoint string,
-	version string,
 	logger logging.LoggerInterface,
 ) *HTTPClient {
 	var timeout int
@@ -64,7 +63,6 @@ func NewHTTPClient(
 		httpClient: client,
 		logger:     logger,
 		apikey:     apikey,
-		version:    version,
 	}
 }
 

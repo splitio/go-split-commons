@@ -10,6 +10,24 @@ type EventDTO struct {
 	Properties      map[string]interface{} `json:"properties,omitempty"`
 }
 
+// Size returns a relatively accurate estimation of the size of the event
+func (e *EventDTO) Size() int {
+	size := 1024
+	if e.Properties == nil {
+		return size
+	}
+
+	for key, value := range e.Properties {
+		size += len(key)
+		switch typedValue := value.(type) {
+		case string:
+			size += len(typedValue)
+		default:
+		}
+	}
+	return size
+}
+
 // QueueStoredEventDTO maps the stored JSON object in redis by SDKs
 type QueueStoredEventDTO struct {
 	Metadata Metadata `json:"m"`

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-split-commons/synchronizer"
@@ -46,13 +47,14 @@ func setupSynchronizers(
 	impressionStorage storage.ImpressionStorage,
 	eventStorage storage.EventsStorage,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) synchronizers {
 	return synchronizers{
 		splitSynchronizer:      synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
 		segmentSynchronizer:    synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
-		metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder),
-		impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger),
-		eventSynchronizer:      synchronizer.NewEventSynchronizer(eventStorage, splitAPI.EventRecorder, metricStorage, logger),
+		metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder, metadata),
+		impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger, metadata),
+		eventSynchronizer:      synchronizer.NewEventSynchronizer(eventStorage, splitAPI.EventRecorder, metricStorage, logger, metadata),
 	}
 }
 
@@ -83,6 +85,7 @@ func NewSynchronizer(
 	eventStorage storage.EventsStorage,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
+	metadata dtos.Metadata,
 ) Synchronizer {
 	splitSynchronizers := setupSynchronizers(
 		splitAPI,
@@ -92,6 +95,7 @@ func NewSynchronizer(
 		impressionStorage,
 		eventStorage,
 		logger,
+		metadata,
 	)
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,

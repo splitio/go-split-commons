@@ -16,17 +16,17 @@ type SegmentFetcher interface {
 
 // ImpressionsRecorder interface to be implemented by Impressions loggers
 type ImpressionsRecorder interface {
-	Record(impressions []dtos.Impression) error
+	Record(impressions []dtos.Impression, metadata dtos.Metadata) error
 }
 
 // MetricsRecorder interface to be implemented by Metrics loggers
 type MetricsRecorder interface {
-	RecordLatencies(latencies []dtos.LatenciesDTO) error
-	RecordCounters(counters []dtos.CounterDTO) error
-	RecordGauge(gauge dtos.GaugeDTO) error
+	RecordLatencies(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error
+	RecordCounters(counters []dtos.CounterDTO, metadata dtos.Metadata) error
+	RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Metadata) error
 }
 
 // EventsRecorder interface to post events
 type EventsRecorder interface {
-	Record(events []dtos.EventDTO) error
+	Record(events []dtos.EventDTO, metadata dtos.Metadata) error
 }

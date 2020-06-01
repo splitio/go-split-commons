@@ -49,16 +49,17 @@ func TestMetricSynchronizerError(t *testing.T) {
 	metricSync := NewMetricSynchronizer(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
-			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
-			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+			RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
-			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
 		},
+		dtos.Metadata{},
 	)
 
 	err := metricSync.SynchronizeTelemetry()
@@ -69,16 +70,17 @@ func TestMetricSynchronizerError(t *testing.T) {
 	metricSync2 := NewMetricSynchronizer(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
-			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 				return nil
 			},
-			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+			RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
-			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
 		},
+		dtos.Metadata{},
 	)
 
 	err = metricSync2.SynchronizeTelemetry()
@@ -89,16 +91,17 @@ func TestMetricSynchronizerError(t *testing.T) {
 	metricSync3 := NewMetricSynchronizer(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
-			RecordCountersCall: func(counters []dtos.CounterDTO) error {
+			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 				return nil
 			},
-			RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+			RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 				return nil
 			},
-			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 				return errors.New("some")
 			},
 		},
+		dtos.Metadata{},
 	)
 
 	err = metricSync3.SynchronizeTelemetry()
@@ -136,7 +139,7 @@ func TestMetricSynchronizer(t *testing.T) {
 	}
 
 	metricMockRecorder := recorderMock.MockMetricRecorder{
-		RecordCountersCall: func(counters []dtos.CounterDTO) error {
+		RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 			if len(counters) != 1 {
 				t.Error("Wrong length for counters")
 			}
@@ -145,13 +148,13 @@ func TestMetricSynchronizer(t *testing.T) {
 			}
 			return nil
 		},
-		RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+		RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 			if gauge.MetricName != "gauge" {
 				t.Error("Wrong gauge")
 			}
 			return nil
 		},
-		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 			if len(latencies) != 1 {
 				t.Error("Wrong length for counters")
 			}
@@ -165,6 +168,7 @@ func TestMetricSynchronizer(t *testing.T) {
 	metricSync := NewMetricSynchronizer(
 		metricMockStorage,
 		metricMockRecorder,
+		dtos.Metadata{},
 	)
 
 	err := metricSync.SynchronizeTelemetry()
@@ -232,19 +236,12 @@ func TestMetricSyncProcess(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	metadata := &dtos.Metadata{
-		SDKVersion:  "go-0.1",
-		MachineIP:   "192.168.0.123",
-		MachineName: "machine1",
-	}
 	metricRecorder := api.NewHTTPMetricsRecorder(
 		"",
-		"go-0.1",
 		&conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		*metadata,
 		logger,
 	)
 
@@ -257,6 +254,7 @@ func TestMetricSyncProcess(t *testing.T) {
 	metricSync := NewMetricSynchronizer(
 		metricStorage,
 		metricRecorder,
+		dtos.Metadata{},
 	)
 
 	err := metricSync.SynchronizeTelemetry()

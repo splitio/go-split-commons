@@ -9,19 +9,18 @@ import (
 )
 
 type httpRecorderBase struct {
-	client   *HTTPClient
-	logger   logging.LoggerInterface
-	metadata dtos.Metadata
+	client *HTTPClient
+	logger logging.LoggerInterface
 }
 
-func (h *httpRecorderBase) recordRaw(url string, data []byte) error {
+func (h *httpRecorderBase) recordRaw(url string, data []byte, metadata dtos.Metadata) error {
 	headers := make(map[string]string)
-	headers["SplitSDKVersion"] = h.metadata.SDKVersion
-	if h.metadata.MachineName != "NA" && h.metadata.MachineName != "unknown" {
-		headers["SplitSDKMachineName"] = h.metadata.MachineName
+	headers["SplitSDKVersion"] = metadata.SDKVersion
+	if metadata.MachineName != "NA" && metadata.MachineName != "unknown" {
+		headers["SplitSDKMachineName"] = metadata.MachineName
 	}
-	if h.metadata.MachineIP != "NA" && h.metadata.MachineIP != "unknown" {
-		headers["SplitSDKMachineIP"] = h.metadata.MachineIP
+	if metadata.MachineIP != "NA" && metadata.MachineIP != "unknown" {
+		headers["SplitSDKMachineIP"] = metadata.MachineIP
 	}
 	return h.client.Post(url, data, headers)
 }
@@ -32,7 +31,7 @@ type HTTPImpressionRecorder struct {
 }
 
 // Record sends an array (or slice) of impressionsRecord to the backend
-func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression) error {
+func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata dtos.Metadata) error {
 	impressionsToPost := make(map[string][]dtos.ImpressionDTO)
 	for _, impression := range impressions {
 		keyImpression := dtos.ImpressionDTO{
@@ -66,7 +65,7 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression) error {
 		return err
 	}
 
-	err = i.recordRaw("/testImpressions/bulk", data)
+	err = i.recordRaw("/testImpressions/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting impressions", err.Error())
 		return err
@@ -79,17 +78,14 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression) error {
 func NewHTTPImpressionRecorder(
 	apikey string,
 	cfg *conf.AdvancedConfig,
-	metadata dtos.Metadata,
-	version string,
 	logger logging.LoggerInterface,
 ) *HTTPImpressionRecorder {
 	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, version, logger)
+	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
-			client:   client,
-			logger:   logger,
-			metadata: metadata,
+			client: client,
+			logger: logger,
 		},
 	}
 }
@@ -100,14 +96,14 @@ type HTTPMetricsRecorder struct {
 }
 
 // RecordCounters method submits counter metrics to the backend
-func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO) error {
+func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 	data, err := json.Marshal(counters)
 	if err != nil {
 		m.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = m.recordRaw("/metrics/counters", data)
+	err = m.recordRaw("/metrics/counters", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting counters", err.Error())
 		return err
@@ -117,14 +113,14 @@ func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO) error {
 }
 
 // RecordLatencies method submits latency metrics to the backend
-func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO) error {
+func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 	data, err := json.Marshal(latencies)
 	if err != nil {
 		m.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = m.recordRaw("/metrics/times", data)
+	err = m.recordRaw("/metrics/times", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting latencies", err.Error())
 		return err
@@ -134,14 +130,14 @@ func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO) err
 }
 
 // RecordGauge method submits gauge metrics to the backend
-func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO) error {
+func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 	data, err := json.Marshal(gauge)
 	if err != nil {
 		m.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = m.recordRaw("/metrics/gauge", data)
+	err = m.recordRaw("/metrics/gauge", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting gauges", err.Error())
 		return err
@@ -153,18 +149,15 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO) error {
 // NewHTTPMetricsRecorder instantiates an HTTPMetricsRecorder
 func NewHTTPMetricsRecorder(
 	apikey string,
-	version string,
 	cfg *conf.AdvancedConfig,
-	metadata dtos.Metadata,
 	logger logging.LoggerInterface,
 ) *HTTPMetricsRecorder {
 	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, version, logger)
+	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
 	return &HTTPMetricsRecorder{
 		httpRecorderBase: httpRecorderBase{
-			client:   client,
-			metadata: metadata,
-			logger:   logger,
+			client: client,
+			logger: logger,
 		},
 	}
 }
@@ -175,14 +168,14 @@ type HTTPEventsRecorder struct {
 }
 
 // Record sends an array (or slice) of dtos.EventDTO to the backend
-func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO) error {
+func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metadata) error {
 	data, err := json.Marshal(events)
 	if err != nil {
 		i.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = i.recordRaw("/events/bulk", data)
+	err = i.recordRaw("/events/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting events", err.Error())
 		return err
@@ -195,17 +188,14 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO) error {
 func NewHTTPEventsRecorder(
 	apikey string,
 	cfg *conf.AdvancedConfig,
-	metadata dtos.Metadata,
-	version string,
 	logger logging.LoggerInterface,
 ) *HTTPEventsRecorder {
 	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, version, logger)
+	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
-			client:   client,
-			logger:   logger,
-			metadata: metadata,
+			client: client,
+			logger: logger,
 		},
 	}
 }

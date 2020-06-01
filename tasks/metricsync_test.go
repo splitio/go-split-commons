@@ -45,15 +45,15 @@ func TestCounterSyncTask(t *testing.T) {
 	}
 
 	metricMockRecorder := recorderMock.MockMetricRecorder{
-		RecordCountersCall: func(counters []dtos.CounterDTO) error {
+		RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 			atomic.AddInt64(&popCounters, 1)
 			return nil
 		},
-		RecordGaugeCall: func(gauge dtos.GaugeDTO) error {
+		RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 			atomic.AddInt64(&popGauge, 1)
 			return nil
 		},
-		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO) error {
+		RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 			atomic.AddInt64(&popLatency, 1)
 			return nil
 		},
@@ -63,6 +63,7 @@ func TestCounterSyncTask(t *testing.T) {
 		synchronizer.NewMetricSynchronizer(
 			metricMockStorage,
 			metricMockRecorder,
+			dtos.Metadata{},
 		),
 		3,
 		logging.NewLogger(&logging.LoggerOptions{}),

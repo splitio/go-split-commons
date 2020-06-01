@@ -89,6 +89,7 @@ type EventStorageConsumer interface {
 	Count() int64
 	Empty() bool
 	PopN(n int64) ([]dtos.EventDTO, error)
+	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
 // --- Wide Interfaces
