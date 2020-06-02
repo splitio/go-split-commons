@@ -5,22 +5,6 @@ import (
 	"github.com/splitio/go-toolkit/datastructures/set"
 )
 
-/*
-SplitCache
-Put(split)
-PutMany(splits []dtos.SplitDTO, changeNumber int64) // ADDED
-Remove(name)
-Split(name)
-FetchMany(names)
-All()
-ChangeNumnber()
-SetChangeNumber(changeNumber)
-SplitNames()
-TrafficTypeExists(trafficTypeName)
-Clear()
-SegmentNames() *set.ThreadUnsafeSet // ADDED
-*/
-
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
 	PutMany(splits []dtos.SplitDTO, changeNumber int64) // Maybe Move Put to this....Doesn't exist in spec
