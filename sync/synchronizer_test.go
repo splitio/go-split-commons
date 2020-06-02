@@ -99,8 +99,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			}
 		},
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet()
-			segmentNames.Add("segment1", "segment2")
+			segmentNames := set.NewSet("segment1", "segment2")
 			return segmentNames
 		},
 	}
@@ -194,8 +193,7 @@ func TestSyncAllOk(t *testing.T) {
 			}
 		},
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet()
-			segmentNames.Add("segment1", "segment2")
+			segmentNames := set.NewSet("segment1", "segment2")
 			return segmentNames
 		},
 	}
@@ -301,8 +299,7 @@ func TestPeriodicFetching(t *testing.T) {
 			}
 		},
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet()
-			segmentNames.Add("segment1", "segment2")
+			segmentNames := set.NewSet("segment1", "segment2")
 			return segmentNames
 		},
 	}

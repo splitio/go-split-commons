@@ -65,7 +65,16 @@ func (m *MMSegmentStorage) SetChangeNumber(name string, till int64) error {
 func (m *MMSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.data[name] = toAdd
+	_, ok := m.data[name]
+	if !ok {
+		m.data[name] = set.NewSet()
+	}
+	if !toRemove.IsEmpty() {
+		m.data[name].Remove(toRemove.List()...)
+	}
+	if !toAdd.IsEmpty() {
+		m.data[name].Add(toAdd.List()...)
+	}
 	m.SetChangeNumber(name, till)
 	return nil
 }

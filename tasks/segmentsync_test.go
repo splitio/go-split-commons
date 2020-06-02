@@ -21,8 +21,7 @@ func TestSegmentSyncTask(t *testing.T) {
 
 	splitMockStorage := storageMock.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet()
-			segmentNames.Add("segment1", "segment2")
+			segmentNames := set.NewSet("segment1", "segment2")
 			return segmentNames
 		},
 	}

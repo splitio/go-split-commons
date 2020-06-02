@@ -66,8 +66,10 @@ func (s *SegmentSynchronizer) processUpdate(segmentChanges *dtos.SegmentChangesD
 		for _, key := range segmentChanges.Removed {
 			toRemove.Add(key)
 		}
-		s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", name, toAdd.Size(), toRemove.Size()))
-		s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
+		if toAdd.Size() > 0 || toRemove.Size() > 0 {
+			s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", name, toAdd.Size(), toRemove.Size()))
+			s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
+		}
 	}
 }
 
