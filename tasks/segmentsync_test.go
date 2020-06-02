@@ -98,7 +98,10 @@ func TestSegmentSyncTask(t *testing.T) {
 			splitMockStorage,
 			segmentMockStorage,
 			segmentMockFetcher,
-			storageMock.MockMetricStorage{},
+			storageMock.MockMetricStorage{
+				IncCounterCall: func(key string) {},
+				IncLatencyCall: func(metricName string, index int) {},
+			},
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
 		3,
