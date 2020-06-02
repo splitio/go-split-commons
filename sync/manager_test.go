@@ -194,7 +194,7 @@ func TestPolling(t *testing.T) {
 		},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 
 	readyChannel := make(chan string, 1)

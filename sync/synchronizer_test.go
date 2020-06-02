@@ -45,7 +45,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		storageMock.MockEventStorage{},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 	err := syncForTest.SyncAll()
 	if err == nil {
@@ -130,7 +130,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		storageMock.MockEventStorage{},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 	err := syncForTest.SyncAll()
 	if err == nil {
@@ -236,7 +236,7 @@ func TestSyncAllOk(t *testing.T) {
 		storageMock.MockEventStorage{},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 	err := syncForTest.SyncAll()
 	if err != nil {
@@ -342,7 +342,7 @@ func TestPeriodicFetching(t *testing.T) {
 		storageMock.MockEventStorage{},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 2200)
@@ -481,7 +481,7 @@ func TestPeriodicRecording(t *testing.T) {
 		},
 		logger,
 		nil,
-		dtos.Metadata{},
+		&dtos.Metadata{},
 	)
 	syncForTest.StartPeriodicDataRecording()
 	time.Sleep(time.Second * 1)

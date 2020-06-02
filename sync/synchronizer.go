@@ -6,6 +6,7 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/event"
 	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
@@ -26,7 +27,7 @@ type synchronizers struct {
 	segmentSynchronizer    *synchronizer.SegmentSynchronizer
 	metricSynchronizer     *synchronizer.MetricSynchronizer
 	impressionSynchronizer *synchronizer.ImpressionSynchronizer
-	eventSynchronizer      *synchronizer.EventSynchronizer
+	eventSynchronizer      event.EventSynchronizer
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -47,14 +48,23 @@ func setupSynchronizers(
 	impressionStorage storage.ImpressionStorage,
 	eventStorage storage.EventsStorage,
 	logger logging.LoggerInterface,
-	metadata dtos.Metadata,
+	metadata *dtos.Metadata,
 ) synchronizers {
+	if metadata != nil {
+		return synchronizers{
+			splitSynchronizer:      synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
+			segmentSynchronizer:    synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
+			metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder, *metadata),
+			impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger, *metadata),
+			eventSynchronizer:      event.NewEventSynchronizerSingle(eventStorage, splitAPI.EventRecorder, metricStorage, logger, *metadata),
+		}
+	}
 	return synchronizers{
-		splitSynchronizer:      synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
-		segmentSynchronizer:    synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
-		metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder, metadata),
-		impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger, metadata),
-		eventSynchronizer:      synchronizer.NewEventSynchronizer(eventStorage, splitAPI.EventRecorder, metricStorage, logger, metadata),
+		splitSynchronizer:   synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
+		segmentSynchronizer: synchronizer.NewSegmentSynchronizer(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
+		// metricSynchronizer:     synchronizer.NewMetricSynchronizer(metricStorage, splitAPI.MetricRecorder),
+		// impressionSynchronizer: synchronizer.NewImpressionSynchronizer(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger),
+		eventSynchronizer: event.NewEventSynchronizerMultiple(eventStorage, splitAPI.EventRecorder, metricStorage, logger),
 	}
 }
 
@@ -85,7 +95,7 @@ func NewSynchronizer(
 	eventStorage storage.EventsStorage,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
-	metadata dtos.Metadata,
+	metadata *dtos.Metadata,
 ) Synchronizer {
 	splitSynchronizers := setupSynchronizers(
 		splitAPI,

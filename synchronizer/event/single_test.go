@@ -1,4 +1,4 @@
-package synchronizer
+package event
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ func TestSynhronizeEventError(t *testing.T) {
 
 	eventMockRecorder := recorderMock.MockEventRecorder{}
 
-	eventSync := NewEventSynchronizer(
+	eventSync := NewEventSynchronizerSingle(
 		eventMockStorage,
 		eventMockRecorder,
 		storageMock.MockMetricStorage{},
@@ -61,7 +61,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 		},
 	}
 
-	eventSync := NewEventSynchronizer(
+	eventSync := NewEventSynchronizerSingle(
 		eventMockStorage,
 		eventMockRecorder,
 		storageMock.MockMetricStorage{},
@@ -117,7 +117,7 @@ func TestSynhronizeEvent(t *testing.T) {
 		},
 	}
 
-	eventSync := NewEventSynchronizer(
+	eventSync := NewEventSynchronizerSingle(
 		eventMockStorage,
 		eventMockRecorder,
 		storageMock.MockMetricStorage{
@@ -200,7 +200,7 @@ func TestSynhronizeEventSync(t *testing.T) {
 	eventStorage.Push(mockedEvent2, 100)
 	eventStorage.Push(mockedEvent3, 100)
 
-	eventSync := NewEventSynchronizer(
+	eventSync := NewEventSynchronizerSingle(
 		eventStorage,
 		eventRecorder,
 		storageMock.MockMetricStorage{

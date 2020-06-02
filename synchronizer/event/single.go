@@ -1,4 +1,4 @@
-package synchronizer
+package event
 
 import (
 	"errors"
@@ -11,15 +11,8 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-const (
-	postEventsLatencies        = "events.time"
-	postEventsLatenciesBackend = "backend::/api/events/bulk"
-	postEventsCounters         = "events.status.{status}"
-	postEventsLocalCounters    = "backend::request.{status}"
-)
-
-// EventSynchronizer struct for event sync
-type EventSynchronizer struct {
+// EventSynchronizerSingle struct for event sync
+type EventSynchronizerSingle struct {
 	eventStorage  storage.EventsStorage
 	eventRecorder service.EventsRecorder
 	metricStorage storage.MetricsStorage
@@ -27,15 +20,15 @@ type EventSynchronizer struct {
 	metadata      dtos.Metadata
 }
 
-// NewEventSynchronizer creates new event synchronizer for posting events
-func NewEventSynchronizer(
+// NewEventSynchronizerSingle creates new event synchronizer for posting events
+func NewEventSynchronizerSingle(
 	eventStorage storage.EventsStorage,
 	eventRecorder service.EventsRecorder,
 	metricStorage storage.MetricsStorage,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
-) *EventSynchronizer {
-	return &EventSynchronizer{
+) EventSynchronizer {
+	return &EventSynchronizerSingle{
 		eventStorage:  eventStorage,
 		eventRecorder: eventRecorder,
 		metricStorage: metricStorage,
@@ -45,7 +38,7 @@ func NewEventSynchronizer(
 }
 
 // SynchronizeEvents syncs events
-func (e *EventSynchronizer) SynchronizeEvents(bulkSize int64) error {
+func (e *EventSynchronizerSingle) SynchronizeEvents(bulkSize int64) error {
 	queuedEvents, err := e.eventStorage.PopN(bulkSize)
 	if err != nil {
 		e.logger.Error("Error reading events queue", err)
@@ -75,7 +68,7 @@ func (e *EventSynchronizer) SynchronizeEvents(bulkSize int64) error {
 }
 
 // FlushEvents flushes events
-func (e *EventSynchronizer) FlushEvents(bulkSize int64) error {
+func (e *EventSynchronizerSingle) FlushEvents(bulkSize int64) error {
 	for !e.eventStorage.Empty() {
 		err := e.SynchronizeEvents(bulkSize)
 		if err != nil {
