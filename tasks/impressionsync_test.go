@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -78,7 +78,7 @@ func TestImpressionSyncTask(t *testing.T) {
 	}
 
 	impressionTask := NewRecordImpressionsTask(
-		synchronizer.NewImpressionSynchronizer(
+		impression.NewRecorderSingle(
 			impressionMockStorage,
 			impressionMockRecorder,
 			storageMock.MockMetricStorage{

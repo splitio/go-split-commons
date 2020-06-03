@@ -1,4 +1,4 @@
-package sync
+package synchronizer
 
 import (
 	"errors"

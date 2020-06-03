@@ -1,14 +1,14 @@
-package synchronizer
+package impression
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
@@ -18,7 +18,7 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-func TestSynhronizeImpressionError(t *testing.T) {
+func TestImpressionRecorderError(t *testing.T) {
 	impressionMockStorage := storageMock.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			if n != 50 {
@@ -30,7 +30,7 @@ func TestSynhronizeImpressionError(t *testing.T) {
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
 
-	impressionSync := NewImpressionSynchronizer(
+	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
 		storageMock.MockMetricStorage{},
@@ -44,7 +44,7 @@ func TestSynhronizeImpressionError(t *testing.T) {
 	}
 }
 
-func TestSynhronizeImpressionsWithNoEvents(t *testing.T) {
+func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 	impressionMockStorage := storageMock.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			if n != 50 {
@@ -56,7 +56,7 @@ func TestSynhronizeImpressionsWithNoEvents(t *testing.T) {
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
 
-	impressionSync := NewImpressionSynchronizer(
+	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
 		storageMock.MockMetricStorage{},
@@ -70,7 +70,7 @@ func TestSynhronizeImpressionsWithNoEvents(t *testing.T) {
 	}
 }
 
-func TestSynhronizeImpression(t *testing.T) {
+func TestImpressionRecorder(t *testing.T) {
 	impression1 := dtos.Impression{
 		BucketingKey: "someBucketingKey1",
 		ChangeNumber: 123456789,
@@ -114,7 +114,7 @@ func TestSynhronizeImpression(t *testing.T) {
 		},
 	}
 
-	impressionSync := NewImpressionSynchronizer(
+	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
 		storageMock.MockMetricStorage{
@@ -139,7 +139,7 @@ func TestSynhronizeImpression(t *testing.T) {
 	}
 }
 
-func TestSynhronizeImpressionSync(t *testing.T) {
+func TestImpressionRecorderSync(t *testing.T) {
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/impressions" && r.Method != "POST" {
@@ -223,7 +223,7 @@ func TestSynhronizeImpressionSync(t *testing.T) {
 	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger)
 	impressionStorage.LogImpressions([]dtos.Impression{impression1, impression2, impression3})
 
-	impressionSync := NewImpressionSynchronizer(
+	impressionSync := NewRecorderSingle(
 		impressionStorage,
 		impressionRecorder,
 		storageMock.MockMetricStorage{

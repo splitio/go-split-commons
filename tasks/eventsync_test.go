@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/event"
+	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -54,7 +54,7 @@ func TestEventSyncTask(t *testing.T) {
 	}
 
 	eventTask := NewRecordEventsTask(
-		event.NewEventSynchronizerSingle(
+		event.NewEventRecorderSingle(
 			eventMockStorage,
 			eventMockRecorder,
 			storageMock.MockMetricStorage{

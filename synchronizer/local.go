@@ -1,25 +1,25 @@
-package sync
+package synchronizer
 
 import (
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/logging"
 )
 
-// LocalSynchronizer implements Synchronizer
-type LocalSynchronizer struct {
+// Local implements Local Synchronizer
+type Local struct {
 	splitTasks          splitTasks
-	synchronizers       synchronizers
+	workers             workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
 }
 
-// NewLocalSynchronizer creates new SynchronizerImpl
-func NewLocalSynchronizer(
+// NewLocal creates new Local
+func NewLocal(
 	period int,
 	splitAPI *service.SplitAPI,
 	splitStorage storage.SplitStorage,
@@ -33,47 +33,47 @@ func NewLocalSynchronizer(
 		PopLatenciesCall: func() []dtos.LatenciesDTO { return make([]dtos.LatenciesDTO, 0, 0) },
 		PutGaugeCall:     func(key string, gauge float64) {},
 	}
-	synchronizers := synchronizers{
-		splitSynchronizer: synchronizer.NewSplitSynchronizer(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
+	workers := workers{
+		splitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
 	}
-	return &LocalSynchronizer{
+	return &Local{
 		splitTasks: splitTasks{
-			splitSyncTask: tasks.NewFetchSplitsTask(synchronizers.splitSynchronizer, period, logger),
+			splitSyncTask: tasks.NewFetchSplitsTask(workers.splitFetcher, period, logger),
 		},
-		synchronizers: synchronizers,
-		logger:        logger,
+		workers: workers,
+		logger:  logger,
 	}
 }
 
 // SyncAll syncs splits and segments
-func (s *LocalSynchronizer) SyncAll() error {
-	return s.synchronizers.splitSynchronizer.SynchronizeSplits(nil)
+func (s *Local) SyncAll() error {
+	return s.workers.splitFetcher.SynchronizeSplits(nil)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
-func (s *LocalSynchronizer) StartPeriodicFetching() {
+func (s *Local) StartPeriodicFetching() {
 	s.splitTasks.splitSyncTask.Start()
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
-func (s *LocalSynchronizer) StopPeriodicFetching() {
+func (s *Local) StopPeriodicFetching() {
 	s.splitTasks.splitSyncTask.Stop(false)
 }
 
 // StartPeriodicDataRecording starts periodic recorders tasks
-func (s *LocalSynchronizer) StartPeriodicDataRecording() {
+func (s *Local) StartPeriodicDataRecording() {
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
-func (s *LocalSynchronizer) StopPeriodicDataRecording() {
+func (s *Local) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *LocalSynchronizer) SynchronizeSplits(till *int64) error {
-	return s.synchronizers.splitSynchronizer.SynchronizeSplits(till)
+func (s *Local) SynchronizeSplits(till *int64) error {
+	return s.workers.splitFetcher.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
-func (s *LocalSynchronizer) SynchronizeSegment(name string, till *int64) error {
+func (s *Local) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -60,7 +60,7 @@ func TestCounterSyncTask(t *testing.T) {
 	}
 
 	metricTask := NewRecordTelemetryTask(
-		synchronizer.NewMetricSynchronizer(
+		worker.NewMetricRecorder(
 			metricMockStorage,
 			metricMockRecorder,
 			dtos.Metadata{},

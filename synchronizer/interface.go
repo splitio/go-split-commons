@@ -1,4 +1,4 @@
-package sync
+package synchronizer
 
 // Synchronizer interface for syncing data to and from splits servers
 type Synchronizer interface {

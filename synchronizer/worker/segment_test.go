@@ -1,4 +1,4 @@
-package synchronizer
+package worker
 
 import (
 	"errors"
@@ -36,7 +36,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentSynchronizer(
+	segmentSync := NewSegmentFetcher(
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
@@ -153,7 +153,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentSynchronizer(
+	segmentSync := NewSegmentFetcher(
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
@@ -243,7 +243,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentSynchronizer(
+	segmentSync := NewSegmentFetcher(
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,
@@ -372,7 +372,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentSynchronizer(
+	segmentSync := NewSegmentFetcher(
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,

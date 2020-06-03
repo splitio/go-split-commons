@@ -1,4 +1,4 @@
-package synchronizer
+package worker
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitSynchronizer(
+	splitSync := NewSplitFetcher(
 		splitMockStorage,
 		splitMockFetcher,
 		&mutexmap.MMMetricsStorage{},
@@ -88,7 +88,7 @@ func TestSplitSynchronizer(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitSynchronizer(
+	splitSync := NewSplitFetcher(
 		splitMockStorage,
 		splitMockFetcher,
 		storageMock.MockMetricStorage{
@@ -152,7 +152,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
 
-	splitSync := NewSplitSynchronizer(
+	splitSync := NewSplitFetcher(
 		splitStorage,
 		splitMockFetcher,
 		storageMock.MockMetricStorage{

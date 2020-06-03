@@ -1,4 +1,4 @@
-package synchronizer
+package impression
 
 import (
 	"errors"
@@ -8,18 +8,12 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-split-commons/util"
 	"github.com/splitio/go-toolkit/logging"
 )
 
-const (
-	testImpressionsLatencies        = "testImpressions.time"
-	testImpressionsLatenciesBackend = "backend::/api/testImpressions/bulk"
-	testImpressionsCounters         = "testImpressions.status.{status}"
-	testImpressionsLocalCounters    = "backend::request.{status}"
-)
-
-// ImpressionSynchronizer struct for impression sync
-type ImpressionSynchronizer struct {
+// RecorderSingle struct for impression sync
+type RecorderSingle struct {
 	impressionStorage  storage.ImpressionStorage
 	impressionRecorder service.ImpressionsRecorder
 	metricStorage      storage.MetricsStorage
@@ -27,15 +21,15 @@ type ImpressionSynchronizer struct {
 	metadata           dtos.Metadata
 }
 
-// NewImpressionSynchronizer creates new impression synchronizer for posting impressions
-func NewImpressionSynchronizer(
+// NewRecorderSingle creates new impression synchronizer for posting impressions
+func NewRecorderSingle(
 	impressionStorage storage.ImpressionStorage,
 	impressionRecorder service.ImpressionsRecorder,
 	metricStorage storage.MetricsStorage,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
-) *ImpressionSynchronizer {
-	return &ImpressionSynchronizer{
+) ImpressionRecorder {
+	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
 		metricStorage:      metricStorage,
@@ -45,7 +39,7 @@ func NewImpressionSynchronizer(
 }
 
 // SynchronizeImpressions syncs impressions
-func (i *ImpressionSynchronizer) SynchronizeImpressions(bulkSize int64) error {
+func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	queuedImpressions, err := i.impressionStorage.PopN(bulkSize)
 	if err != nil {
 		i.logger.Error("Error reading impressions queue", err)
@@ -60,21 +54,18 @@ func (i *ImpressionSynchronizer) SynchronizeImpressions(bulkSize int64) error {
 	err = i.impressionRecorder.Record(queuedImpressions, i.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
-			i.metricStorage.IncCounter(strings.Replace(testImpressionsLocalCounters, "{status}", "error", 1))
 			i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
 		}
 		return err
 	}
-	elapsed := int(time.Now().Sub(before).Nanoseconds())
-	i.metricStorage.IncLatency(testImpressionsLatencies, elapsed)
-	i.metricStorage.IncLatency(testImpressionsLatenciesBackend, elapsed)
-	i.metricStorage.IncCounter(strings.Replace(testImpressionsLocalCounters, "{status}", "ok", 1))
+	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
+	i.metricStorage.IncLatency(testImpressionsLatencies, bucket)
 	i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", "200", 1))
 	return nil
 }
 
 // FlushImpressions flushes impressions
-func (i *ImpressionSynchronizer) FlushImpressions(bulkSize int64) error {
+func (i *RecorderSingle) FlushImpressions(bulkSize int64) error {
 	for !i.impressionStorage.Empty() {
 		err := i.SynchronizeImpressions(bulkSize)
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -94,7 +94,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentTask := NewFetchSegmentsTask(
-		synchronizer.NewSegmentSynchronizer(
+		worker.NewSegmentFetcher(
 			splitMockStorage,
 			segmentMockStorage,
 			segmentMockFetcher,

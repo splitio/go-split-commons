@@ -1,4 +1,4 @@
-package synchronizer
+package worker
 
 import (
 	"errors"
@@ -8,27 +8,27 @@ import (
 	"github.com/splitio/go-split-commons/storage"
 )
 
-// MetricSynchronizer struct for metric sync
-type MetricSynchronizer struct {
+// MetricRecorder struct for metric sync
+type MetricRecorder struct {
 	metricStorage  storage.MetricsStorage
 	metricRecorder service.MetricsRecorder
 	metadata       dtos.Metadata
 }
 
-// NewMetricSynchronizer creates new metric synchronizer for posting metrics
-func NewMetricSynchronizer(
+// NewMetricRecorder creates new metric synchronizer for posting metrics
+func NewMetricRecorder(
 	metricStorage storage.MetricsStorage,
 	metricRecorder service.MetricsRecorder,
 	metadata dtos.Metadata,
-) *MetricSynchronizer {
-	return &MetricSynchronizer{
+) *MetricRecorder {
+	return &MetricRecorder{
 		metricStorage:  metricStorage,
 		metricRecorder: metricRecorder,
 		metadata:       metadata,
 	}
 }
 
-func (m *MetricSynchronizer) synchronizeLatencies() error {
+func (m *MetricRecorder) synchronizeLatencies() error {
 	latencies := m.metricStorage.PopLatencies()
 	if len(latencies) > 0 {
 		err := m.metricRecorder.RecordLatencies(latencies, m.metadata)
@@ -37,7 +37,7 @@ func (m *MetricSynchronizer) synchronizeLatencies() error {
 	return nil
 }
 
-func (m *MetricSynchronizer) synchronizeGauges() error {
+func (m *MetricRecorder) synchronizeGauges() error {
 	var errs []error
 	for _, gauge := range m.metricStorage.PopGauges() {
 		err := m.metricRecorder.RecordGauge(gauge, m.metadata)
@@ -51,7 +51,7 @@ func (m *MetricSynchronizer) synchronizeGauges() error {
 	return nil
 }
 
-func (m *MetricSynchronizer) synchronizeCounters() error {
+func (m *MetricRecorder) synchronizeCounters() error {
 	counters := m.metricStorage.PopCounters()
 	if len(counters) > 0 {
 		err := m.metricRecorder.RecordCounters(counters, m.metadata)
@@ -61,7 +61,7 @@ func (m *MetricSynchronizer) synchronizeCounters() error {
 }
 
 // SynchronizeTelemetry syncs telemetry
-func (m *MetricSynchronizer) SynchronizeTelemetry() error {
+func (m *MetricRecorder) SynchronizeTelemetry() error {
 	err := m.synchronizeGauges()
 	if err != nil {
 		return err
