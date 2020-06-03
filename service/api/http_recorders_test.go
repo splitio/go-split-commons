@@ -102,22 +102,15 @@ func TestPostImpressions(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		dtos.Metadata{
-			SDKVersion:  "go-some",
-			MachineIP:   "127.0.0.1",
-			MachineName: "SOME_MACHINE_NAME",
-		},
-		"some",
 		logger,
 	)
-	err2 := impressionRecorder.Record(impressions)
+	err2 := impressionRecorder.Record(impressions, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "SOME_MACHINE_NAME"})
 	if err2 != nil {
 		t.Error(err2)
 	}
 }
 
 func TestPostMetricsLatency(t *testing.T) {
-
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -166,21 +159,15 @@ func TestPostMetricsLatency(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		dtos.Metadata{
-			SDKVersion:  "go-some",
-			MachineIP:   "127.0.0.1",
-			MachineName: "ip-127-0-0-1",
-		},
 		logger,
 	)
-	err2 := metricsRecorder.RecordLatencies(latencies)
+	err2 := metricsRecorder.RecordLatencies(latencies, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
 	if err2 != nil {
 		t.Error(err2)
 	}
 }
 
 func TestPostMetricsCounters(t *testing.T) {
-
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -233,22 +220,16 @@ func TestPostMetricsCounters(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		dtos.Metadata{
-			SDKVersion:  "go-some",
-			MachineIP:   "127.0.0.1",
-			MachineName: "ip-127-0-0-1",
-		},
 		logger,
 	)
 
-	err2 := metricsRecorder.RecordCounters(counters)
+	err2 := metricsRecorder.RecordCounters(counters, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
 	if err2 != nil {
 		t.Error(err2)
 	}
 }
 
 func TestPostMetricsGauge(t *testing.T) {
-
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -295,15 +276,10 @@ func TestPostMetricsGauge(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		dtos.Metadata{
-			SDKVersion:  "go-some",
-			MachineIP:   "127.0.0.1",
-			MachineName: "ip-127-0-0-1",
-		},
 		logger,
 	)
 
-	err2 := metricsRecorder.RecordGauge(gauge)
+	err2 := metricsRecorder.RecordGauge(gauge, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
 	if err2 != nil {
 		t.Error(err2)
 	}

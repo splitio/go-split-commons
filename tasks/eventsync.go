@@ -1,14 +1,14 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/synchronizer"
+	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 // NewRecordEventsTask creates a new events recording task
 func NewRecordEventsTask(
-	synchronizer *synchronizer.EventSynchronizer,
+	synchronizer event.EventRecorder,
 	bulkSize int64,
 	period int,
 	logger logging.LoggerInterface,

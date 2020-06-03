@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/splitio/go-client/splitio"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -40,13 +39,12 @@ type HTTPSplitFetcher struct {
 func NewHTTPSplitFetcher(
 	apikey string,
 	cfg *conf.AdvancedConfig,
-	version string,
 	logger logging.LoggerInterface,
 ) *HTTPSplitFetcher {
 	sdkURL, _ := getUrls(cfg)
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, sdkURL, version, logger),
+			client: NewHTTPClient(apikey, cfg, sdkURL, logger),
 			logger: logger,
 		},
 	}
@@ -96,7 +94,7 @@ func NewHTTPSegmentFetcher(
 	sdkURL, _ := getUrls(cfg)
 	return &HTTPSegmentFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, sdkURL, splitio.Version, logger),
+			client: NewHTTPClient(apikey, cfg, sdkURL, logger),
 			logger: logger,
 		},
 	}

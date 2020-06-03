@@ -7,36 +7,32 @@ import (
 
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
+	ChangeNumber() (int64, error)
 	PutMany(splits []dtos.SplitDTO, changeNumber int64) // Maybe Move Put to this....Doesn't exist in spec
 	Remove(splitname string)
-	ChangeNumber() (int64, error)
 	SetChangeNumber(changeNumber int64) error
-	Clear()
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
 type SplitStorageConsumer interface {
-	Split(splitName string) *dtos.SplitDTO
-	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
 	All() []dtos.SplitDTO
+	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
+	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
 }
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
 type SegmentStorageProducer interface {
-	Put(name string, segment *set.ThreadUnsafeSet, changeNumber int64) // Move to Update instead of Put
-	Update(segmentName string, toAdd []string, toRemove []string, till int64) error
 	ChangeNumber(segmentName string) (int64, error)
+	Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
 	SetChangeNumber(segmentName string, till int64) error
-	Remove(segmentName string) // Not Here
-	Clear()
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
-	Get(segmentName string) *set.ThreadUnsafeSet // Should be replaced for IsInSegment
+	Keys(segmentName string) *set.ThreadUnsafeSet
 	// MISSING IsInSegment(name, key)
 }
 
@@ -72,9 +68,10 @@ type EventStorageProducer interface {
 
 // EventStorageConsumer interface should be implemented by structs that offer popping impressions
 type EventStorageConsumer interface {
-	PopN(n int64) ([]dtos.EventDTO, error)
-	Empty() bool
 	Count() int64
+	Empty() bool
+	PopN(n int64) ([]dtos.EventDTO, error)
+	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
 // --- Wide Interfaces

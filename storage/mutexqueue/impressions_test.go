@@ -26,9 +26,6 @@ func TestMSImpressionsStorage(t *testing.T) {
 	queueSize := 20
 	queue := NewMQImpressionsStorage(queueSize, isFull, logger)
 
-	if queue.Count() != 0 {
-		t.Error("Queue count error")
-	}
 	if !queue.Empty() {
 		t.Error("Queue empty error")
 	}
@@ -36,9 +33,6 @@ func TestMSImpressionsStorage(t *testing.T) {
 	// LogImpressions from back to front
 	queue.LogImpressions([]dtos.Impression{i0, i1, i2, i3, i4})
 
-	if queue.Count() != 5 {
-		t.Error("Queue count error")
-	}
 	if queue.Empty() {
 		t.Error("Queue empty error")
 	}

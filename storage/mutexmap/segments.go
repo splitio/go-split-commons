@@ -24,24 +24,26 @@ func NewMMSegmentStorage() *MMSegmentStorage {
 	}
 }
 
-// Update updates segment
-func (m *MMSegmentStorage) Update(segmentName string, toAdd []string, toRemove []string, till int64) error {
-	return nil
-}
-
-// Put adds a new segment to the in-memory storage
-func (m *MMSegmentStorage) Put(name string, segment *set.ThreadUnsafeSet, till int64) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.data[name] = segment
-	m.SetChangeNumber(name, till)
-}
-
 // ChangeNumber returns the latest timestamp the segment was fetched
 func (m *MMSegmentStorage) ChangeNumber(segmentName string) (int64, error) {
 	m.tillMutex.RLock()
 	defer m.tillMutex.RUnlock()
 	return m.till[segmentName], nil
+}
+
+// Keys retrieves a segment from the in-memory storage
+// NOTE: A pointer TO A COPY is returned, in order to avoid race conditions between
+// evaluations and sdk <-> backend sync
+func (m *MMSegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
+	// @TODO replace to IsInSegment
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	item, exists := m.data[segmentName]
+	if !exists {
+		return nil
+	}
+	s := item.Copy().(*set.ThreadUnsafeSet)
+	return s
 }
 
 // SetChangeNumber sets the till value belong to segmentName
@@ -52,38 +54,20 @@ func (m *MMSegmentStorage) SetChangeNumber(name string, till int64) error {
 	return nil
 }
 
-func (m *MMSegmentStorage) _removeTill(segmentName string) {
-	m.tillMutex.Lock()
-	defer m.tillMutex.Unlock()
-	delete(m.till, segmentName)
-}
-
-// Remove deletes a segment from the in-memmory storage
-func (m *MMSegmentStorage) Remove(segmentName string) {
+// Update adds a new segment to the in-memory storage
+func (m *MMSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	delete(m.data, segmentName)
-	m._removeTill(segmentName)
-}
-
-// Clear replaces the segment storage with an empty one.
-func (m *MMSegmentStorage) Clear() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.data = make(map[string]*set.ThreadUnsafeSet)
-}
-
-// Get retrieves a segment from the in-memory storage
-// NOTE: A pointer TO A COPY is returned, in order to avoid race conditions between
-// evaluations and sdk <-> backend sync
-func (m *MMSegmentStorage) Get(segmentName string) *set.ThreadUnsafeSet {
-	// @TODO replace to IsInSegment
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-	item, exists := m.data[segmentName]
-	if !exists {
-		return nil
+	_, ok := m.data[name]
+	if !ok {
+		m.data[name] = set.NewSet()
 	}
-	s := item.Copy().(*set.ThreadUnsafeSet)
-	return s
+	if !toRemove.IsEmpty() {
+		m.data[name].Remove(toRemove.List()...)
+	}
+	if !toAdd.IsEmpty() {
+		m.data[name].Add(toAdd.List()...)
+	}
+	m.SetChangeNumber(name, till)
+	return nil
 }

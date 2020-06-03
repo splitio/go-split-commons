@@ -12,21 +12,32 @@ import (
 
 func TestMMSplitStorage(t *testing.T) {
 	splitStorage := NewMMSplitStorage()
-	splits := make([]dtos.SplitDTO, 10)
+
+	result := splitStorage.All()
+	if len(result) != 0 {
+		t.Error("Unexpected number of splits returned")
+	}
+
+	splits := make([]dtos.SplitDTO, 0, 10)
 	for index := 0; index < 10; index++ {
 		splits = append(splits, dtos.SplitDTO{
 			Name: fmt.Sprintf("SomeSplit_%d", index),
 			Algo: index,
 		})
 	}
-
 	splitStorage.PutMany(splits, 123)
+
 	for index := 0; index < 10; index++ {
 		splitName := fmt.Sprintf("SomeSplit_%d", index)
 		split := splitStorage.Split(splitName)
 		if split == nil || split.Name != splitName || split.Algo != index {
 			t.Error("Split not returned as expected")
 		}
+	}
+
+	result = splitStorage.All()
+	if len(result) != 10 {
+		t.Error("Unexpected number of splits returned")
 	}
 
 	splitNames := make([]string, 0)
@@ -70,7 +81,7 @@ func TestMMSplitStorage(t *testing.T) {
 
 func TestSplitMutexMapConcurrency(t *testing.T) {
 	splitStorage := NewMMSplitStorage()
-	splits := make([]dtos.SplitDTO, 10)
+	splits := make([]dtos.SplitDTO, 0, 10)
 	for index := 0; index < 10; index++ {
 		splits = append(splits, dtos.SplitDTO{
 			Name: fmt.Sprintf("SomeSplit_%d", index),

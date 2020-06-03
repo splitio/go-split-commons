@@ -30,7 +30,6 @@ func TestSpitChangesFetch(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		"some",
 		logger,
 	)
 
@@ -72,7 +71,6 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
-		"some",
 		logger,
 	)
 
