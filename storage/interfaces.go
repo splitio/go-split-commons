@@ -26,7 +26,6 @@ type SplitStorageConsumer interface {
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
 type SegmentStorageProducer interface {
 	ChangeNumber(segmentName string) (int64, error)
-	Clear()
 	Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
 	SetChangeNumber(segmentName string, till int64) error
 }

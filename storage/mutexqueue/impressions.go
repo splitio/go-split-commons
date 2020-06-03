@@ -87,14 +87,5 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 func (s *MQImpressionsStorage) Empty() bool {
 	s.mutexQueue.Lock()
 	defer s.mutexQueue.Unlock()
-
 	return s.queue.Len() == 0
-}
-
-// Count returns the number of events into slice
-func (s *MQImpressionsStorage) Count() int64 {
-	s.mutexQueue.Lock()
-	defer s.mutexQueue.Unlock()
-
-	return int64(s.queue.Len())
 }

@@ -24,13 +24,6 @@ func NewMMSegmentStorage() *MMSegmentStorage {
 	}
 }
 
-// Clear replaces the segment storage with an empty one.
-func (m *MMSegmentStorage) Clear() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.data = make(map[string]*set.ThreadUnsafeSet)
-}
-
 // ChangeNumber returns the latest timestamp the segment was fetched
 func (m *MMSegmentStorage) ChangeNumber(segmentName string) (int64, error) {
 	m.tillMutex.RLock()

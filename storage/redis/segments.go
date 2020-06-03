@@ -43,10 +43,6 @@ func (r *SegmentStorage) ChangeNumber(segmentName string) (int64, error) {
 	return asInt, nil
 }
 
-// Clear removes all splits from storage
-func (r *SegmentStorage) Clear() {
-}
-
 // Keys returns segments keys for segment if it's present
 func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 	keyToFetch := strings.Replace(redisSegment, "{segment}", segmentName, 1)
@@ -74,7 +70,6 @@ func (r *SegmentStorage) SetChangeNumber(segmentName string, changeNumber int64)
 
 // Update adds a new segment
 func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
-	// MAYBE MOVE TO EVALSCRIPT
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
 	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
