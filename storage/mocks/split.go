@@ -9,7 +9,6 @@ import (
 type MockSplitStorage struct {
 	AllCall               func() []dtos.SplitDTO
 	ChangeNumberCall      func() (int64, error)
-	ClearCall             func()
 	FetchManyCall         func(splitNames []string) map[string]*dtos.SplitDTO
 	PutManyCall           func(splits []dtos.SplitDTO, changeNumber int64)
 	RemoveCall            func(splitname string)
@@ -28,11 +27,6 @@ func (m MockSplitStorage) All() []dtos.SplitDTO {
 // ChangeNumber mock
 func (m MockSplitStorage) ChangeNumber() (int64, error) {
 	return m.ChangeNumberCall()
-}
-
-// Clear mock
-func (m MockSplitStorage) Clear() {
-	m.ClearCall()
 }
 
 // FetchMany mock

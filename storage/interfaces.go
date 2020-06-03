@@ -7,20 +7,19 @@ import (
 
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
+	ChangeNumber() (int64, error)
 	PutMany(splits []dtos.SplitDTO, changeNumber int64) // Maybe Move Put to this....Doesn't exist in spec
 	Remove(splitname string)
-	ChangeNumber() (int64, error)
 	SetChangeNumber(changeNumber int64) error
-	Clear()
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
 type SplitStorageConsumer interface {
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
+	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	TrafficTypeExists(trafficType string) bool
 }
 
