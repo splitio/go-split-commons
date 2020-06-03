@@ -23,10 +23,10 @@ const (
 
 // SegmentFetcher struct for segment sync
 type SegmentFetcher struct {
-	splitStorage   storage.SplitStorage
+	splitStorage   storage.SplitStorageConsumer
 	segmentStorage storage.SegmentStorage
 	segmentFetcher service.SegmentFetcher
-	metricStorage  storage.MetricsStorage
+	metricStorage  storage.MetricsStorageProducer
 	logger         logging.LoggerInterface
 }
 

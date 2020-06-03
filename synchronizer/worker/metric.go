@@ -10,14 +10,14 @@ import (
 
 // MetricRecorder struct for metric sync
 type MetricRecorder struct {
-	metricStorage  storage.MetricsStorage
+	metricStorage  storage.MetricsStorageConsumer
 	metricRecorder service.MetricsRecorder
 	metadata       dtos.Metadata
 }
 
 // NewMetricRecorder creates new metric synchronizer for posting metrics
 func NewMetricRecorder(
-	metricStorage storage.MetricsStorage,
+	metricStorage storage.MetricsStorageConsumer,
 	metricRecorder service.MetricsRecorder,
 	metadata dtos.Metadata,
 ) *MetricRecorder {

@@ -14,18 +14,18 @@ import (
 
 // RecorderSingle struct for impression sync
 type RecorderSingle struct {
-	impressionStorage  storage.ImpressionStorage
+	impressionStorage  storage.ImpressionStorageConsumer
 	impressionRecorder service.ImpressionsRecorder
-	metricStorage      storage.MetricsStorage
+	metricStorage      storage.MetricsStorageProducer
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
 }
 
 // NewRecorderSingle creates new impression synchronizer for posting impressions
 func NewRecorderSingle(
-	impressionStorage storage.ImpressionStorage,
+	impressionStorage storage.ImpressionStorageConsumer,
 	impressionRecorder service.ImpressionsRecorder,
-	metricStorage storage.MetricsStorage,
+	metricStorage storage.MetricsStorageProducer,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) ImpressionRecorder {

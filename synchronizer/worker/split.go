@@ -22,7 +22,7 @@ const (
 type SplitFetcher struct {
 	splitStorage  storage.SplitStorage
 	splitFetcher  service.SplitFetcher
-	metricStorage storage.MetricsStorage
+	metricStorage storage.MetricsStorageProducer
 	logger        logging.LoggerInterface
 }
 

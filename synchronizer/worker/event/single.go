@@ -14,18 +14,18 @@ import (
 
 // RecorderSingle struct for event sync
 type RecorderSingle struct {
-	eventStorage  storage.EventsStorage
+	eventStorage  storage.EventStorageConsumer
 	eventRecorder service.EventsRecorder
-	metricStorage storage.MetricsStorage
+	metricStorage storage.MetricsStorageProducer
 	logger        logging.LoggerInterface
 	metadata      dtos.Metadata
 }
 
 // NewEventRecorderSingle creates new event synchronizer for posting events
 func NewEventRecorderSingle(
-	eventStorage storage.EventsStorage,
+	eventStorage storage.EventStorageConsumer,
 	eventRecorder service.EventsRecorder,
-	metricStorage storage.MetricsStorage,
+	metricStorage storage.MetricsStorageProducer,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) EventRecorder {
