@@ -13,7 +13,7 @@ import (
 // Local implements Local Synchronizer
 type Local struct {
 	splitTasks          splitTasks
-	workers             workers
+	workers             Workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
 }
@@ -33,7 +33,7 @@ func NewLocal(
 		PopLatenciesCall: func() []dtos.LatenciesDTO { return make([]dtos.LatenciesDTO, 0, 0) },
 		PutGaugeCall:     func(key string, gauge float64) {},
 	}
-	workers := workers{
+	workers := Workers{
 		splitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
 	}
 	return &Local{

@@ -2,9 +2,7 @@ package synchronizer
 
 import (
 	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
@@ -22,8 +20,8 @@ type splitTasks struct {
 	eventSyncTask      *asynctask.AsyncTask
 }
 
-// workers struct for workers
-type workers struct {
+// Workers struct for workers
+type Workers struct {
 	splitFetcher       *worker.SplitFetcher
 	segmentFetcher     *worker.SegmentFetcher
 	telemetryRecorder  *worker.MetricRecorder
@@ -34,34 +32,15 @@ type workers struct {
 // SynchronizerImpl implements Synchronizer
 type SynchronizerImpl struct {
 	splitTasks          splitTasks
-	workers             workers
+	workers             Workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
 }
 
-func setupWorkers(
-	splitAPI *service.SplitAPI,
-	splitStorage storage.SplitStorage,
-	segmentStorage storage.SegmentStorage,
-	metricStorage storage.MetricsStorage,
-	impressionStorage storage.ImpressionStorage,
-	eventStorage storage.EventsStorage,
-	logger logging.LoggerInterface,
-	metadata *dtos.Metadata,
-) workers {
-	return workers{
-		splitFetcher:       worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorage, logger),
-		segmentFetcher:     worker.NewSegmentFetcher(splitStorage, segmentStorage, splitAPI.SegmentFetcher, metricStorage, logger),
-		telemetryRecorder:  worker.NewMetricRecorder(metricStorage, splitAPI.MetricRecorder, *metadata),
-		impressionRecorder: impression.NewRecorderSingle(impressionStorage, splitAPI.ImpressionRecorder, metricStorage, logger, *metadata),
-		eventRecorder:      event.NewEventRecorderSingle(eventStorage, splitAPI.EventRecorder, metricStorage, logger, *metadata),
-	}
-}
-
 func setupTasks(
-	workers workers,
+	workers Workers,
 	confTask conf.TaskPeriods,
 	confAdvanced conf.AdvancedConfig,
 	logger logging.LoggerInterface,
@@ -80,30 +59,15 @@ func NewSynchronizer(
 	confTask conf.TaskPeriods,
 	confAdvanced conf.AdvancedConfig,
 	splitAPI *service.SplitAPI,
-	splitStorage storage.SplitStorage,
-	segmentStorage storage.SegmentStorage,
-	metricStorage storage.MetricsStorage,
-	impressionStorage storage.ImpressionStorage,
-	eventStorage storage.EventsStorage,
+	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
-	metadata *dtos.Metadata,
 ) Synchronizer {
-	splitWorkers := setupWorkers(
-		splitAPI,
-		splitStorage,
-		segmentStorage,
-		metricStorage,
-		impressionStorage,
-		eventStorage,
-		logger,
-		metadata,
-	)
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
 		eventBulkSize:       confAdvanced.EventsBulkSize,
-		splitTasks:          setupTasks(splitWorkers, confTask, confAdvanced, logger),
-		workers:             splitWorkers,
+		splitTasks:          setupTasks(workers, confTask, confAdvanced, logger),
+		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
 	}

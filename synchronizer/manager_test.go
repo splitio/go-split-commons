@@ -10,6 +10,9 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	httpMocks "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/synchronizer/worker"
+	"github.com/splitio/go-split-commons/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -97,104 +100,114 @@ func TestPolling(t *testing.T) {
 			},
 		},
 	}
+
+	splitStorageMock := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return -1, nil
+		},
+		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 3 {
+				t.Error("Wrong changenumber")
+			}
+			if len(splits) != 2 {
+				t.Error("Wrong length of passed splits")
+			}
+		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet {
+			segmentNames := set.NewSet("segment1", "segment2")
+			return segmentNames
+		},
+	}
+	metricStorageMock := storageMock.MockMetricStorage{
+		PopCountersCall: func() []dtos.CounterDTO {
+			return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
+		},
+		PopGaugesCall: func() []dtos.GaugeDTO {
+			return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
+		},
+		PopLatenciesCall: func() []dtos.LatenciesDTO {
+			return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
+		},
+		IncLatencyCall: func(metricName string, index int) {},
+		IncCounterCall: func(key string) {},
+		PutGaugeCall:   func(key string, gauge float64) {},
+	}
+	segmentStorageMock := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return -1, nil
+		},
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
+			if segmentName != "segment1" && segmentName != "segment2" {
+				t.Error("Wrong name")
+			}
+			return nil
+		},
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			if name != "segment1" && name != "segment2" {
+				t.Error("Wrong name")
+			}
+			return nil
+		},
+	}
+	eventStorageMock := storageMock.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			if n != 100 {
+				t.Error("It should be 100")
+			}
+			return []dtos.EventDTO{{
+				EventTypeID:     "someEvent",
+				Key:             "someKey",
+				Properties:      nil,
+				Timestamp:       123456789,
+				TrafficTypeName: "someTrafficType",
+				Value:           nil,
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			if eventsCalled < 4 {
+				return false
+			}
+			return true
+		},
+	}
+	impressionStorageMock := storageMock.MockImpressionStorage{
+		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			if n != 100 {
+				t.Error("It should be 100")
+			}
+			return []dtos.Impression{{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "someFeature",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         123456789,
+				Treatment:    "someTreatment",
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			if impressionsCalled < 3 {
+				return false
+			}
+			return true
+		},
+	}
+
+	workers := Workers{
+		splitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricStorageMock, logger),
+		segmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
+		eventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
+		impressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
+		telemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+	}
+
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
 		&splitAPI,
-		storageMock.MockSplitStorage{
-			ChangeNumberCall: func() (int64, error) {
-				return -1, nil
-			},
-			PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
-				if changeNumber != 3 {
-					t.Error("Wrong changenumber")
-				}
-				if len(splits) != 2 {
-					t.Error("Wrong length of passed splits")
-				}
-			},
-			SegmentNamesCall: func() *set.ThreadUnsafeSet {
-				segmentNames := set.NewSet("segment1", "segment2")
-				return segmentNames
-			},
-		},
-		storageMock.MockSegmentStorage{
-			ChangeNumberCall: func(segmentName string) (int64, error) {
-				return -1, nil
-			},
-			KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
-				if segmentName != "segment1" && segmentName != "segment2" {
-					t.Error("Wrong name")
-				}
-				return nil
-			},
-			UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
-				if name != "segment1" && name != "segment2" {
-					t.Error("Wrong name")
-				}
-				return nil
-			},
-		},
-		storageMock.MockMetricStorage{
-			PopCountersCall: func() []dtos.CounterDTO {
-				return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
-			},
-			PopGaugesCall: func() []dtos.GaugeDTO {
-				return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
-			},
-			PopLatenciesCall: func() []dtos.LatenciesDTO {
-				return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
-			},
-			IncLatencyCall: func(metricName string, index int) {},
-			IncCounterCall: func(key string) {},
-			PutGaugeCall:   func(key string, gauge float64) {},
-		},
-		storageMock.MockImpressionStorage{
-			PopNCall: func(n int64) ([]dtos.Impression, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
-				return []dtos.Impression{{
-					BucketingKey: "someBucketingKey",
-					ChangeNumber: 123456789,
-					FeatureName:  "someFeature",
-					KeyName:      "someKey",
-					Label:        "someLabel",
-					Time:         123456789,
-					Treatment:    "someTreatment",
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				if impressionsCalled < 3 {
-					return false
-				}
-				return true
-			},
-		},
-		storageMock.MockEventStorage{
-			PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
-				return []dtos.EventDTO{{
-					EventTypeID:     "someEvent",
-					Key:             "someKey",
-					Properties:      nil,
-					Timestamp:       123456789,
-					TrafficTypeName: "someTrafficType",
-					Value:           nil,
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				if eventsCalled < 4 {
-					return false
-				}
-				return true
-			},
-		},
+		workers,
 		logger,
 		nil,
-		&dtos.Metadata{},
 	)
 
 	readyChannel := make(chan string, 1)
