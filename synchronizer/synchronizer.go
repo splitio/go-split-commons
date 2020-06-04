@@ -22,11 +22,11 @@ type splitTasks struct {
 
 // Workers struct for workers
 type Workers struct {
-	splitFetcher       *worker.SplitFetcher
-	segmentFetcher     *worker.SegmentFetcher
-	telemetryRecorder  *worker.MetricRecorder
-	impressionRecorder impression.ImpressionRecorder
-	eventRecorder      event.EventRecorder
+	SplitFetcher       *worker.SplitFetcher
+	SegmentFetcher     *worker.SegmentFetcher
+	TelemetryRecorder  *worker.MetricRecorder
+	ImpressionRecorder impression.ImpressionRecorder
+	EventRecorder      event.EventRecorder
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -46,11 +46,11 @@ func setupTasks(
 	logger logging.LoggerInterface,
 ) splitTasks {
 	return splitTasks{
-		splitSyncTask:      tasks.NewFetchSplitsTask(workers.splitFetcher, confTask.SplitSync, logger),
-		segmentSyncTask:    tasks.NewFetchSegmentsTask(workers.segmentFetcher, confTask.SegmentSync, confAdvanced.SegmentWorkers, confAdvanced.SegmentQueueSize, logger),
-		telemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.telemetryRecorder, confTask.CounterSync, logger),
-		impressionSyncTask: tasks.NewRecordImpressionsTask(workers.impressionRecorder, confTask.ImpressionSync, logger, confAdvanced.ImpressionsBulkSize),
-		eventSyncTask:      tasks.NewRecordEventsTask(workers.eventRecorder, confAdvanced.EventsBulkSize, confTask.EventsSync, logger),
+		splitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, confTask.SplitSync, logger),
+		segmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, confTask.SegmentSync, confAdvanced.SegmentWorkers, confAdvanced.SegmentQueueSize, logger),
+		telemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, confTask.CounterSync, logger),
+		impressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, confTask.ImpressionSync, logger, confAdvanced.ImpressionsBulkSize),
+		eventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, confAdvanced.EventsBulkSize, confTask.EventsSync, logger),
 	}
 }
 
@@ -79,14 +79,14 @@ func (s *SynchronizerImpl) dataFlusher() {
 		switch msg {
 		case "EVENTS_FULL":
 			s.logger.Debug("FLUSHING storage queue")
-			err := s.workers.eventRecorder.SynchronizeEvents(s.eventBulkSize)
+			err := s.workers.EventRecorder.SynchronizeEvents(s.eventBulkSize)
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
 			break
 		case "IMPRESSIONS_FULL":
 			s.logger.Debug("FLUSHING storage queue")
-			err := s.workers.impressionRecorder.SynchronizeImpressions(s.impressionBulkSize)
+			err := s.workers.ImpressionRecorder.SynchronizeImpressions(s.impressionBulkSize)
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
@@ -96,11 +96,11 @@ func (s *SynchronizerImpl) dataFlusher() {
 
 // SyncAll syncs splits and segments
 func (s *SynchronizerImpl) SyncAll() error {
-	err := s.workers.splitFetcher.SynchronizeSplits(nil)
+	err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	if err != nil {
 		return err
 	}
-	return s.workers.segmentFetcher.SynchronizeSegments()
+	return s.workers.SegmentFetcher.SynchronizeSegments()
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -135,10 +135,10 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 
 // SynchronizeSplits syncs splits
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
-	return s.workers.splitFetcher.SynchronizeSplits(till)
+	return s.workers.SplitFetcher.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
-	return s.workers.segmentFetcher.SynchronizeSegment(name, till)
+	return s.workers.SegmentFetcher.SynchronizeSegment(name, till)
 }

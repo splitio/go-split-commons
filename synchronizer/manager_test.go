@@ -194,11 +194,11 @@ func TestPolling(t *testing.T) {
 	}
 
 	workers := Workers{
-		splitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricStorageMock, logger),
-		segmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
-		eventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
-		impressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
-		telemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+		SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricStorageMock, logger),
+		SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
+		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
+		TelemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 
 	syncForTest := NewSynchronizer(

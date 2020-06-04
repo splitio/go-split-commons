@@ -34,11 +34,11 @@ func NewLocal(
 		PutGaugeCall:     func(key string, gauge float64) {},
 	}
 	workers := Workers{
-		splitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
+		SplitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
 	}
 	return &Local{
 		splitTasks: splitTasks{
-			splitSyncTask: tasks.NewFetchSplitsTask(workers.splitFetcher, period, logger),
+			splitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, period, logger),
 		},
 		workers: workers,
 		logger:  logger,
@@ -47,7 +47,7 @@ func NewLocal(
 
 // SyncAll syncs splits and segments
 func (s *Local) SyncAll() error {
-	return s.workers.splitFetcher.SynchronizeSplits(nil)
+	return s.workers.SplitFetcher.SynchronizeSplits(nil)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -70,7 +70,7 @@ func (s *Local) StopPeriodicDataRecording() {
 
 // SynchronizeSplits syncs splits
 func (s *Local) SynchronizeSplits(till *int64) error {
-	return s.workers.splitFetcher.SynchronizeSplits(till)
+	return s.workers.SplitFetcher.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment
