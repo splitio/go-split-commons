@@ -45,6 +45,7 @@ type ImpressionStorageProducer interface {
 type ImpressionStorageConsumer interface {
 	Empty() bool
 	PopN(n int64) ([]dtos.Impression, error)
+	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
 }
 
 // MetricsStorageProducer interface should be impemented by structs that accept incoming metrics
@@ -68,7 +69,6 @@ type EventStorageProducer interface {
 
 // EventStorageConsumer interface should be implemented by structs that offer popping impressions
 type EventStorageConsumer interface {
-	Count() int64
 	Empty() bool
 	PopN(n int64) ([]dtos.EventDTO, error)
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)

@@ -40,6 +40,13 @@ func (s *MQImpressionsStorage) sendSignalIsFull() {
 	}
 }
 
+// Empty returns if slice len if zero
+func (s *MQImpressionsStorage) Empty() bool {
+	s.mutexQueue.Lock()
+	defer s.mutexQueue.Unlock()
+	return s.queue.Len() == 0
+}
+
 // LogImpressions inserts impressions into the queue
 func (s *MQImpressionsStorage) LogImpressions(impressions []dtos.Impression) error {
 	s.mutexQueue.Lock()
@@ -83,9 +90,7 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 	return toReturn, nil
 }
 
-// Empty returns if slice len if zero
-func (s *MQImpressionsStorage) Empty() bool {
-	s.mutexQueue.Lock()
-	defer s.mutexQueue.Unlock()
-	return s.queue.Len() == 0
+// PopNWithMetadata pop N elements from queue
+func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+	return []dtos.ImpressionQueueObject{}, nil
 }

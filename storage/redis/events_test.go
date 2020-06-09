@@ -89,10 +89,8 @@ func marshalEvent(event dtos.QueueStoredEventDTO) string {
 	return string(json)
 }
 
-/*
-func TestPopNEvents(t *testing.T) {
+func TestPopNEventsWithMetadata(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.events"
-	expectedStop := 2
 
 	metadata := dtos.Metadata{
 		SDKVersion:  "go-test",
@@ -128,8 +126,8 @@ func TestPopNEvents(t *testing.T) {
 			if start != 0 {
 				t.Errorf("Unexpected start. Expected: %d Actual: %d", 0, start)
 			}
-			if stop != 2 {
-				t.Errorf("Unexpected stop. Expected: %d Actual: %d", expectedStop, stop)
+			if stop != 9998 {
+				t.Errorf("Unexpected stop. Expected: %d Actual: %d", 9998, stop)
 			}
 			return &mocks.MockResultOutput{
 				MultiCall: func() ([]string, error) {
@@ -151,6 +149,15 @@ func TestPopNEvents(t *testing.T) {
 				ErrCall: func() error { return nil },
 			}
 		},
+		LLenCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ErrCall:    func() error { return nil },
+				ResultCall: func() (int64, error) { return 3, nil },
+			}
+		},
 	}
 
 	mockPrefixedClient := &redis.PrefixedRedisClient{
@@ -160,12 +167,11 @@ func TestPopNEvents(t *testing.T) {
 
 	eventStorage := NewEventsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
 
-	events, err := eventStorage.PopN(3)
+	storedEvents, err := eventStorage.PopNWithMetadata(3)
 	if err != nil {
 		t.Error("It should not return error")
 	}
-	if len(events) != 2 {
-		t.Error("It should return 2 events")
+	if len(storedEvents) != 3 {
+		t.Error("Unexpected returned events")
 	}
 }
-*/
