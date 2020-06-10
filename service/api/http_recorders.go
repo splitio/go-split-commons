@@ -9,7 +9,7 @@ import (
 )
 
 type httpRecorderBase struct {
-	client *HTTPClient
+	client Client
 	logger logging.LoggerInterface
 }
 

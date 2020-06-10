@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +17,12 @@ import (
 const prodSdkURL = "https://sdk.split.io/api"
 const prodEventsURL = "https://events.split.io/api"
 const defaultHTTPTimeout = 30
+
+// Client interface for HTTPClient
+type Client interface {
+	Get(service string) ([]byte, error)
+	Post(service string, body []byte, headers map[string]string) error
+}
 
 func getUrls(cfg *conf.AdvancedConfig) (sdkURL string, eventsURL string) {
 	if cfg != nil && cfg.SdkURL != "" {
@@ -41,7 +46,6 @@ type HTTPClient struct {
 	headers    map[string]string
 	logger     logging.LoggerInterface
 	apikey     string
-	version    string
 }
 
 // NewHTTPClient instance of HttpClient
@@ -50,7 +54,7 @@ func NewHTTPClient(
 	cfg *conf.AdvancedConfig,
 	endpoint string,
 	logger logging.LoggerInterface,
-) *HTTPClient {
+) Client {
 	var timeout int
 	if cfg.HTTPTimeout != 0 {
 		timeout = cfg.HTTPTimeout
@@ -166,26 +170,4 @@ func (c *HTTPClient) Post(service string, body []byte, headers map[string]string
 		Code:    resp.StatusCode,
 		Message: resp.Status,
 	}
-}
-
-// ValidateApikey validates apikey
-func ValidateApikey(apikey string, config conf.AdvancedConfig) error {
-	sdkURL, _ := getUrls(&config)
-	client := &http.Client{}
-
-	req, _ := http.NewRequest("GET", sdkURL+"/segmentChanges/___TEST___?since=-1", nil)
-	req.Header.Add("Accept-Encoding", "gzip")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+apikey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 403 {
-		return errors.New("you passed a browser type apikey, please grab an apikey from the Split console that is of type sdk")
-	}
-
-	return nil
 }

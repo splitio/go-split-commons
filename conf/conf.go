@@ -72,4 +72,5 @@ type AdvancedConfig struct {
 	EventsQueueSize      int
 	ImpressionsQueueSize int
 	ImpressionsBulkSize  int64
+	AuthURL              string
 }
