@@ -73,4 +73,5 @@ type AdvancedConfig struct {
 	ImpressionsQueueSize int
 	ImpressionsBulkSize  int64
 	AuthURL              string
+	StreamingURL         string
 }
