@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
@@ -14,6 +15,7 @@ import (
 type SegmentStorage struct {
 	client redis.PrefixedRedisClient
 	logger logging.LoggerInterface
+	mutext *sync.RWMutex
 }
 
 // NewSegmentStorage creates a new RedisSegmentStorage and returns a reference to it
@@ -21,12 +23,28 @@ func NewSegmentStorage(redisClient *redis.PrefixedRedisClient, logger logging.Lo
 	return &SegmentStorage{
 		client: *redisClient,
 		logger: logger,
+		mutext: &sync.RWMutex{},
 	}
 }
 
-// Get returns a segment wrapped in a set
-func (r *SegmentStorage) Get(segmentName string) *set.ThreadUnsafeSet {
-	// @TODO replace to SISMember
+// ChangeNumber returns the changeNumber for a particular segment
+func (r *SegmentStorage) ChangeNumber(segmentName string) (int64, error) {
+	segmentKey := strings.Replace(redisSegmentTill, "{segment}", segmentName, 1)
+	tillStr, err := r.client.Get(segmentKey)
+	if err != nil {
+		return -1, err
+	}
+
+	asInt, err := strconv.ParseInt(tillStr, 10, 64)
+	if err != nil {
+		r.logger.Error("Error retrieving till. Returning -1: ", err.Error())
+		return -1, err
+	}
+	return asInt, nil
+}
+
+// Keys returns segments keys for segment if it's present
+func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 	keyToFetch := strings.Replace(redisSegment, "{segment}", segmentName, 1)
 	segmentKeys, err := r.client.SMembers(keyToFetch)
 	if len(segmentKeys) <= 0 {
@@ -44,22 +62,23 @@ func (r *SegmentStorage) Get(segmentName string) *set.ThreadUnsafeSet {
 	return segment
 }
 
-// Till returns the changeNumber for a particular segment
-func (r *SegmentStorage) Till(segmentName string) int64 {
+// SetChangeNumber sets the till value belong to segmentName
+func (r *SegmentStorage) SetChangeNumber(segmentName string, changeNumber int64) error {
 	segmentKey := strings.Replace(redisSegmentTill, "{segment}", segmentName, 1)
-	tillStr, err := r.client.Get(segmentKey)
-	if err != nil {
-		return -1
-	}
-
-	asInt, err := strconv.ParseInt(tillStr, 10, 64)
-	if err != nil {
-		r.logger.Error("Error retrieving till. Returning -1: ", err.Error())
-		return -1
-	}
-	return asInt
+	return r.client.Set(segmentKey, changeNumber, 0)
 }
 
-// Clear removes all splits from storage
-func (r *SegmentStorage) Clear() {
+// Update adds a new segment
+func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
+	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
+	if !toRemove.IsEmpty() {
+		r.client.SRem(segmentKey, toRemove.List()...)
+	}
+	if !toAdd.IsEmpty() {
+		r.client.SAdd(segmentKey, toAdd.List()...)
+	}
+	r.SetChangeNumber(name, till)
+	return nil
 }

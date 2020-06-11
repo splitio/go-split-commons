@@ -109,6 +109,11 @@ func (s *MQEventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
 	return toReturn, nil
 }
 
+// PopNWithMetadata pop N elements from queue
+func (s *MQEventsStorage) PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error) {
+	return []dtos.QueueStoredEventDTO{}, nil
+}
+
 // Empty returns if slice len if zero
 func (s *MQEventsStorage) Empty() bool {
 	s.mutexQueue.Lock()

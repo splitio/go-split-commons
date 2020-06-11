@@ -10,7 +10,8 @@ import (
 	"github.com/splitio/go-toolkit/redis/mocks"
 )
 
-func TestSegmentGetErrort(t *testing.T) {
+// ADD TEST FOR UPDATECALL
+func TestSegmentKeysErrort(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.segment.someSegment"
 
 	mockedRedisClient := mocks.MockClient{
@@ -30,13 +31,13 @@ func TestSegmentGetErrort(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	segment := segmentStorage.Get("someSegment")
+	segment := segmentStorage.Keys("someSegment")
 	if segment != nil {
 		t.Error("Unexpected result")
 	}
 }
 
-func TestSegmentGetNonExistant(t *testing.T) {
+func TestSegmentKeysNonExistent(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.segment.someSegment"
 
 	mockedRedisClient := mocks.MockClient{
@@ -56,12 +57,12 @@ func TestSegmentGetNonExistant(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	segment := segmentStorage.Get("someSegment")
+	segment := segmentStorage.Keys("someSegment")
 	if segment != nil {
 		t.Error("Unexpected result")
 	}
 }
-func TestSegmentGet(t *testing.T) {
+func TestSegmentKeys(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.segment.someSegment"
 
 	mockedRedisClient := mocks.MockClient{
@@ -81,7 +82,7 @@ func TestSegmentGet(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	segment := segmentStorage.Get("someSegment")
+	segment := segmentStorage.Keys("someSegment")
 	if segment == nil || !segment.IsEqual(set.NewSet("key1", "key2")) {
 		t.Error("Incorrect segment")
 		t.Error(segment)
@@ -108,7 +109,7 @@ func TestSegmentTillError(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := segmentStorage.Till("someSegment")
+	till, _ := segmentStorage.ChangeNumber("someSegment")
 	if till != -1 {
 		t.Error("Unexpected till")
 	}
@@ -134,7 +135,7 @@ func TestSegmentTill(t *testing.T) {
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := segmentStorage.Till("someSegment")
+	till, _ := segmentStorage.ChangeNumber("someSegment")
 	if till != 123456789 {
 		t.Error("Unexpected till")
 	}

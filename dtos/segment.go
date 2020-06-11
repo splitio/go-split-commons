@@ -8,3 +8,10 @@ type SegmentChangesDTO struct {
 	Since   int64    `json:"since"`
 	Till    int64    `json:"till"`
 }
+
+// SegmentKeyDTO maps key data
+type SegmentKeyDTO struct {
+	Name         string
+	LastModified int64
+	Removed      bool
+}

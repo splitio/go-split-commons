@@ -89,6 +89,7 @@ func marshalEvent(event dtos.QueueStoredEventDTO) string {
 	return string(json)
 }
 
+/*
 func TestPopNEvents(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.events"
 	expectedStop := 2
@@ -167,3 +168,4 @@ func TestPopNEvents(t *testing.T) {
 		t.Error("It should return 2 events")
 	}
 }
+*/

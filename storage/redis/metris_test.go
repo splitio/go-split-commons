@@ -10,6 +10,65 @@ import (
 	"github.com/splitio/go-toolkit/redis/mocks"
 )
 
+func TestIncCounter(t *testing.T) {
+	metadata := dtos.Metadata{
+		SDKVersion:  "go-test",
+		MachineIP:   "1.2.3.4",
+		MachineName: "test",
+	}
+
+	expectedKey := "someprefix.SPLITIO/go-test/test/count.count1"
+
+	mockedRedisClient := mocks.MockClient{
+		IncrCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 0, nil },
+			}
+		},
+	}
+
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &mockedRedisClient,
+		Prefix: "someprefix",
+	}
+
+	metricStorage := NewMetricsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
+
+	metricStorage.IncCounter("count1")
+}
+
+func TestIncLatency(t *testing.T) {
+	metadata := dtos.Metadata{
+		SDKVersion:  "go-test",
+		MachineIP:   "1.2.3.4",
+		MachineName: "test",
+	}
+
+	expectedKey := "someprefix.SPLITIO/go-test/test/latency.m1.bucket.13"
+
+	mockedRedisClient := mocks.MockClient{
+		IncrCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 0, nil },
+			}
+		},
+	}
+
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &mockedRedisClient,
+		Prefix: "someprefix",
+	}
+
+	metricStorage := NewMetricsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
+
+	metricStorage.IncLatency("m1", 13)
+}
 func TestPutGauge(t *testing.T) {
 	metadata := dtos.Metadata{
 		SDKVersion:  "go-test",
@@ -42,64 +101,4 @@ func TestPutGauge(t *testing.T) {
 	metricStorage := NewMetricsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
 
 	metricStorage.PutGauge("g1", 3.345)
-}
-
-func TestIncLatency(t *testing.T) {
-	metadata := dtos.Metadata{
-		SDKVersion:  "go-test",
-		MachineIP:   "1.2.3.4",
-		MachineName: "test",
-	}
-
-	expectedKey := "someprefix.SPLITIO/go-test/test/latency.m1.bucket.13"
-
-	mockedRedisClient := mocks.MockClient{
-		IncrCall: func(key string) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
-			}
-		},
-	}
-
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	metricStorage := NewMetricsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
-
-	metricStorage.IncLatency("m1", 13)
-}
-
-func TestIncCounter(t *testing.T) {
-	metadata := dtos.Metadata{
-		SDKVersion:  "go-test",
-		MachineIP:   "1.2.3.4",
-		MachineName: "test",
-	}
-
-	expectedKey := "someprefix.SPLITIO/go-test/test/count.count1"
-
-	mockedRedisClient := mocks.MockClient{
-		IncrCall: func(key string) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
-			}
-		},
-	}
-
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	metricStorage := NewMetricsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
-
-	metricStorage.IncCounter("count1")
 }

@@ -3,7 +3,6 @@ package redis
 import (
 	"encoding/json"
 	"errors"
-	"sync/atomic"
 	"testing"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -12,32 +11,6 @@ import (
 	"github.com/splitio/go-toolkit/redis"
 	"github.com/splitio/go-toolkit/redis/mocks"
 )
-
-func TestGetSplitError(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.split.someSplit"
-
-	mockedRedisClient := mocks.MockClient{
-		GetCall: func(key string) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			return &mocks.MockResultOutput{
-				ResultStringCall: func() (string, error) { return "", errors.New("Some Error") },
-			}
-		},
-	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
-
-	split := splitStorage.Get("someSplit")
-	if split != nil {
-		t.Error("Unexpected result")
-	}
-}
 
 func createSampleSplit(name string) dtos.SplitDTO {
 	return dtos.SplitDTO{
@@ -63,16 +36,32 @@ func marshalSplit(split dtos.SplitDTO) string {
 	return string(json)
 }
 
-func TestGetSplit(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.split.someSplit"
+func TestAll(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.*"
 
 	mockedRedisClient := mocks.MockClient{
-		GetCall: func(key string) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+		KeysCall: func(pattern string) redis.Result {
+			if pattern != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
 			}
 			return &mocks.MockResultOutput{
-				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit")), nil },
+				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+			}
+		},
+		MGetCall: func(keys []string) redis.Result {
+			if keys[0] != "someprefix.SPLITIO.split1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", keys[0])
+			}
+			if keys[1] != "someprefix.SPLITIO.split2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", keys[1])
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1")),
+						marshalSplit(createSampleSplit("split2")),
+					}, nil
+				},
 			}
 		},
 	}
@@ -83,9 +72,64 @@ func TestGetSplit(t *testing.T) {
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	split := splitStorage.Get("someSplit")
-	if split.Name != "someSplit" {
-		t.Error("Unexpected result")
+	splits := splitStorage.All()
+	if len(splits) != 2 {
+		t.Error("Unexpected size")
+	}
+	if splits[0].Name != "split1" || splits[1].Name != "split2" {
+		t.Error("Unexpected returned splits")
+	}
+}
+
+func TestChangeNumberError(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.splits.till"
+
+	mockedRedisClient := mocks.MockClient{
+		GetCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ResultStringCall: func() (string, error) { return "", errors.New("Some Error") },
+			}
+		},
+	}
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &mockedRedisClient,
+		Prefix: "someprefix",
+	}
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	till, _ := splitStorage.ChangeNumber()
+	if till != -1 {
+		t.Error("Unexpected till")
+	}
+}
+
+func TestChangeNumber(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.splits.till"
+
+	mockedRedisClient := mocks.MockClient{
+		GetCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ResultStringCall: func() (string, error) { return "123456789", nil },
+			}
+		},
+	}
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &mockedRedisClient,
+		Prefix: "someprefix",
+	}
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	till, _ := splitStorage.ChangeNumber()
+	if till != 123456789 {
+		t.Error("Unexpected till")
 	}
 }
 
@@ -162,8 +206,53 @@ func TestFetchMany(t *testing.T) {
 	}
 }
 
-func TestSplittTillError(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.splits.till"
+// TESTPUTMANY
+// TESTREMOVE
+func TestSegmentNames(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.*"
+
+	mockedRedisClient := mocks.MockClient{
+		KeysCall: func(pattern string) redis.Result {
+			if pattern != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+			}
+			return &mocks.MockResultOutput{
+				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+			}
+		},
+		MGetCall: func(keys []string) redis.Result {
+			if keys[0] != "someprefix.SPLITIO.split1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", keys[0])
+			}
+			if keys[1] != "someprefix.SPLITIO.split2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", keys[1])
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1")),
+						marshalSplit(createSampleSplit("split2")),
+					}, nil
+				},
+			}
+		},
+	}
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &mockedRedisClient,
+		Prefix: "someprefix",
+	}
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	segments := splitStorage.SegmentNames()
+	if segments == nil || !segments.IsEqual(set.NewSet("segment")) {
+		t.Error("Incorrect segments")
+		t.Error(segments)
+	}
+}
+
+func TestSplitError(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.someSplit"
 
 	mockedRedisClient := mocks.MockClient{
 		GetCall: func(key string) redis.Result {
@@ -182,14 +271,14 @@ func TestSplittTillError(t *testing.T) {
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := splitStorage.Till()
-	if till != -1 {
-		t.Error("Unexpected till")
+	split := splitStorage.Split("someSplit")
+	if split != nil {
+		t.Error("Unexpected result")
 	}
 }
 
-func TestSplitTill(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.splits.till"
+func TestSplit(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.someSplit"
 
 	mockedRedisClient := mocks.MockClient{
 		GetCall: func(key string) redis.Result {
@@ -197,7 +286,7 @@ func TestSplitTill(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			return &mocks.MockResultOutput{
-				ResultStringCall: func() (string, error) { return "123456789", nil },
+				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit")), nil },
 			}
 		},
 	}
@@ -208,9 +297,9 @@ func TestSplitTill(t *testing.T) {
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
-	till := splitStorage.Till()
-	if till != 123456789 {
-		t.Error("Unexpected till")
+	split := splitStorage.Split("someSplit")
+	if split.Name != "someSplit" {
+		t.Error("Unexpected result")
 	}
 }
 
@@ -266,108 +355,6 @@ func TestSplitNames(t *testing.T) {
 	}
 	if splitNames[0] != "someKey" || splitNames[1] != "someKey2" {
 		t.Error("Unexpected result")
-	}
-}
-
-func TestSegmentNames(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.split.*"
-	var call int64
-
-	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
-			}
-			return &mocks.MockResultOutput{
-				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
-			}
-		},
-		GetCall: func(key string) redis.Result {
-			atomic.AddInt64(&call, 1)
-			switch call {
-			case 1:
-				if key != "someprefix.SPLITIO.split1" {
-					t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", key)
-				}
-				return &mocks.MockResultOutput{
-					ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("split1")), nil },
-				}
-			case 2:
-				if key != "someprefix.SPLITIO.split2" {
-					t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", key)
-				}
-				return &mocks.MockResultOutput{
-					ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("split2")), nil },
-				}
-			default:
-				t.Error("Unexpected call made")
-				return nil
-			}
-		},
-	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
-
-	segments := splitStorage.SegmentNames()
-	if segments == nil || !segments.IsEqual(set.NewSet("segment")) {
-		t.Error("Incorrect segments")
-		t.Error(segments)
-	}
-}
-
-func TestGetAll(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.split.*"
-	var call int64
-
-	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
-			}
-			return &mocks.MockResultOutput{
-				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
-			}
-		},
-		GetCall: func(key string) redis.Result {
-			atomic.AddInt64(&call, 1)
-			switch call {
-			case 1:
-				if key != "someprefix.SPLITIO.split1" {
-					t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", key)
-				}
-				return &mocks.MockResultOutput{
-					ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("split1")), nil },
-				}
-			case 2:
-				if key != "someprefix.SPLITIO.split2" {
-					t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", key)
-				}
-				return &mocks.MockResultOutput{
-					ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("split2")), nil },
-				}
-			default:
-				t.Error("Unexpected call made")
-				return nil
-			}
-		},
-	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
-
-	splits := splitStorage.GetAll()
-	if len(splits) != 2 {
-		t.Error("Unexpected size")
-	}
-	if splits[0].Name != "split1" || splits[1].Name != "split2" {
-		t.Error("Unexpected returned splits")
 	}
 }
 

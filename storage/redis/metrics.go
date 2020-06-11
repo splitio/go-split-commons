@@ -40,12 +40,12 @@ func NewMetricsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Met
 	}
 }
 
-// PutGauge stores a gauge in redis
-func (r *MetricsStorage) PutGauge(key string, gauge float64) {
-	keyToStore := strings.Replace(r.gaugeTemplate, "{metric}", key, 1)
-	err := r.client.Set(keyToStore, gauge, 0)
+// IncCounter incraeses the count for a specific metric
+func (r *MetricsStorage) IncCounter(metric string) {
+	keyToIncr := strings.Replace(r.countersTemplate, "{metric}", metric, 1)
+	_, err := r.client.Incr(keyToIncr)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error storing gauge \"%s\" in redis: %s\n", key, err))
+		r.logger.Error(fmt.Sprintf("Error incrementing counterfor metric \"%s\" in redis: %s", metric, err.Error()))
 	}
 }
 
@@ -53,7 +53,7 @@ func (r *MetricsStorage) PutGauge(key string, gauge float64) {
 func (r *MetricsStorage) IncLatency(metric string, index int) {
 	keyToIncr := strings.Replace(r.latenciesTemplate, "{metric}", metric, 1)
 	keyToIncr = strings.Replace(keyToIncr, "{bucket}", strconv.FormatInt(int64(index), 10), 1)
-	err := r.client.Incr(keyToIncr)
+	_, err := r.client.Incr(keyToIncr)
 	if err != nil {
 		r.logger.Error(fmt.Sprintf(
 			"Error incrementing latency bucket %d for metric \"%s\" in redis: %s", index, metric, err.Error(),
@@ -61,11 +61,26 @@ func (r *MetricsStorage) IncLatency(metric string, index int) {
 	}
 }
 
-// IncCounter incraeses the count for a specific metric
-func (r *MetricsStorage) IncCounter(metric string) {
-	keyToIncr := strings.Replace(r.countersTemplate, "{metric}", metric, 1)
-	err := r.client.Incr(keyToIncr)
+// PopCounters some
+func (r *MetricsStorage) PopCounters() []dtos.CounterDTO {
+	return make([]dtos.CounterDTO, 0)
+}
+
+// PopGauges some
+func (r *MetricsStorage) PopGauges() []dtos.GaugeDTO {
+	return make([]dtos.GaugeDTO, 0)
+}
+
+// PopLatencies some
+func (r *MetricsStorage) PopLatencies() []dtos.LatenciesDTO {
+	return make([]dtos.LatenciesDTO, 0)
+}
+
+// PutGauge stores a gauge in redis
+func (r *MetricsStorage) PutGauge(key string, gauge float64) {
+	keyToStore := strings.Replace(r.gaugeTemplate, "{metric}", key, 1)
+	err := r.client.Set(keyToStore, gauge, 0)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error incrementing counterfor metric \"%s\" in redis: %s", metric, err.Error()))
+		r.logger.Error(fmt.Sprintf("Error storing gauge \"%s\" in redis: %s\n", key, err))
 	}
 }

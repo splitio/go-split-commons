@@ -3,7 +3,6 @@ package redis
 const (
 	redisSplit            = "SPLITIO.split.{split}"                                              // split object
 	redisSplitTill        = "SPLITIO.splits.till"                                                // last split fetch
-	redisSegments         = "SPLITIO.segments.registered"                                        // segments that appear in fetched splits
 	redisSegment          = "SPLITIO.segment.{segment}"                                          // segment object
 	redisSegmentTill      = "SPLITIO.segment.{segment}.till"                                     // last segment fetch
 	redisImpressions      = "SPLITIO/{sdkVersion}/{instanceId}/impressions.{feature}"            // impressions for a feature
@@ -14,6 +13,7 @@ const (
 	redisImpressionsQueue = "SPLITIO.impressions"                                                // impressions LIST key
 	redisImpressionsTTL   = 60                                                                   // impressions default TTL
 	redisTrafficType      = "SPLITIO.trafficType.{trafficType}"                                  // traffic Type fetch
+	redisHash             = "SPLITIO.hash"
 )
 
 const (

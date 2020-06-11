@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -92,90 +91,5 @@ func TestLogImpressions(t *testing.T) {
 	err := impressionStorage.LogImpressions([]dtos.Impression{impression})
 	if err != nil {
 		t.Error("It should not return error")
-	}
-}
-
-func marshalImpression(impresion dtos.ImpressionQueueObject) string {
-	json, _ := json.Marshal(impresion)
-	return string(json)
-}
-
-func TestPopNImpressions(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.impressions"
-	expectedStop := 2
-
-	metadata := dtos.Metadata{
-		SDKVersion:  "go-test",
-		MachineIP:   "1.2.3.4",
-		MachineName: "test",
-	}
-	impression := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment",
-	}
-	queueImpression := dtos.ImpressionQueueObject{
-		Metadata:   metadata,
-		Impression: impression,
-	}
-	queueImpression2 := dtos.ImpressionQueueObject{
-		Metadata: dtos.Metadata{
-			SDKVersion:  "go-test-2",
-			MachineIP:   "1.2.3.4",
-			MachineName: "test",
-		},
-		Impression: impression,
-	}
-
-	mockedRedisClient := mocks.MockClient{
-		LRangeCall: func(key string, start int64, stop int64) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			if start != 0 {
-				t.Errorf("Unexpected start. Expected: %d Actual: %d", 0, start)
-			}
-			if stop != 2 {
-				t.Errorf("Unexpected stop. Expected: %d Actual: %d", expectedStop, stop)
-			}
-			return &mocks.MockResultOutput{
-				MultiCall: func() ([]string, error) {
-					return []string{marshalImpression(queueImpression), marshalImpression(queueImpression), marshalImpression(queueImpression2)}, nil
-				},
-			}
-		},
-		LTrimCall: func(key string, start, stop int64) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			if start != 3 {
-				t.Errorf("Unexpected start. Expected: %d Actual: %d", 3, start)
-			}
-			if stop != -1 {
-				t.Errorf("Unexpected stop. Expected: %d Actual: %d", -1, stop)
-			}
-			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
-			}
-		},
-	}
-
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
-	impressionStorage := NewImpressionStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
-
-	impressions, err := impressionStorage.PopN(3)
-	if err != nil {
-		t.Error("It should not return error")
-	}
-	if len(impressions) != 2 {
-		t.Error("It should return 2 impressions")
 	}
 }
