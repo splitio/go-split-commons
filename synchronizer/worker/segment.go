@@ -109,7 +109,7 @@ func (s *SegmentFetcher) SynchronizeSegments() error {
 	s.logger.Debug("Segment Sync", segmentNames)
 	wg := sync.WaitGroup{}
 	wg.Add(len(segmentNames))
-	failedSegments := make([]string, 0)
+	failedSegments := set.NewThreadSafeSet()
 	for _, name := range segmentNames {
 		conv, ok := name.(string)
 		if !ok {
@@ -123,7 +123,7 @@ func (s *SegmentFetcher) SynchronizeSegments() error {
 			for !ready {
 				err = s.SynchronizeSegment(segmentName, nil)
 				if err != nil {
-					failedSegments = append(failedSegments, segmentName)
+					failedSegments.Add(segmentName)
 				}
 				return
 			}
@@ -131,7 +131,7 @@ func (s *SegmentFetcher) SynchronizeSegments() error {
 	}
 	wg.Wait()
 
-	if len(failedSegments) > 0 {
+	if failedSegments.Size() > 0 {
 		return fmt.Errorf("The following segments failed to be fetched %v", failedSegments)
 	}
 
