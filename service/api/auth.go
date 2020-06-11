@@ -24,11 +24,7 @@ type AuthAPIClient struct {
 }
 
 // NewAuthAPIClient instantiates and return an AuthAPIClient
-func NewAuthAPIClient(
-	apikey string,
-	cfg *conf.AdvancedConfig,
-	logger logging.LoggerInterface,
-) *AuthAPIClient {
+func NewAuthAPIClient(apikey string, cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *AuthAPIClient {
 	return &AuthAPIClient{
 		client: NewHTTPClient(apikey, cfg, getAuthURL(cfg), logger),
 		logger: logger,
