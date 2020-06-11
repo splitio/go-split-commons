@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/sse"
 )
 
 const streamingURL = "https://streaming.split.io/sse"
@@ -18,7 +19,7 @@ func getStreamingURL(cfg *conf.AdvancedConfig) string {
 
 // StreamingClient struct
 type StreamingClient struct {
-	sseClient *SSEClient
+	sseClient *sse.SSEClient
 	logger    logging.LoggerInterface
 }
 
@@ -26,13 +27,13 @@ type StreamingClient struct {
 func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *StreamingClient {
 	sseReady := make(chan struct{}, 1)
 	return &StreamingClient{
-		sseClient: NewSSEClient(getStreamingURL(cfg), sseReady, logger),
+		sseClient: sse.NewSSEClient(getStreamingURL(cfg), sseReady, logger),
 		logger:    logger,
 	}
 }
 
 // ConnectStreaming connects to streaming
-func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncommingMessage func(e Event)) error {
+func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncommingMessage func(e map[string]interface{})) error {
 	params := make(map[string]string)
 	params["channels"] = strings.Join(channelList, ",")
 	params["accessToken"] = token
