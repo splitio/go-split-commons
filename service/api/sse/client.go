@@ -24,8 +24,7 @@ type StreamingClient struct {
 }
 
 // NewStreamingClient creates new SSE Client
-func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *StreamingClient {
-	sseReady := make(chan struct{}, 1)
+func NewStreamingClient(cfg *conf.AdvancedConfig, sseReady chan struct{}, logger logging.LoggerInterface) *StreamingClient {
 	return &StreamingClient{
 		sseClient: sse.NewSSEClient(getStreamingURL(cfg), sseReady, logger),
 		logger:    logger,

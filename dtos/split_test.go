@@ -10,7 +10,6 @@ import (
 
 var splitsMock, _ = ioutil.ReadFile("../testdata/splits_mock.json")
 var splitMock, _ = ioutil.ReadFile("../testdata/split_mock.json")
-var segmentMock, _ = ioutil.ReadFile("../testdata/segment_mock.json")
 
 func TestSplitDTO(t *testing.T) {
 	mockedData := fmt.Sprintf(string(splitsMock), splitMock)
