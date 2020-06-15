@@ -64,16 +64,14 @@ func (p *Processor) Process(i dtos.IncomingNotification) error {
 	case dtos.SplitUpdate:
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
 		p.splitQueue.Put(splitUpdate)
-		// processSplitUpdate
 	case dtos.SegmentUpdate:
 		segmentUpdate := dtos.NewSegmentChangeNotification(i.Channel, *i.ChangeNumber, *i.SegmentName)
 		p.segmentQueue.Put(segmentUpdate)
-		// processSegmentUpdate
 	case dtos.SplitKill:
 		// splitKill := dtos.NewSplitKillNotification(i.Channel, *i.ChangeNumber, *i.DefaultTreatment, *i.SplitName)
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
 		p.splitQueue.Put(splitUpdate)
-		// processSplitKill
+		// killLocally
 	case dtos.Control:
 		control := dtos.NewControlNotification(i.Channel, *i.ControlType)
 		fmt.Println(control)
