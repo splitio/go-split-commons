@@ -11,7 +11,7 @@ import (
 )
 
 type httpFetcherBase struct {
-	client *HTTPClient
+	client Client
 	logger logging.LoggerInterface
 }
 

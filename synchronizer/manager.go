@@ -1,6 +1,8 @@
 package synchronizer
 
 import (
+	"errors"
+
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -16,12 +18,15 @@ func NewSynchronizerManager(
 	sinchronizer Synchronizer,
 	logger logging.LoggerInterface,
 	statusChannel chan string,
-) *Manager {
+) (*Manager, error) {
+	if statusChannel == nil || cap(statusChannel) < 1 {
+		return nil, errors.New("Status channel cannot be nil nor having capacity")
+	}
 	return &Manager{
 		synchronizer:  sinchronizer,
 		logger:        logger,
 		statusChannel: statusChannel,
-	}
+	}, nil
 }
 
 func (s *Manager) startPolling() {
