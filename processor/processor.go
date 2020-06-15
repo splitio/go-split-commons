@@ -11,16 +11,16 @@ import (
 
 // Processor struct for notification processor
 type Processor struct {
-	segmentQueue queue.Queue
-	splitQueue   queue.Queue
+	segmentQueue *queue.Queue
+	splitQueue   *queue.Queue
 	logger       logging.LoggerInterface
 }
 
 // NewProcessor creates new processor
-func NewProcessor(logger logging.LoggerInterface) *Processor {
+func NewProcessor(segmentQueue *queue.Queue, splitQueue *queue.Queue, logger logging.LoggerInterface) *Processor {
 	return &Processor{
-		segmentQueue: queue.NewQueue(dtos.SegmentUpdate, 5000),
-		splitQueue:   queue.NewQueue(dtos.SplitUpdate, 5000),
+		segmentQueue: segmentQueue,
+		splitQueue:   splitQueue,
 		logger:       logger,
 	}
 }
@@ -52,14 +52,14 @@ func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
 	}
 
 	p.logger.Debug("Incomming Notification:", incomingNotification)
-	err = p.Process(incomingNotification)
+	err = p.process(incomingNotification)
 	if err != nil {
 		p.logger.Error(err)
 	}
 }
 
 // Process takes an incoming notification and generates appropriate notifications for it.
-func (p *Processor) Process(i dtos.IncomingNotification) error {
+func (p *Processor) process(i dtos.IncomingNotification) error {
 	switch i.Type {
 	case dtos.SplitUpdate:
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)

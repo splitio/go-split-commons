@@ -3,6 +3,8 @@ package processor
 import (
 	"testing"
 
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/queue"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -46,48 +48,50 @@ func wrapEvent(channel string, data string) map[string]interface{} {
 }
 
 func TestHandleIncomingMessage(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
-	p := NewProcessor(logger)
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	segmentQueue := queue.NewQueue(dtos.SegmentUpdate, 5000)
+	splitQueue := queue.NewQueue(dtos.SplitUpdate, 5000)
+	p := NewProcessor(segmentQueue, splitQueue, logger)
 
 	e0 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "")
 	p.HandleIncomingMessage(e0)
-	if p.splitQueue.Size() != 0 {
+	if splitQueue.Size() != 0 {
 		t.Error("It should be 0")
 	}
-	if p.segmentQueue.Size() != 0 {
+	if segmentQueue.Size() != 0 {
 		t.Error("It should be 0")
 	}
 
 	e0 = wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"WRONG\"}")
 	p.HandleIncomingMessage(e0)
-	if p.splitQueue.Size() != 0 {
+	if splitQueue.Size() != 0 {
 		t.Error("It should be 0")
 	}
-	if p.segmentQueue.Size() != 0 {
+	if segmentQueue.Size() != 0 {
 		t.Error("It should be 0")
 	}
 
 	e1 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_KILL\",\"changeNumber\":1591996754396,\"defaultTreatment\":\"INITIALIZATION_STEP\",\"splitName\":\"PUSH_TEST_2\"}")
 	p.HandleIncomingMessage(e1)
-	if p.splitQueue.Size() != 1 {
+	if splitQueue.Size() != 1 {
 		t.Error("It should be 1")
 	}
-	if p.segmentQueue.Size() != 0 {
+	if segmentQueue.Size() != 0 {
 		t.Error("It should be 0")
 	}
 
 	e2 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1591996685190}")
 	p.HandleIncomingMessage(e2)
-	if p.splitQueue.Size() != 2 {
+	if splitQueue.Size() != 2 {
 		t.Error("It should be 2")
 	}
 
 	e3 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"PUSH_SEGMENT_CSV_MULTIPLE\"}")
 	p.HandleIncomingMessage(e3)
-	if p.segmentQueue.Size() != 1 {
+	if segmentQueue.Size() != 1 {
 		t.Error("It should be 1")
 	}
-	if p.splitQueue.Size() != 2 {
+	if splitQueue.Size() != 2 {
 		t.Error("It should be 2")
 	}
 }

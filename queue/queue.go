@@ -13,8 +13,8 @@ type Queue struct {
 }
 
 // NewQueue creates new queue
-func NewQueue(name string, size int64) Queue {
-	return Queue{
+func NewQueue(name string, size int64) *Queue {
+	return &Queue{
 		name:  name,
 		queue: make(chan dtos.Notification, size),
 	}
