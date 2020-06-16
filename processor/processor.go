@@ -9,6 +9,10 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
+const (
+	keepalive = "keepalive"
+)
+
 // Processor struct for notification processor
 type Processor struct {
 	segmentQueue *queue.Queue
@@ -25,20 +29,34 @@ func NewProcessor(segmentQueue *queue.Queue, splitQueue *queue.Queue, logger log
 	}
 }
 
+func (p *Processor) getData(data interface{}) *string {
+	if data == nil {
+		return nil
+	}
+
+	str, ok := data.(string)
+	if !ok {
+		return nil
+	}
+	return &str
+}
+
 // HandleIncomingMessage handles incoming message from streaming
 func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
-	if event["data"] == nil {
-		p.logger.Error("data is not present in incoming notification")
-		return
+	keepAliveEvent := p.getData(event["event"])
+	if keepAliveEvent != nil {
+		// Reset Timer Connection
+		p.logger.Info("RESET TIMER")
 	}
-	strEvent, ok := event["data"].(string)
-	if !ok {
-		p.logger.Error("wrong type of data")
+
+	updateEvent := p.getData(event["data"])
+	if updateEvent == nil {
+		p.logger.Error("data is not present in incoming notification")
 		return
 	}
 
 	var incomingNotification dtos.IncomingNotification
-	err := json.Unmarshal([]byte(strEvent), &incomingNotification)
+	err := json.Unmarshal([]byte(*updateEvent), &incomingNotification)
 	if err != nil {
 		p.logger.Error("cannot parse data as IncomingNotification type")
 		return
