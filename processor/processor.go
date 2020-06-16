@@ -2,10 +2,11 @@ package processor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/queue"
+	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -15,18 +16,27 @@ const (
 
 // Processor struct for notification processor
 type Processor struct {
-	segmentQueue *queue.Queue
-	splitQueue   *queue.Queue
+	segmentQueue chan dtos.SegmentChangeNotification
+	splitQueue   chan dtos.SplitChangeNotification
+	splitStorage storage.SplitStorageProducer
 	logger       logging.LoggerInterface
 }
 
 // NewProcessor creates new processor
-func NewProcessor(segmentQueue *queue.Queue, splitQueue *queue.Queue, logger logging.LoggerInterface) *Processor {
+func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer, logger logging.LoggerInterface) (*Processor, error) {
+	if cap(segmentQueue) < 5000 {
+		return nil, errors.New("Small size of segmentQueue")
+	}
+	if cap(splitQueue) < 5000 {
+		return nil, errors.New("Small size of splitQueue")
+	}
+
 	return &Processor{
 		segmentQueue: segmentQueue,
 		splitQueue:   splitQueue,
+		splitStorage: splitStorage,
 		logger:       logger,
-	}
+	}, nil
 }
 
 func (p *Processor) getData(data interface{}) *string {
@@ -81,15 +91,14 @@ func (p *Processor) process(i dtos.IncomingNotification) error {
 	switch i.Type {
 	case dtos.SplitUpdate:
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
-		p.splitQueue.Put(splitUpdate)
+		p.splitQueue <- splitUpdate
 	case dtos.SegmentUpdate:
 		segmentUpdate := dtos.NewSegmentChangeNotification(i.Channel, *i.ChangeNumber, *i.SegmentName)
-		p.segmentQueue.Put(segmentUpdate)
+		p.segmentQueue <- segmentUpdate
 	case dtos.SplitKill:
-		// splitKill := dtos.NewSplitKillNotification(i.Channel, *i.ChangeNumber, *i.DefaultTreatment, *i.SplitName)
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
-		p.splitQueue.Put(splitUpdate)
-		// killLocally
+		p.splitStorage.KillLocally(*i.SplitName, *i.DefaultTreatment)
+		p.splitQueue <- splitUpdate
 	case dtos.Control:
 		control := dtos.NewControlNotification(i.Channel, *i.ControlType)
 		fmt.Println(control)

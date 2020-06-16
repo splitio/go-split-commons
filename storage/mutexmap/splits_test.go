@@ -79,6 +79,34 @@ func TestMMSplitStorage(t *testing.T) {
 	}
 }
 
+func TestSplitKillLocally(t *testing.T) {
+	splitStorage := NewMMSplitStorage()
+
+	splitStorage.PutMany([]dtos.SplitDTO{{
+		Name:             "some",
+		Algo:             1,
+		DefaultTreatment: "defaultTreatment",
+		Killed:           false,
+	}}, 12345678)
+
+	fetchedSplit := splitStorage._get("some")
+	if fetchedSplit.Killed {
+		t.Error("It should not be killed")
+	}
+	if fetchedSplit.DefaultTreatment != "defaultTreatment" {
+		t.Error("It should be defaultTreatment")
+	}
+
+	splitStorage.KillLocally("some", "anotherDefaultTreatment")
+	fetchedKilled := splitStorage._get("some")
+	if !fetchedKilled.Killed {
+		t.Error("It should be killed")
+	}
+	if fetchedKilled.DefaultTreatment != "anotherDefaultTreatment" {
+		t.Error("It should be anotherDefaultTreatment")
+	}
+}
+
 func TestSplitMutexMapConcurrency(t *testing.T) {
 	splitStorage := NewMMSplitStorage()
 	splits := make([]dtos.SplitDTO, 0, 10)
@@ -87,7 +115,6 @@ func TestSplitMutexMapConcurrency(t *testing.T) {
 			Name: fmt.Sprintf("SomeSplit_%d", index),
 			Algo: index,
 		})
-
 	}
 
 	iterations := 100000

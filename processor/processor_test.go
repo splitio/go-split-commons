@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/queue"
+	"github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -34,49 +34,59 @@ func TestKeepAliveMessage(t *testing.T) {
 
 func TestHandleIncomingMessage(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	segmentQueue := queue.NewQueue(dtos.SegmentUpdate, 5000)
-	splitQueue := queue.NewQueue(dtos.SplitUpdate, 5000)
-	p := NewProcessor(segmentQueue, splitQueue, logger)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
+	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
+	splitStorage := mocks.MockSplitStorage{
+		KillLocallyCall: func(splitName, defaultTreatment string) {
+			if splitName != "test" {
+				t.Error("Wrong splitName passed")
+			}
+			if defaultTreatment != "some" {
+				t.Error("Wrong defaultTreatment passed")
+			}
+		},
+	}
+	p, _ := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
 
 	e0 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "")
 	p.HandleIncomingMessage(e0)
-	if splitQueue.Size() != 0 {
+	if len(segmentQueue) != 0 {
 		t.Error("It should be 0")
 	}
-	if segmentQueue.Size() != 0 {
+	if len(splitQueue) != 0 {
 		t.Error("It should be 0")
 	}
 
 	e0 = wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"WRONG\"}")
 	p.HandleIncomingMessage(e0)
-	if splitQueue.Size() != 0 {
+	if len(segmentQueue) != 0 {
 		t.Error("It should be 0")
 	}
-	if segmentQueue.Size() != 0 {
+	if len(splitQueue) != 0 {
 		t.Error("It should be 0")
 	}
 
-	e1 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_KILL\",\"changeNumber\":1591996754396,\"defaultTreatment\":\"INITIALIZATION_STEP\",\"splitName\":\"PUSH_TEST_2\"}")
+	e1 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_KILL\",\"changeNumber\":1591996754396,\"defaultTreatment\":\"some\",\"splitName\":\"test\"}")
 	p.HandleIncomingMessage(e1)
-	if splitQueue.Size() != 1 {
+	if len(splitQueue) != 1 {
 		t.Error("It should be 1")
 	}
-	if segmentQueue.Size() != 0 {
+	if len(segmentQueue) != 0 {
 		t.Error("It should be 0")
 	}
 
 	e2 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1591996685190}")
 	p.HandleIncomingMessage(e2)
-	if splitQueue.Size() != 2 {
+	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
 	}
 
-	e3 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"PUSH_SEGMENT_CSV_MULTIPLE\"}")
+	e3 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"some\"}")
 	p.HandleIncomingMessage(e3)
-	if segmentQueue.Size() != 1 {
+	if len(segmentQueue) != 1 {
 		t.Error("It should be 1")
 	}
-	if splitQueue.Size() != 2 {
+	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
 	}
 }

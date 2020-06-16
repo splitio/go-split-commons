@@ -72,6 +72,18 @@ func (m *MMSplitStorage) FetchMany(splitNames []string) map[string]*dtos.SplitDT
 	return splits
 }
 
+// KillLocally kills the split locally
+func (m *MMSplitStorage) KillLocally(splitName string, defaultTreatment string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	split := m._get(splitName)
+	if split != nil {
+		split.DefaultTreatment = defaultTreatment
+		split.Killed = true
+		m.data[split.Name] = *split
+	}
+}
+
 // increaseTrafficTypeCount increases value for a traffic type
 func (m *MMSplitStorage) increaseTrafficTypeCount(trafficType string) {
 	m.ttMutex.Lock()
