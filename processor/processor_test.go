@@ -20,18 +20,6 @@ func wrapEvent(channel string, data string) map[string]interface{} {
 	return event
 }
 
-/*
-func TestKeepAliveMessage(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-	segmentQueue := queue.NewQueue(dtos.SegmentUpdate, 5000)
-	splitQueue := queue.NewQueue(dtos.SplitUpdate, 5000)
-	p := NewProcessor(segmentQueue, splitQueue, logger)
-	event := make(map[string]interface{})
-	event["event"] = keepalive
-	p.HandleIncomingMessage(event)
-}
-*/
-
 func TestHandleIncomingMessage(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
