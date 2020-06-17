@@ -132,7 +132,7 @@ func (s *SegmentFetcher) SynchronizeSegments() error {
 	wg.Wait()
 
 	if failedSegments.Size() > 0 {
-		return fmt.Errorf("The following segments failed to be fetched %v", failedSegments)
+		return fmt.Errorf("The following segments failed to be fetched %v", failedSegments.List())
 	}
 
 	return nil
