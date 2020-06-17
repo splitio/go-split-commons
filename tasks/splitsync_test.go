@@ -83,7 +83,7 @@ func TestSplitSyncTask(t *testing.T) {
 
 	splitTask.Stop(false)
 	time.Sleep(time.Second * 1)
-	if call <= 0 {
+	if atomic.LoadInt64(&call) <= 0 {
 		t.Error("Request not received")
 	}
 

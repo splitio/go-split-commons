@@ -28,6 +28,9 @@ func (t *Token) ChannelList() ([]string, error) {
 	}
 
 	tokenParts := strings.Split(t.Token, ".")
+	if len(tokenParts) < 1 {
+		return nil, errors.New("Cannot decode token")
+	}
 	decodedPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
 	if err != nil {
 		return nil, err
