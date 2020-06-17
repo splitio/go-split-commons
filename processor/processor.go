@@ -54,7 +54,7 @@ func (p *Processor) getData(data interface{}) *string {
 // HandleIncomingMessage handles incoming message from streaming
 func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
 	keepAliveEvent := p.getData(event["event"])
-	if keepAliveEvent != nil {
+	if keepAliveEvent != nil && *keepAliveEvent == keepalive {
 		// Reset Timer Connection
 		p.logger.Info("RESET TIMER")
 	}

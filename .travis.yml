@@ -10,4 +10,4 @@ install:
   - dep ensure
 
 script:
-  - go test -v -cover $(go list ./... | grep -v /vendor/)
+  - go test -v -cover $(go list ./... | grep -v /vendor/) -race
