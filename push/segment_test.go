@@ -1,30 +1,28 @@
-package worker
+package push
 
 import (
 	"testing"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/synchronizer/mocks"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestSegmentUpdateWorker(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
 	segmentQUeue := make(chan dtos.SegmentChangeNotification, 5000)
-	mockedSync := mocks.MockSynchronizer{
-		SynchronizeSegmentCall: func(segmentName string, till *int64) error {
-			if segmentName != "some" {
-				t.Error("Unexpected segment name")
-			}
-			if *till != 123456789 {
-				t.Error("Unexpected till")
-			}
-			return nil
-		},
+
+	segmentHandler := func(segmentName string, till *int64) error {
+		if segmentName != "some" {
+			t.Error("Unexpected segment name")
+		}
+		if *till != 123456789 {
+			t.Error("Unexpected till")
+		}
+		return nil
 	}
 
-	segmentWorker, _ := NewSegmentUpdateWorker(segmentQUeue, mockedSync, logger)
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQUeue, segmentHandler, logger)
 	segmentWorker.Start()
 	segmentQUeue <- dtos.NewSegmentChangeNotification("some", 123456789, "some")
 

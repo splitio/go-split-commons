@@ -11,8 +11,8 @@ import (
 const streamingURL = "https://streaming.split.io/sse"
 
 func getStreamingURL(cfg *conf.AdvancedConfig) string {
-	if cfg != nil && cfg.StreamingURL != "" {
-		return cfg.StreamingURL
+	if cfg != nil && cfg.StreamingServiceURL != "" {
+		return cfg.StreamingServiceURL
 	}
 	return streamingURL
 }

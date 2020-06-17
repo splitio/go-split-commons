@@ -72,6 +72,7 @@ type AdvancedConfig struct {
 	EventsQueueSize      int
 	ImpressionsQueueSize int
 	ImpressionsBulkSize  int64
-	AuthURL              string
-	StreamingURL         string
+	StreamingEnabled     bool
+	AuthServiceURL       string
+	StreamingServiceURL  string
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
+	"github.com/splitio/go-split-commons/service/mocks"
 	httpMocks "github.com/splitio/go-split-commons/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-toolkit/datastructures/set"
@@ -25,6 +26,7 @@ func TestPolling(t *testing.T) {
 	var segmentFetchCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
@@ -99,7 +101,7 @@ func TestPolling(t *testing.T) {
 	}
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
 		&splitAPI,
 		storageMock.MockSplitStorage{
 			ChangeNumberCall: func() (int64, error) {
@@ -202,6 +204,13 @@ func TestPolling(t *testing.T) {
 		syncForTest,
 		logger,
 		readyChannel,
+		advanced,
+		mocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return nil, nil
+			},
+		},
+		storageMock.MockSplitStorage{},
 	)
 	managerTest.Start()
 

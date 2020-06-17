@@ -23,7 +23,7 @@ func TestStreamingError(t *testing.T) {
 	defer ts.Close()
 
 	mocked := &conf.AdvancedConfig{
-		StreamingURL: ts.URL,
+		StreamingServiceURL: ts.URL,
 	}
 	mockedClient := NewStreamingClient(mocked, make(chan struct{}), logger)
 
@@ -68,7 +68,7 @@ func TestStreamingOk(t *testing.T) {
 	defer ts.Close()
 
 	mocked := &conf.AdvancedConfig{
-		StreamingURL: ts.URL,
+		StreamingServiceURL: ts.URL,
 	}
 	mockedClient = NewStreamingClient(mocked, sseReady, logger)
 

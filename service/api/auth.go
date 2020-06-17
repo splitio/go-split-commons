@@ -11,8 +11,8 @@ import (
 const prodAuthURL = "https://auth.split-stage.io"
 
 func getAuthURL(cfg *conf.AdvancedConfig) string {
-	if cfg != nil && cfg.AuthURL != "" {
-		return cfg.AuthURL
+	if cfg != nil && cfg.AuthServiceURL != "" {
+		return cfg.AuthServiceURL
 	}
 	return prodAuthURL
 }

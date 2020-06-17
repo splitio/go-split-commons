@@ -1,4 +1,4 @@
-package worker
+package push
 
 import (
 	"errors"
@@ -7,30 +7,29 @@ import (
 	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/synchronizer"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 // SegmentUpdateWorker struct
 type SegmentUpdateWorker struct {
-	activeGoroutines    *sync.WaitGroup
-	segmentQueue        chan dtos.SegmentChangeNotification
-	segmentSynchronizer synchronizer.Synchronizer
-	shouldKeepRunning   int64
-	logger              logging.LoggerInterface
+	activeGoroutines  *sync.WaitGroup
+	segmentQueue      chan dtos.SegmentChangeNotification
+	handler           func(segmentName string, till *int64) error
+	shouldKeepRunning int64
+	logger            logging.LoggerInterface
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
-func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, segmentSynchronizer synchronizer.Synchronizer, logger logging.LoggerInterface) (*SegmentUpdateWorker, error) {
+func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, handler func(segmentName string, till *int64) error, logger logging.LoggerInterface) (*SegmentUpdateWorker, error) {
 	if cap(segmentQueue) < 5000 {
 		return nil, errors.New("")
 	}
 
 	return &SegmentUpdateWorker{
-		activeGoroutines:    &sync.WaitGroup{},
-		segmentQueue:        segmentQueue,
-		segmentSynchronizer: segmentSynchronizer,
-		logger:              logger,
+		activeGoroutines: &sync.WaitGroup{},
+		segmentQueue:     segmentQueue,
+		handler:          handler,
+		logger:           logger,
 	}, nil
 }
 
@@ -48,7 +47,7 @@ func (s *SegmentUpdateWorker) Start() {
 			segmentUpdate := <-s.segmentQueue
 			s.logger.Debug("Received Segment update and proceding to perform fetch")
 			s.logger.Debug(fmt.Sprintf("SegmentName: %s\nChangeNumber: %d", segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber))
-			err := s.segmentSynchronizer.SynchronizeSegment(segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber)
+			err := s.handler(segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber)
 			if err != nil {
 				s.logger.Error(err)
 			}

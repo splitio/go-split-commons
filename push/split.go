@@ -1,4 +1,4 @@
-package worker
+package push
 
 import (
 	"errors"
@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/synchronizer"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -15,22 +14,22 @@ import (
 type SplitUpdateWorker struct {
 	activeGoroutines  *sync.WaitGroup
 	splitQueue        chan dtos.SplitChangeNotification
-	splitSynchronizer synchronizer.Synchronizer
+	handler           func(till *int64) error
 	shouldKeepRunning int64
 	logger            logging.LoggerInterface
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
-func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, splitSynchronizer synchronizer.Synchronizer, logger logging.LoggerInterface) (*SplitUpdateWorker, error) {
+func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler func(till *int64) error, logger logging.LoggerInterface) (*SplitUpdateWorker, error) {
 	if cap(splitQueue) < 5000 {
 		return nil, errors.New("")
 	}
 
 	return &SplitUpdateWorker{
-		activeGoroutines:  &sync.WaitGroup{},
-		splitQueue:        splitQueue,
-		splitSynchronizer: splitSynchronizer,
-		logger:            logger,
+		activeGoroutines: &sync.WaitGroup{},
+		splitQueue:       splitQueue,
+		handler:          handler,
+		logger:           logger,
 	}, nil
 }
 
@@ -50,7 +49,7 @@ func (s *SplitUpdateWorker) Start() {
 			splitUpdate := <-s.splitQueue
 			s.logger.Debug("Received Split update and proceding to perform fetch")
 			s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", &splitUpdate.ChangeNumber))
-			err := s.splitSynchronizer.SynchronizeSplits(&splitUpdate.ChangeNumber)
+			err := s.handler(&splitUpdate.ChangeNumber)
 			if err != nil {
 				s.logger.Error(err)
 			}
