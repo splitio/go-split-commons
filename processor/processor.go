@@ -57,6 +57,7 @@ func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
 	if keepAliveEvent != nil {
 		// Reset Timer Connection
 		p.logger.Info("RESET TIMER")
+		return
 	}
 
 	updateEvent := p.getData(event["data"])

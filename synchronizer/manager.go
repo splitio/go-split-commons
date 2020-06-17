@@ -58,12 +58,14 @@ func (s *Manager) Start() error {
 	}()
 
 	if s.config.StreamingEnabled && token.PushEnabled {
-		s.logger.Info("Start Streaming")
 		channels, err := token.ChannelList()
 		if err == nil {
+			s.logger.Info("Start Streaming")
 			s.pushManager.Start(token.Token, channels)
+			s.logger.Info("Streaming started")
 			return nil
 		}
+		s.logger.Error("Error occured starting streaming", err)
 	}
 
 	s.logger.Info("Start periodic polling")

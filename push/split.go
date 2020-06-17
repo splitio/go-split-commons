@@ -35,6 +35,7 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 
 // Start starts worker
 func (s *SplitUpdateWorker) Start() {
+	s.logger.Info("Started SplitUpdateWorker")
 	if s.IsRunning() {
 		s.logger.Info("Split worker is already running")
 		return
@@ -43,8 +44,6 @@ func (s *SplitUpdateWorker) Start() {
 	atomic.StoreInt64(&s.shouldKeepRunning, 1)
 	go func() {
 		defer s.activeGoroutines.Done()
-		s.logger.Debug(atomic.LoadInt64(&s.shouldKeepRunning))
-		s.logger.Debug(atomic.LoadInt64(&s.shouldKeepRunning) == 1)
 		for atomic.LoadInt64(&s.shouldKeepRunning) == 1 {
 			splitUpdate := <-s.splitQueue
 			s.logger.Debug("Received Split update and proceding to perform fetch")

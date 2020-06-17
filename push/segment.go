@@ -35,6 +35,7 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 
 // Start starts worker
 func (s *SegmentUpdateWorker) Start() {
+	s.logger.Info("Started SegmentUpdateWorker")
 	if s.IsRunning() {
 		s.logger.Info("Segment worker is already running")
 		return

@@ -30,9 +30,18 @@ func NewPushManager(
 ) *PushManager {
 	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
-	processor, _ := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
-	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
-	splitWorker, _ := NewSplitUpdateWorker(splitQueue, synchronizeSplitsHandler, logger)
+	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	if err != nil {
+		logger.Error("Err creating processor", err)
+	}
+	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
+	if err != nil {
+		logger.Error("Err creating segmentWorker", err)
+	}
+	splitWorker, err := NewSplitUpdateWorker(splitQueue, synchronizeSplitsHandler, logger)
+	if err != nil {
+		logger.Error("Err creating splitWorker", err)
+	}
 
 	return &PushManager{
 		sseClient:     sse.NewStreamingClient(config, make(chan struct{}, 1), logger),
@@ -45,10 +54,9 @@ func NewPushManager(
 
 // Start push services
 func (p *PushManager) Start(token string, channels []string) error {
-	err := p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
-	if err == nil {
-		return err
-	}
+	p.logger.Info("CHANNELS:", channels)
+	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
+
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
 	return nil
@@ -56,6 +64,7 @@ func (p *PushManager) Start(token string, channels []string) error {
 
 // Stop push services
 func (p *PushManager) Stop() {
+	p.logger.Error("CALLED STOP")
 	p.sseClient.StopStreaming()
 	p.splitWorker.Stop()
 	p.segmentWorker.Stop()
