@@ -76,6 +76,34 @@ func TestMMSplitStorage(t *testing.T) {
 	}
 }
 
+func TestSplitKillLocally(t *testing.T) {
+	splitStorage := NewMMSplitStorage()
+
+	splitStorage.PutMany([]dtos.SplitDTO{{
+		Name:             "some",
+		Algo:             1,
+		DefaultTreatment: "defaultTreatment",
+		Killed:           false,
+	}}, 12345678)
+
+	fetchedSplit := splitStorage._get("some")
+	if fetchedSplit.Killed {
+		t.Error("It should not be killed")
+	}
+	if fetchedSplit.DefaultTreatment != "defaultTreatment" {
+		t.Error("It should be defaultTreatment")
+	}
+
+	splitStorage.KillLocally("some", "anotherDefaultTreatment")
+	fetchedKilled := splitStorage._get("some")
+	if !fetchedKilled.Killed {
+		t.Error("It should be killed")
+	}
+	if fetchedKilled.DefaultTreatment != "anotherDefaultTreatment" {
+		t.Error("It should be anotherDefaultTreatment")
+	}
+}
+
 func TestTrafficTypeOnUpdates(t *testing.T) {
 	s1 := dtos.SplitDTO{
 		Name:            "s1",
