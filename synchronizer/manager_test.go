@@ -14,6 +14,26 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
+func TestSyncError(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	manager, err := NewSynchronizerManager(&SynchronizerImpl{}, logger, nil)
+	if err == nil {
+		t.Error("It should return err")
+	}
+	if manager != nil {
+		t.Error("It should be nil")
+	}
+
+	manager, err = NewSynchronizerManager(&SynchronizerImpl{}, logger, make(chan string))
+	if err == nil {
+		t.Error("It should return err")
+	}
+	if manager != nil {
+		t.Error("It should be nil")
+	}
+}
+
 func TestPolling(t *testing.T) {
 	var shouldBeReady int64
 	var impressionsCalled int64
@@ -198,7 +218,7 @@ func TestPolling(t *testing.T) {
 	)
 
 	readyChannel := make(chan string, 1)
-	managerTest := NewSynchronizerManager(
+	managerTest, _ := NewSynchronizerManager(
 		syncForTest,
 		logger,
 		readyChannel,

@@ -27,33 +27,22 @@
 
 [[projects]]
   branch = "modularization"
-  digest = "1:e3989245071ea320718d7f199d056d9d3bc247937bef2f0cc34b8ae913f38dd2"
+  digest = "1:2ffcbcfce9056ac727fbadf0bc3c3e7d3877d6ec45473fba09a264039257cb77"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
     "datastructures/set",
     "deepcopy",
     "logging",
+    "queuecache",
     "redis",
     "redis/helpers",
     "redis/mocks",
+    "sse",
     "workerpool",
   ]
   pruneopts = ""
-  revision = "f2a2688be5ffaf0593f7549a48e7c3b4dc5aaedc"
-
-[[projects]]
-  digest = "1:25767798b44837eea0f7b801d327ccd3136dfade65e780b8ed94b606fbaea65a"
-  name = "github.com/splitio/split-synchronizer"
-  packages = [
-    "appcontext",
-    "conf",
-    "log",
-    "splitio",
-  ]
-  pruneopts = ""
-  revision = "1e7b3999d26aa75d4f2443357a79e98a76c95e44"
-  version = "2.0.0"
+  revision = "98d7264450789a008eb5f4109ba5ab86a5db3bde"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -72,11 +61,12 @@
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/deepcopy",
     "github.com/splitio/go-toolkit/logging",
+    "github.com/splitio/go-toolkit/queuecache",
     "github.com/splitio/go-toolkit/redis",
     "github.com/splitio/go-toolkit/redis/helpers",
     "github.com/splitio/go-toolkit/redis/mocks",
+    "github.com/splitio/go-toolkit/sse",
     "github.com/splitio/go-toolkit/workerpool",
-    "github.com/splitio/split-synchronizer/log",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"
