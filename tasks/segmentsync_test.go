@@ -117,7 +117,7 @@ func TestSegmentSyncTask(t *testing.T) {
 
 	segmentTask.Stop(false)
 	time.Sleep(time.Second * 1)
-	if s1Requested != 2 && s2Requested != 2 {
+	if atomic.LoadInt64(&s1Requested) != 2 && atomic.LoadInt64(&s2Requested) != 2 {
 		t.Error("It should call fetch twice")
 	}
 	if segmentTask.IsRunning() {

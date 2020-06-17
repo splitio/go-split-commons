@@ -15,6 +15,7 @@ type PushManager struct {
 	processor     *processor.Processor
 	segmentWorker *SegmentUpdateWorker
 	splitWorker   *SplitUpdateWorker
+	ready         chan struct{}
 	logger        logging.LoggerInterface
 }
 
@@ -43,11 +44,14 @@ func NewPushManager(
 		logger.Error("Err creating splitWorker", err)
 	}
 
+	ready := make(chan struct{}, 1)
+
 	return &PushManager{
-		sseClient:     sse.NewStreamingClient(config, make(chan struct{}, 1), logger),
+		sseClient:     sse.NewStreamingClient(config, ready, logger),
 		processor:     processor,
 		segmentWorker: segmentWorker,
 		splitWorker:   splitWorker,
+		ready:         ready,
 		logger:        logger,
 	}
 }
@@ -57,6 +61,9 @@ func (p *PushManager) Start(token string, channels []string) error {
 	p.logger.Info("CHANNELS:", channels)
 	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
 
+	p.logger.Info("WAITING FOR READY")
+	<-p.ready
+	p.logger.Info("READY FOR WORKERS")
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
 	return nil
@@ -66,6 +73,10 @@ func (p *PushManager) Start(token string, channels []string) error {
 func (p *PushManager) Stop() {
 	p.logger.Error("CALLED STOP")
 	p.sseClient.StopStreaming()
-	p.splitWorker.Stop()
-	p.segmentWorker.Stop()
+	if p.splitWorker.IsRunning() {
+		p.splitWorker.Stop()
+	}
+	if p.segmentWorker.IsRunning() {
+		p.segmentWorker.Stop()
+	}
 }

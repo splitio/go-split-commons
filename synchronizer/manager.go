@@ -1,6 +1,8 @@
 package synchronizer
 
 import (
+	"errors"
+
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
 	"github.com/splitio/go-split-commons/service"
@@ -26,7 +28,10 @@ func NewSynchronizerManager(
 	config conf.AdvancedConfig,
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
-) *Manager {
+) (*Manager, error) {
+	if statusChannel == nil || cap(statusChannel) < 1 {
+		return nil, errors.New("Status channel cannot be nil nor having capacity")
+	}
 	return &Manager{
 		synchronizer:  synchronizer,
 		logger:        logger,
@@ -34,7 +39,7 @@ func NewSynchronizerManager(
 		config:        config,
 		authClient:    authClient,
 		pushManager:   push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config),
-	}
+	}, nil
 }
 
 func (s *Manager) startPolling() {
@@ -48,21 +53,18 @@ func (s *Manager) Start() error {
 		return err
 	}
 
-	go func() {
-		err = s.synchronizer.SyncAll()
-		if err != nil {
-			s.statusChannel <- "ERROR"
-		}
-		s.synchronizer.StartPeriodicDataRecording()
-		s.statusChannel <- "READY"
-	}()
+	err = s.synchronizer.SyncAll()
+	if err != nil {
+		s.statusChannel <- "ERROR"
+	}
+	s.synchronizer.StartPeriodicDataRecording()
+	s.statusChannel <- "READY"
 
 	if s.config.StreamingEnabled && token.PushEnabled {
 		channels, err := token.ChannelList()
 		if err == nil {
 			s.logger.Info("Start Streaming")
 			s.pushManager.Start(token.Token, channels)
-			s.logger.Info("Streaming started")
 			return nil
 		}
 		s.logger.Error("Error occured starting streaming", err)
@@ -76,6 +78,7 @@ func (s *Manager) Start() error {
 // Stop stop synchronizaation through Split
 func (s *Manager) Stop() {
 	s.logger.Debug("STOPPING PERIODIC TASKS")
+	s.pushManager.Stop()
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
 }

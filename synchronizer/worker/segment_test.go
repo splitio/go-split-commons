@@ -177,10 +177,10 @@ func TestSegmentSynchronizer(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	if s1Requested != 2 {
+	if atomic.LoadInt64(&s1Requested) != 2 {
 		t.Error("Should be called twice")
 	}
-	if s2Requested != 2 {
+	if atomic.LoadInt64(&s2Requested) != 2 {
 		t.Error("Should be called twice")
 	}
 }
@@ -272,7 +272,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		t.Error("Segment S1 stored/retrieved incorrectly")
 	}
 
-	if s1Requested != 1 {
+	if atomic.LoadInt64(&s1Requested) != 1 {
 		t.Error("Should be called once")
 	}
 
@@ -286,7 +286,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		t.Error("Unexpected segment keys")
 	}
 
-	if s1Requested != 2 {
+	if atomic.LoadInt64(&s1Requested) != 2 {
 		t.Error("Should be called twice")
 	}
 }
