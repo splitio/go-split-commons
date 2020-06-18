@@ -25,13 +25,23 @@ func TestStreamingError(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, make(chan struct{}), logger)
 
-	err := mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	sseError := make(chan error, 1)
+	mockedClient := NewStreamingClient(mocked, make(chan struct{}), sseError, logger)
+
+	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		t.Error("Should not execute callback")
 	})
+
+	time.Sleep(200 * time.Millisecond)
+
+	err := <-sseError
 	if err == nil || err.Error() != "Could not connect to streaming" {
 		t.Error("Unexpected error")
+	}
+
+	if mockedClient.IsRunning() {
+		t.Error("It should not be running")
 	}
 }
 
@@ -45,7 +55,9 @@ func TestStreamingOk(t *testing.T) {
 	var mockedClient *StreamingClient
 
 	sseReady := make(chan struct{}, 1)
+	sseError := make(chan error, 1)
 	var sseReadyReceived int64
+	var sseErrorReceived int64
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -70,7 +82,7 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient = NewStreamingClient(mocked, sseReady, logger)
+	mockedClient = NewStreamingClient(mocked, sseReady, sseError, logger)
 
 	var result map[string]interface{}
 
@@ -79,22 +91,32 @@ func TestStreamingOk(t *testing.T) {
 			select {
 			case <-sseReady:
 				atomic.AddInt64(&sseReadyReceived, 1)
+			case <-sseError:
+				atomic.AddInt64(&sseErrorReceived, 1)
 			default:
 			}
 		}
 	}()
 
-	err := mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		result = e
 	})
+	if !mockedClient.IsRunning() {
+		t.Error("It should be running")
+	}
 
+	time.Sleep(500 * time.Millisecond)
+
+	if mockedClient.IsRunning() {
+		t.Error("It should not be running")
+	}
+	if atomic.LoadInt64(&sseErrorReceived) != 0 {
+		t.Error("It should not have error")
+	}
 	if atomic.LoadInt64(&sseReadyReceived) != 1 {
 		t.Error("It should be ready")
 	}
 
-	if err != nil {
-		t.Error("It should not return error")
-	}
 	if result["id"] != mockedData["id"] {
 		t.Error("Unexpected id")
 	}

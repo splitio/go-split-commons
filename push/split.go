@@ -17,6 +17,7 @@ type SplitUpdateWorker struct {
 	handler           func(till *int64) error
 	shouldKeepRunning int64
 	logger            logging.LoggerInterface
+	stop              chan struct{}
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -30,6 +31,7 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 		splitQueue:       splitQueue,
 		handler:          handler,
 		logger:           logger,
+		stop:             make(chan struct{}, 1),
 	}, nil
 }
 
@@ -45,12 +47,16 @@ func (s *SplitUpdateWorker) Start() {
 	go func() {
 		defer s.activeGoroutines.Done()
 		for atomic.LoadInt64(&s.shouldKeepRunning) == 1 {
-			splitUpdate := <-s.splitQueue
-			s.logger.Debug("Received Split update and proceding to perform fetch")
-			s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", &splitUpdate.ChangeNumber))
-			err := s.handler(&splitUpdate.ChangeNumber)
-			if err != nil {
-				s.logger.Error(err)
+			select {
+			case splitUpdate := <-s.splitQueue:
+				s.logger.Debug("Received Split update and proceding to perform fetch")
+				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", &splitUpdate.ChangeNumber))
+				err := s.handler(&splitUpdate.ChangeNumber)
+				if err != nil {
+					s.logger.Error(err)
+				}
+			case <-s.stop:
+				break
 			}
 		}
 	}()
@@ -59,6 +65,7 @@ func (s *SplitUpdateWorker) Start() {
 // Stop stops worker
 func (s *SplitUpdateWorker) Stop() {
 	atomic.StoreInt64(&s.shouldKeepRunning, 0)
+	s.stop <- struct{}{}
 	s.activeGoroutines.Wait()
 }
 

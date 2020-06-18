@@ -4,3 +4,4 @@
  - Added synchronizer manager.
  - Added tasks.
  - Added workers.
+ - Added push manager.

@@ -17,6 +17,7 @@ type SegmentUpdateWorker struct {
 	handler           func(segmentName string, till *int64) error
 	shouldKeepRunning int64
 	logger            logging.LoggerInterface
+	stop              chan struct{}
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
@@ -30,6 +31,7 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 		segmentQueue:     segmentQueue,
 		handler:          handler,
 		logger:           logger,
+		stop:             make(chan struct{}, 1),
 	}, nil
 }
 
@@ -45,12 +47,16 @@ func (s *SegmentUpdateWorker) Start() {
 	go func() {
 		defer s.activeGoroutines.Done()
 		for atomic.LoadInt64(&s.shouldKeepRunning) == 1 {
-			segmentUpdate := <-s.segmentQueue
-			s.logger.Debug("Received Segment update and proceding to perform fetch")
-			s.logger.Debug(fmt.Sprintf("SegmentName: %s\nChangeNumber: %d", segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber))
-			err := s.handler(segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber)
-			if err != nil {
-				s.logger.Error(err)
+			select {
+			case segmentUpdate := <-s.segmentQueue:
+				s.logger.Debug("Received Segment update and proceding to perform fetch")
+				s.logger.Debug(fmt.Sprintf("SegmentName: %s\nChangeNumber: %d", segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber))
+				err := s.handler(segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber)
+				if err != nil {
+					s.logger.Error(err)
+				}
+			case <-s.stop:
+				break
 			}
 		}
 	}()
@@ -59,6 +65,7 @@ func (s *SegmentUpdateWorker) Start() {
 // Stop stops worker
 func (s *SegmentUpdateWorker) Stop() {
 	atomic.StoreInt64(&s.shouldKeepRunning, 0)
+	s.stop <- struct{}{}
 	s.activeGoroutines.Wait()
 }
 

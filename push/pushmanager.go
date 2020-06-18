@@ -15,7 +15,8 @@ type PushManager struct {
 	processor     *processor.Processor
 	segmentWorker *SegmentUpdateWorker
 	splitWorker   *SplitUpdateWorker
-	ready         chan struct{}
+	sseReady      chan struct{}
+	sseError      chan error
 	logger        logging.LoggerInterface
 }
 
@@ -28,55 +29,66 @@ func NewPushManager(
 	synchronizeSplitsHandler func(till *int64) error,
 	splitStorage storage.SplitStorage,
 	config *conf.AdvancedConfig,
-) *PushManager {
-	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
-	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
+) (*PushManager, error) {
+	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
 	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
 	if err != nil {
-		logger.Error("Err creating processor", err)
+		return nil, err
 	}
 	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
 	if err != nil {
-		logger.Error("Err creating segmentWorker", err)
+		return nil, err
 	}
 	splitWorker, err := NewSplitUpdateWorker(splitQueue, synchronizeSplitsHandler, logger)
 	if err != nil {
-		logger.Error("Err creating splitWorker", err)
+		return nil, err
 	}
 
-	ready := make(chan struct{}, 1)
-
+	sseReady := make(chan struct{}, 1)
+	sseError := make(chan error, 1)
 	return &PushManager{
-		sseClient:     sse.NewStreamingClient(config, ready, logger),
+		sseClient:     sse.NewStreamingClient(config, sseReady, sseError, logger),
 		processor:     processor,
 		segmentWorker: segmentWorker,
 		splitWorker:   splitWorker,
-		ready:         ready,
+		sseReady:      sseReady,
+		sseError:      sseError,
 		logger:        logger,
-	}
+	}, nil
 }
 
 // Start push services
 func (p *PushManager) Start(token string, channels []string) error {
-	p.logger.Info("CHANNELS:", channels)
 	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
 
-	p.logger.Info("WAITING FOR READY")
-	<-p.ready
-	p.logger.Info("READY FOR WORKERS")
-	p.splitWorker.Start()
-	p.segmentWorker.Start()
-	return nil
+	select {
+	case <-p.sseReady:
+		p.splitWorker.Start()
+		p.segmentWorker.Start()
+		return nil
+	case err := <-p.sseError:
+		p.logger.Error("Some error occured when connecting to streaming")
+		p.Stop()
+		return err
+	}
 }
 
 // Stop push services
 func (p *PushManager) Stop() {
-	p.logger.Error("CALLED STOP")
-	p.sseClient.StopStreaming()
+	p.logger.Info("Stopping Push Services")
+	if p.sseClient.IsRunning() {
+		p.sseClient.StopStreaming()
+	}
 	if p.splitWorker.IsRunning() {
 		p.splitWorker.Stop()
 	}
 	if p.segmentWorker.IsRunning() {
 		p.segmentWorker.Stop()
 	}
+}
+
+// IsRunning returns true if the services are running
+func (p *PushManager) IsRunning() bool {
+	return p.sseClient.IsRunning() || p.splitWorker.IsRunning() || p.segmentWorker.IsRunning()
 }
