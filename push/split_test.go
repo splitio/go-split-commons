@@ -22,15 +22,12 @@ func TestSplitUpdateWorker(t *testing.T) {
 	splitWorker.Start()
 	splitQueue <- dtos.NewSplitChangeNotification("some", 123456789)
 
-	go func() {
-		if !splitWorker.IsRunning() {
-			t.Error("It should be running")
-		}
-		time.Sleep(1 * time.Second)
-		splitWorker.Stop()
-	}()
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+	time.Sleep(1 * time.Second)
+	splitWorker.Stop()
 
-	time.Sleep(2 * time.Second)
 	if splitWorker.IsRunning() {
 		t.Error("It should be stopped")
 	}

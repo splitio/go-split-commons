@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -12,12 +11,12 @@ import (
 
 // SegmentUpdateWorker struct
 type SegmentUpdateWorker struct {
-	activeGoroutines  *sync.WaitGroup
-	segmentQueue      chan dtos.SegmentChangeNotification
-	handler           func(segmentName string, till *int64) error
-	shouldKeepRunning int64
-	logger            logging.LoggerInterface
-	stop              chan struct{}
+	activeGoroutines *sync.WaitGroup
+	segmentQueue     chan dtos.SegmentChangeNotification
+	handler          func(segmentName string, till *int64) error
+	logger           logging.LoggerInterface
+	stop             chan struct{}
+	running          bool
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
@@ -32,6 +31,7 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 		handler:          handler,
 		logger:           logger,
 		stop:             make(chan struct{}, 1),
+		running:          false,
 	}, nil
 }
 
@@ -43,10 +43,10 @@ func (s *SegmentUpdateWorker) Start() {
 		return
 	}
 	s.activeGoroutines.Add(1)
-	atomic.StoreInt64(&s.shouldKeepRunning, 1)
+	s.running = true
 	go func() {
 		defer s.activeGoroutines.Done()
-		for atomic.LoadInt64(&s.shouldKeepRunning) == 1 {
+		for {
 			select {
 			case segmentUpdate := <-s.segmentQueue:
 				s.logger.Debug("Received Segment update and proceding to perform fetch")
@@ -56,20 +56,20 @@ func (s *SegmentUpdateWorker) Start() {
 					s.logger.Error(err)
 				}
 			case <-s.stop:
-				break
+				return
 			}
+			s.activeGoroutines.Wait()
 		}
 	}()
 }
 
 // Stop stops worker
 func (s *SegmentUpdateWorker) Stop() {
-	atomic.StoreInt64(&s.shouldKeepRunning, 0)
 	s.stop <- struct{}{}
-	s.activeGoroutines.Wait()
+	s.running = false
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
-	return atomic.LoadInt64(&s.shouldKeepRunning) == 1
+	return s.running
 }

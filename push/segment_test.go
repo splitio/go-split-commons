@@ -26,15 +26,12 @@ func TestSegmentUpdateWorker(t *testing.T) {
 	segmentWorker.Start()
 	segmentQUeue <- dtos.NewSegmentChangeNotification("some", 123456789, "some")
 
-	go func() {
-		if !segmentWorker.IsRunning() {
-			t.Error("It should be running")
-		}
-		time.Sleep(1 * time.Second)
-		segmentWorker.Stop()
-	}()
+	if !segmentWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+	time.Sleep(1 * time.Second)
+	segmentWorker.Stop()
 
-	time.Sleep(2 * time.Second)
 	if segmentWorker.IsRunning() {
 		t.Error("It should be stopped")
 	}

@@ -26,8 +26,8 @@
   version = "v0.9.1"
 
 [[projects]]
-  branch = "modularization"
-  digest = "1:2ffcbcfce9056ac727fbadf0bc3c3e7d3877d6ec45473fba09a264039257cb77"
+  branch = "sse"
+  digest = "1:ba129df233b99ee2831e8fea384e6e0cbd55644fc4b2c70e7e141545828086dc"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
@@ -42,7 +42,7 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "98d7264450789a008eb5f4109ba5ab86a5db3bde"
+  revision = "7f1ce117864e0e95b26d19c3979040896d73caca"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -12,12 +11,12 @@ import (
 
 // SplitUpdateWorker struct
 type SplitUpdateWorker struct {
-	activeGoroutines  *sync.WaitGroup
-	splitQueue        chan dtos.SplitChangeNotification
-	handler           func(till *int64) error
-	shouldKeepRunning int64
-	logger            logging.LoggerInterface
-	stop              chan struct{}
+	activeGoroutines *sync.WaitGroup
+	splitQueue       chan dtos.SplitChangeNotification
+	handler          func(till *int64) error
+	logger           logging.LoggerInterface
+	stop             chan struct{}
+	running          bool
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -32,6 +31,7 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 		handler:          handler,
 		logger:           logger,
 		stop:             make(chan struct{}, 1),
+		running:          false,
 	}, nil
 }
 
@@ -43,20 +43,20 @@ func (s *SplitUpdateWorker) Start() {
 		return
 	}
 	s.activeGoroutines.Add(1)
-	atomic.StoreInt64(&s.shouldKeepRunning, 1)
+	s.running = true
 	go func() {
 		defer s.activeGoroutines.Done()
-		for atomic.LoadInt64(&s.shouldKeepRunning) == 1 {
+		for {
 			select {
 			case splitUpdate := <-s.splitQueue:
 				s.logger.Debug("Received Split update and proceding to perform fetch")
-				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", &splitUpdate.ChangeNumber))
+				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", splitUpdate.ChangeNumber))
 				err := s.handler(&splitUpdate.ChangeNumber)
 				if err != nil {
 					s.logger.Error(err)
 				}
 			case <-s.stop:
-				break
+				return
 			}
 		}
 	}()
@@ -64,12 +64,12 @@ func (s *SplitUpdateWorker) Start() {
 
 // Stop stops worker
 func (s *SplitUpdateWorker) Stop() {
-	atomic.StoreInt64(&s.shouldKeepRunning, 0)
 	s.stop <- struct{}{}
 	s.activeGoroutines.Wait()
+	s.running = false
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SplitUpdateWorker) IsRunning() bool {
-	return atomic.LoadInt64(&s.shouldKeepRunning) == 1
+	return s.running
 }

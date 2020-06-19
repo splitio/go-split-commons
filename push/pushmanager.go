@@ -62,15 +62,17 @@ func NewPushManager(
 func (p *PushManager) Start(token string, channels []string) error {
 	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
 
-	select {
-	case <-p.sseReady:
-		p.splitWorker.Start()
-		p.segmentWorker.Start()
-		return nil
-	case err := <-p.sseError:
-		p.logger.Error("Some error occured when connecting to streaming")
-		p.Stop()
-		return err
+	for {
+		select {
+		case <-p.sseReady:
+			p.splitWorker.Start()
+			p.segmentWorker.Start()
+			return nil
+		case err := <-p.sseError:
+			p.logger.Error("Some error occured when connecting to streaming")
+			p.Stop()
+			return err
+		}
 	}
 }
 

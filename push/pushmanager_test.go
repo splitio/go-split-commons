@@ -66,11 +66,6 @@ func TestPushLogic(t *testing.T) {
 		t.Error("It should not return error")
 	}
 
-	var mockedClient *sse.StreamingClient
-
-	sseReady := make(chan struct{}, 1)
-	sseError := make(chan error, 1)
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
 		if !err {
@@ -103,7 +98,9 @@ func TestPushLogic(t *testing.T) {
 
 	advanced.StreamingServiceURL = ts.URL
 
-	mockedClient = sse.NewStreamingClient(advanced, sseReady, sseError, logger)
+	sseReady := make(chan struct{}, 1)
+	sseError := make(chan error, 1)
+	mockedClient := sse.NewStreamingClient(advanced, sseReady, sseError, logger)
 
 	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
 		atomic.AddInt64(&shouldReceiveSegmentChange, 1)
