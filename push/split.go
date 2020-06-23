@@ -17,6 +17,7 @@ type SplitUpdateWorker struct {
 	logger           logging.LoggerInterface
 	stop             chan struct{}
 	running          bool
+	mutex            *sync.RWMutex
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -32,6 +33,7 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 		logger:           logger,
 		stop:             make(chan struct{}, 1),
 		running:          false,
+		mutex:            &sync.RWMutex{},
 	}, nil
 }
 
@@ -43,7 +45,9 @@ func (s *SplitUpdateWorker) Start() {
 		return
 	}
 	s.activeGoroutines.Add(1)
+	s.mutex.Lock()
 	s.running = true
+	s.mutex.Unlock()
 	go func() {
 		defer s.activeGoroutines.Done()
 		for {
@@ -66,10 +70,14 @@ func (s *SplitUpdateWorker) Start() {
 func (s *SplitUpdateWorker) Stop() {
 	s.stop <- struct{}{}
 	s.activeGoroutines.Wait()
+	s.mutex.Lock()
 	s.running = false
+	s.mutex.Unlock()
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SplitUpdateWorker) IsRunning() bool {
+	defer s.mutex.RUnlock()
+	s.mutex.RLock()
 	return s.running
 }

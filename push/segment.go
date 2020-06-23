@@ -17,6 +17,7 @@ type SegmentUpdateWorker struct {
 	logger           logging.LoggerInterface
 	stop             chan struct{}
 	running          bool
+	mutex            *sync.RWMutex
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
@@ -32,6 +33,7 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 		logger:           logger,
 		stop:             make(chan struct{}, 1),
 		running:          false,
+		mutex:            &sync.RWMutex{},
 	}, nil
 }
 
@@ -43,7 +45,9 @@ func (s *SegmentUpdateWorker) Start() {
 		return
 	}
 	s.activeGoroutines.Add(1)
+	s.mutex.Lock()
 	s.running = true
+	s.mutex.Unlock()
 	go func() {
 		defer s.activeGoroutines.Done()
 		for {
@@ -58,7 +62,6 @@ func (s *SegmentUpdateWorker) Start() {
 			case <-s.stop:
 				return
 			}
-			s.activeGoroutines.Wait()
 		}
 	}()
 }
@@ -66,10 +69,15 @@ func (s *SegmentUpdateWorker) Start() {
 // Stop stops worker
 func (s *SegmentUpdateWorker) Stop() {
 	s.stop <- struct{}{}
+	s.activeGoroutines.Wait()
+	s.mutex.Lock()
 	s.running = false
+	s.mutex.Unlock()
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
+	defer s.mutex.RUnlock()
+	s.mutex.RLock()
 	return s.running
 }
