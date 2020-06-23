@@ -27,12 +27,15 @@ type Processor struct {
 
 // NewProcessor creates new processor
 func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer,
-	logger logging.LoggerInterface, keepAlive chan struct{}) (*Processor, error) {
+	keepAlive chan struct{}, logger logging.LoggerInterface) (*Processor, error) {
 	if cap(segmentQueue) < segmentQueueCheck {
 		return nil, errors.New("Small size of segmentQueue")
 	}
 	if cap(splitQueue) < splitQueueCheck {
 		return nil, errors.New("Small size of splitQueue")
+	}
+	if cap(keepAlive) < 1 {
+		return nil, errors.New("KeepAlive handler should have capacity")
 	}
 
 	return &Processor{

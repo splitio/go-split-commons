@@ -1,6 +1,7 @@
 package push
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -49,7 +50,7 @@ func NewPushManager(
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
 	keepAlive := make(chan struct{}, 1)
-	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger, keepAlive)
+	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, keepAlive, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +96,14 @@ func (p *PushManager) Start(token string, channels []string) {
 						keepRunning = false
 						p.status <- Error
 					case <-p.keepAlive:
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
+						fmt.Println("KEEEEP ALIVE")
 					}
 				}
 			case <-p.sseError:

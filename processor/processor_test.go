@@ -34,7 +34,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 			}
 		},
 	}
-	p, _ := NewProcessor(segmentQueue, splitQueue, splitStorage, logger, make(chan struct{}, 1))
+	p, _ := NewProcessor(segmentQueue, splitQueue, splitStorage, make(chan struct{}, 1), logger)
 
 	e0 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "")
 	p.HandleIncomingMessage(e0)
@@ -84,7 +84,7 @@ func TestKeepAlive(t *testing.T) {
 	keepalive := make(chan struct{}, 1)
 
 	processor, _ := NewProcessor(make(chan dtos.SegmentChangeNotification, 5000), make(chan dtos.SplitChangeNotification, 5000), mocks.MockSplitStorage{},
-		logger, keepalive)
+		keepalive, logger)
 
 	e := make(map[string]interface{})
 	e["event"] = "keepalive"

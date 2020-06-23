@@ -53,6 +53,7 @@ func TestPushManager(t *testing.T) {
 func TestPushLogic(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
+	var shouldReceiveKeepAlive int64
 
 	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
 	advanced := &conf.AdvancedConfig{
@@ -61,7 +62,8 @@ func TestPushLogic(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan struct{}, 1))
+	keepAlive := make(chan struct{}, 1)
+	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, keepAlive, logger)
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -76,7 +78,7 @@ func TestPushLogic(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 1; i++ {
+		for i := 0; i <= 2; i++ {
 			switch i {
 			case 0:
 				sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
@@ -85,6 +87,11 @@ func TestPushLogic(t *testing.T) {
 				mockedStr, _ := json.Marshal(mockedData)
 				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 			case 1:
+				mockedData := make(map[string]interface{})
+				mockedData["event"] = "keepalive"
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			case 2:
 				sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
 				var mockedData map[string]interface{}
 				_ = json.Unmarshal(sseMock, &mockedData)
@@ -125,12 +132,24 @@ func TestPushLogic(t *testing.T) {
 		splitWorker:   splitWorker,
 		sseReady:      sseReady,
 		sseError:      sseError,
-		keepAlive:     make(chan struct{}),
+		keepAlive:     keepAlive,
 		status:        make(chan int, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
 	}
+
+	go func() {
+		for {
+			select {
+			case msg := <-keepAlive:
+				atomic.AddInt64(&shouldReceiveKeepAlive, 1)
+				if msg != struct{}{} {
+					t.Error("Should receive at least one keep alive")
+				}
+			}
+		}
+	}()
 
 	mockedPush.Start("some", []string{})
 
@@ -147,6 +166,9 @@ func TestPushLogic(t *testing.T) {
 		t.Error("It should be one")
 	}
 	if atomic.LoadInt64(&shouldReceiveSplitChange) != 1 {
+		t.Error("It should be one")
+	}
+	if atomic.LoadInt64(&shouldReceiveKeepAlive) != 1 {
 		t.Error("It should be one")
 	}
 }
