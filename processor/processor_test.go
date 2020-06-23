@@ -80,7 +80,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 }
 
 func TestKeepAlive(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	keepalive := make(chan struct{}, 1)
 
 	processor, _ := NewProcessor(make(chan dtos.SegmentChangeNotification, 5000), make(chan dtos.SplitChangeNotification, 5000), mocks.MockSplitStorage{},

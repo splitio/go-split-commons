@@ -556,7 +556,7 @@ func TestStreaming(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
 		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: ts.URL, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{

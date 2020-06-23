@@ -57,7 +57,7 @@ func TestStreamingError(t *testing.T) {
 }
 
 func TestStreamingOk(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	sseMock, _ := ioutil.ReadFile("../../../testdata/sse.json")
 	var mockedData map[string]interface{}

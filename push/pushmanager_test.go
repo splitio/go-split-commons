@@ -55,7 +55,7 @@ func TestPushLogic(t *testing.T) {
 	var shouldReceiveSplitChange int64
 	var shouldReceiveKeepAlive int64
 
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
