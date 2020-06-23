@@ -1,7 +1,6 @@
 package push
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -96,14 +95,6 @@ func (p *PushManager) Start(token string, channels []string) {
 						keepRunning = false
 						p.status <- Error
 					case <-p.keepAlive:
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
-						fmt.Println("KEEEEP ALIVE")
 					}
 				}
 			case <-p.sseError:

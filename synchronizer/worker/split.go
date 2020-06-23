@@ -82,7 +82,7 @@ func (s *SplitFetcher) SynchronizeSplits(till *int64) error {
 		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
 		s.metricStorage.IncLatency(splitChangesLatencies, bucket)
 		s.metricStorage.IncCounter(strings.Replace(splitChangesCounters, "{status}", "200", 1))
-		if splits.Till == splits.Since || (till != nil && *till > splits.Till) {
+		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {
 			return nil
 		}
 	}
