@@ -34,7 +34,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 			}
 		},
 	}
-	p, _ := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	p, _ := NewProcessor(segmentQueue, splitQueue, splitStorage, logger, make(chan struct{}, 1))
 
 	e0 := wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "")
 	p.HandleIncomingMessage(e0)
@@ -76,5 +76,22 @@ func TestHandleIncomingMessage(t *testing.T) {
 	}
 	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
+	}
+}
+
+func TestKeepAlive(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
+	keepalive := make(chan struct{}, 1)
+
+	processor, _ := NewProcessor(make(chan dtos.SegmentChangeNotification, 5000), make(chan dtos.SplitChangeNotification, 5000), mocks.MockSplitStorage{},
+		logger, keepalive)
+
+	e := make(map[string]interface{})
+	e["event"] = "keepalive"
+	processor.HandleIncomingMessage(e)
+
+	received := <-keepalive
+	if received != struct{}{} {
+		t.Error("It should receive keepalive event")
 	}
 }

@@ -1,6 +1,8 @@
 package push
 
 import (
+	"time"
+
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/processor"
@@ -9,14 +11,27 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
+const (
+	resetTimer = 120
+)
+
+const (
+	// Ready represents ready
+	Ready = iota
+	// Error represents some error in SSE streaming
+	Error
+)
+
 // PushManager strcut for managing push services
 type PushManager struct {
 	sseClient     *sse.StreamingClient
 	processor     *processor.Processor
 	segmentWorker *SegmentUpdateWorker
 	splitWorker   *SplitUpdateWorker
+	status        chan int
 	sseReady      chan struct{}
 	sseError      chan error
+	keepAlive     chan struct{}
 	logger        logging.LoggerInterface
 }
 
@@ -29,10 +44,12 @@ func NewPushManager(
 	synchronizeSplitsHandler func(till *int64) error,
 	splitStorage storage.SplitStorage,
 	config *conf.AdvancedConfig,
+	status chan int,
 ) (*PushManager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
-	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	keepAlive := make(chan struct{}, 1)
+	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, logger, keepAlive)
 	if err != nil {
 		return nil, err
 	}
@@ -54,26 +71,39 @@ func NewPushManager(
 		splitWorker:   splitWorker,
 		sseReady:      sseReady,
 		sseError:      sseError,
+		status:        status,
+		keepAlive:     keepAlive,
 		logger:        logger,
 	}, nil
 }
 
 // Start push services
-func (p *PushManager) Start(token string, channels []string) error {
+func (p *PushManager) Start(token string, channels []string) {
 	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
 
-	for {
-		select {
-		case <-p.sseReady:
-			p.splitWorker.Start()
-			p.segmentWorker.Start()
-			return nil
-		case err := <-p.sseError:
-			p.logger.Error("Some error occured when connecting to streaming")
-			p.Stop()
-			return err
+	go func() {
+		for {
+			select {
+			case <-p.sseReady:
+				p.splitWorker.Start()
+				p.segmentWorker.Start()
+				p.status <- Ready
+				keepRunning := true
+				for keepRunning {
+					select {
+					case <-time.After(resetTimer * time.Second):
+						keepRunning = false
+						p.status <- Error
+					case <-p.keepAlive:
+					}
+				}
+			case <-p.sseError:
+				p.logger.Error("Some error occured when connecting to streaming")
+				p.status <- Error
+				return
+			}
 		}
-	}
+	}()
 }
 
 // Stop push services

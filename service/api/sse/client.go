@@ -33,7 +33,7 @@ type StreamingClient struct {
 // NewStreamingClient creates new SSE Client
 func NewStreamingClient(cfg *conf.AdvancedConfig, sseReady chan struct{}, sseError chan error, logger logging.LoggerInterface) *StreamingClient {
 	status := make(chan int, 1)
-	sseClient, _ := sse.NewSSEClient(getStreamingURL(cfg), status, logger)
+	sseClient, _ := sse.NewSSEClient(getStreamingURL(cfg), status, make(chan struct{}, 1), logger)
 
 	return &StreamingClient{
 		mutex:     &sync.RWMutex{},

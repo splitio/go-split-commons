@@ -106,7 +106,7 @@ func TestStreamingOk(t *testing.T) {
 		}
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	if !mockedClient.IsRunning() {
 		t.Error("It should be running")
 	}

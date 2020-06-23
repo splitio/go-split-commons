@@ -21,7 +21,7 @@ import (
 func TestSyncError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
-	manager, err := NewSynchronizerManager(&SynchronizerImpl{}, logger, nil, conf.AdvancedConfig{}, httpMocks.MockAuthClient{}, storageMock.MockSplitStorage{})
+	manager, err := NewSynchronizerManager(&SynchronizerImpl{}, logger, make(chan int), conf.AdvancedConfig{}, httpMocks.MockAuthClient{}, storageMock.MockSplitStorage{}, make(chan int))
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -29,7 +29,7 @@ func TestSyncError(t *testing.T) {
 		t.Error("It should be nil")
 	}
 
-	manager, err = NewSynchronizerManager(&SynchronizerImpl{}, logger, make(chan string), conf.AdvancedConfig{}, httpMocks.MockAuthClient{}, storageMock.MockSplitStorage{})
+	manager, err = NewSynchronizerManager(&SynchronizerImpl{}, logger, make(chan int), conf.AdvancedConfig{}, httpMocks.MockAuthClient{}, storageMock.MockSplitStorage{}, make(chan int))
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -55,11 +55,11 @@ func TestSyncInvalidAuth(t *testing.T) {
 		},
 	}
 
-	readyChannel := make(chan string, 1)
+	statusChan := make(chan int, 1)
 	managerTest, err := NewSynchronizerManager(
 		mockSync,
 		logger,
-		readyChannel,
+		make(chan int, 1),
 		advanced,
 		mocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
@@ -67,13 +67,16 @@ func TestSyncInvalidAuth(t *testing.T) {
 			},
 		},
 		storageMock.MockSplitStorage{},
+		statusChan,
 	)
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	err = managerTest.Start()
-	if err == nil {
-		t.Error("It should return err")
+	go managerTest.Start()
+
+	msg := <-statusChan
+	if msg != Error {
+		t.Error("It should be err")
 	}
 }
 
@@ -95,11 +98,10 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 		},
 	}
 
-	readyChannel := make(chan string, 1)
 	managerTest, err := NewSynchronizerManager(
 		mockSync,
 		logger,
-		readyChannel,
+		make(chan int, 1),
 		advanced,
 		mocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
@@ -107,6 +109,7 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 			},
 		},
 		storageMock.MockSplitStorage{},
+		make(chan int, 1),
 	)
 	if err != nil {
 		t.Error("It should not return err")
@@ -138,11 +141,10 @@ func TestPollingWithStreamingPushFalse(t *testing.T) {
 		},
 	}
 
-	readyChannel := make(chan string, 1)
 	managerTest, err := NewSynchronizerManager(
 		mockSync,
 		logger,
-		readyChannel,
+		make(chan int, 1),
 		advanced,
 		mocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
@@ -153,6 +155,7 @@ func TestPollingWithStreamingPushFalse(t *testing.T) {
 			},
 		},
 		storageMock.MockSplitStorage{},
+		make(chan int, 1),
 	)
 	if err != nil {
 		t.Error("It should not return err")
@@ -172,27 +175,26 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
 		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: "some", SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	mockSync := syncMock.MockSynchronizer{
-		SyncAllCall: func() error {
-			return nil
-		},
-		StartPeriodicDataRecordingCall: func() {
-			atomic.AddInt64(&periodicDataRecording, 1)
-		},
-		StartPeriodicFetchingCall: func() {
-			atomic.AddInt64(&periodicDataFetching, 1)
-		},
-	}
 
-	readyChannel := make(chan string, 1)
-	pushManager, err := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced)
+	streamingStatus := make(chan int, 1)
+	pushManager, err := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, streamingStatus)
 	if err != nil {
 		t.Error("It should not return err")
 	}
+
 	managerTest := Manager{
-		mockSync,
+		syncMock.MockSynchronizer{
+			SyncAllCall: func() error {
+				return nil
+			},
+			StartPeriodicDataRecordingCall: func() {
+				atomic.AddInt64(&periodicDataRecording, 1)
+			},
+			StartPeriodicFetchingCall: func() {
+				atomic.AddInt64(&periodicDataFetching, 1)
+			},
+		},
 		logger,
-		readyChannel,
 		advanced,
 		mocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
@@ -203,8 +205,14 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 			},
 		},
 		pushManager,
+		make(chan int, 1),
+		streamingStatus,
 	}
-	managerTest.Start()
+
+	go managerTest.Start()
+
+	time.Sleep(1 * time.Second)
+
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
 		t.Error("It should be called once")
 	}
@@ -398,7 +406,7 @@ func TestPolling(t *testing.T) {
 		&dtos.Metadata{},
 	)
 
-	readyChannel := make(chan string, 1)
+	readyChannel := make(chan int, 1)
 	managerTest, err := NewSynchronizerManager(
 		syncForTest,
 		logger,
@@ -410,13 +418,24 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		storageMock.MockSplitStorage{},
+		readyChannel,
 	)
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	managerTest.Start()
+	go managerTest.Start()
 
-	time.Sleep(time.Second * 1)
+	msg := <-readyChannel
+	switch msg {
+	case Ready:
+		// Broadcast ready status for SDK
+		atomic.AddInt64(&shouldBeReady, 1)
+	default:
+		t.Error("Wrong msg received")
+	}
+
+	time.Sleep(2 * time.Second)
+
 	if atomic.LoadInt64(&splitFetchCalled) != 2 {
 		t.Error("It should be called twice")
 		t.Error(splitFetchCalled)
@@ -464,15 +483,6 @@ func TestPolling(t *testing.T) {
 	}
 	if atomic.LoadInt64(&latenciesCalled) != 2 {
 		t.Error("It should be called twice")
-	}
-
-	msg := <-readyChannel
-	switch msg {
-	case "READY":
-		// Broadcast ready status for SDK
-		atomic.AddInt64(&shouldBeReady, 1)
-	default:
-		t.Error("Wrong msg received")
 	}
 
 	if shouldBeReady != 1 {

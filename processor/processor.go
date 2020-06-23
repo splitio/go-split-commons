@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	keepalive = "keepalive"
+	keepalive         = "keepalive"
+	segmentQueueCheck = 5000
+	splitQueueCheck   = 5000
 )
 
 // Processor struct for notification processor
@@ -19,15 +21,17 @@ type Processor struct {
 	segmentQueue chan dtos.SegmentChangeNotification
 	splitQueue   chan dtos.SplitChangeNotification
 	splitStorage storage.SplitStorageProducer
+	keepAlive    chan struct{}
 	logger       logging.LoggerInterface
 }
 
 // NewProcessor creates new processor
-func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer, logger logging.LoggerInterface) (*Processor, error) {
-	if cap(segmentQueue) < 5000 {
+func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer,
+	logger logging.LoggerInterface, keepAlive chan struct{}) (*Processor, error) {
+	if cap(segmentQueue) < segmentQueueCheck {
 		return nil, errors.New("Small size of segmentQueue")
 	}
-	if cap(splitQueue) < 5000 {
+	if cap(splitQueue) < splitQueueCheck {
 		return nil, errors.New("Small size of splitQueue")
 	}
 
@@ -35,6 +39,7 @@ func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue c
 		segmentQueue: segmentQueue,
 		splitQueue:   splitQueue,
 		splitStorage: splitStorage,
+		keepAlive:    keepAlive,
 		logger:       logger,
 	}, nil
 }
@@ -55,8 +60,8 @@ func (p *Processor) getData(data interface{}) *string {
 func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
 	keepAliveEvent := p.getData(event["event"])
 	if keepAliveEvent != nil && *keepAliveEvent == keepalive {
-		// Reset Timer Connection
-		p.logger.Info("RESET TIMER")
+		p.logger.Info("RECEIVED KEEPALIVE EVENT")
+		p.keepAlive <- struct{}{}
 		return
 	}
 

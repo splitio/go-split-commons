@@ -23,14 +23,14 @@ func TestPushManagerError(t *testing.T) {
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 1000, SplitUpdateQueueSize: 5000,
 	}
-	_, err := NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced)
+	_, err := NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced, make(chan int))
 	if err == nil || err.Error() != "Small size of segmentQueue" {
 		t.Error("It should return err", err)
 	}
 
 	advanced.SegmentUpdateQueueSize = 5000
 	advanced.SplitUpdateQueueSize = 1000
-	_, err = NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced)
+	_, err = NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced, make(chan int))
 	if err == nil || err.Error() != "Small size of splitQueue" {
 		t.Error("It should return err", err)
 	}
@@ -41,7 +41,7 @@ func TestPushManager(t *testing.T) {
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
-	push, err := NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced)
+	push, err := NewPushManager(logger, nil, nil, mocks.MockSplitStorage{}, advanced, make(chan int))
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -61,7 +61,7 @@ func TestPushLogic(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan struct{}, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -125,15 +125,14 @@ func TestPushLogic(t *testing.T) {
 		splitWorker:   splitWorker,
 		sseReady:      sseReady,
 		sseError:      sseError,
+		keepAlive:     make(chan struct{}),
+		status:        make(chan int, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
 	}
 
-	err = mockedPush.Start("some", []string{})
-	if err != nil {
-		t.Error("It should not be error")
-	}
+	mockedPush.Start("some", []string{})
 
 	time.Sleep(1 * time.Second)
 	if !mockedPush.IsRunning() {
