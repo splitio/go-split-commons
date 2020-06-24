@@ -28,6 +28,7 @@ type Manager struct {
 	pushManager     *push.PushManager
 	managerStatus   chan int
 	streamingStatus chan int
+	usingStreaming  bool
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -56,6 +57,7 @@ func NewSynchronizerManager(
 		authClient:      authClient,
 		pushManager:     pushManager,
 		managerStatus:   managerStatus,
+		usingStreaming:  false,
 	}, nil
 }
 
@@ -87,11 +89,25 @@ func (s *Manager) Start() {
 					case push.Ready:
 						s.logger.Info("SSE Streaming is ready")
 						s.managerStatus <- StreamingReady
+						s.usingStreaming = true
 					case push.Error:
 						s.pushManager.Stop()
 						s.logger.Info("Start periodic polling due error in Streaming")
 						s.synchronizer.StartPeriodicFetching()
 						return
+					case push.PublisherNotPresent:
+						if s.usingStreaming {
+							s.logger.Info("Start periodic polling due error in Streaming")
+							s.synchronizer.StartPeriodicFetching()
+							s.usingStreaming = false
+						}
+						return
+					case push.PublisherAvailable:
+						if !s.usingStreaming {
+							s.logger.Info("Stop periodic polling due Publishers Available")
+							s.synchronizer.StopPeriodicFetching()
+							s.usingStreaming = true
+						}
 					}
 				}
 			}

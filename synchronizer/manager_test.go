@@ -212,6 +212,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		pushManager,
 		make(chan int, 1),
 		streamingStatus,
+		false,
 	}
 
 	go managerTest.Start()

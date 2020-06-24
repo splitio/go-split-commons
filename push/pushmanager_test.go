@@ -12,7 +12,6 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/processor"
 	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-toolkit/logging"
@@ -63,7 +62,7 @@ func TestPushLogic(t *testing.T) {
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
 	keepAlive := make(chan struct{}, 1)
-	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, keepAlive, logger)
+	processorTest, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, keepAlive, *NewKeeper(make(chan int, 1)), logger)
 	if err != nil {
 		t.Error("It should not return error")
 	}

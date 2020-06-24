@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/processor"
 	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/logging"
@@ -18,21 +17,26 @@ const (
 const (
 	// Ready represents ready
 	Ready = iota
+	// PublisherNotPresent there are no publishers sending data
+	PublisherNotPresent
+	// PublisherAvailable there are publishers running
+	PublisherAvailable
 	// Error represents some error in SSE streaming
 	Error
 )
 
 // PushManager strcut for managing push services
 type PushManager struct {
-	sseClient     *sse.StreamingClient
-	processor     *processor.Processor
-	segmentWorker *SegmentUpdateWorker
-	splitWorker   *SplitUpdateWorker
-	status        chan int
-	sseReady      chan struct{}
-	sseError      chan error
-	keepAlive     chan struct{}
-	logger        logging.LoggerInterface
+	sseClient         *sse.StreamingClient
+	processor         *Processor
+	segmentWorker     *SegmentUpdateWorker
+	splitWorker       *SplitUpdateWorker
+	status            chan int
+	sseReady          chan struct{}
+	sseError          chan error
+	keepAlive         chan struct{}
+	runningPublishers chan int
+	logger            logging.LoggerInterface
 }
 
 // Missing token exp
@@ -49,7 +53,9 @@ func NewPushManager(
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
 	keepAlive := make(chan struct{}, 1)
-	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, keepAlive, logger)
+	runningPublishers := make(chan int, 1)
+	keeper := NewKeeper(runningPublishers)
+	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, keepAlive, *keeper, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -65,15 +71,16 @@ func NewPushManager(
 	sseReady := make(chan struct{}, 1)
 	sseError := make(chan error, 1)
 	return &PushManager{
-		sseClient:     sse.NewStreamingClient(config, sseReady, sseError, logger),
-		processor:     processor,
-		segmentWorker: segmentWorker,
-		splitWorker:   splitWorker,
-		sseReady:      sseReady,
-		sseError:      sseError,
-		status:        status,
-		keepAlive:     keepAlive,
-		logger:        logger,
+		sseClient:         sse.NewStreamingClient(config, sseReady, sseError, logger),
+		processor:         processor,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		sseReady:          sseReady,
+		sseError:          sseError,
+		status:            status,
+		keepAlive:         keepAlive,
+		runningPublishers: runningPublishers,
+		logger:            logger,
 	}, nil
 }
 
@@ -101,6 +108,13 @@ func (p *PushManager) Start(token string, channels []string) {
 				p.logger.Error("Some error occured when connecting to streaming")
 				p.status <- Error
 				return
+			case publishers := <-p.runningPublishers:
+				p.logger.Debug("Publishers updated", publishers)
+				if publishers == 0 {
+					p.status <- PublisherNotPresent
+				} else {
+					p.status <- PublisherAvailable
+				}
 			}
 		}
 	}()
