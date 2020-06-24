@@ -15,6 +15,7 @@ import (
 )
 
 func TestStreamingError(t *testing.T) {
+	var sseErrorReceived int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -23,29 +24,50 @@ func TestStreamingError(t *testing.T) {
 	defer ts.Close()
 
 	mocked := &conf.AdvancedConfig{
-		StreamingURL: ts.URL,
+		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, make(chan struct{}), logger)
 
-	err := mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	sseError := make(chan error, 1)
+	sseReady := make(chan struct{}, 1)
+	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
+
+	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		t.Error("Should not execute callback")
 	})
-	if err == nil || err.Error() != "Could not connect to streaming" {
-		t.Error("Unexpected error")
+	go func() {
+		for {
+			select {
+			case err := <-sseError:
+				atomic.AddInt64(&sseErrorReceived, 1)
+				if err.Error() != "Some error occurred connecting to streaming" {
+					t.Error("Unexpected error")
+				}
+			}
+		}
+	}()
+
+	time.Sleep(200 * time.Millisecond)
+
+	if mockedClient.IsRunning() {
+		t.Error("It should not be running")
+	}
+	if atomic.LoadInt64(&sseErrorReceived) != 1 {
+		t.Error("It should be one")
 	}
 }
 
 func TestStreamingOk(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelError})
+	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
+
 	sseMock, _ := ioutil.ReadFile("../../../testdata/sse.json")
 	var mockedData map[string]interface{}
 	_ = json.Unmarshal(sseMock, &mockedData)
 	mockedStr, _ := json.Marshal(mockedData)
 
-	var mockedClient *StreamingClient
-
+	sseError := make(chan error, 1)
 	sseReady := make(chan struct{}, 1)
 	var sseReadyReceived int64
+	var sseErrorReceived int64
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -59,42 +81,48 @@ func TestStreamingOk(t *testing.T) {
 
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
-
-		go func() {
-			time.Sleep(50 * time.Millisecond)
-			mockedClient.StopStreaming()
-		}()
 	}))
 	defer ts.Close()
 
 	mocked := &conf.AdvancedConfig{
-		StreamingURL: ts.URL,
+		StreamingServiceURL: ts.URL,
 	}
-	mockedClient = NewStreamingClient(mocked, sseReady, logger)
+	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
 
 	var result map[string]interface{}
+
+	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+		result = e
+	})
 
 	go func() {
 		for {
 			select {
 			case <-sseReady:
 				atomic.AddInt64(&sseReadyReceived, 1)
-			default:
+			case <-sseError:
+				atomic.AddInt64(&sseErrorReceived, 1)
 			}
 		}
 	}()
 
-	err := mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
-		result = e
-	})
+	time.Sleep(300 * time.Millisecond)
+	if !mockedClient.IsRunning() {
+		t.Error("It should be running")
+	}
 
+	mockedClient.StopStreaming()
+	time.Sleep(1 * time.Second)
+	if mockedClient.IsRunning() {
+		t.Error("It should not be running")
+	}
+	if atomic.LoadInt64(&sseErrorReceived) != 0 {
+		t.Error("It should not have error")
+	}
 	if atomic.LoadInt64(&sseReadyReceived) != 1 {
 		t.Error("It should be ready")
 	}
 
-	if err != nil {
-		t.Error("It should not return error")
-	}
 	if result["id"] != mockedData["id"] {
 		t.Error("Unexpected id")
 	}
@@ -113,5 +141,4 @@ func TestStreamingOk(t *testing.T) {
 	if result["data"] != mockedData["data"] {
 		t.Error("Unexpected data")
 	}
-
 }

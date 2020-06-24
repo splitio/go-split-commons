@@ -63,15 +63,18 @@ type TaskPeriods struct {
 // - SegmentQueueSize - How many segments can be queued for updating (should be >= # segments the user has)
 // - SegmentWorkers - How many workers will be used when performing segments sync.
 type AdvancedConfig struct {
-	HTTPTimeout          int
-	SegmentQueueSize     int
-	SegmentWorkers       int
-	SdkURL               string
-	EventsURL            string
-	EventsBulkSize       int64
-	EventsQueueSize      int
-	ImpressionsQueueSize int
-	ImpressionsBulkSize  int64
-	AuthURL              string
-	StreamingURL         string
+	HTTPTimeout            int
+	SegmentQueueSize       int
+	SegmentWorkers         int
+	SdkURL                 string
+	EventsURL              string
+	EventsBulkSize         int64
+	EventsQueueSize        int
+	ImpressionsQueueSize   int
+	ImpressionsBulkSize    int64
+	StreamingEnabled       bool
+	AuthServiceURL         string
+	StreamingServiceURL    string
+	SplitUpdateQueueSize   int64
+	SegmentUpdateQueueSize int64
 }
