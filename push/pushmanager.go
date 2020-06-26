@@ -27,9 +27,9 @@ type PushManager struct {
 	sseClient       *sse.StreamingClient
 	segmentWorker   *SegmentUpdateWorker
 	splitWorker     *SplitUpdateWorker
+	parser          *NotificationParser
 	managerStatus   chan int
 	streamingStatus chan int
-	parser          *NotificationParser
 	logger          logging.LoggerInterface
 }
 

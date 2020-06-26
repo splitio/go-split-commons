@@ -1,9 +1,18 @@
 package push
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -40,11 +49,11 @@ func TestPushManager(t *testing.T) {
 	}
 }
 
-/*
 func TestPushLogic(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
-	var shouldReceiveKeepAlive int64
+	var shouldReceiveReady int64
+	var shouldReceiveError int64
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
@@ -53,10 +62,14 @@ func TestPushLogic(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	keepAlive := make(chan struct{}, 1)
-	processorTest, err := processor.NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, keepAlive, logger)
+	processorTest, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
 	if err != nil {
 		t.Error("It should not return error")
+	}
+
+	parser := NewNotificationParser(processorTest, logger)
+	if err != nil {
+		t.Error("It should not return err")
 	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -96,9 +109,8 @@ func TestPushLogic(t *testing.T) {
 
 	advanced.StreamingServiceURL = ts.URL
 
-	sseReady := make(chan struct{}, 1)
-	sseError := make(chan error, 1)
-	mockedClient := sse.NewStreamingClient(advanced, sseReady, sseError, logger)
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
 
 	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
 		atomic.AddInt64(&shouldReceiveSegmentChange, 1)
@@ -115,30 +127,27 @@ func TestPushLogic(t *testing.T) {
 		return nil
 	}, logger)
 
+	managerStatus := make(chan int, 1)
 	mockedPush := PushManager{
-		sseClient:     mockedClient,
-		processor:     processorTest,
-		logger:        logger,
-		segmentWorker: segmentWorker,
-		splitWorker:   splitWorker,
-		sseReady:      sseReady,
-		sseError:      sseError,
-		keepAlive:     keepAlive,
-		status:        make(chan int, 1),
+		sseClient:       mockedClient,
+		parser:          parser,
+		logger:          logger,
+		segmentWorker:   segmentWorker,
+		splitWorker:     splitWorker,
+		managerStatus:   managerStatus,
+		streamingStatus: streamingStatus,
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
 	}
 
 	go func() {
-		for {
-			select {
-			case msg := <-keepAlive:
-				atomic.AddInt64(&shouldReceiveKeepAlive, 1)
-				if msg != struct{}{} {
-					t.Error("Should receive at least one keep alive")
-				}
-			}
+		msg := <-managerStatus
+		switch msg {
+		case Ready:
+			atomic.AddInt64(&shouldReceiveReady, 1)
+		case Error:
+			atomic.AddInt64(&shouldReceiveError, 1)
 		}
 	}()
 
@@ -159,8 +168,10 @@ func TestPushLogic(t *testing.T) {
 	if atomic.LoadInt64(&shouldReceiveSplitChange) != 1 {
 		t.Error("It should be one")
 	}
-	if atomic.LoadInt64(&shouldReceiveKeepAlive) != 1 {
+	if atomic.LoadInt64(&shouldReceiveReady) != 1 {
 		t.Error("It should be one")
 	}
+	if atomic.LoadInt64(&shouldReceiveError) != 0 {
+		t.Error("It should not return error")
+	}
 }
-*/
