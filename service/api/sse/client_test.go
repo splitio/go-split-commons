@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -89,8 +90,10 @@ func TestStreamingOk(t *testing.T) {
 	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
 	var result map[string]interface{}
-
+	mutexTest := sync.RWMutex{}
 	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+		defer mutexTest.Unlock()
+		mutexTest.Lock()
 		result = e
 	})
 
@@ -125,6 +128,7 @@ func TestStreamingOk(t *testing.T) {
 		t.Error("It should be ready")
 	}
 
+	mutexTest.RLock()
 	if result["id"] != mockedData["id"] {
 		t.Error("Unexpected id")
 	}
@@ -143,4 +147,5 @@ func TestStreamingOk(t *testing.T) {
 	if result["data"] != mockedData["data"] {
 		t.Error("Unexpected data")
 	}
+	mutexTest.RUnlock()
 }
