@@ -1,19 +1,9 @@
 package push
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/processor"
-	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -50,6 +40,7 @@ func TestPushManager(t *testing.T) {
 	}
 }
 
+/*
 func TestPushLogic(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
@@ -172,3 +163,4 @@ func TestPushLogic(t *testing.T) {
 		t.Error("It should be one")
 	}
 }
+*/

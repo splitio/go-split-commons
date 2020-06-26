@@ -12,6 +12,7 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/sse"
 )
 
 func TestStreamingError(t *testing.T) {
@@ -27,9 +28,8 @@ func TestStreamingError(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 
-	sseError := make(chan error, 1)
-	sseReady := make(chan struct{}, 1)
-	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
+	streamingStatus := make(chan int, 1)
+	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
 	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		t.Error("Should not execute callback")
@@ -37,9 +37,9 @@ func TestStreamingError(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case err := <-sseError:
+			case msg := <-streamingStatus:
 				atomic.AddInt64(&sseErrorReceived, 1)
-				if err.Error() != "Some error occurred connecting to streaming" {
+				if msg != sse.ErrorConnectToStreaming {
 					t.Error("Unexpected error")
 				}
 			}
@@ -64,8 +64,7 @@ func TestStreamingOk(t *testing.T) {
 	_ = json.Unmarshal(sseMock, &mockedData)
 	mockedStr, _ := json.Marshal(mockedData)
 
-	sseError := make(chan error, 1)
-	sseReady := make(chan struct{}, 1)
+	streamingStatus := make(chan int, 1)
 	var sseReadyReceived int64
 	var sseErrorReceived int64
 
@@ -87,7 +86,7 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
+	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
 	var result map[string]interface{}
 
@@ -98,10 +97,13 @@ func TestStreamingOk(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case <-sseReady:
-				atomic.AddInt64(&sseReadyReceived, 1)
-			case <-sseError:
-				atomic.AddInt64(&sseErrorReceived, 1)
+			case status := <-streamingStatus:
+				switch status {
+				case sse.OK:
+					atomic.AddInt64(&sseReadyReceived, 1)
+				default:
+					atomic.AddInt64(&sseErrorReceived, 1)
+				}
 			}
 		}
 	}()

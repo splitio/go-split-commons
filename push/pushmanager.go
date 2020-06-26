@@ -1,14 +1,14 @@
 package push
 
 import (
-	"time"
+	"errors"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/processor"
 	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/logging"
+	sseStatus "github.com/splitio/go-toolkit/sse"
 )
 
 const (
@@ -24,15 +24,13 @@ const (
 
 // PushManager strcut for managing push services
 type PushManager struct {
-	sseClient     *sse.StreamingClient
-	processor     *processor.Processor
-	segmentWorker *SegmentUpdateWorker
-	splitWorker   *SplitUpdateWorker
-	status        chan int
-	sseReady      chan struct{}
-	sseError      chan error
-	keepAlive     chan struct{}
-	logger        logging.LoggerInterface
+	sseClient       *sse.StreamingClient
+	segmentWorker   *SegmentUpdateWorker
+	splitWorker     *SplitUpdateWorker
+	managerStatus   chan int
+	streamingStatus chan int
+	parser          *NotificationParser
+	logger          logging.LoggerInterface
 }
 
 // Missing token exp
@@ -44,14 +42,17 @@ func NewPushManager(
 	synchronizeSplitsHandler func(till *int64) error,
 	splitStorage storage.SplitStorage,
 	config *conf.AdvancedConfig,
-	status chan int,
+	managerStatus chan int,
 ) (*PushManager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
-	keepAlive := make(chan struct{}, 1)
-	processor, err := processor.NewProcessor(segmentQueue, splitQueue, splitStorage, keepAlive, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
 	if err != nil {
 		return nil, err
+	}
+	parser := NewNotificationParser(processor, logger)
+	if parser == nil {
+		return nil, errors.New("Could not instantiate NotificationParser")
 	}
 	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
 	if err != nil {
@@ -62,45 +63,35 @@ func NewPushManager(
 		return nil, err
 	}
 
-	sseReady := make(chan struct{}, 1)
-	sseError := make(chan error, 1)
+	streamingStatus := make(chan int, 1)
 	return &PushManager{
-		sseClient:     sse.NewStreamingClient(config, sseReady, sseError, logger),
-		processor:     processor,
-		segmentWorker: segmentWorker,
-		splitWorker:   splitWorker,
-		sseReady:      sseReady,
-		sseError:      sseError,
-		status:        status,
-		keepAlive:     keepAlive,
-		logger:        logger,
+		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
+		segmentWorker:   segmentWorker,
+		splitWorker:     splitWorker,
+		managerStatus:   managerStatus,
+		streamingStatus: streamingStatus,
+		parser:          parser,
+		logger:          logger,
 	}, nil
 }
 
 // Start push services
 func (p *PushManager) Start(token string, channels []string) {
-	go p.sseClient.ConnectStreaming(token, channels, p.processor.HandleIncomingMessage)
+	go p.sseClient.ConnectStreaming(token, channels, p.parser.HandleIncomingMessage)
 
 	go func() {
 		for {
 			select {
-			case <-p.sseReady:
-				p.splitWorker.Start()
-				p.segmentWorker.Start()
-				p.status <- Ready
-				keepRunning := true
-				for keepRunning {
-					select {
-					case <-time.After(resetTimer * time.Second):
-						keepRunning = false
-						p.status <- Error
-					case <-p.keepAlive:
-					}
+			case status := <-p.streamingStatus:
+				switch status {
+				case sseStatus.OK:
+					p.splitWorker.Start()
+					p.segmentWorker.Start()
+					p.managerStatus <- Ready
+				default:
+					p.managerStatus <- Error
+					return
 				}
-			case <-p.sseError:
-				p.logger.Error("Some error occured when connecting to streaming")
-				p.status <- Error
-				return
 			}
 		}
 	}()
