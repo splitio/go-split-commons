@@ -77,7 +77,7 @@ func (s *SegmentUpdateWorker) Stop() {
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
-	defer s.mutex.RUnlock()
 	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	return s.running
 }

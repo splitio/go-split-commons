@@ -43,9 +43,9 @@ func (k *Keeper) cleanManagerPrefix(manager string) string {
 
 // UpdateManagers updates current manager count
 func (k *Keeper) UpdateManagers(manager string, publishers int) {
-	defer k.mutex.Unlock()
 	parsedManager := k.cleanManagerPrefix(manager)
 	k.mutex.Lock()
+	defer k.mutex.Unlock()
 	k.managers[parsedManager] = publishers
 
 	if parsedManager == "control_pri" {
@@ -59,8 +59,8 @@ func (k *Keeper) UpdateManagers(manager string, publishers int) {
 
 // UpdateLastNotification updates last message received
 func (k *Keeper) UpdateLastNotification(manager string, timestamp int64) {
-	defer k.mutex.Unlock()
 	k.mutex.Lock()
+	defer k.mutex.Unlock()
 	k.last = &last{
 		manager:   k.cleanManagerPrefix(manager),
 		timestamp: timestamp,

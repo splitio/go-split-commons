@@ -48,6 +48,12 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logg
 	}
 }
 
+func (s *StreamingClient) updateStreamingStatus(status bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.running = status
+}
+
 // ConnectStreaming connects to streaming
 func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncomingMessage func(e map[string]interface{})) {
 	params := make(map[string]string)
@@ -62,9 +68,7 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 			case status := <-s.sseStatus:
 				switch status {
 				case sse.OK:
-					s.mutex.Lock()
-					s.running = true
-					s.mutex.Unlock()
+					s.updateStreamingStatus(true)
 					s.streamingStatus <- sse.OK
 				case sse.ErrorConnectToStreaming:
 					s.logger.Error("Error connecting to streaming")
@@ -92,10 +96,8 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 
 // StopStreaming stops streaming
 func (s *StreamingClient) StopStreaming() {
-	defer s.mutex.Unlock()
 	s.sseClient.Shutdown()
-	s.mutex.Lock()
-	s.running = false
+	s.updateStreamingStatus(false)
 }
 
 // IsRunning returns true if it's running

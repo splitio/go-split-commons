@@ -18,10 +18,10 @@ const (
 const (
 	// Ready represents ready
 	Ready = iota
-	// SwitchToPolling there are no publishers for streaming
-	SwitchToPolling
-	// SwitchToStreaming there are publishers presents
-	SwitchToStreaming
+	// PushIsDown there are no publishers for streaming
+	PushIsDown
+	// PushIsUp there are publishers presents
+	PushIsUp
 	// Error represents some error in SSE streaming
 	Error
 )
@@ -103,9 +103,9 @@ func (p *PushManager) Start(token string, channels []string) {
 			case publisherStatus := <-p.publishers:
 				switch publisherStatus {
 				case PublisherNotPresent:
-					p.managerStatus <- SwitchToPolling
+					p.managerStatus <- PushIsDown
 				case PublisherAvailable:
-					p.managerStatus <- SwitchToStreaming
+					p.managerStatus <- PushIsUp
 				}
 			}
 		}

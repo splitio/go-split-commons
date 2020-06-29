@@ -37,13 +37,12 @@ type Manager struct {
 func NewSynchronizerManager(
 	synchronizer Synchronizer,
 	logger logging.LoggerInterface,
-	statusChannel chan int,
 	config conf.AdvancedConfig,
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
 ) (*Manager, error) {
-	if statusChannel == nil || cap(statusChannel) < 1 {
+	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
 	streamingStatus := make(chan int, 1)
@@ -54,14 +53,26 @@ func NewSynchronizerManager(
 	return &Manager{
 		synchronizer:    synchronizer,
 		logger:          logger,
-		streamingStatus: streamingStatus,
 		config:          config,
 		authClient:      authClient,
 		pushManager:     pushManager,
+		streamingStatus: streamingStatus,
 		managerStatus:   managerStatus,
 		usingStreaming:  false,
 		mutex:           &sync.RWMutex{},
 	}, nil
+}
+
+func (s *Manager) getUsingStreaming() bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return s.usingStreaming
+}
+
+func (s *Manager) updateUsingStreaming(status bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.usingStreaming = status
 }
 
 // Start starts synchronization through Split
@@ -90,32 +101,25 @@ func (s *Manager) Start() {
 				case status := <-s.streamingStatus:
 					switch status {
 					case push.Ready:
-						defer s.mutex.Unlock()
 						s.logger.Info("SSE Streaming is ready")
 						s.managerStatus <- StreamingReady
-						s.mutex.Lock()
-						s.usingStreaming = true
+						s.updateUsingStreaming(true)
 					case push.Error:
 						s.pushManager.Stop()
 						s.logger.Info("Start periodic polling due error in Streaming")
 						s.synchronizer.StartPeriodicFetching()
 						return
-					case push.SwitchToPolling:
-						defer s.mutex.Unlock()
-						s.mutex.Lock()
-						if s.usingStreaming {
+					case push.PushIsDown:
+						if s.getUsingStreaming() {
 							s.logger.Info("Start periodic polling due error in Streaming")
 							s.synchronizer.StartPeriodicFetching()
-							s.usingStreaming = false
+							s.updateUsingStreaming(false)
 						}
-						return
-					case push.SwitchToStreaming:
-						defer s.mutex.Unlock()
-						s.mutex.Lock()
-						if !s.usingStreaming {
+					case push.PushIsUp:
+						if !s.getUsingStreaming() {
 							s.logger.Info("Stop periodic polling due Publishers Available")
 							s.synchronizer.StopPeriodicFetching()
-							s.usingStreaming = true
+							s.updateUsingStreaming(true)
 						}
 					}
 				}
