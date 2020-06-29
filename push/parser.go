@@ -8,12 +8,14 @@ import (
 )
 
 const (
+	occupancy = "[meta]occupancy"
 	update    = "update"
 	errorType = "error"
 )
 
 // NotificationParser struct
 type NotificationParser struct {
+	keeper    *Keeper
 	processor *Processor
 	logger    logging.LoggerInterface
 }
@@ -34,8 +36,9 @@ type incomingEvent struct {
 }
 
 // NewNotificationParser creates notifcation parser
-func NewNotificationParser(processor *Processor, logger logging.LoggerInterface) *NotificationParser {
+func NewNotificationParser(processor *Processor, keeper *Keeper, logger logging.LoggerInterface) *NotificationParser {
 	return &NotificationParser{
+		keeper:    keeper,
 		processor: processor,
 		logger:    logger,
 	}
@@ -63,6 +66,20 @@ func (n *NotificationParser) getString(data interface{}) *string {
 		return nil
 	}
 	return &str
+}
+
+func (n *NotificationParser) wrapOccupancy(incomingEvent incomingEvent) *dtos.Occupancy {
+	if incomingEvent.data == nil {
+		return nil
+	}
+
+	var occupancy *dtos.Occupancy
+	err := json.Unmarshal([]byte(*incomingEvent.data), &occupancy)
+	if err != nil {
+		return nil
+	}
+
+	return occupancy
 }
 
 func (n *NotificationParser) wrapUpdateEvent(incomingEvent incomingEvent) *dtos.IncomingNotification {
@@ -98,6 +115,11 @@ func (n *NotificationParser) wrapIncomingEvent(event map[string]interface{}) inc
 		incomingEvent.event = errorType
 	}
 
+	if incomingEvent.name != nil && *incomingEvent.name == occupancy {
+		incomingEvent.event = occupancy
+		return incomingEvent
+	}
+
 	incomingEvent.event = update
 	return incomingEvent
 }
@@ -106,6 +128,14 @@ func (n *NotificationParser) wrapIncomingEvent(event map[string]interface{}) inc
 func (n *NotificationParser) HandleIncomingMessage(event map[string]interface{}) {
 	incomingEvent := n.wrapIncomingEvent(event)
 	switch incomingEvent.event {
+	case occupancy:
+		n.logger.Debug("Presence event received")
+		occupancy := n.wrapOccupancy(incomingEvent)
+		if occupancy == nil || incomingEvent.channel == nil {
+			return
+		}
+		n.keeper.UpdateManagers(*incomingEvent.channel, occupancy.Data.Publishers)
+		return
 	case update:
 		n.logger.Debug("Update event received")
 		incomingNotification := n.wrapUpdateEvent(incomingEvent)

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -212,6 +213,8 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		pushManager,
 		make(chan int, 1),
 		streamingStatus,
+		false,
+		&sync.RWMutex{},
 	}
 
 	go managerTest.Start()

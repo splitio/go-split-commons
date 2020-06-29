@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
@@ -28,6 +29,8 @@ type Manager struct {
 	pushManager     *push.PushManager
 	managerStatus   chan int
 	streamingStatus chan int
+	usingStreaming  bool
+	mutex           *sync.RWMutex
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -56,6 +59,8 @@ func NewSynchronizerManager(
 		authClient:      authClient,
 		pushManager:     pushManager,
 		managerStatus:   managerStatus,
+		usingStreaming:  false,
+		mutex:           &sync.RWMutex{},
 	}, nil
 }
 
@@ -85,13 +90,33 @@ func (s *Manager) Start() {
 				case status := <-s.streamingStatus:
 					switch status {
 					case push.Ready:
+						defer s.mutex.Unlock()
 						s.logger.Info("SSE Streaming is ready")
 						s.managerStatus <- StreamingReady
+						s.mutex.Lock()
+						s.usingStreaming = true
 					case push.Error:
 						s.pushManager.Stop()
 						s.logger.Info("Start periodic polling due error in Streaming")
 						s.synchronizer.StartPeriodicFetching()
 						return
+					case push.SwitchToPolling:
+						defer s.mutex.Unlock()
+						s.mutex.Lock()
+						if s.usingStreaming {
+							s.logger.Info("Start periodic polling due error in Streaming")
+							s.synchronizer.StartPeriodicFetching()
+							s.usingStreaming = false
+						}
+						return
+					case push.SwitchToStreaming:
+						defer s.mutex.Unlock()
+						s.mutex.Lock()
+						if !s.usingStreaming {
+							s.logger.Info("Stop periodic polling due Publishers Available")
+							s.synchronizer.StopPeriodicFetching()
+							s.usingStreaming = true
+						}
 					}
 				}
 			}

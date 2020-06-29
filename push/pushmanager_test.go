@@ -67,7 +67,7 @@ func TestPushLogic(t *testing.T) {
 		t.Error("It should not return error")
 	}
 
-	parser := NewNotificationParser(processorTest, logger)
+	parser := NewNotificationParser(processorTest, nil, logger)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -174,4 +174,8 @@ func TestPushLogic(t *testing.T) {
 	if atomic.LoadInt64(&shouldReceiveError) != 0 {
 		t.Error("It should not return error")
 	}
+}
+
+func TestFeedbackLoop(t *testing.T) {
+
 }

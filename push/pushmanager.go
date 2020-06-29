@@ -18,6 +18,10 @@ const (
 const (
 	// Ready represents ready
 	Ready = iota
+	// SwitchToPolling there are no publishers for streaming
+	SwitchToPolling
+	// SwitchToStreaming there are publishers presents
+	SwitchToStreaming
 	// Error represents some error in SSE streaming
 	Error
 )
@@ -30,6 +34,7 @@ type PushManager struct {
 	parser          *NotificationParser
 	managerStatus   chan int
 	streamingStatus chan int
+	publishers      chan int
 	logger          logging.LoggerInterface
 }
 
@@ -50,7 +55,9 @@ func NewPushManager(
 	if err != nil {
 		return nil, err
 	}
-	parser := NewNotificationParser(processor, logger)
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
+	parser := NewNotificationParser(processor, keeper, logger)
 	if parser == nil {
 		return nil, errors.New("Could not instantiate NotificationParser")
 	}
@@ -70,6 +77,7 @@ func NewPushManager(
 		splitWorker:     splitWorker,
 		managerStatus:   managerStatus,
 		streamingStatus: streamingStatus,
+		publishers:      publishers,
 		parser:          parser,
 		logger:          logger,
 	}, nil
@@ -91,6 +99,13 @@ func (p *PushManager) Start(token string, channels []string) {
 				default:
 					p.managerStatus <- Error
 					return
+				}
+			case publisherStatus := <-p.publishers:
+				switch publisherStatus {
+				case PublisherNotPresent:
+					p.managerStatus <- SwitchToPolling
+				case PublisherAvailable:
+					p.managerStatus <- SwitchToStreaming
 				}
 			}
 		}
