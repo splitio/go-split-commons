@@ -126,7 +126,6 @@ func (s *Manager) Start() {
 			}
 		}
 	}
-
 	s.logger.Info("Start periodic polling")
 	s.synchronizer.StartPeriodicFetching()
 }

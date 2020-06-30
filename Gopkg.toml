@@ -1,3 +1,3 @@
 [[constraint]]
-  branch = "sse2"
+  branch = "asynctask"
   name = "github.com/splitio/go-toolkit"

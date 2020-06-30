@@ -548,7 +548,7 @@ func TestStreaming(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
 		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: ts.URL, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
@@ -901,6 +901,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		w.Header().Set("Cache-Control", "no-cache")
 
 		for i := 0; i <= 3; i++ {
+			time.Sleep(time.Duration(i*100) * time.Millisecond)
 			switch i {
 			case 0:
 				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
@@ -922,19 +923,30 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
 		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: ts.URL, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
 			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
-				return &dtos.SplitChangesDTO{}, nil
+				return &dtos.SplitChangesDTO{
+					Splits: []dtos.SplitDTO{mockedSplit1},
+					Since:  1,
+					Till:   1,
+				}, nil
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
 			FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
 				atomic.AddInt64(&segmentFetchCalled, 1)
-				return &dtos.SegmentChangesDTO{}, nil
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   []string{"some"},
+					Removed: []string{},
+					Since:   1,
+					Till:    1,
+				}, nil
 			},
 		},
 		EventRecorder: httpMocks.MockEventRecorder{
@@ -1054,13 +1066,14 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		t.Error("It should send streaming ready")
 	}
 
+	time.Sleep(2 * time.Second)
 	managerTest.Stop()
 	time.Sleep(1 * time.Second)
 
-	if atomic.LoadInt64(&splitFetchCalled) != 1 {
+	if atomic.LoadInt64(&splitFetchCalled) != 2 {
 		t.Error("It should be called once")
 	}
-	if atomic.LoadInt64(&segmentFetchCalled) != 1 {
+	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
 		t.Error("It should be called once")
 	}
 }
