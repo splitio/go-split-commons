@@ -37,6 +37,12 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 	}, nil
 }
 
+func (s *SegmentUpdateWorker) updateStatus(status bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.running = status
+}
+
 // Start starts worker
 func (s *SegmentUpdateWorker) Start() {
 	s.logger.Info("Started SegmentUpdateWorker")
@@ -45,9 +51,7 @@ func (s *SegmentUpdateWorker) Start() {
 		return
 	}
 	s.activeGoroutines.Add(1)
-	s.mutex.Lock()
-	s.running = true
-	s.mutex.Unlock()
+	s.updateStatus(true)
 	go func() {
 		defer s.activeGoroutines.Done()
 		for {
@@ -68,16 +72,16 @@ func (s *SegmentUpdateWorker) Start() {
 
 // Stop stops worker
 func (s *SegmentUpdateWorker) Stop() {
-	s.stop <- struct{}{}
-	s.activeGoroutines.Wait()
-	s.mutex.Lock()
-	s.running = false
-	s.mutex.Unlock()
+	if s.IsRunning() {
+		s.stop <- struct{}{}
+		s.activeGoroutines.Wait()
+		s.updateStatus(false)
+	}
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
-	defer s.mutex.RUnlock()
 	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	return s.running
 }
