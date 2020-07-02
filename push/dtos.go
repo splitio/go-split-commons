@@ -15,3 +15,13 @@ type IncomingEvent struct {
 	statusCode *int
 	href       *string
 }
+
+// Metrics dto
+type Metrics struct {
+	Publishers int `json:"publishers"`
+}
+
+// Occupancy dto
+type Occupancy struct {
+	Data Metrics `json:"metrics"`
+}

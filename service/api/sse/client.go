@@ -14,6 +14,7 @@ const (
 	streamingURL = "https://streaming.split.io/sse"
 	version      = "1.1"
 	keepAlive    = 120
+	occupancy    = "[?occupancy=metrics.publishers]control_pri,[?occupancy=metrics.publishers]control_sec"
 )
 
 func getStreamingURL(cfg *conf.AdvancedConfig) string {
@@ -51,13 +52,13 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logg
 }
 
 // ConnectStreaming connects to streaming
-func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncommingMessage func(e map[string]interface{})) {
+func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncomingMessage func(e map[string]interface{})) {
 	params := make(map[string]string)
-	params["channels"] = strings.Join(channelList, ",")
+	params["channels"] = strings.Join(channelList, ",") + "," + occupancy
 	params["accessToken"] = token
 	params["v"] = version
 
-	go s.sseClient.Do(params, handleIncommingMessage)
+	go s.sseClient.Do(params, handleIncomingMessage)
 	go func() {
 		for {
 			status := <-s.sseStatus

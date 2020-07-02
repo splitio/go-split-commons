@@ -18,6 +18,10 @@ const (
 const (
 	// Ready represents ready
 	Ready = iota
+	// PushIsDown there are no publishers for streaming
+	PushIsDown
+	// PushIsUp there are publishers presents
+	PushIsUp
 	// Error represents some error in SSE streaming
 	Error
 )
@@ -30,6 +34,7 @@ type PushManager struct {
 	eventHandler    *EventHandler
 	managerStatus   chan<- int
 	streamingStatus chan int
+	publishers      chan int
 	logger          logging.LoggerInterface
 }
 
@@ -54,7 +59,12 @@ func NewPushManager(
 	if parser == nil {
 		return nil, errors.New("Could not instantiate NotificationParser")
 	}
-	eventHandler := NewEventHandler(parser, processor, logger)
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
+	if keeper == nil {
+		return nil, errors.New("Could not instantiate Keeper")
+	}
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
 	if err != nil {
 		return nil, err
@@ -72,6 +82,7 @@ func NewPushManager(
 		managerStatus:   managerStatus,
 		streamingStatus: streamingStatus,
 		eventHandler:    eventHandler,
+		publishers:      publishers,
 		logger:          logger,
 	}, nil
 }
@@ -82,16 +93,26 @@ func (p *PushManager) Start(token string, channels []string) {
 
 	go func() {
 		for {
-			status := <-p.streamingStatus
-			switch status {
-			case sseStatus.OK:
-				p.splitWorker.Start()
-				p.segmentWorker.Start()
-				p.managerStatus <- Ready
-			default:
-				p.managerStatus <- Error
-				return
+			select {
+			case status := <-p.streamingStatus:
+				switch status {
+				case sseStatus.OK:
+					p.splitWorker.Start()
+					p.segmentWorker.Start()
+					p.managerStatus <- Ready
+				default:
+					p.managerStatus <- Error
+					return
+				}
+			case publisherStatus := <-p.publishers:
+				switch publisherStatus {
+				case PublisherNotPresent:
+					p.managerStatus <- PushIsDown
+				case PublisherAvailable:
+					p.managerStatus <- PushIsUp
+				}
 			}
+
 		}
 	}()
 }

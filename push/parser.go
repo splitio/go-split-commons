@@ -8,6 +8,7 @@ import (
 const (
 	update    = "update"
 	errorType = "error"
+	occupancy = "[meta]occupancy"
 )
 
 // NotificationParser struct
@@ -50,8 +51,14 @@ func (n *NotificationParser) Parse(event map[string]interface{}) IncomingEvent {
 
 	if incomingEvent.code != nil && incomingEvent.statusCode != nil {
 		incomingEvent.event = errorType
-	} else {
-		incomingEvent.event = update
+		return incomingEvent
 	}
+
+	if incomingEvent.name != nil && *incomingEvent.name == occupancy {
+		incomingEvent.event = occupancy
+		return incomingEvent
+	}
+
+	incomingEvent.event = update
 	return incomingEvent
 }

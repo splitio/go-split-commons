@@ -71,7 +71,8 @@ func TestPushLogic(t *testing.T) {
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	eventHandler := NewEventHandler(parser, processor, logger)
+	keeper := NewKeeper(make(chan int, 1))
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -204,7 +205,8 @@ func TestPushError(t *testing.T) {
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	eventHandler := NewEventHandler(parser, processor, logger)
+	keeper := NewKeeper(make(chan int, 1))
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -287,5 +289,126 @@ func TestPushError(t *testing.T) {
 	}
 	if atomic.LoadInt64(&shouldReceiveError) != 2 {
 		t.Error("It should return error")
+	}
+}
+
+func TestFeedbackLoop(t *testing.T) {
+	var shouldReceiveReady int64
+	var shouldReceiveError int64
+	var shouldReceiveSwitchToPolling int64
+	var shouldReceiveSwitchToStreaming int64
+
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	advanced := &conf.AdvancedConfig{
+		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
+	}
+
+	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	parser := NewNotificationParser(logger)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, err := w.(http.Flusher)
+		if !err {
+			t.Error("Unexpected error")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+
+		for i := 0; i < 2; i++ {
+			switch i {
+			case 0:
+				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
+				var mockedData map[string]interface{}
+				_ = json.Unmarshal(sseMock, &mockedData)
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			case 1:
+				sseMock, _ := ioutil.ReadFile("../testdata/occupancy2.json")
+				var mockedData map[string]interface{}
+				_ = json.Unmarshal(sseMock, &mockedData)
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			}
+		}
+		flusher.Flush()
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
+
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
+
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
+		return nil
+	}, logger)
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, func(till *int64) error {
+		return nil
+	}, logger)
+
+	managerStatus := make(chan int, 1)
+
+	go func() {
+		for {
+			msg := <-managerStatus
+			switch msg {
+			case Ready:
+				atomic.AddInt64(&shouldReceiveReady, 1)
+			case PushIsDown:
+				atomic.AddInt64(&shouldReceiveSwitchToPolling, 1)
+			case PushIsUp:
+				atomic.AddInt64(&shouldReceiveSwitchToStreaming, 1)
+			case Error:
+				atomic.AddInt64(&shouldReceiveError, 1)
+			}
+		}
+	}()
+
+	mockedPush := PushManager{
+		sseClient:       mockedClient,
+		eventHandler:    eventHandler,
+		logger:          logger,
+		segmentWorker:   segmentWorker,
+		splitWorker:     splitWorker,
+		managerStatus:   managerStatus,
+		streamingStatus: streamingStatus,
+		publishers:      publishers,
+	}
+
+	mockedPush.Start("some", []string{})
+
+	time.Sleep(1 * time.Second)
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	mockedPush.Stop()
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
+	}
+	if atomic.LoadInt64(&shouldReceiveSwitchToPolling) != 1 {
+		t.Error("It should be one")
+	}
+	if atomic.LoadInt64(&shouldReceiveSwitchToPolling) != 1 {
+		t.Error("It should be one")
+	}
+	if atomic.LoadInt64(&shouldReceiveReady) != 1 {
+		t.Error("It should be one")
+	}
+	if atomic.LoadInt64(&shouldReceiveError) != 0 {
+		t.Error("It should not return error")
 	}
 }
