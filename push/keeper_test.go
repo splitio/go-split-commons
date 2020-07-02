@@ -18,6 +18,15 @@ func TestUpdateManagers(t *testing.T) {
 	if len(keeper.managers) != 5 {
 		t.Error("Unexpected managers registered")
 	}
+	if keeper.Publishers("unexistent") != nil {
+		t.Error("It should be nil")
+	}
+	if *keeper.Publishers("some_0") != 0 {
+		t.Error("It should be one")
+	}
+	if *keeper.Publishers("some_4") != 4 {
+		t.Error("It should be five")
+	}
 }
 
 func TestUpdateLastNotification(t *testing.T) {
@@ -27,11 +36,11 @@ func TestUpdateLastNotification(t *testing.T) {
 		keeper.UpdateLastNotification(fmt.Sprintf("some_%d", i), int64(i))
 	}
 
-	if keeper.last.manager != "some_4" {
+	manager, timestamp := keeper.LastNotification()
+	if manager != "some_4" {
 		t.Error("Unexpected manager registered for latest")
 	}
-
-	if keeper.last.timestamp != 4 {
+	if timestamp != 4 {
 		t.Error("Unexpected manager registered for latest")
 	}
 }

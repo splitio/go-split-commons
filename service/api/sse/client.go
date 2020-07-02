@@ -54,7 +54,7 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logg
 // ConnectStreaming connects to streaming
 func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncomingMessage func(e map[string]interface{})) {
 	params := make(map[string]string)
-	params["channels"] = strings.Join(channelList, ",") + "," + occupancy
+	params["channels"] = strings.Join(append(channelList, occupancy), ",")
 	params["accessToken"] = token
 	params["v"] = version
 

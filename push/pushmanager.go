@@ -2,6 +2,7 @@ package push
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
@@ -110,6 +111,8 @@ func (p *PushManager) Start(token string, channels []string) {
 					p.managerStatus <- PushIsDown
 				case PublisherAvailable:
 					p.managerStatus <- PushIsUp
+				default:
+					p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 				}
 			}
 
