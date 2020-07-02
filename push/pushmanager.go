@@ -27,8 +27,8 @@ type PushManager struct {
 	sseClient       *sse.StreamingClient
 	segmentWorker   *SegmentUpdateWorker
 	splitWorker     *SplitUpdateWorker
-	parser          *NotificationParser
-	managerStatus   chan int
+	eventHandler    *EventHandler
+	managerStatus   chan<- int
 	streamingStatus chan int
 	logger          logging.LoggerInterface
 }
@@ -50,10 +50,11 @@ func NewPushManager(
 	if err != nil {
 		return nil, err
 	}
-	parser := NewNotificationParser(processor, logger)
+	parser := NewNotificationParser(logger)
 	if parser == nil {
 		return nil, errors.New("Could not instantiate NotificationParser")
 	}
+	eventHandler := NewEventHandler(parser, processor, logger)
 	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizeSegmentHandler, logger)
 	if err != nil {
 		return nil, err
@@ -63,21 +64,21 @@ func NewPushManager(
 		return nil, err
 	}
 
-	streamingStatus := make(chan int, 1)
+	streamingStatus := make(chan int, 1000)
 	return &PushManager{
 		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
 		segmentWorker:   segmentWorker,
 		splitWorker:     splitWorker,
 		managerStatus:   managerStatus,
 		streamingStatus: streamingStatus,
-		parser:          parser,
+		eventHandler:    eventHandler,
 		logger:          logger,
 	}, nil
 }
 
 // Start push services
 func (p *PushManager) Start(token string, channels []string) {
-	go p.sseClient.ConnectStreaming(token, channels, p.parser.HandleIncomingMessage)
+	go p.sseClient.ConnectStreaming(token, channels, p.eventHandler.HandleIncomingMessage)
 
 	go func() {
 		for {

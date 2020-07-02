@@ -1,3 +1,3 @@
 [[constraint]]
-  branch = "sse2"
+  branch = "modularization"
   name = "github.com/splitio/go-toolkit"

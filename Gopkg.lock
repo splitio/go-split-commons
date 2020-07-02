@@ -26,11 +26,12 @@
   version = "v0.9.1"
 
 [[projects]]
-  branch = "sse2"
-  digest = "1:10923d50b9e5e7a0df23bf6dc46e9c3a8a9a907e26c6cbf4d371ccd3e3f9add8"
+  branch = "modularization"
+  digest = "1:39c52c709a2c5d3c6443000676eca2f2d88cd37c39958a9890f4ed6a60a8ad7d"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
+    "common",
     "datastructures/set",
     "deepcopy",
     "logging",
@@ -42,7 +43,7 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "34f82702832a00c44144272b3d9f01d54f67930c"
+  revision = "d90a0c187d77d85930c697e92d6bcf52efa8ff89"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -58,6 +59,7 @@
   input-imports = [
     "github.com/pkg/errors",
     "github.com/splitio/go-toolkit/asynctask",
+    "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/deepcopy",
     "github.com/splitio/go-toolkit/logging",

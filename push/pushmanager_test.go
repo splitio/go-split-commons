@@ -62,15 +62,15 @@ func TestPushLogic(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processorTest, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
 	if err != nil {
 		t.Error("It should not return error")
 	}
-
-	parser := NewNotificationParser(processorTest, logger)
+	parser := NewNotificationParser(logger)
 	if err != nil {
 		t.Error("It should not return err")
 	}
+	eventHandler := NewEventHandler(parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -130,7 +130,7 @@ func TestPushLogic(t *testing.T) {
 	managerStatus := make(chan int, 1)
 	mockedPush := PushManager{
 		sseClient:       mockedClient,
-		parser:          parser,
+		eventHandler:    eventHandler,
 		logger:          logger,
 		segmentWorker:   segmentWorker,
 		splitWorker:     splitWorker,
