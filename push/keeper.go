@@ -25,6 +25,7 @@ type Keeper struct {
 	last         *last
 	publishers   chan int
 	mutex        *sync.RWMutex
+	mutexLast    *sync.RWMutex
 }
 
 // NewKeeper creates new keeper
@@ -33,6 +34,7 @@ func NewKeeper(publishers chan int) *Keeper {
 		managers:     make(map[string]int),
 		activeRegion: "us-east-1",
 		mutex:        &sync.RWMutex{},
+		mutexLast:    &sync.RWMutex{},
 		publishers:   publishers,
 	}
 }
@@ -59,8 +61,8 @@ func (k *Keeper) UpdateManagers(manager string, publishers int) {
 
 // UpdateLastNotification updates last message received
 func (k *Keeper) UpdateLastNotification(manager string, timestamp int64) {
-	k.mutex.Lock()
-	defer k.mutex.Unlock()
+	k.mutexLast.Lock()
+	defer k.mutexLast.Unlock()
 	k.last = &last{
 		manager:   k.cleanManagerPrefix(manager),
 		timestamp: timestamp,
