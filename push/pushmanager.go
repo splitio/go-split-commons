@@ -82,17 +82,15 @@ func (p *PushManager) Start(token string, channels []string) {
 
 	go func() {
 		for {
-			select {
-			case status := <-p.streamingStatus:
-				switch status {
-				case sseStatus.OK:
-					p.splitWorker.Start()
-					p.segmentWorker.Start()
-					p.managerStatus <- Ready
-				default:
-					p.managerStatus <- Error
-					return
-				}
+			status := <-p.streamingStatus
+			switch status {
+			case sseStatus.OK:
+				p.splitWorker.Start()
+				p.segmentWorker.Start()
+				p.managerStatus <- Ready
+			default:
+				p.managerStatus <- Error
+				return
 			}
 		}
 	}()

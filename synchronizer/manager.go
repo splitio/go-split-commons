@@ -81,18 +81,16 @@ func (s *Manager) Start() {
 			s.logger.Info("Start Streaming")
 			s.pushManager.Start(token.Token, channels)
 			for {
-				select {
-				case status := <-s.streamingStatus:
-					switch status {
-					case push.Ready:
-						s.logger.Info("SSE Streaming is ready")
-						s.managerStatus <- StreamingReady
-					case push.Error:
-						s.pushManager.Stop()
-						s.logger.Info("Start periodic polling due error in Streaming")
-						s.synchronizer.StartPeriodicFetching()
-						return
-					}
+				status := <-s.streamingStatus
+				switch status {
+				case push.Ready:
+					s.logger.Info("SSE Streaming is ready")
+					s.managerStatus <- StreamingReady
+				case push.Error:
+					s.pushManager.Stop()
+					s.logger.Info("Start periodic polling due error in Streaming")
+					s.synchronizer.StartPeriodicFetching()
+					return
 				}
 			}
 		}

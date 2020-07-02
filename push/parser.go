@@ -25,17 +25,27 @@ func NewNotificationParser(logger logging.LoggerInterface) *NotificationParser {
 // Parse parses incoming event from streaming
 func (n *NotificationParser) Parse(event map[string]interface{}) IncomingEvent {
 	incomingEvent := IncomingEvent{
-		id:         common.AsStringOrNil(event["id"]),
-		timestamp:  common.AsInt64OrNil(event["timestamp"]),
-		encoding:   common.AsStringOrNil(event["encoding"]),
-		data:       common.AsStringOrNil(event["data"]),
-		name:       common.AsStringOrNil(event["name"]),
-		clientID:   common.AsStringOrNil(event["clientId"]),
-		channel:    common.AsStringOrNil(event["channel"]),
-		message:    common.AsStringOrNil(event["message"]),
-		code:       common.AsInt64OrNil(event["code"]),
-		statusCode: common.AsInt64OrNil(event["statusCode"]),
-		href:       common.AsStringOrNil(event["href"]),
+		id:       common.AsStringOrNil(event["id"]),
+		encoding: common.AsStringOrNil(event["encoding"]),
+		data:     common.AsStringOrNil(event["data"]),
+		name:     common.AsStringOrNil(event["name"]),
+		clientID: common.AsStringOrNil(event["clientId"]),
+		channel:  common.AsStringOrNil(event["channel"]),
+		message:  common.AsStringOrNil(event["message"]),
+		href:     common.AsStringOrNil(event["href"]),
+	}
+
+	timestamp := common.AsFloat64OrNil(event["timestamp"])
+	if timestamp != nil {
+		incomingEvent.timestamp = common.Int64Ref(int64(*timestamp))
+	}
+	code := common.AsFloat64OrNil(event["code"])
+	if code != nil {
+		incomingEvent.code = common.IntRef(int(*code))
+	}
+	statusCode := common.AsFloat64OrNil(event["statusCode"])
+	if statusCode != nil {
+		incomingEvent.statusCode = common.IntRef(int(*statusCode))
 	}
 
 	if incomingEvent.code != nil && incomingEvent.statusCode != nil {

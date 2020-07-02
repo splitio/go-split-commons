@@ -37,12 +37,10 @@ func TestStreamingError(t *testing.T) {
 	})
 	go func() {
 		for {
-			select {
-			case msg := <-streamingStatus:
-				atomic.AddInt64(&sseErrorReceived, 1)
-				if msg != sse.ErrorConnectToStreaming {
-					t.Error("Unexpected error")
-				}
+			msg := <-streamingStatus
+			atomic.AddInt64(&sseErrorReceived, 1)
+			if msg != sse.ErrorConnectToStreaming {
+				t.Error("Unexpected error")
 			}
 		}
 	}()
@@ -99,14 +97,12 @@ func TestStreamingOk(t *testing.T) {
 
 	go func() {
 		for {
-			select {
-			case status := <-streamingStatus:
-				switch status {
-				case sse.OK:
-					atomic.AddInt64(&sseReadyReceived, 1)
-				default:
-					atomic.AddInt64(&sseErrorReceived, 1)
-				}
+			status := <-streamingStatus
+			switch status {
+			case sse.OK:
+				atomic.AddInt64(&sseReadyReceived, 1)
+			default:
+				atomic.AddInt64(&sseErrorReceived, 1)
 			}
 		}
 	}()

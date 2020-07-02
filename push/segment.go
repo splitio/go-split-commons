@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -16,8 +17,7 @@ type SegmentUpdateWorker struct {
 	handler          func(segmentName string, till *int64) error
 	logger           logging.LoggerInterface
 	stop             chan struct{}
-	running          bool
-	mutex            *sync.RWMutex
+	running          atomic.Value
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
@@ -25,22 +25,16 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 	if cap(segmentQueue) < 5000 {
 		return nil, errors.New("")
 	}
+	running := atomic.Value{}
+	running.Store(false)
 
 	return &SegmentUpdateWorker{
-		activeGoroutines: &sync.WaitGroup{},
-		segmentQueue:     segmentQueue,
-		handler:          handler,
-		logger:           logger,
-		stop:             make(chan struct{}, 1),
-		running:          false,
-		mutex:            &sync.RWMutex{},
+		segmentQueue: segmentQueue,
+		handler:      handler,
+		logger:       logger,
+		stop:         make(chan struct{}, 1),
+		running:      running,
 	}, nil
-}
-
-func (s *SegmentUpdateWorker) updateStatus(status bool) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.running = status
 }
 
 // Start starts worker
@@ -50,10 +44,8 @@ func (s *SegmentUpdateWorker) Start() {
 		s.logger.Info("Segment worker is already running")
 		return
 	}
-	s.activeGoroutines.Add(1)
-	s.updateStatus(true)
+	s.running.Store(true)
 	go func() {
-		defer s.activeGoroutines.Done()
 		for {
 			select {
 			case segmentUpdate := <-s.segmentQueue:
@@ -74,14 +66,11 @@ func (s *SegmentUpdateWorker) Start() {
 func (s *SegmentUpdateWorker) Stop() {
 	if s.IsRunning() {
 		s.stop <- struct{}{}
-		s.activeGoroutines.Wait()
-		s.updateStatus(false)
+		s.running.Store(false)
 	}
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-	return s.running
+	return s.running.Load().(bool)
 }

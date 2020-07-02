@@ -11,7 +11,7 @@ type IncomingEvent struct {
 	event      string
 	channel    *string
 	message    *string
-	code       *int64
-	statusCode *int64
+	code       *int
+	statusCode *int
 	href       *string
 }

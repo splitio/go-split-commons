@@ -42,8 +42,8 @@ func TestParse(t *testing.T) {
 
 	e3 := make(map[string]interface{})
 	e3["message"] = "Token expired"
-	e3["code"] = int64(40142)
-	e3["statusCode"] = int64(401)
+	e3["code"] = float64(40142)
+	e3["statusCode"] = float64(401)
 	e3["href"] = "https://help.io/error/40142"
 	i3 := parser.Parse(e3)
 	if i3.event != "error" {

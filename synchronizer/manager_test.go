@@ -516,36 +516,34 @@ func TestStreaming(t *testing.T) {
 		w.Header().Set("Cache-Control", "no-cache")
 
 		for {
-			select {
-			case msg := <-sseMsg:
-				switch msg {
-				case 0:
-					return
-				case 1:
-					sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
-					var mockedData map[string]interface{}
-					_ = json.Unmarshal(sseMock, &mockedData)
-					mockedStr, _ := json.Marshal(mockedData)
-					fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-				case 2:
-					mockedData := make(map[string]interface{})
-					mockedData["event"] = "keepalive"
-					mockedStr, _ := json.Marshal(mockedData)
-					fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-				case 3:
-					sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
-					var mockedData map[string]interface{}
-					_ = json.Unmarshal(sseMock, &mockedData)
-					mockedStr, _ := json.Marshal(mockedData)
-					fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-				case 4:
-					sseMock, _ := ioutil.ReadFile("../testdata/sse3.json")
-					var mockedData map[string]interface{}
-					_ = json.Unmarshal(sseMock, &mockedData)
-					mockedStr, _ := json.Marshal(mockedData)
-					fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-				default:
-				}
+			msg := <-sseMsg
+			switch msg {
+			case 0:
+				return
+			case 1:
+				sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
+				var mockedData map[string]interface{}
+				_ = json.Unmarshal(sseMock, &mockedData)
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			case 2:
+				mockedData := make(map[string]interface{})
+				mockedData["event"] = "keepalive"
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			case 3:
+				sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
+				var mockedData map[string]interface{}
+				_ = json.Unmarshal(sseMock, &mockedData)
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			case 4:
+				sseMock, _ := ioutil.ReadFile("../testdata/sse3.json")
+				var mockedData map[string]interface{}
+				_ = json.Unmarshal(sseMock, &mockedData)
+				mockedStr, _ := json.Marshal(mockedData)
+				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+			default:
 			}
 			flusher.Flush()
 		}
