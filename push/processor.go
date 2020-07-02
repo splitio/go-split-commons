@@ -1,7 +1,6 @@
-package processor
+package push
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -11,7 +10,8 @@ import (
 )
 
 const (
-	keepalive = "keepalive"
+	segmentQueueCheck = 5000
+	splitQueueCheck   = 5000
 )
 
 // Processor struct for notification processor
@@ -24,10 +24,10 @@ type Processor struct {
 
 // NewProcessor creates new processor
 func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer, logger logging.LoggerInterface) (*Processor, error) {
-	if cap(segmentQueue) < 5000 {
+	if cap(segmentQueue) < segmentQueueCheck {
 		return nil, errors.New("Small size of segmentQueue")
 	}
-	if cap(splitQueue) < 5000 {
+	if cap(splitQueue) < splitQueueCheck {
 		return nil, errors.New("Small size of splitQueue")
 	}
 
@@ -39,68 +39,41 @@ func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue c
 	}, nil
 }
 
-func (p *Processor) getData(data interface{}) *string {
-	if data == nil {
-		return nil
-	}
-
-	str, ok := data.(string)
-	if !ok {
-		return nil
-	}
-	return &str
-}
-
-// HandleIncomingMessage handles incoming message from streaming
-func (p *Processor) HandleIncomingMessage(event map[string]interface{}) {
-	keepAliveEvent := p.getData(event["event"])
-	if keepAliveEvent != nil && *keepAliveEvent == keepalive {
-		// Reset Timer Connection
-		p.logger.Info("RESET TIMER")
-		return
-	}
-
-	updateEvent := p.getData(event["data"])
-	if updateEvent == nil {
-		p.logger.Error("data is not present in incoming notification")
-		return
-	}
-
-	var incomingNotification dtos.IncomingNotification
-	err := json.Unmarshal([]byte(*updateEvent), &incomingNotification)
-	if err != nil {
-		p.logger.Error("cannot parse data as IncomingNotification type")
-		return
-	}
-
-	if event["channel"] != nil {
-		channel, ok := event["channel"].(string)
-		if ok {
-			incomingNotification.Channel = channel
-		}
-	}
-
-	p.logger.Debug("Incomming Notification:", incomingNotification)
-	err = p.process(incomingNotification)
-	if err != nil {
-		p.logger.Error(err)
-	}
-}
-
 // Process takes an incoming notification and generates appropriate notifications for it.
-func (p *Processor) process(i dtos.IncomingNotification) error {
+func (p *Processor) Process(i dtos.IncomingNotification) error {
 	switch i.Type {
 	case dtos.SplitUpdate:
+		if i.ChangeNumber == nil {
+			return errors.New("ChangeNumber could not be nil, discarded")
+		}
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
 		p.splitQueue <- splitUpdate
 	case dtos.SegmentUpdate:
+		if i.ChangeNumber == nil {
+			return errors.New("ChangeNumber could not be nil, discarded")
+		}
+		if i.SegmentName == nil {
+			return errors.New("SegmentName could not be nil, discarded")
+		}
 		segmentUpdate := dtos.NewSegmentChangeNotification(i.Channel, *i.ChangeNumber, *i.SegmentName)
 		p.segmentQueue <- segmentUpdate
 	case dtos.SplitKill:
+		if i.ChangeNumber == nil {
+			return errors.New("ChangeNumber could not be nil, discarded")
+		}
+		if i.SplitName == nil {
+			return errors.New("SplitName could not be nil, discarded")
+		}
+		if i.DefaultTreatment == nil {
+			return errors.New("DefaultTreatment could not be nil, discarded")
+		}
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
 		p.splitStorage.KillLocally(*i.SplitName, *i.DefaultTreatment)
 		p.splitQueue <- splitUpdate
 	case dtos.Control:
+		if i.ControlType == nil {
+			return errors.New("ControlType could not be nil, discarded")
+		}
 		control := dtos.NewControlNotification(i.Channel, *i.ControlType)
 		fmt.Println(control)
 		// processControl

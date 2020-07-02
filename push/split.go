@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -16,7 +17,7 @@ type SplitUpdateWorker struct {
 	handler          func(till *int64) error
 	logger           logging.LoggerInterface
 	stop             chan struct{}
-	running          bool
+	running          atomic.Value
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -24,14 +25,16 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 	if cap(splitQueue) < 5000 {
 		return nil, errors.New("")
 	}
+	running := atomic.Value{}
+	running.Store(false)
 
 	return &SplitUpdateWorker{
 		activeGoroutines: &sync.WaitGroup{},
 		splitQueue:       splitQueue,
 		handler:          handler,
 		logger:           logger,
+		running:          running,
 		stop:             make(chan struct{}, 1),
-		running:          false,
 	}, nil
 }
 
@@ -42,10 +45,8 @@ func (s *SplitUpdateWorker) Start() {
 		s.logger.Info("Split worker is already running")
 		return
 	}
-	s.activeGoroutines.Add(1)
-	s.running = true
+	s.running.Store(true)
 	go func() {
-		defer s.activeGoroutines.Done()
 		for {
 			select {
 			case splitUpdate := <-s.splitQueue:
@@ -64,12 +65,13 @@ func (s *SplitUpdateWorker) Start() {
 
 // Stop stops worker
 func (s *SplitUpdateWorker) Stop() {
-	s.stop <- struct{}{}
-	s.activeGoroutines.Wait()
-	s.running = false
+	if s.IsRunning() {
+		s.stop <- struct{}{}
+		s.running.Store(false)
+	}
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SplitUpdateWorker) IsRunning() bool {
-	return s.running
+	return s.running.Load().(bool)
 }

@@ -6,12 +6,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/sse"
 )
 
 func TestStreamingError(t *testing.T) {
@@ -27,21 +29,18 @@ func TestStreamingError(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 
-	sseError := make(chan error, 1)
-	sseReady := make(chan struct{}, 1)
-	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
+	streamingStatus := make(chan int, 1)
+	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
 	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		t.Error("Should not execute callback")
 	})
 	go func() {
 		for {
-			select {
-			case err := <-sseError:
-				atomic.AddInt64(&sseErrorReceived, 1)
-				if err.Error() != "Some error occurred connecting to streaming" {
-					t.Error("Unexpected error")
-				}
+			msg := <-streamingStatus
+			atomic.AddInt64(&sseErrorReceived, 1)
+			if msg != sse.ErrorConnectToStreaming {
+				t.Error("Unexpected error")
 			}
 		}
 	}()
@@ -57,15 +56,14 @@ func TestStreamingError(t *testing.T) {
 }
 
 func TestStreamingOk(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelAll})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	sseMock, _ := ioutil.ReadFile("../../../testdata/sse.json")
 	var mockedData map[string]interface{}
 	_ = json.Unmarshal(sseMock, &mockedData)
 	mockedStr, _ := json.Marshal(mockedData)
 
-	sseError := make(chan error, 1)
-	sseReady := make(chan struct{}, 1)
+	streamingStatus := make(chan int, 1)
 	var sseReadyReceived int64
 	var sseErrorReceived int64
 
@@ -87,26 +85,29 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, sseReady, sseError, logger)
+	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
 	var result map[string]interface{}
-
+	mutexTest := sync.RWMutex{}
 	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+		defer mutexTest.Unlock()
+		mutexTest.Lock()
 		result = e
 	})
 
 	go func() {
 		for {
-			select {
-			case <-sseReady:
+			status := <-streamingStatus
+			switch status {
+			case sse.OK:
 				atomic.AddInt64(&sseReadyReceived, 1)
-			case <-sseError:
+			default:
 				atomic.AddInt64(&sseErrorReceived, 1)
 			}
 		}
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	if !mockedClient.IsRunning() {
 		t.Error("It should be running")
 	}
@@ -123,6 +124,7 @@ func TestStreamingOk(t *testing.T) {
 		t.Error("It should be ready")
 	}
 
+	mutexTest.RLock()
 	if result["id"] != mockedData["id"] {
 		t.Error("Unexpected id")
 	}
@@ -141,4 +143,5 @@ func TestStreamingOk(t *testing.T) {
 	if result["data"] != mockedData["data"] {
 		t.Error("Unexpected data")
 	}
+	mutexTest.RUnlock()
 }

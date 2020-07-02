@@ -9,7 +9,7 @@ import (
 )
 
 func TestSegmentUpdateWorker(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	segmentQUeue := make(chan dtos.SegmentChangeNotification, 5000)
 
 	segmentHandler := func(segmentName string, till *int64) error {

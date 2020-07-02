@@ -9,7 +9,7 @@ import (
 )
 
 func TestSplitUpdateWorker(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
 	mockedSync := func(till *int64) error {
 		if *till != 123456789 {

@@ -96,7 +96,7 @@ func (s *SegmentFetcher) SynchronizeSegment(name string, till *int64) error {
 		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
 		s.metricStorage.IncLatency(segmentChangesLatencies, bucket)
 		s.metricStorage.IncCounter(strings.Replace(segmentChangesCounters, "{status}", "200", 1))
-		if segmentChanges.Since == segmentChanges.Till {
+		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
 			return nil
 		}
 	}
