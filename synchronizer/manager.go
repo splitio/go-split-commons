@@ -44,7 +44,7 @@ func NewSynchronizerManager(
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
-	streamingStatus := make(chan int, 1)
+	streamingStatus := make(chan int, 1000)
 	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus)
 	if err != nil {
 		return nil, err

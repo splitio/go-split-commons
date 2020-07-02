@@ -59,7 +59,7 @@ func NewPushManager(
 	if parser == nil {
 		return nil, errors.New("Could not instantiate NotificationParser")
 	}
-	publishers := make(chan int, 1)
+	publishers := make(chan int, 1000)
 	keeper := NewKeeper(publishers)
 	if keeper == nil {
 		return nil, errors.New("Could not instantiate Keeper")
