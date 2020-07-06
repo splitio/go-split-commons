@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,47 +42,6 @@ func TestSyncError(t *testing.T) {
 	}
 }
 
-func TestSyncInvalidAuth(t *testing.T) {
-	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-	mockSync := syncMock.MockSynchronizer{
-		SyncAllCall: func() error {
-			t.Error("It should not be called")
-			return nil
-		},
-		StartPeriodicDataRecordingCall: func() {
-			t.Error("It should not be called")
-		},
-		StartPeriodicFetchingCall: func() {
-			t.Error("It should not be called")
-		},
-	}
-
-	statusChan := make(chan int, 1)
-	managerTest, err := NewSynchronizerManager(
-		mockSync,
-		logger,
-		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return nil, errors.New("some")
-			},
-		},
-		storageMock.MockSplitStorage{},
-		statusChan,
-	)
-	if err != nil {
-		t.Error("It should not return err")
-	}
-	go managerTest.Start()
-
-	msg := <-statusChan
-	if msg != Error {
-		t.Error("It should be err")
-	}
-}
-
 func TestPollingWithStreamingFalse(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
@@ -102,20 +60,22 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 		},
 	}
 
-	managerTest, err := NewSynchronizerManager(
-		mockSync,
-		logger,
-		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return nil, nil
-			},
+	status := make(chan int, 1)
+	push, _ := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, status, mocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return nil, nil
 		},
-		storageMock.MockSplitStorage{},
-		make(chan int, 1),
-	)
-	if err != nil {
-		t.Error("It should not return err")
+	})
+	streamingRunning := atomic.Value{}
+	streamingRunning.Store(false)
+	managerTest := Manager{
+		synchronizer:     mockSync,
+		logger:           logger,
+		config:           advanced,
+		managerStatus:    make(chan int, 1),
+		pushManager:      push,
+		streamingStatus:  status,
+		streamingRunning: streamingRunning,
 	}
 	managerTest.Start()
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
@@ -179,10 +139,15 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	streamingStatus := make(chan int, 1)
-	pushManager, err := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, streamingStatus)
-	if err != nil {
-		t.Error("It should not return err")
-	}
+	pushManager, _ := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, streamingStatus,
+		mocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		})
 
 	streamingRunning := atomic.Value{}
 	streamingRunning.Store(false)
@@ -200,14 +165,6 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		},
 		logger,
 		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return &dtos.Token{
-					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
-					PushEnabled: true,
-				}, nil
-			},
-		},
 		pushManager,
 		make(chan int, 1),
 		streamingStatus,
