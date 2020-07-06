@@ -28,9 +28,11 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should not return error")
 	}
 	parser := NewNotificationParser(logger)
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
 
-	eventHandler := NewEventHandler(parser, processor, logger)
-	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", ""))
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
+	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "", nil))
 	if len(segmentQueue) != 0 {
 		t.Error("It should be 0")
 	}
@@ -38,7 +40,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should be 0")
 	}
 
-	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"WRONG\"}"))
+	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"WRONG\"}", nil))
 	if len(segmentQueue) != 0 {
 		t.Error("It should be 0")
 	}
@@ -46,7 +48,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should be 0")
 	}
 
-	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_KILL\",\"changeNumber\":1591996754396,\"defaultTreatment\":\"some\",\"splitName\":\"test\"}"))
+	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_KILL\",\"changeNumber\":1591996754396,\"defaultTreatment\":\"some\",\"splitName\":\"test\"}", nil))
 	if len(splitQueue) != 1 {
 		t.Error("It should be 1")
 	}
@@ -54,12 +56,12 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should be 0")
 	}
 
-	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1591996685190}"))
+	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits", "{\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1591996685190}", nil))
 	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
 	}
 
-	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"some\"}"))
+	eventHandler.HandleIncomingMessage(wrapEvent("NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments", "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"some\"}", nil))
 	if len(segmentQueue) != 1 {
 		t.Error("It should be 1")
 	}
@@ -78,5 +80,25 @@ func TestHandleIncomingMessage(t *testing.T) {
 	}
 	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
+	}
+
+	name := "[meta]occupancy"
+	e6 := wrapEvent("[?occupancy=metrics.publishers]control_sec", "{\"metrics\":{\"publishers\":1}}", &name)
+	eventHandler.HandleIncomingMessage(e6)
+
+	e7 := wrapEvent("[?occupancy=metrics.publishers]control_pri", "{\"metrics\":{\"publishers\":2}}", &name)
+	eventHandler.HandleIncomingMessage(e7)
+
+	if keeper.activeRegion != "us-east-1" {
+		t.Error("Unexpected activeRegion")
+	}
+	if len(keeper.managers) != 2 {
+		t.Error("Wrong amount of managers")
+	}
+	if keeper.managers["control_sec"] != 1 {
+		t.Error("Unexpected amount of publishers")
+	}
+	if keeper.managers["control_pri"] != 2 {
+		t.Error("Unexpected amount of publishers")
 	}
 }

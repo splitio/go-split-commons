@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"errors"
+	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
@@ -21,41 +22,44 @@ const (
 
 // Manager struct
 type Manager struct {
-	synchronizer    Synchronizer
-	logger          logging.LoggerInterface
-	config          conf.AdvancedConfig
-	authClient      service.AuthClient
-	pushManager     *push.PushManager
-	managerStatus   chan int
-	streamingStatus chan int
+	synchronizer     Synchronizer
+	logger           logging.LoggerInterface
+	config           conf.AdvancedConfig
+	authClient       service.AuthClient
+	pushManager      *push.PushManager
+	managerStatus    chan<- int
+	streamingStatus  chan int
+	streamingRunning atomic.Value
 }
 
 // NewSynchronizerManager creates new sync manager
 func NewSynchronizerManager(
 	synchronizer Synchronizer,
 	logger logging.LoggerInterface,
-	statusChannel chan int,
 	config conf.AdvancedConfig,
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
 ) (*Manager, error) {
-	if statusChannel == nil || cap(statusChannel) < 1 {
+	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
-	streamingStatus := make(chan int, 1)
+	streamingStatus := make(chan int, 1000)
 	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus)
 	if err != nil {
 		return nil, err
 	}
+	streamingRunning := atomic.Value{}
+	streamingRunning.Store(false)
 	return &Manager{
-		synchronizer:    synchronizer,
-		logger:          logger,
-		streamingStatus: streamingStatus,
-		config:          config,
-		authClient:      authClient,
-		pushManager:     pushManager,
-		managerStatus:   managerStatus,
+		synchronizer:     synchronizer,
+		logger:           logger,
+		streamingStatus:  streamingStatus,
+		config:           config,
+		authClient:       authClient,
+		pushManager:      pushManager,
+		managerStatus:    managerStatus,
+		streamingRunning: streamingRunning,
 	}, nil
 }
 
@@ -86,16 +90,28 @@ func (s *Manager) Start() {
 				case push.Ready:
 					s.logger.Info("SSE Streaming is ready")
 					s.managerStatus <- StreamingReady
+					s.streamingRunning.Store(true)
 				case push.Error:
 					s.pushManager.Stop()
 					s.logger.Info("Start periodic polling due error in Streaming")
 					s.synchronizer.StartPeriodicFetching()
 					return
+				case push.PushIsDown:
+					if s.streamingRunning.Load().(bool) {
+						s.logger.Info("Start periodic polling due error in Streaming")
+						s.synchronizer.StartPeriodicFetching()
+						s.streamingRunning.Store(false)
+					}
+				case push.PushIsUp:
+					if !s.streamingRunning.Load().(bool) {
+						s.logger.Info("Stop periodic polling due Publishers Available")
+						s.synchronizer.StopPeriodicFetching()
+						s.streamingRunning.Store(true)
+					}
 				}
 			}
 		}
 	}
-
 	s.logger.Info("Start periodic polling")
 	s.synchronizer.StartPeriodicFetching()
 }
