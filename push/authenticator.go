@@ -17,6 +17,10 @@ const (
 	Finished
 )
 
+const (
+	maxSecondsRetry = 1800
+)
+
 // Authenticator struct
 type Authenticator struct {
 	backoffAuthentication *backoff.BackOff
@@ -41,7 +45,7 @@ func NewAuthenticator(authentication chan interface{}, authClient service.AuthCl
 		return false, nil // Result is OK, Stopping Here, no more backoff
 	}
 
-	backoffAuthentication := backoff.NewBackOff("PerformAuthentication", perform, 1, logger)
+	backoffAuthentication := backoff.NewBackOff("PerformAuthentication", perform, 1, float64(maxSecondsRetry), logger)
 	if backoffAuthentication == nil {
 		return nil
 	}
