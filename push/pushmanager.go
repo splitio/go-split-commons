@@ -24,13 +24,16 @@ const (
 	PushIsDown
 	// PushIsUp there are publishers presents
 	PushIsUp
+	// BackoffAuth backoff is running for authentication
+	BackoffAuth
 	// Error represents some error in SSE streaming
 	Error
 )
 
 // PushManager strcut for managing push services
 type PushManager struct {
-	authClient      service.AuthClient
+	authentication  chan interface{}
+	authenticator   *Authenticator
 	sseClient       *sse.StreamingClient
 	segmentWorker   *SegmentUpdateWorker
 	splitWorker     *SplitUpdateWorker
@@ -40,8 +43,6 @@ type PushManager struct {
 	publishers      chan int
 	logger          logging.LoggerInterface
 }
-
-// Missing token exp
 
 // NewPushManager creates new PushManager
 func NewPushManager(
@@ -78,9 +79,16 @@ func NewPushManager(
 		return nil, err
 	}
 
+	authenticationStatus := make(chan interface{}, 1000)
+	authenticator := NewAuthenticator(authenticationStatus, authClient, logger)
+	if authenticator == nil {
+		return nil, errors.New("Could not start Authenticator")
+	}
+
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
-		authClient:      authClient,
+		authentication:  authenticationStatus,
+		authenticator:   authenticator,
 		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
 		segmentWorker:   segmentWorker,
 		splitWorker:     splitWorker,
@@ -92,25 +100,48 @@ func NewPushManager(
 	}, nil
 }
 
+// Missing token exp
+
+func (p *PushManager) switchToPolling() {
+	p.logger.Error("Error authenticating, switching to polling")
+	p.managerStatus <- Error
+	return
+}
+
 // Start push services
 func (p *PushManager) Start() {
-	token, err := p.authClient.Authenticate()
-	if err != nil || !token.PushEnabled {
-		p.managerStatus <- Error
-		return
-	}
-
-	channels, err := token.ChannelList()
-	if err != nil {
-		p.managerStatus <- Error
-		return
-	}
-
-	go p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
+	p.authenticator.Start()
 
 	go func() {
 		for {
 			select {
+			case authenticationStatus := <-p.authentication:
+				p.logger.Debug(fmt.Sprintf("Authenticator received event: %v", authenticationStatus))
+				p.logger.Debug(fmt.Sprintf("Authenticator received event: %T", authenticationStatus))
+				switch v := authenticationStatus.(type) {
+				case int:
+					switch v {
+					case Retrying:
+						p.managerStatus <- BackoffAuth
+					case Finished:
+						p.switchToPolling()
+					default:
+						p.switchToPolling()
+					}
+				case *dtos.Token:
+					p.logger.Info("Authentication backoff is done, token received")
+					if v.PushEnabled {
+						channels, err := v.ChannelList()
+						if err != nil {
+							p.switchToPolling()
+						}
+						go p.sseClient.ConnectStreaming(v.Token, channels, p.eventHandler.HandleIncomingMessage)
+					} else {
+						p.switchToPolling()
+					}
+				default:
+					p.switchToPolling()
+				}
 			case status := <-p.streamingStatus:
 				switch status {
 				case sseStatus.OK:
@@ -118,8 +149,7 @@ func (p *PushManager) Start() {
 					p.segmentWorker.Start()
 					p.managerStatus <- Ready
 				default:
-					p.managerStatus <- Error
-					return
+					p.switchToPolling()
 				}
 			case publisherStatus := <-p.publishers:
 				switch publisherStatus {
@@ -131,7 +161,6 @@ func (p *PushManager) Start() {
 					p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 				}
 			}
-
 		}
 	}()
 }

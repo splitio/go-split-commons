@@ -156,16 +156,10 @@ func TestPushLogic(t *testing.T) {
 		return nil
 	}, logger)
 
-	managerStatus := make(chan int, 1)
-	mockedPush := PushManager{
-		sseClient:       mockedClient,
-		eventHandler:    eventHandler,
-		logger:          logger,
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
-		authClient: authMocks.MockAuthClient{
+	authStat := make(chan interface{}, 1)
+	authenticator := NewAuthenticator(
+		authStat,
+		authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -173,6 +167,19 @@ func TestPushLogic(t *testing.T) {
 				}, nil
 			},
 		},
+		logger,
+	)
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authentication:  authStat,
+		authenticator:   authenticator,
+		sseClient:       mockedClient,
+		eventHandler:    eventHandler,
+		logger:          logger,
+		segmentWorker:   segmentWorker,
+		splitWorker:     splitWorker,
+		managerStatus:   managerStatus,
+		streamingStatus: streamingStatus,
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -265,9 +272,10 @@ func TestPushError(t *testing.T) {
 		return nil
 	}, logger)
 
-	managerStatus := make(chan int, 1)
-	mockedPush := PushManager{
-		authClient: authMocks.MockAuthClient{
+	authStat := make(chan interface{}, 1)
+	authenticator := NewAuthenticator(
+		authStat,
+		authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -275,6 +283,12 @@ func TestPushError(t *testing.T) {
 				}, nil
 			},
 		},
+		logger,
+	)
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authentication:  authStat,
+		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -414,7 +428,22 @@ func TestFeedbackLoop(t *testing.T) {
 		}
 	}()
 
+	authStat := make(chan interface{}, 1)
+	authenticator := NewAuthenticator(
+		authStat,
+		authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		},
+		logger,
+	)
 	mockedPush := PushManager{
+		authentication:  authStat,
+		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -423,14 +452,6 @@ func TestFeedbackLoop(t *testing.T) {
 		managerStatus:   managerStatus,
 		streamingStatus: streamingStatus,
 		publishers:      publishers,
-		authClient: authMocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return &dtos.Token{
-					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
-					PushEnabled: true,
-				}, nil
-			},
-		},
 	}
 
 	mockedPush.Start()
@@ -459,7 +480,7 @@ func TestFeedbackLoop(t *testing.T) {
 }
 
 func TestWorkers(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
@@ -504,9 +525,23 @@ func TestWorkers(t *testing.T) {
 		return nil
 	}, logger)
 
+	authStat := make(chan interface{}, 1)
+	authenticator := NewAuthenticator(
+		authStat,
+		authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		},
+		logger,
+	)
 	managerStatus := make(chan int, 1)
-
 	mockedPush := PushManager{
+		authentication:  authStat,
+		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -515,14 +550,6 @@ func TestWorkers(t *testing.T) {
 		managerStatus:   managerStatus,
 		streamingStatus: streamingStatus,
 		publishers:      publishers,
-		authClient: authMocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return &dtos.Token{
-					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
-					PushEnabled: true,
-				}, nil
-			},
-		},
 	}
 
 	go mockedPush.Start()
