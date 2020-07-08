@@ -80,6 +80,7 @@ func (s *Manager) Start() {
 			case push.Ready:
 				s.logger.Info("SSE Streaming is ready")
 				s.managerStatus <- StreamingReady
+				go s.synchronizer.SyncAll()
 				s.streamingRunning.Store(true)
 			case push.Error:
 				s.pushManager.Stop()
@@ -101,6 +102,7 @@ func (s *Manager) Start() {
 					s.logger.Info("Stop periodic polling due Publishers Available")
 					s.pushManager.StartWorkers()
 					s.synchronizer.StopPeriodicFetching()
+					go s.synchronizer.SyncAll()
 					s.streamingRunning.Store(true)
 				}
 			}
