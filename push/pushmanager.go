@@ -173,7 +173,7 @@ func (p *PushManager) Start() {
 		p.cancelStreaming()
 		return
 	case <-time.After(1800 * time.Second):
-		p.logger.Debug("Streaming keep running")
+		p.logger.Debug("Streaming timed out")
 		cancelSSEConnection()
 		p.cancelStreaming()
 		return
