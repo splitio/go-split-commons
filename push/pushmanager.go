@@ -104,9 +104,7 @@ func (p *PushManager) cancelStreaming() {
 	p.managerStatus <- Error
 }
 
-// Start push services
-func (p *PushManager) Start() {
-	errResult := make(chan error, 100)
+func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	tokenResult := make(chan *dtos.Token, 100)
 	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, func() bool {
 		token, err := p.authClient.Authenticate()
@@ -123,29 +121,30 @@ func (p *PushManager) Start() {
 		return true // Result is OK, Stopping Here, no more backoff
 	})
 
-	var token *dtos.Token
 	select {
-	case tokenAuth := <-tokenResult:
-		token = tokenAuth
+	case token := <-tokenResult:
+		if !token.PushEnabled {
+			p.cancelStreaming()
+			return nil
+		}
+		return token
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		p.cancelStreaming()
-		return
+		return nil
 	case <-time.After(1800 * time.Second):
 		p.logger.Debug("Authenticator timed out")
 		cancelAuthBackoff()
 		p.cancelStreaming()
-		return
+		return nil
 	}
+}
 
-	if !token.PushEnabled {
-		p.cancelStreaming()
-		return
-	}
+func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
 	channels, err := token.ChannelList()
 	if err != nil {
 		p.cancelStreaming()
-		return
+		return err
 	}
 
 	sseResult := make(chan struct{}, 100)
@@ -167,15 +166,30 @@ func (p *PushManager) Start() {
 
 	select {
 	case <-sseResult:
-		break
+		return nil
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		p.cancelStreaming()
-		return
+		return errors.New("Error connecting streaming")
 	case <-time.After(1800 * time.Second):
 		p.logger.Debug("Streaming timed out")
 		cancelSSEConnection()
 		p.cancelStreaming()
+		return errors.New("Timed out")
+	}
+}
+
+// Start push services
+func (p *PushManager) Start() {
+	errResult := make(chan error, 100)
+
+	token := p.performAuthentication(errResult)
+	if token == nil {
+		return
+	}
+
+	err := p.connectToStreaming(errResult, *token)
+	if err != nil {
 		return
 	}
 
