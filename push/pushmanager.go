@@ -47,6 +47,7 @@ type PushManager struct {
 	streamingStatus chan int
 	publishers      chan int
 	logger          logging.LoggerInterface
+	backoffWorker   func()
 }
 
 // NewPushManager creates new PushManager
@@ -106,8 +107,11 @@ func (p *PushManager) cancelStreaming() {
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
+	defer func() {
+		p.backoffWorker = nil
+	}()
 	tokenResult := make(chan *dtos.Token, 1)
-	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
+	p.backoffWorker = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
 			errType, ok := err.(dtos.HTTPError)
@@ -135,6 +139,9 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 }
 
 func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
+	defer func() {
+		p.backoffWorker = nil
+	}()
 	channels, err := token.ChannelList()
 	if err != nil {
 		p.cancelStreaming()
@@ -142,7 +149,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	}
 
 	sseResult := make(chan struct{}, 1)
-	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
+	p.backoffWorker = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
@@ -210,6 +217,9 @@ func (p *PushManager) Start() {
 // Stop push services
 func (p *PushManager) Stop() {
 	p.logger.Info("Stopping Push Services")
+	if p.backoffWorker != nil {
+		p.backoffWorker()
+	}
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
