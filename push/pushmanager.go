@@ -209,12 +209,7 @@ func (p *PushManager) Stop() {
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
-	if p.splitWorker.IsRunning() {
-		p.splitWorker.Stop()
-	}
-	if p.segmentWorker.IsRunning() {
-		p.segmentWorker.Stop()
-	}
+	p.StopWorkers()
 }
 
 // IsRunning returns true if the services are running
