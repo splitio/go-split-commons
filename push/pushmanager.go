@@ -124,18 +124,15 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	select {
 	case token := <-tokenResult:
 		if !token.PushEnabled {
-			p.cancelStreaming()
 			return nil
 		}
 		return token
 	case err := <-errResult:
 		p.logger.Error(err.Error())
-		p.cancelStreaming()
 		return nil
 	case <-time.After(1800 * time.Second):
 		p.logger.Debug("Authenticator timed out")
 		cancelAuthBackoff()
-		p.cancelStreaming()
 		return nil
 	}
 }
@@ -169,12 +166,10 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 		return nil
 	case err := <-errResult:
 		p.logger.Error(err.Error())
-		p.cancelStreaming()
 		return errors.New("Error connecting streaming")
 	case <-time.After(1800 * time.Second):
 		p.logger.Debug("Streaming timed out")
 		cancelSSEConnection()
-		p.cancelStreaming()
 		return errors.New("Timed out")
 	}
 }
@@ -185,11 +180,13 @@ func (p *PushManager) Start() {
 
 	token := p.performAuthentication(errResult)
 	if token == nil {
+		p.cancelStreaming()
 		return
 	}
 
 	err := p.connectToStreaming(errResult, *token)
 	if err != nil {
+		p.cancelStreaming()
 		return
 	}
 

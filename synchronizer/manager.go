@@ -90,7 +90,7 @@ func (s *Manager) Start() {
 
 	if s.config.StreamingEnabled {
 		s.logger.Info("Start Streaming")
-		s.pushManager.Start()
+		go s.pushManager.Start()
 		// Listens Streaming Status
 		for {
 			status := <-s.streamingStatus
