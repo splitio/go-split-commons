@@ -106,7 +106,7 @@ func (p *PushManager) cancelStreaming() {
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
-	tokenResult := make(chan *dtos.Token, 100)
+	tokenResult := make(chan *dtos.Token, 1)
 	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
@@ -141,7 +141,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 		return err
 	}
 
-	sseResult := make(chan struct{}, 100)
+	sseResult := make(chan struct{}, 1)
 	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
@@ -169,7 +169,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 
 // Start push services
 func (p *PushManager) Start() {
-	errResult := make(chan error, 100)
+	errResult := make(chan error, 1)
 
 	token := p.performAuthentication(errResult)
 	if token == nil {
