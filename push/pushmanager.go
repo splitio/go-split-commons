@@ -18,6 +18,7 @@ import (
 
 const (
 	resetTimer = 120
+	maxPeriod  = 1800
 )
 
 const (
@@ -106,7 +107,7 @@ func (p *PushManager) cancelStreaming() {
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	tokenResult := make(chan *dtos.Token, 100)
-	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, func() bool {
+	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
 			errType, ok := err.(dtos.HTTPError)
@@ -130,10 +131,6 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		return nil
-	case <-time.After(1800 * time.Second):
-		p.logger.Debug("Authenticator timed out")
-		cancelAuthBackoff()
-		return nil
 	}
 }
 
@@ -145,7 +142,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	}
 
 	sseResult := make(chan struct{}, 100)
-	cancelSSEConnection := common.WithBackoffCancelling(1*time.Second, func() bool {
+	_ = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
@@ -167,10 +164,6 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		return errors.New("Error connecting streaming")
-	case <-time.After(1800 * time.Second):
-		p.logger.Debug("Streaming timed out")
-		cancelSSEConnection()
-		return errors.New("Timed out")
 	}
 }
 
