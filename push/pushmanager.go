@@ -3,12 +3,15 @@ package push
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-toolkit/common"
 	"github.com/splitio/go-toolkit/logging"
 	sseStatus "github.com/splitio/go-toolkit/sse"
 )
@@ -26,14 +29,15 @@ const (
 	PushIsUp
 	// BackoffAuth backoff is running for authentication
 	BackoffAuth
+	// BackoffSSE backoff is running for connecting to stream
+	BackoffSSE
 	// Error represents some error in SSE streaming
 	Error
 )
 
 // PushManager strcut for managing push services
 type PushManager struct {
-	authentication  chan interface{}
-	authenticator   *Authenticator
+	authClient      service.AuthClient
 	sseClient       *sse.StreamingClient
 	segmentWorker   *SegmentUpdateWorker
 	splitWorker     *SplitUpdateWorker
@@ -79,16 +83,9 @@ func NewPushManager(
 		return nil, err
 	}
 
-	authenticationStatus := make(chan interface{}, 1000)
-	authenticator := NewAuthenticator(authenticationStatus, authClient, logger)
-	if authenticator == nil {
-		return nil, errors.New("Could not start Authenticator")
-	}
-
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
-		authentication:  authenticationStatus,
-		authenticator:   authenticator,
+		authClient:      authClient,
 		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
 		segmentWorker:   segmentWorker,
 		splitWorker:     splitWorker,
@@ -102,55 +99,96 @@ func NewPushManager(
 
 // Missing token exp
 
-func (p *PushManager) switchToPolling() {
+func (p *PushManager) cancelStreaming() {
 	p.logger.Error("Error authenticating, switching to polling")
 	p.managerStatus <- Error
-	return
 }
 
 // Start push services
 func (p *PushManager) Start() {
-	p.authenticator.Start()
+	errResult := make(chan error, 100)
+	tokenResult := make(chan *dtos.Token, 100)
+	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, func() bool {
+		token, err := p.authClient.Authenticate()
+		if err != nil {
+			errType, ok := err.(dtos.HTTPError)
+			if ok && errType.Code >= http.StatusInternalServerError {
+				p.managerStatus <- BackoffAuth
+				return false // It will continue retrying
+			}
+			errResult <- errors.New("Error authenticating")
+			return true
+		}
+		tokenResult <- token
+		return true // Result is OK, Stopping Here, no more backoff
+	})
+
+	var token *dtos.Token
+	select {
+	case tokenAuth := <-tokenResult:
+		token = tokenAuth
+	case err := <-errResult:
+		p.logger.Error(err.Error())
+		p.cancelStreaming()
+		return
+	case <-time.After(1800 * time.Second):
+		p.logger.Debug("Authenticator timed out")
+		cancelAuthBackoff()
+		p.cancelStreaming()
+		return
+	}
+
+	if !token.PushEnabled {
+		p.cancelStreaming()
+		return
+	}
+	channels, err := token.ChannelList()
+	if err != nil {
+		p.cancelStreaming()
+		return
+	}
+
+	sseResult := make(chan struct{}, 100)
+	cancelSSEConnection := common.WithBackoffCancelling(1*time.Second, func() bool {
+		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
+		status := <-p.streamingStatus
+		switch status {
+		case sseStatus.OK:
+			sseResult <- struct{}{}
+			return true
+		case sseStatus.ErrorInternal:
+			p.managerStatus <- BackoffSSE
+			return false // It will continue retrying
+		default:
+			errResult <- errors.New("Error connecting streaming")
+			return true
+		}
+	})
+
+	select {
+	case <-sseResult:
+		break
+	case err := <-errResult:
+		p.logger.Error(err.Error())
+		p.cancelStreaming()
+		return
+	case <-time.After(1800 * time.Second):
+		p.logger.Debug("Streaming keep running")
+		cancelSSEConnection()
+		p.cancelStreaming()
+		return
+	}
+
+	p.splitWorker.Start()
+	p.segmentWorker.Start()
+	p.managerStatus <- Ready
 
 	go func() {
 		for {
 			select {
-			case authenticationStatus := <-p.authentication:
-				p.logger.Debug(fmt.Sprintf("Authenticator received event: %v", authenticationStatus))
-				p.logger.Debug(fmt.Sprintf("Authenticator received event: %T", authenticationStatus))
-				switch v := authenticationStatus.(type) {
-				case int:
-					switch v {
-					case Retrying:
-						p.managerStatus <- BackoffAuth
-					case Finished:
-						p.switchToPolling()
-					default:
-						p.switchToPolling()
-					}
-				case *dtos.Token:
-					p.logger.Info("Authentication backoff is done, token received")
-					if v.PushEnabled {
-						channels, err := v.ChannelList()
-						if err != nil {
-							p.switchToPolling()
-						}
-						go p.sseClient.ConnectStreaming(v.Token, channels, p.eventHandler.HandleIncomingMessage)
-					} else {
-						p.switchToPolling()
-					}
-				default:
-					p.switchToPolling()
-				}
-			case status := <-p.streamingStatus:
-				switch status {
-				case sseStatus.OK:
-					p.splitWorker.Start()
-					p.segmentWorker.Start()
-					p.managerStatus <- Ready
-				default:
-					p.switchToPolling()
-				}
+			case <-p.streamingStatus:
+				p.cancelStreaming()
+				return
 			case publisherStatus := <-p.publishers:
 				switch publisherStatus {
 				case PublisherNotPresent:

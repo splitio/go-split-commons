@@ -97,6 +97,7 @@ func (s *Manager) Start() {
 			switch status {
 			// Backoff is running -> start polling until auth is ok
 			case push.BackoffAuth:
+			case push.BackoffSSE:
 				if s.status.Load().(int) != Polling {
 					s.logger.Info("Start periodic polling due backoff")
 					s.startPolling()

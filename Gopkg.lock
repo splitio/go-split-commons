@@ -27,11 +27,10 @@
 
 [[projects]]
   branch = "backoff"
-  digest = "1:a55e4e95138dc61368853871439c3c47529716aae1365d945648b33edf69a579"
+  digest = "1:45758391ebe30d74ad4918f0b664970d975ed61ab38c63853f582502e4e1ed1e"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
-    "backoff",
     "common",
     "datastructures/set",
     "deepcopy",
@@ -44,7 +43,7 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "afb0395fe56dfdc3862bf87df1cfe5ae0bd72bb5"
+  revision = "59a3777f5992b4a353ac0a478a961fe2075c3d3b"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -60,7 +59,6 @@
   input-imports = [
     "github.com/pkg/errors",
     "github.com/splitio/go-toolkit/asynctask",
-    "github.com/splitio/go-toolkit/backoff",
     "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/deepcopy",

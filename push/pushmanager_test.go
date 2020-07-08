@@ -156,10 +156,9 @@ func TestPushLogic(t *testing.T) {
 		return nil
 	}, logger)
 
-	authStat := make(chan interface{}, 1)
-	authenticator := NewAuthenticator(
-		authStat,
-		authMocks.MockAuthClient{
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -167,12 +166,6 @@ func TestPushLogic(t *testing.T) {
 				}, nil
 			},
 		},
-		logger,
-	)
-	managerStatus := make(chan int, 1)
-	mockedPush := PushManager{
-		authentication:  authStat,
-		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -272,10 +265,9 @@ func TestPushError(t *testing.T) {
 		return nil
 	}, logger)
 
-	authStat := make(chan interface{}, 1)
-	authenticator := NewAuthenticator(
-		authStat,
-		authMocks.MockAuthClient{
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -283,12 +275,6 @@ func TestPushError(t *testing.T) {
 				}, nil
 			},
 		},
-		logger,
-	)
-	managerStatus := make(chan int, 1)
-	mockedPush := PushManager{
-		authentication:  authStat,
-		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -428,10 +414,8 @@ func TestFeedbackLoop(t *testing.T) {
 		}
 	}()
 
-	authStat := make(chan interface{}, 1)
-	authenticator := NewAuthenticator(
-		authStat,
-		authMocks.MockAuthClient{
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -439,11 +423,6 @@ func TestFeedbackLoop(t *testing.T) {
 				}, nil
 			},
 		},
-		logger,
-	)
-	mockedPush := PushManager{
-		authentication:  authStat,
-		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,
@@ -525,10 +504,9 @@ func TestWorkers(t *testing.T) {
 		return nil
 	}, logger)
 
-	authStat := make(chan interface{}, 1)
-	authenticator := NewAuthenticator(
-		authStat,
-		authMocks.MockAuthClient{
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
 				return &dtos.Token{
 					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
@@ -536,12 +514,6 @@ func TestWorkers(t *testing.T) {
 				}, nil
 			},
 		},
-		logger,
-	)
-	managerStatus := make(chan int, 1)
-	mockedPush := PushManager{
-		authentication:  authStat,
-		authenticator:   authenticator,
 		sseClient:       mockedClient,
 		eventHandler:    eventHandler,
 		logger:          logger,

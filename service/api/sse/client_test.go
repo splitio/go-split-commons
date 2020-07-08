@@ -32,18 +32,17 @@ func TestStreamingError(t *testing.T) {
 	streamingStatus := make(chan int, 1)
 	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
-	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
-		t.Error("Should not execute callback")
-	})
 	go func() {
-		for {
-			msg := <-streamingStatus
-			atomic.AddInt64(&sseErrorReceived, 1)
-			if msg != sse.ErrorConnectToStreaming {
-				t.Error("Unexpected error")
-			}
+		msg := <-streamingStatus
+		atomic.AddInt64(&sseErrorReceived, 1)
+		if msg != sse.ErrorInternal {
+			t.Error("Unexpected error")
 		}
 	}()
+
+	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+		t.Error("Should not execute callback")
+	})
 
 	time.Sleep(200 * time.Millisecond)
 

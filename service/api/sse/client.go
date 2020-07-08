@@ -81,6 +81,9 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 			case sse.ErrorRequestPerformed:
 				s.logger.Error("Error performing request when connect to stream service")
 				s.streamingStatus <- sse.ErrorRequestPerformed
+			case sse.ErrorInternal:
+				s.logger.Error("Internal Error when connect to stream service")
+				s.streamingStatus <- sse.ErrorInternal
 			default:
 				s.logger.Error("Unexpected error occured with streaming")
 				s.streamingStatus <- sse.ErrorUnexpected
