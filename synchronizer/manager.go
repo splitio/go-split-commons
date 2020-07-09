@@ -138,6 +138,7 @@ func (s *Manager) Start() {
 					go s.synchronizer.SyncAll()
 				}
 			case push.TokenExpiration:
+				s.pushManager.Stop()
 				go s.pushManager.Start()
 			}
 		}
