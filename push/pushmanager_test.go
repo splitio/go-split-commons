@@ -166,13 +166,15 @@ func TestPushLogic(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:       mockedClient,
-		eventHandler:    eventHandler,
-		logger:          logger,
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
+		sseClient:         mockedClient,
+		eventHandler:      eventHandler,
+		logger:            logger,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -275,13 +277,15 @@ func TestPushError(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:       mockedClient,
-		eventHandler:    eventHandler,
-		logger:          logger,
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
+		sseClient:         mockedClient,
+		eventHandler:      eventHandler,
+		logger:            logger,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -423,14 +427,16 @@ func TestFeedbackLoop(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:       mockedClient,
-		eventHandler:    eventHandler,
-		logger:          logger,
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
-		publishers:      publishers,
+		sseClient:         mockedClient,
+		eventHandler:      eventHandler,
+		logger:            logger,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		publishers:        publishers,
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
 	}
 
 	mockedPush.Start()
@@ -514,14 +520,16 @@ func TestWorkers(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:       mockedClient,
-		eventHandler:    eventHandler,
-		logger:          logger,
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
-		publishers:      publishers,
+		sseClient:         mockedClient,
+		eventHandler:      eventHandler,
+		logger:            logger,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		publishers:        publishers,
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()
@@ -556,5 +564,145 @@ func TestWorkers(t *testing.T) {
 	}
 	if mockedPush.sseClient.IsRunning() {
 		t.Error("It should be stopped")
+	}
+}
+
+func TestBackoffAuth(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	count := 0
+	advanced := &conf.AdvancedConfig{}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
+
+	managerStatus := make(chan int, 100)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				if count == 2 {
+					return &dtos.Token{
+						Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+						PushEnabled: true,
+					}, nil
+				}
+				count++
+				return nil, dtos.HTTPError{
+					Code:    500,
+					Message: "500",
+				}
+
+			},
+		},
+		sseClient:         mockedClient,
+		eventHandler:      nil,
+		logger:            logger,
+		segmentWorker:     nil,
+		splitWorker:       nil,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		publishers:        make(chan int, 1),
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
+	}
+
+	go mockedPush.Start()
+	backoff := 0
+	shouldListen := true
+	for shouldListen {
+		msg := <-managerStatus
+		switch msg {
+		case BackoffAuth:
+			backoff++
+		default:
+			shouldListen = false
+		}
+	}
+	if backoff != 2 {
+		t.Error("It should call backoff twice")
+	}
+}
+
+func TestBackoffSSE(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	count := 0
+	advanced := &conf.AdvancedConfig{
+		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
+	}
+
+	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	parser := NewNotificationParser(logger)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if count == 2 {
+			fmt.Fprintln(w, "ok")
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		count++
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
+		return nil
+	}, logger)
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, func(till *int64) error {
+		return nil
+	}, logger)
+
+	managerStatus := make(chan int, 100)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		},
+		sseClient:         mockedClient,
+		eventHandler:      eventHandler,
+		logger:            logger,
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		publishers:        make(chan int, 1),
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
+	}
+
+	go mockedPush.Start()
+	backoff := 0
+	shouldListen := true
+	for shouldListen {
+		msg := <-managerStatus
+		switch msg {
+		case BackoffSSE:
+			backoff++
+		default:
+			shouldListen = false
+		}
+	}
+	if backoff != 2 {
+		t.Error("It should call backoff twice")
 	}
 }

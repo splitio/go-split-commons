@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -19,7 +18,7 @@ import (
 
 const (
 	resetTimer = 120
-	maxPeriod  = 1800
+	maxPeriod  = 30 * time.Minute
 )
 
 const (
@@ -39,17 +38,17 @@ const (
 
 // PushManager strcut for managing push services
 type PushManager struct {
-	authClient      service.AuthClient
-	sseClient       *sse.StreamingClient
-	segmentWorker   *SegmentUpdateWorker
-	splitWorker     *SplitUpdateWorker
-	eventHandler    *EventHandler
-	managerStatus   chan<- int
-	streamingStatus chan int
-	publishers      chan int
-	logger          logging.LoggerInterface
-	backoffWorker   func()
-	mutexBackoff    sync.RWMutex
+	authClient        service.AuthClient
+	sseClient         *sse.StreamingClient
+	segmentWorker     *SegmentUpdateWorker
+	splitWorker       *SplitUpdateWorker
+	eventHandler      *EventHandler
+	managerStatus     chan<- int
+	streamingStatus   chan int
+	publishers        chan int
+	logger            logging.LoggerInterface
+	cancelAuthBackoff chan struct{}
+	cancelSSEBackoff  chan struct{}
 }
 
 // NewPushManager creates new PushManager
@@ -89,16 +88,17 @@ func NewPushManager(
 
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
-		authClient:      authClient,
-		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
-		segmentWorker:   segmentWorker,
-		splitWorker:     splitWorker,
-		managerStatus:   managerStatus,
-		streamingStatus: streamingStatus,
-		eventHandler:    eventHandler,
-		publishers:      publishers,
-		logger:          logger,
-		mutexBackoff:    sync.RWMutex{},
+		authClient:        authClient,
+		sseClient:         sse.NewStreamingClient(config, streamingStatus, logger),
+		segmentWorker:     segmentWorker,
+		splitWorker:       splitWorker,
+		managerStatus:     managerStatus,
+		streamingStatus:   streamingStatus,
+		eventHandler:      eventHandler,
+		publishers:        publishers,
+		logger:            logger,
+		cancelAuthBackoff: make(chan struct{}, 1),
+		cancelSSEBackoff:  make(chan struct{}, 1),
 	}, nil
 }
 
@@ -109,18 +109,18 @@ func (p *PushManager) cancelStreaming() {
 	p.managerStatus <- Error
 }
 
-func (p *PushManager) setCancelBackoffWorker(cancel func()) {
-	p.mutexBackoff.Lock()
-	defer p.mutexBackoff.Unlock()
-	p.backoffWorker = cancel
-}
-
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
+	var cancelAuthBackoff func()
+	if len(p.cancelAuthBackoff) > 0 {
+		<-p.cancelAuthBackoff
+	}
 	defer func() {
-		p.setCancelBackoffWorker(nil)
+		if cancelAuthBackoff != nil {
+			cancelAuthBackoff()
+		}
 	}()
 	tokenResult := make(chan *dtos.Token, 1)
-	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod*time.Second, func() bool {
+	cancelAuthBackoff = common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
 			errType, ok := err.(dtos.HTTPError)
@@ -134,7 +134,6 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 		tokenResult <- token
 		return true // Result is OK, Stopping Here, no more backoff
 	})
-	p.setCancelBackoffWorker(cancelAuthBackoff)
 
 	select {
 	case token := <-tokenResult:
@@ -145,12 +144,20 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		return nil
+	case <-p.cancelAuthBackoff:
+		return nil
 	}
 }
 
 func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
+	var cancelSSEBackoff func()
+	if len(p.cancelSSEBackoff) > 0 {
+		<-p.cancelSSEBackoff
+	}
 	defer func() {
-		p.setCancelBackoffWorker(nil)
+		if cancelSSEBackoff != nil {
+			cancelSSEBackoff()
+		}
 	}()
 	channels, err := token.ChannelList()
 	if err != nil {
@@ -159,7 +166,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	}
 
 	sseResult := make(chan struct{}, 1)
-	cancelStreamingBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod*time.Second, func() bool {
+	cancelSSEBackoff = common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
@@ -174,7 +181,6 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 			return true
 		}
 	})
-	p.setCancelBackoffWorker(cancelStreamingBackoff)
 
 	select {
 	case <-sseResult:
@@ -182,6 +188,8 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	case err := <-errResult:
 		p.logger.Error(err.Error())
 		return errors.New("Error connecting streaming")
+	case <-p.cancelSSEBackoff:
+		return nil
 	}
 }
 
@@ -228,11 +236,8 @@ func (p *PushManager) Start() {
 // Stop push services
 func (p *PushManager) Stop() {
 	p.logger.Info("Stopping Push Services")
-	p.mutexBackoff.RLock()
-	if p.backoffWorker != nil {
-		p.backoffWorker()
-	}
-	p.mutexBackoff.RUnlock()
+	p.cancelAuthBackoff <- struct{}{}
+	p.cancelSSEBackoff <- struct{}{}
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
