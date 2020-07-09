@@ -110,17 +110,11 @@ func (p *PushManager) cancelStreaming() {
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
-	var cancelAuthBackoff func()
 	if len(p.cancelAuthBackoff) > 0 {
 		<-p.cancelAuthBackoff
 	}
-	defer func() {
-		if cancelAuthBackoff != nil {
-			cancelAuthBackoff()
-		}
-	}()
 	tokenResult := make(chan *dtos.Token, 1)
-	cancelAuthBackoff = common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
+	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
 			errType, ok := err.(dtos.HTTPError)
@@ -134,7 +128,7 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 		tokenResult <- token
 		return true // Result is OK, Stopping Here, no more backoff
 	})
-
+	defer cancelAuthBackoff()
 	select {
 	case token := <-tokenResult:
 		if !token.PushEnabled {
@@ -150,15 +144,9 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 }
 
 func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
-	var cancelSSEBackoff func()
 	if len(p.cancelSSEBackoff) > 0 {
 		<-p.cancelSSEBackoff
 	}
-	defer func() {
-		if cancelSSEBackoff != nil {
-			cancelSSEBackoff()
-		}
-	}()
 	channels, err := token.ChannelList()
 	if err != nil {
 		p.cancelStreaming()
@@ -166,7 +154,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	}
 
 	sseResult := make(chan struct{}, 1)
-	cancelSSEBackoff = common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
+	cancelSSEBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
@@ -181,7 +169,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 			return true
 		}
 	})
-
+	defer cancelSSEBackoff()
 	select {
 	case <-sseResult:
 		return nil
