@@ -66,18 +66,21 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 			return nil, nil
 		},
 	})
-	streamingRunning := atomic.Value{}
-	streamingRunning.Store(false)
+	stat := atomic.Value{}
+	stat.Store(Created)
 	managerTest := Manager{
-		synchronizer:     mockSync,
-		logger:           logger,
-		config:           advanced,
-		managerStatus:    make(chan int, 1),
-		pushManager:      push,
-		streamingStatus:  status,
-		streamingRunning: streamingRunning,
+		synchronizer:    mockSync,
+		logger:          logger,
+		config:          advanced,
+		managerStatus:   make(chan int, 1),
+		pushManager:     push,
+		streamingStatus: status,
+		status:          stat,
 	}
 	managerTest.Start()
+	if managerTest.status.Load().(int) != Polling {
+		t.Error("It should started in Polling mode")
+	}
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
 		t.Error("It should be called once")
 	}
@@ -123,6 +126,9 @@ func TestPollingWithStreamingPushFalse(t *testing.T) {
 		t.Error("It should not return err")
 	}
 	managerTest.Start()
+	if managerTest.status.Load().(int) != Polling {
+		t.Error("It should started in Polling mode")
+	}
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
 		t.Error("It should be called once")
 	}
@@ -149,8 +155,8 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 			},
 		})
 
-	streamingRunning := atomic.Value{}
-	streamingRunning.Store(false)
+	status := atomic.Value{}
+	status.Store(Created)
 	managerTest := Manager{
 		syncMock.MockSynchronizer{
 			SyncAllCall: func() error {
@@ -168,13 +174,16 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		pushManager,
 		make(chan int, 1),
 		streamingStatus,
-		streamingRunning,
+		status,
 	}
 
 	go managerTest.Start()
 
 	time.Sleep(1 * time.Second)
 
+	if managerTest.status.Load().(int) != Polling {
+		t.Error("It should started in Polling mode")
+	}
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
 		t.Error("It should be called once")
 	}
@@ -417,6 +426,9 @@ func TestPolling(t *testing.T) {
 	}
 	if atomic.LoadInt64(&latenciesCalled) != 1 {
 		t.Error("It should be called once")
+	}
+	if managerTest.status.Load().(int) != Polling {
+		t.Error("It should started in Polling mode")
 	}
 
 	managerTest.Stop()
@@ -681,6 +693,10 @@ func TestStreaming(t *testing.T) {
 		t.Error("Wrong msg received")
 	}
 
+	if managerTest.status.Load().(int) != Streaming {
+		t.Error("It should started in Polling mode")
+	}
+
 	time.Sleep(1 * time.Second)
 	managerTest.Stop()
 	time.Sleep(1 * time.Second)
@@ -735,7 +751,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		w.Header().Set("Cache-Control", "no-cache")
 
 		for i := 0; i <= 3; i++ {
-			time.Sleep(time.Duration(i*100) * time.Millisecond)
+			time.Sleep(time.Duration(100) * time.Millisecond)
 			switch i {
 			case 0:
 				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
@@ -900,7 +916,10 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		t.Error("It should send streaming ready")
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
+	if managerTest.status.Load().(int) != Streaming {
+		t.Error("It should be Streaming")
+	}
 	managerTest.Stop()
 	time.Sleep(1 * time.Second)
 

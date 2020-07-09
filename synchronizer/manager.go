@@ -20,15 +20,26 @@ const (
 	Error
 )
 
+const (
+	// Created flags
+	Created = iota
+	// Starting flags
+	Starting
+	// Streaming flags
+	Streaming
+	// Polling flags
+	Polling
+)
+
 // Manager struct
 type Manager struct {
-	synchronizer     Synchronizer
-	logger           logging.LoggerInterface
-	config           conf.AdvancedConfig
-	pushManager      *push.PushManager
-	managerStatus    chan<- int
-	streamingStatus  chan int
-	streamingRunning atomic.Value
+	synchronizer    Synchronizer
+	logger          logging.LoggerInterface
+	config          conf.AdvancedConfig
+	pushManager     *push.PushManager
+	managerStatus   chan<- int
+	streamingStatus chan int
+	status          atomic.Value
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -48,17 +59,23 @@ func NewSynchronizerManager(
 	if err != nil {
 		return nil, err
 	}
-	streamingRunning := atomic.Value{}
-	streamingRunning.Store(false)
+	status := atomic.Value{}
+	status.Store(Created)
 	return &Manager{
-		synchronizer:     synchronizer,
-		logger:           logger,
-		streamingStatus:  streamingStatus,
-		config:           config,
-		pushManager:      pushManager,
-		managerStatus:    managerStatus,
-		streamingRunning: streamingRunning,
+		synchronizer:    synchronizer,
+		logger:          logger,
+		streamingStatus: streamingStatus,
+		config:          config,
+		pushManager:     pushManager,
+		managerStatus:   managerStatus,
+		status:          status,
 	}, nil
+}
+
+func (s *Manager) startPolling() {
+	s.pushManager.StopWorkers()
+	s.synchronizer.StartPeriodicFetching()
+	s.status.Store(Polling)
 }
 
 // Start starts synchronization through Split
@@ -73,43 +90,58 @@ func (s *Manager) Start() {
 
 	if s.config.StreamingEnabled {
 		s.logger.Info("Start Streaming")
-		s.pushManager.Start()
+		go s.pushManager.Start()
+		// Listens Streaming Status
 		for {
 			status := <-s.streamingStatus
 			switch status {
+			// Backoff is running -> start polling until auth is ok
+			case push.BackoffAuth:
+				fallthrough
+			case push.BackoffSSE:
+				if s.status.Load().(int) != Polling {
+					s.logger.Info("Start periodic polling due backoff")
+					s.startPolling()
+				}
+			// SSE Streaming and workers are ready
 			case push.Ready:
+				// If Ready comes eventually when Backoff is done and polling is running
+				if s.status.Load().(int) == Polling {
+					s.synchronizer.StopPeriodicFetching()
+				}
 				s.logger.Info("SSE Streaming is ready")
 				s.managerStatus <- StreamingReady
+				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
-				s.streamingRunning.Store(true)
+			// Error occurs and it will switch to polling
 			case push.Error:
 				s.pushManager.Stop()
 				s.logger.Info("Start periodic polling due error in Streaming")
-				s.synchronizer.StartPeriodicFetching()
+				s.startPolling()
 				return
+			// Publisher sends that there is no Notification Managers available
 			case push.PushIsDown:
 				// If streaming is already running, proceeding to stop workers
 				// and keeping SSE running
-				if s.streamingRunning.Load().(bool) {
+				if s.status.Load().(int) == Streaming {
 					s.logger.Info("Start periodic polling due error in Streaming")
-					s.pushManager.StopWorkers()
-					s.synchronizer.StartPeriodicFetching()
-					s.streamingRunning.Store(false)
+					s.startPolling()
 				}
+			// Publisher sends that there are at least one Notification Manager available
 			case push.PushIsUp:
 				// If streaming is not already running, proceeding to start workers
-				if !s.streamingRunning.Load().(bool) {
+				if s.status.Load().(int) != Streaming {
 					s.logger.Info("Stop periodic polling due Publishers Available")
 					s.pushManager.StartWorkers()
 					s.synchronizer.StopPeriodicFetching()
+					s.status.Store(Streaming)
 					go s.synchronizer.SyncAll()
-					s.streamingRunning.Store(true)
 				}
 			}
 		}
 	} else {
 		s.logger.Info("Start periodic polling")
-		s.synchronizer.StartPeriodicFetching()
+		s.startPolling()
 	}
 }
 

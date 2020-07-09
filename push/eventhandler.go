@@ -81,6 +81,7 @@ func (e *EventHandler) HandleIncomingMessage(event map[string]interface{}) {
 		e.keeper.UpdateManagers(*incomingEvent.channel, occupancy.Data.Publishers)
 		return
 	case errorType:
+		e.logger.Debug(fmt.Sprintf("Error received: %+v", incomingEvent))
 	default:
 		e.logger.Debug(fmt.Sprintf("Unexpected incomingEvent: %+v", incomingEvent))
 		e.logger.Error("Unexpected type of event received")
