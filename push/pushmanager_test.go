@@ -166,15 +166,16 @@ func TestPushLogic(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      eventHandler,
-		logger:            logger,
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          eventHandler,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -277,15 +278,16 @@ func TestPushError(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      eventHandler,
-		logger:            logger,
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          eventHandler,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -309,6 +311,7 @@ func TestPushError(t *testing.T) {
 		t.Error("It should be running")
 	}
 	streamingStatus <- sseStatus.ErrorKeepAlive
+	mockedPush.Stop()
 	time.Sleep(100 * time.Millisecond)
 
 	mockedPush.Start()
@@ -326,7 +329,7 @@ func TestPushError(t *testing.T) {
 		t.Error("It should be one")
 	}
 	if atomic.LoadInt64(&shouldReceiveReady) != 2 {
-		t.Error("It should be one")
+		t.Error("It should be one", shouldReceiveReady)
 	}
 	if atomic.LoadInt64(&shouldReceiveError) != 2 {
 		t.Error("It should return error")
@@ -427,16 +430,17 @@ func TestFeedbackLoop(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      eventHandler,
-		logger:            logger,
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		publishers:        publishers,
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          eventHandler,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		publishers:            publishers,
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 
 	mockedPush.Start()
@@ -520,16 +524,17 @@ func TestWorkers(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      eventHandler,
-		logger:            logger,
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		publishers:        publishers,
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          eventHandler,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		publishers:            publishers,
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()
@@ -579,7 +584,12 @@ func TestBackoffAuth(t *testing.T) {
 	advanced.StreamingServiceURL = ts.URL
 	streamingStatus := make(chan int, 1)
 	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
-
+	segmentWorker, _ := NewSegmentUpdateWorker(make(chan dtos.SegmentChangeNotification, 5000), func(segmentName string, till *int64) error {
+		return nil
+	}, logger)
+	splitWorker, _ := NewSplitUpdateWorker(make(chan dtos.SplitChangeNotification, 5000), func(till *int64) error {
+		return nil
+	}, logger)
 	managerStatus := make(chan int, 100)
 	mockedPush := PushManager{
 		authClient: authMocks.MockAuthClient{
@@ -598,16 +608,17 @@ func TestBackoffAuth(t *testing.T) {
 
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      nil,
-		logger:            logger,
-		segmentWorker:     nil,
-		splitWorker:       nil,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		publishers:        make(chan int, 1),
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          nil,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		publishers:            make(chan int, 1),
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()
@@ -678,16 +689,17 @@ func TestBackoffSSE(t *testing.T) {
 				}, nil
 			},
 		},
-		sseClient:         mockedClient,
-		eventHandler:      eventHandler,
-		logger:            logger,
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		publishers:        make(chan int, 1),
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		sseClient:             mockedClient,
+		eventHandler:          eventHandler,
+		logger:                logger,
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		publishers:            make(chan int, 1),
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()

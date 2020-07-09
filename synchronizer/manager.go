@@ -137,6 +137,8 @@ func (s *Manager) Start() {
 					s.status.Store(Streaming)
 					go s.synchronizer.SyncAll()
 				}
+			case push.TokenExpiration:
+				go s.pushManager.Start()
 			}
 		}
 	} else {

@@ -32,23 +32,26 @@ const (
 	BackoffAuth
 	// BackoffSSE backoff is running for connecting to stream
 	BackoffSSE
+	// TokenExpiration flag to restart push services
+	TokenExpiration
 	// Error represents some error in SSE streaming
 	Error
 )
 
-// PushManager strcut for managing push services
+// PushManager struct for managing push services
 type PushManager struct {
-	authClient        service.AuthClient
-	sseClient         *sse.StreamingClient
-	segmentWorker     *SegmentUpdateWorker
-	splitWorker       *SplitUpdateWorker
-	eventHandler      *EventHandler
-	managerStatus     chan<- int
-	streamingStatus   chan int
-	publishers        chan int
-	logger            logging.LoggerInterface
-	cancelAuthBackoff chan struct{}
-	cancelSSEBackoff  chan struct{}
+	authClient            service.AuthClient
+	sseClient             *sse.StreamingClient
+	segmentWorker         *SegmentUpdateWorker
+	splitWorker           *SplitUpdateWorker
+	eventHandler          *EventHandler
+	managerStatus         chan<- int
+	streamingStatus       chan int
+	publishers            chan int
+	logger                logging.LoggerInterface
+	cancelAuthBackoff     chan struct{}
+	cancelSSEBackoff      chan struct{}
+	cancelTokenExpiration chan struct{}
 }
 
 // NewPushManager creates new PushManager
@@ -88,21 +91,20 @@ func NewPushManager(
 
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
-		authClient:        authClient,
-		sseClient:         sse.NewStreamingClient(config, streamingStatus, logger),
-		segmentWorker:     segmentWorker,
-		splitWorker:       splitWorker,
-		managerStatus:     managerStatus,
-		streamingStatus:   streamingStatus,
-		eventHandler:      eventHandler,
-		publishers:        publishers,
-		logger:            logger,
-		cancelAuthBackoff: make(chan struct{}, 1),
-		cancelSSEBackoff:  make(chan struct{}, 1),
+		authClient:            authClient,
+		sseClient:             sse.NewStreamingClient(config, streamingStatus, logger),
+		segmentWorker:         segmentWorker,
+		splitWorker:           splitWorker,
+		managerStatus:         managerStatus,
+		streamingStatus:       streamingStatus,
+		eventHandler:          eventHandler,
+		publishers:            publishers,
+		logger:                logger,
+		cancelAuthBackoff:     make(chan struct{}, 1),
+		cancelSSEBackoff:      make(chan struct{}, 1),
+		cancelTokenExpiration: make(chan struct{}, 1),
 	}, nil
 }
-
-// Missing token exp
 
 func (p *PushManager) cancelStreaming() {
 	p.logger.Error("Error authenticating, switching to polling")
@@ -143,19 +145,13 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	}
 }
 
-func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
+func (p *PushManager) connectToStreaming(errResult chan error, token string, channels []string) error {
 	if len(p.cancelSSEBackoff) > 0 {
 		<-p.cancelSSEBackoff
 	}
-	channels, err := token.ChannelList()
-	if err != nil {
-		p.cancelStreaming()
-		return err
-	}
-
 	sseResult := make(chan struct{}, 1)
 	cancelSSEBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
-		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
+		p.sseClient.ConnectStreaming(token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
 		case sseStatus.OK:
@@ -183,15 +179,39 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 
 // Start push services
 func (p *PushManager) Start() {
+	if p.IsRunning() {
+		p.logger.Debug("PushManager is already running, skipping Start")
+		return
+	}
 	errResult := make(chan error, 1)
-
 	token := p.performAuthentication(errResult)
 	if token == nil {
 		p.cancelStreaming()
 		return
 	}
+	channels, err := token.ChannelList()
+	if err != nil {
+		p.cancelStreaming()
+		return
+	}
+	nextTokenExpiration, err := token.CalculateNextTokenExpiration()
+	if err != nil {
+		p.cancelStreaming()
+		return
+	}
+	go func() {
+		for {
+			select {
+			case <-time.After(nextTokenExpiration):
+				p.managerStatus <- TokenExpiration
+				return
+			case <-p.cancelTokenExpiration:
+				return
+			}
+		}
+	}()
 
-	err := p.connectToStreaming(errResult, *token)
+	err = p.connectToStreaming(errResult, token.Token, channels)
 	if err != nil {
 		p.cancelStreaming()
 		return
@@ -226,6 +246,7 @@ func (p *PushManager) Stop() {
 	p.logger.Info("Stopping Push Services")
 	p.cancelAuthBackoff <- struct{}{}
 	p.cancelSSEBackoff <- struct{}{}
+	p.cancelTokenExpiration <- struct{}{}
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
