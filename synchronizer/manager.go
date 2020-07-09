@@ -54,22 +54,27 @@ func NewSynchronizerManager(
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
-	streamingStatus := make(chan int, 1000)
-	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
-	if err != nil {
-		return nil, err
-	}
+
 	status := atomic.Value{}
 	status.Store(Created)
-	return &Manager{
-		synchronizer:    synchronizer,
-		logger:          logger,
-		streamingStatus: streamingStatus,
-		config:          config,
-		pushManager:     pushManager,
-		managerStatus:   managerStatus,
-		status:          status,
-	}, nil
+	manager := &Manager{
+		synchronizer:  synchronizer,
+		logger:        logger,
+		config:        config,
+		managerStatus: managerStatus,
+		status:        status,
+	}
+	if config.StreamingEnabled {
+		streamingStatus := make(chan int, 1000)
+		pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
+		if err != nil {
+			return nil, err
+		}
+		manager.pushManager = pushManager
+		manager.streamingStatus = streamingStatus
+	}
+
+	return manager, nil
 }
 
 func (s *Manager) startPolling() {
@@ -144,14 +149,15 @@ func (s *Manager) Start() {
 		}
 	} else {
 		s.logger.Info("Start periodic polling")
-		s.startPolling()
+		s.synchronizer.StartPeriodicFetching()
+		s.status.Store(Polling)
 	}
 }
 
 // Stop stop synchronizaation through Split
 func (s *Manager) Stop() {
 	s.logger.Info("STOPPING MANAGER TASKS")
-	if s.pushManager.IsRunning() {
+	if s.pushManager != nil && s.pushManager.IsRunning() {
 		s.pushManager.Stop()
 	}
 	s.synchronizer.StopPeriodicFetching()
