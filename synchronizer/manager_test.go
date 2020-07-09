@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,47 +42,6 @@ func TestSyncError(t *testing.T) {
 	}
 }
 
-func TestSyncInvalidAuth(t *testing.T) {
-	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-	mockSync := syncMock.MockSynchronizer{
-		SyncAllCall: func() error {
-			t.Error("It should not be called")
-			return nil
-		},
-		StartPeriodicDataRecordingCall: func() {
-			t.Error("It should not be called")
-		},
-		StartPeriodicFetchingCall: func() {
-			t.Error("It should not be called")
-		},
-	}
-
-	statusChan := make(chan int, 1)
-	managerTest, err := NewSynchronizerManager(
-		mockSync,
-		logger,
-		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return nil, errors.New("some")
-			},
-		},
-		storageMock.MockSplitStorage{},
-		statusChan,
-	)
-	if err != nil {
-		t.Error("It should not return err")
-	}
-	go managerTest.Start()
-
-	msg := <-statusChan
-	if msg != Error {
-		t.Error("It should be err")
-	}
-}
-
 func TestPollingWithStreamingFalse(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
@@ -102,20 +60,22 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 		},
 	}
 
-	managerTest, err := NewSynchronizerManager(
-		mockSync,
-		logger,
-		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return nil, nil
-			},
+	status := make(chan int, 1)
+	push, _ := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, status, mocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return nil, nil
 		},
-		storageMock.MockSplitStorage{},
-		make(chan int, 1),
-	)
-	if err != nil {
-		t.Error("It should not return err")
+	})
+	streamingRunning := atomic.Value{}
+	streamingRunning.Store(false)
+	managerTest := Manager{
+		synchronizer:     mockSync,
+		logger:           logger,
+		config:           advanced,
+		managerStatus:    make(chan int, 1),
+		pushManager:      push,
+		streamingStatus:  status,
+		streamingRunning: streamingRunning,
 	}
 	managerTest.Start()
 	if atomic.LoadInt64(&periodicDataRecording) != 1 {
@@ -179,10 +139,15 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	streamingStatus := make(chan int, 1)
-	pushManager, err := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, streamingStatus)
-	if err != nil {
-		t.Error("It should not return err")
-	}
+	pushManager, _ := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, streamingStatus,
+		mocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		})
 
 	streamingRunning := atomic.Value{}
 	streamingRunning.Store(false)
@@ -200,14 +165,6 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		},
 		logger,
 		advanced,
-		mocks.MockAuthClient{
-			AuthenticateCall: func() (*dtos.Token, error) {
-				return &dtos.Token{
-					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
-					PushEnabled: true,
-				}, nil
-			},
-		},
 		pushManager,
 		make(chan int, 1),
 		streamingStatus,
@@ -502,6 +459,7 @@ func TestStreaming(t *testing.T) {
 	var splitFetchCalled int64
 	var segmentFetchCalled int64
 	var kilLocallyCalled int64
+	var putManyCalled int64
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -544,8 +502,6 @@ func TestStreaming(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
-	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
 		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: ts.URL, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -554,115 +510,48 @@ func TestStreaming(t *testing.T) {
 		SplitFetcher: httpMocks.MockSplitFetcher{
 			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
-				switch atomic.LoadInt64(&splitFetchCalled) {
-				case 1:
-					if changeNumber != -1 {
-						t.Error("Wrong changenumber passed")
-					}
-
-					return &dtos.SplitChangesDTO{
-						Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-						Since:  123,
-						Till:   123,
-					}, nil
-				case 2:
-					if changeNumber != 123 {
-						t.Error("Wrong changenumber passed")
-					}
-
-					return &dtos.SplitChangesDTO{
-						Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-						Since:  1591996685190,
-						Till:   1591996685190,
-					}, nil
-				case 3:
-					if changeNumber != 1591996685190 {
-						t.Error("Wrong changenumber passed")
-					}
-
-					return &dtos.SplitChangesDTO{
-						Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-						Since:  1591996754396,
-						Till:   1591996754396,
-					}, nil
-
-				default:
-					t.Error("Unexpected FetchCall")
-					return nil, nil
-				}
+				return &dtos.SplitChangesDTO{
+					Splits: []dtos.SplitDTO{},
+					Since:  1591996754396,
+					Till:   1591996754396,
+				}, nil
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
 			FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
 				atomic.AddInt64(&segmentFetchCalled, 1)
-
-				switch atomic.LoadInt64(&shouldBeReady) {
-				case 0:
-					if name != "segment1" && name != "segment2" {
-						t.Error("Wrong name")
-					}
-					return &dtos.SegmentChangesDTO{
-						Name:    name,
-						Added:   []string{"some"},
-						Removed: []string{},
-						Since:   123,
-						Till:    123,
-					}, nil
-				case 1:
-					if name != "TEST_SEGMENT" {
-						t.Error("Wrong name")
-					}
-					return &dtos.SegmentChangesDTO{
-						Name:    name,
-						Added:   []string{"test_key"},
-						Removed: []string{},
-						Since:   1591988398533,
-						Till:    1591988398533,
-					}, nil
-				default:
-					t.Error("Unexpected FetchCall")
-					return nil, nil
-				}
+				return &dtos.SegmentChangesDTO{
+					Name:    name,
+					Added:   []string{"test_key"},
+					Removed: []string{},
+					Since:   1591988398533,
+					Till:    1591988398533,
+				}, nil
 			},
 		},
 		EventRecorder: httpMocks.MockEventRecorder{
 			RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&eventsCalled, 1)
-				if len(events) != 1 {
-					t.Error("Wrong length")
-				}
 				return nil
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
 			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
-				if len(impressions) != 1 {
-					t.Error("Wrong length")
-				}
 				return nil
 			},
 		},
 		MetricRecorder: httpMocks.MockMetricRecorder{
 			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&countersCalled, 1)
-				if len(counters) != 1 {
-					t.Error("Wrong length")
-				}
 				return nil
 			},
 			RecordGaugeCall: func(gauge dtos.GaugeDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&gaugesCalled, 1)
-				if gauge.MetricName != "gauge" {
-					t.Error("Wrong gauge")
-				}
 				return nil
 			},
 			RecordLatenciesCall: func(latencies []dtos.LatenciesDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&latenciesCalled, 1)
-				if len(latencies) != 1 {
-					t.Error("Wrong length")
-				}
 				return nil
 			},
 		},
@@ -679,44 +568,13 @@ func TestStreaming(t *testing.T) {
 			}
 		},
 		ChangeNumberCall: func() (int64, error) {
-			switch atomic.LoadInt64(&splitFetchCalled) {
-			case 0:
-				return -1, nil
-			case 1:
-				return 123, nil
-			case 2:
-				return 1591996685190, nil
-			case 3:
-				return 1591996754396, nil
-			default:
-				t.Error("Unexpected ChangeNumber call")
-				return -1, nil
-			}
+			return 123, nil
 		},
 		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
-			switch atomic.LoadInt64(&splitFetchCalled) {
-			case 1:
-				if changeNumber != 123 {
-					t.Error("Wrong changenumber")
-				}
-				if len(splits) != 2 {
-					t.Error("Wrong length of passed splits")
-				}
-			case 2:
-				if changeNumber != 1591996685190 {
-					t.Error("Wrong changenumber")
-				}
-			case 3:
-				if changeNumber != 1591996754396 {
-					t.Error("Wrong changenumber")
-				}
-			default:
-				t.Error("Unexpected PutMany call")
-			}
+			atomic.AddInt64(&putManyCalled, 1)
 		},
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
+			return set.NewSet("segment1")
 		},
 	}
 
@@ -730,24 +588,9 @@ func TestStreaming(t *testing.T) {
 				return -1, nil
 			},
 			KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
-				if segmentName != "segment1" && segmentName != "segment2" && segmentName != "TEST_SEGMENT" {
-					t.Error("Wrong name")
-				}
 				return nil
 			},
 			UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
-				switch atomic.LoadInt64(&shouldBeReady) {
-				case 0:
-					if name != "segment1" && name != "segment2" {
-						t.Error("Wrong name")
-					}
-				case 1:
-					if name != "TEST_SEGMENT" {
-						t.Error("Wrong name")
-					}
-				default:
-					t.Error("Unexpected UpdateCall")
-				}
 				return nil
 			},
 		},
@@ -767,9 +610,6 @@ func TestStreaming(t *testing.T) {
 		},
 		storageMock.MockImpressionStorage{
 			PopNCall: func(n int64) ([]dtos.Impression, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
 				return []dtos.Impression{{
 					BucketingKey: "someBucketingKey",
 					ChangeNumber: 123456789,
@@ -781,17 +621,11 @@ func TestStreaming(t *testing.T) {
 				}}, nil
 			},
 			EmptyCall: func() bool {
-				if impressionsCalled < 3 {
-					return false
-				}
 				return true
 			},
 		},
 		storageMock.MockEventStorage{
 			PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
 				return []dtos.EventDTO{{
 					EventTypeID:     "someEvent",
 					Key:             "someKey",
@@ -802,9 +636,6 @@ func TestStreaming(t *testing.T) {
 				}}, nil
 			},
 			EmptyCall: func() bool {
-				if eventsCalled < 4 {
-					return false
-				}
 				return true
 			},
 		},
@@ -854,18 +685,17 @@ func TestStreaming(t *testing.T) {
 	managerTest.Stop()
 	time.Sleep(1 * time.Second)
 
-	if atomic.LoadInt64(&splitFetchCalled) != 3 {
-		t.Error("It should be called three times")
+	if atomic.LoadInt64(&splitFetchCalled) != 4 {
+		t.Error("It should be called fourth times")
 	}
 	if atomic.LoadInt64(&segmentFetchCalled) != 3 {
-		t.Error(segmentFetchCalled)
 		t.Error("It should be called three times")
 	}
-	if atomic.LoadInt64(&impressionsCalled) != 3 {
-		t.Error("It should be called three times")
+	if atomic.LoadInt64(&impressionsCalled) != 1 {
+		t.Error("It should be called once")
 	}
-	if atomic.LoadInt64(&eventsCalled) != 4 {
-		t.Error("It should be called fourth times")
+	if atomic.LoadInt64(&eventsCalled) != 1 {
+		t.Error("It should be called once")
 	}
 	if atomic.LoadInt64(&countersCalled) != 2 {
 		t.Error("It should be called twice")
@@ -884,6 +714,9 @@ func TestStreaming(t *testing.T) {
 	}
 	if atomic.LoadInt64(&kilLocallyCalled) != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&putManyCalled) != 4 {
+		t.Error("It should be called fourth times")
 	}
 }
 
@@ -1071,10 +904,10 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	managerTest.Stop()
 	time.Sleep(1 * time.Second)
 
-	if atomic.LoadInt64(&splitFetchCalled) != 2 {
-		t.Error("It should be called once")
+	if atomic.LoadInt64(&splitFetchCalled) != 4 {
+		t.Error("It should be called fourth times")
 	}
-	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
-		t.Error("It should be called once")
+	if atomic.LoadInt64(&segmentFetchCalled) != 4 {
+		t.Error("It should be called fourth times")
 	}
 }

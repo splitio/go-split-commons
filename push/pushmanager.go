@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/service/api/sse"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-toolkit/logging"
@@ -29,6 +30,7 @@ const (
 
 // PushManager strcut for managing push services
 type PushManager struct {
+	authClient      service.AuthClient
 	sseClient       *sse.StreamingClient
 	segmentWorker   *SegmentUpdateWorker
 	splitWorker     *SplitUpdateWorker
@@ -49,6 +51,7 @@ func NewPushManager(
 	splitStorage storage.SplitStorage,
 	config *conf.AdvancedConfig,
 	managerStatus chan int,
+	authClient service.AuthClient,
 ) (*PushManager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
@@ -77,6 +80,7 @@ func NewPushManager(
 
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
+		authClient:      authClient,
 		sseClient:       sse.NewStreamingClient(config, streamingStatus, logger),
 		segmentWorker:   segmentWorker,
 		splitWorker:     splitWorker,
@@ -89,8 +93,20 @@ func NewPushManager(
 }
 
 // Start push services
-func (p *PushManager) Start(token string, channels []string) {
-	go p.sseClient.ConnectStreaming(token, channels, p.eventHandler.HandleIncomingMessage)
+func (p *PushManager) Start() {
+	token, err := p.authClient.Authenticate()
+	if err != nil || !token.PushEnabled {
+		p.managerStatus <- Error
+		return
+	}
+
+	channels, err := token.ChannelList()
+	if err != nil {
+		p.managerStatus <- Error
+		return
+	}
+
+	go p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 
 	go func() {
 		for {
@@ -126,6 +142,16 @@ func (p *PushManager) Stop() {
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
+	p.StopWorkers()
+}
+
+// IsRunning returns true if the services are running
+func (p *PushManager) IsRunning() bool {
+	return p.sseClient.IsRunning() || p.splitWorker.IsRunning() || p.segmentWorker.IsRunning()
+}
+
+// StopWorkers stops workers
+func (p *PushManager) StopWorkers() {
 	if p.splitWorker.IsRunning() {
 		p.splitWorker.Stop()
 	}
@@ -134,7 +160,12 @@ func (p *PushManager) Stop() {
 	}
 }
 
-// IsRunning returns true if the services are running
-func (p *PushManager) IsRunning() bool {
-	return p.sseClient.IsRunning() || p.splitWorker.IsRunning() || p.segmentWorker.IsRunning()
+// StartWorkers starts workers
+func (p *PushManager) StartWorkers() {
+	if !p.splitWorker.IsRunning() {
+		p.splitWorker.Start()
+	}
+	if !p.segmentWorker.IsRunning() {
+		p.segmentWorker.Start()
+	}
 }

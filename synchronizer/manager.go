@@ -25,7 +25,6 @@ type Manager struct {
 	synchronizer     Synchronizer
 	logger           logging.LoggerInterface
 	config           conf.AdvancedConfig
-	authClient       service.AuthClient
 	pushManager      *push.PushManager
 	managerStatus    chan<- int
 	streamingStatus  chan int
@@ -45,7 +44,7 @@ func NewSynchronizerManager(
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
 	streamingStatus := make(chan int, 1000)
-	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus)
+	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,6 @@ func NewSynchronizerManager(
 		logger:           logger,
 		streamingStatus:  streamingStatus,
 		config:           config,
-		authClient:       authClient,
 		pushManager:      pushManager,
 		managerStatus:    managerStatus,
 		streamingRunning: streamingRunning,
@@ -65,13 +63,7 @@ func NewSynchronizerManager(
 
 // Start starts synchronization through Split
 func (s *Manager) Start() {
-	token, err := s.authClient.Authenticate()
-	if err != nil {
-		s.managerStatus <- Error
-		return
-	}
-
-	err = s.synchronizer.SyncAll()
+	err := s.synchronizer.SyncAll()
 	if err != nil {
 		s.managerStatus <- Error
 		return
@@ -79,41 +71,46 @@ func (s *Manager) Start() {
 	s.synchronizer.StartPeriodicDataRecording()
 	s.managerStatus <- Ready
 
-	if s.config.StreamingEnabled && token.PushEnabled {
-		channels, err := token.ChannelList()
-		if err == nil {
-			s.logger.Info("Start Streaming")
-			s.pushManager.Start(token.Token, channels)
-			for {
-				status := <-s.streamingStatus
-				switch status {
-				case push.Ready:
-					s.logger.Info("SSE Streaming is ready")
-					s.managerStatus <- StreamingReady
-					s.streamingRunning.Store(true)
-				case push.Error:
-					s.pushManager.Stop()
+	if s.config.StreamingEnabled {
+		s.logger.Info("Start Streaming")
+		s.pushManager.Start()
+		for {
+			status := <-s.streamingStatus
+			switch status {
+			case push.Ready:
+				s.logger.Info("SSE Streaming is ready")
+				s.managerStatus <- StreamingReady
+				go s.synchronizer.SyncAll()
+				s.streamingRunning.Store(true)
+			case push.Error:
+				s.pushManager.Stop()
+				s.logger.Info("Start periodic polling due error in Streaming")
+				s.synchronizer.StartPeriodicFetching()
+				return
+			case push.PushIsDown:
+				// If streaming is already running, proceeding to stop workers
+				// and keeping SSE running
+				if s.streamingRunning.Load().(bool) {
 					s.logger.Info("Start periodic polling due error in Streaming")
+					s.pushManager.StopWorkers()
 					s.synchronizer.StartPeriodicFetching()
-					return
-				case push.PushIsDown:
-					if s.streamingRunning.Load().(bool) {
-						s.logger.Info("Start periodic polling due error in Streaming")
-						s.synchronizer.StartPeriodicFetching()
-						s.streamingRunning.Store(false)
-					}
-				case push.PushIsUp:
-					if !s.streamingRunning.Load().(bool) {
-						s.logger.Info("Stop periodic polling due Publishers Available")
-						s.synchronizer.StopPeriodicFetching()
-						s.streamingRunning.Store(true)
-					}
+					s.streamingRunning.Store(false)
+				}
+			case push.PushIsUp:
+				// If streaming is not already running, proceeding to start workers
+				if !s.streamingRunning.Load().(bool) {
+					s.logger.Info("Stop periodic polling due Publishers Available")
+					s.pushManager.StartWorkers()
+					s.synchronizer.StopPeriodicFetching()
+					go s.synchronizer.SyncAll()
+					s.streamingRunning.Store(true)
 				}
 			}
 		}
+	} else {
+		s.logger.Info("Start periodic polling")
+		s.synchronizer.StartPeriodicFetching()
 	}
-	s.logger.Info("Start periodic polling")
-	s.synchronizer.StartPeriodicFetching()
 }
 
 // Stop stop synchronizaation through Split
