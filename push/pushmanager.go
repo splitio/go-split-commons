@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -48,6 +49,7 @@ type PushManager struct {
 	publishers      chan int
 	logger          logging.LoggerInterface
 	backoffWorker   func()
+	mutexBackoff    sync.RWMutex
 }
 
 // NewPushManager creates new PushManager
@@ -96,6 +98,7 @@ func NewPushManager(
 		eventHandler:    eventHandler,
 		publishers:      publishers,
 		logger:          logger,
+		mutexBackoff:    sync.RWMutex{},
 	}, nil
 }
 
@@ -106,12 +109,18 @@ func (p *PushManager) cancelStreaming() {
 	p.managerStatus <- Error
 }
 
+func (p *PushManager) setCancelBackoffWorker(cancel func()) {
+	p.mutexBackoff.Lock()
+	defer p.mutexBackoff.Unlock()
+	p.backoffWorker = cancel
+}
+
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 	defer func() {
-		p.backoffWorker = nil
+		p.setCancelBackoffWorker(nil)
 	}()
 	tokenResult := make(chan *dtos.Token, 1)
-	p.backoffWorker = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
+	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod*time.Second, func() bool {
 		token, err := p.authClient.Authenticate()
 		if err != nil {
 			errType, ok := err.(dtos.HTTPError)
@@ -125,6 +134,7 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 		tokenResult <- token
 		return true // Result is OK, Stopping Here, no more backoff
 	})
+	p.setCancelBackoffWorker(cancelAuthBackoff)
 
 	select {
 	case token := <-tokenResult:
@@ -140,7 +150,7 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 
 func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token) error {
 	defer func() {
-		p.backoffWorker = nil
+		p.setCancelBackoffWorker(nil)
 	}()
 	channels, err := token.ChannelList()
 	if err != nil {
@@ -149,7 +159,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 	}
 
 	sseResult := make(chan struct{}, 1)
-	p.backoffWorker = common.WithBackoffCancelling(1*time.Second, float64(maxPeriod), func() bool {
+	cancelStreamingBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod*time.Second, func() bool {
 		p.sseClient.ConnectStreaming(token.Token, channels, p.eventHandler.HandleIncomingMessage)
 		status := <-p.streamingStatus
 		switch status {
@@ -164,6 +174,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token dtos.Token)
 			return true
 		}
 	})
+	p.setCancelBackoffWorker(cancelStreamingBackoff)
 
 	select {
 	case <-sseResult:
@@ -217,9 +228,11 @@ func (p *PushManager) Start() {
 // Stop push services
 func (p *PushManager) Stop() {
 	p.logger.Info("Stopping Push Services")
+	p.mutexBackoff.RLock()
 	if p.backoffWorker != nil {
 		p.backoffWorker()
 	}
+	p.mutexBackoff.RUnlock()
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
