@@ -3,6 +3,7 @@ package synchronizer
 import (
 	"errors"
 	"sync/atomic"
+	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
@@ -91,8 +92,6 @@ func (s *Manager) Start() {
 		return
 	}
 	s.synchronizer.StartPeriodicDataRecording()
-	s.managerStatus <- Ready
-
 	if s.config.StreamingEnabled {
 		s.logger.Info("Start Streaming")
 		go s.pushManager.Start()
@@ -115,7 +114,7 @@ func (s *Manager) Start() {
 					s.synchronizer.StopPeriodicFetching()
 				}
 				s.logger.Info("SSE Streaming is ready")
-				s.managerStatus <- StreamingReady
+				s.managerStatus <- Ready
 				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
 			// Error occurs and it will switch to polling
@@ -144,10 +143,12 @@ func (s *Manager) Start() {
 				}
 			case push.TokenExpiration:
 				s.pushManager.Stop()
+				time.Sleep(6 * time.Second)
 				go s.pushManager.Start()
 			}
 		}
 	} else {
+		s.managerStatus <- Ready
 		s.logger.Info("Start periodic polling")
 		s.synchronizer.StartPeriodicFetching()
 		s.status.Store(Polling)

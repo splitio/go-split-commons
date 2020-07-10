@@ -462,7 +462,7 @@ func TestPolling(t *testing.T) {
 
 func TestStreaming(t *testing.T) {
 	var shouldBeReady int64
-	shouldBeReadyStreaming := 0
+	// shouldBeReadyStreaming := 0
 	var impressionsCalled int64
 	var eventsCalled int64
 	var countersCalled int64
@@ -685,13 +685,15 @@ func TestStreaming(t *testing.T) {
 	default:
 		t.Error("Wrong msg received")
 	}
-	msg = <-statusChannel
-	switch msg {
-	case StreamingReady:
-		shouldBeReadyStreaming++
-	default:
-		t.Error("Wrong msg received")
-	}
+	/*
+		msg = <-statusChannel
+		switch msg {
+		case StreamingReady:
+			shouldBeReadyStreaming++
+		default:
+			t.Error("Wrong msg received")
+		}
+	*/
 
 	if managerTest.status.Load().(int) != Streaming {
 		t.Error("It should started in Polling mode")
@@ -725,9 +727,11 @@ func TestStreaming(t *testing.T) {
 	if atomic.LoadInt64(&shouldBeReady) != 1 {
 		t.Error("It should be ready eventually")
 	}
-	if shouldBeReadyStreaming != 1 {
-		t.Error("It should be ready eventually")
-	}
+	/*
+		if shouldBeReadyStreaming != 1 {
+			t.Error("It should be ready eventually")
+		}
+	*/
 	if atomic.LoadInt64(&kilLocallyCalled) != 1 {
 		t.Error("It should be called once")
 	}
@@ -911,10 +915,12 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	if msg != Ready {
 		t.Error("It should send ready")
 	}
-	msg = <-statusChannel
-	if msg != StreamingReady {
-		t.Error("It should send streaming ready")
-	}
+	/*
+		msg = <-statusChannel
+		if msg != StreamingReady {
+			t.Error("It should send streaming ready")
+		}
+	*/
 
 	time.Sleep(1 * time.Second)
 	if managerTest.status.Load().(int) != Streaming {

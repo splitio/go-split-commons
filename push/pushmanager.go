@@ -107,7 +107,7 @@ func NewPushManager(
 }
 
 func (p *PushManager) cancelStreaming() {
-	p.logger.Error("Error authenticating, switching to polling")
+	p.logger.Error("Error, switching to polling")
 	p.managerStatus <- Error
 }
 
@@ -180,8 +180,11 @@ func (p *PushManager) connectToStreaming(errResult chan error, token string, cha
 // Start push services
 func (p *PushManager) Start() {
 	if p.IsRunning() {
-		p.logger.Debug("PushManager is already running, skipping Start")
+		p.logger.Info("PushManager is already running, skipping Start")
 		return
+	}
+	if len(p.cancelTokenExpiration) > 0 {
+		<-p.cancelTokenExpiration
 	}
 	errResult := make(chan error, 1)
 	token := p.performAuthentication(errResult)
@@ -210,13 +213,11 @@ func (p *PushManager) Start() {
 			}
 		}
 	}()
-
 	err = p.connectToStreaming(errResult, token.Token, channels)
 	if err != nil {
 		p.cancelStreaming()
 		return
 	}
-
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
 	p.managerStatus <- Ready
@@ -224,9 +225,13 @@ func (p *PushManager) Start() {
 	go func() {
 		for {
 			select {
-			case <-p.streamingStatus:
-				p.cancelStreaming()
-				return
+			case msg := <-p.streamingStatus:
+				switch msg {
+				case sseStatus.OK:
+				default:
+					p.cancelStreaming()
+					return
+				}
 			case publisherStatus := <-p.publishers:
 				switch publisherStatus {
 				case PublisherNotPresent:
