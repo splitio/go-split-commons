@@ -3,6 +3,8 @@ package dtos
 import (
 	"testing"
 	"time"
+
+	"github.com/splitio/go-toolkit/datastructures/set"
 )
 
 func TestTokenChannels(t *testing.T) {
@@ -39,19 +41,23 @@ func TestTokenChannels(t *testing.T) {
 	if err != nil {
 		t.Error("It should be nil")
 	}
+	channels := set.NewThreadSafeSet()
+	for r := range result {
+		channels.Add(r)
+	}
 	if result == nil || len(result) != 4 {
 		t.Error("It should not be nil")
 	}
-	if result[0] == "NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_segments" {
+	if channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_segments") {
 		t.Error("It should exist")
 	}
-	if result[1] == "NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_splits" {
+	if channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_splits") {
 		t.Error("It should exist")
 	}
-	if result[2] == "control_pri" {
+	if channels.Has("control_pri") {
 		t.Error("It should exist")
 	}
-	if result[3] == "control_sec" {
+	if channels.Has("control_sec") {
 		t.Error("It should exist")
 	}
 }
