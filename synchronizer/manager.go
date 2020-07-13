@@ -37,7 +37,7 @@ type Manager struct {
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
 	pushManager     *push.PushManager
-	managerStatus   chan<- int
+	managerStatus   chan int
 	streamingStatus chan int
 	status          atomic.Value
 }
@@ -85,6 +85,9 @@ func (s *Manager) startPolling() {
 
 // Start starts synchronization through Split
 func (s *Manager) Start() {
+	if len(s.managerStatus) > 0 {
+		<-s.managerStatus
+	}
 	err := s.synchronizer.SyncAll()
 	if err != nil {
 		s.managerStatus <- Error
