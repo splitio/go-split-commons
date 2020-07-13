@@ -79,6 +79,7 @@ func NewSynchronizerManager(
 
 func (s *Manager) startPolling() {
 	s.pushManager.StopWorkers()
+	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicFetching()
 	s.status.Store(Polling)
 }
