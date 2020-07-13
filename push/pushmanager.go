@@ -52,6 +52,7 @@ type PushManager struct {
 	cancelAuthBackoff     chan struct{}
 	cancelSSEBackoff      chan struct{}
 	cancelTokenExpiration chan struct{}
+	stopped               chan struct{}
 }
 
 // NewPushManager creates new PushManager
@@ -103,6 +104,7 @@ func NewPushManager(
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}, nil
 }
 
@@ -179,6 +181,9 @@ func (p *PushManager) connectToStreaming(errResult chan error, token string, cha
 
 // Start push services
 func (p *PushManager) Start() {
+	if len(p.stopped) > 0 {
+		<-p.stopped
+	}
 	if p.IsRunning() {
 		p.logger.Info("PushManager is already running, skipping Start")
 		return
@@ -227,7 +232,6 @@ func (p *PushManager) Start() {
 			select {
 			case msg := <-p.streamingStatus:
 				switch msg {
-				case sseStatus.OK:
 				default:
 					p.cancelStreaming()
 					return
@@ -241,6 +245,8 @@ func (p *PushManager) Start() {
 				default:
 					p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 				}
+			case <-p.stopped:
+				return
 			}
 		}
 	}()
@@ -248,6 +254,9 @@ func (p *PushManager) Start() {
 
 // Stop push services
 func (p *PushManager) Stop() {
+	defer func() {
+		p.stopped <- struct{}{}
+	}()
 	p.logger.Info("Stopping Push Services")
 	p.cancelAuthBackoff <- struct{}{}
 	p.cancelSSEBackoff <- struct{}{}

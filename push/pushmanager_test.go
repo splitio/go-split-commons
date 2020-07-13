@@ -176,6 +176,7 @@ func TestPushLogic(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
@@ -219,8 +220,6 @@ func TestPushLogic(t *testing.T) {
 func TestPushError(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
-	var shouldReceiveReady int64
-	var shouldReceiveError int64
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
@@ -268,6 +267,7 @@ func TestPushError(t *testing.T) {
 		return nil
 	}, logger)
 
+	stopped := make(chan struct{}, 1)
 	managerStatus := make(chan int, 1)
 	mockedPush := PushManager{
 		authClient: authMocks.MockAuthClient{
@@ -288,51 +288,49 @@ func TestPushError(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               stopped,
 	}
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
 	}
 
-	go func() {
-		for {
-			msg := <-managerStatus
-			switch msg {
-			case Ready:
-				atomic.AddInt64(&shouldReceiveReady, 1)
-			case Error:
-				atomic.AddInt64(&shouldReceiveError, 1)
-			}
-		}
-	}()
-
 	mockedPush.Start()
-	time.Sleep(100 * time.Millisecond)
+	msg := <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
 	if !mockedPush.IsRunning() {
 		t.Error("It should be running")
 	}
 	streamingStatus <- sseStatus.ErrorKeepAlive
+	msg = <-managerStatus
+	if msg != Error {
+		t.Error("It should be error")
+	}
 	mockedPush.Stop()
-	time.Sleep(100 * time.Millisecond)
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
+	}
 
 	mockedPush.Start()
-	time.Sleep(100 * time.Millisecond)
 	if !mockedPush.IsRunning() {
 		t.Error("It should be running")
 	}
+	msg = <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
 	streamingStatus <- sseStatus.ErrorUnexpected
-	time.Sleep(100 * time.Millisecond)
-
+	msg = <-managerStatus
+	if msg != Error {
+		t.Error("It should be error")
+	}
+	mockedPush.Stop()
 	if atomic.LoadInt64(&shouldReceiveSegmentChange) != 0 {
 		t.Error("It should be one")
 	}
 	if atomic.LoadInt64(&shouldReceiveSplitChange) != 0 {
 		t.Error("It should be one")
-	}
-	if atomic.LoadInt64(&shouldReceiveReady) != 2 {
-		t.Error("It should be one", shouldReceiveReady)
-	}
-	if atomic.LoadInt64(&shouldReceiveError) != 2 {
-		t.Error("It should return error")
 	}
 }
 
@@ -441,6 +439,7 @@ func TestFeedbackLoop(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}
 
 	mockedPush.Start()
@@ -535,6 +534,7 @@ func TestWorkers(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()
@@ -619,6 +619,7 @@ func TestBackoffAuth(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()
@@ -700,6 +701,7 @@ func TestBackoffSSE(t *testing.T) {
 		cancelAuthBackoff:     make(chan struct{}, 1),
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
+		stopped:               make(chan struct{}, 1),
 	}
 
 	go mockedPush.Start()

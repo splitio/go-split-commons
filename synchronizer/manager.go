@@ -3,7 +3,6 @@ package synchronizer
 import (
 	"errors"
 	"sync/atomic"
-	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
@@ -143,8 +142,7 @@ func (s *Manager) Start() {
 				}
 			case push.TokenExpiration:
 				s.pushManager.Stop()
-				time.Sleep(6 * time.Second)
-				go s.pushManager.Start()
+				s.pushManager.Start()
 			}
 		}
 	} else {
