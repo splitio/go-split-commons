@@ -181,12 +181,12 @@ func (p *PushManager) connectToStreaming(errResult chan error, token string, cha
 
 // Start push services
 func (p *PushManager) Start() {
-	if len(p.stopped) > 0 {
-		<-p.stopped
-	}
 	if p.IsRunning() {
 		p.logger.Info("PushManager is already running, skipping Start")
 		return
+	}
+	if len(p.stopped) > 0 {
+		<-p.stopped
 	}
 	if len(p.cancelTokenExpiration) > 0 {
 		<-p.cancelTokenExpiration
@@ -211,6 +211,7 @@ func (p *PushManager) Start() {
 		for {
 			select {
 			case <-time.After(nextTokenExpiration):
+				p.logger.Info("Token expired")
 				p.managerStatus <- TokenExpiration
 				return
 			case <-p.cancelTokenExpiration:
