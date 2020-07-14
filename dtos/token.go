@@ -33,7 +33,7 @@ func (t *Token) ChannelList() ([]string, error) {
 	}
 
 	tokenParts := strings.Split(t.Token, ".")
-	if len(tokenParts) < 1 {
+	if len(tokenParts) < 2 {
 		return nil, errors.New("Cannot decode token")
 	}
 	decodedPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
@@ -68,7 +68,7 @@ func (t *Token) CalculateNextTokenExpiration() (time.Duration, error) {
 	}
 
 	tokenParts := strings.Split(t.Token, ".")
-	if len(tokenParts) < 1 {
+	if len(tokenParts) < 2 {
 		return 0, errors.New("Cannot decode token")
 	}
 	decodedPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])

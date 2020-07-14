@@ -54,7 +54,7 @@ func TestPushManager(t *testing.T) {
 
 func TestPushInvalidAuth(t *testing.T) {
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
+		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	status := make(chan int, 1)
@@ -124,12 +124,6 @@ func TestPushLogic(t *testing.T) {
 				_ = json.Unmarshal(sseMock, &mockedData)
 				mockedStr, _ := json.Marshal(mockedData)
 				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 3:
-				sseMock, _ := ioutil.ReadFile("../testdata/sseError.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 			}
 			flusher.Flush()
 		}
@@ -192,7 +186,7 @@ func TestPushLogic(t *testing.T) {
 		}
 	}()
 
-	mockedPush.Start()
+	go mockedPush.Start()
 
 	time.Sleep(1 * time.Second)
 	if !mockedPush.IsRunning() {
@@ -213,7 +207,7 @@ func TestPushLogic(t *testing.T) {
 		t.Error("It should be one")
 	}
 	if atomic.LoadInt64(&shouldReceiveError) != 0 {
-		t.Error("It should not return error")
+		t.Error("It should be zero")
 	}
 }
 
@@ -221,7 +215,7 @@ func TestPushError(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
 
-	logger := logging.NewLogger(&logging.LoggerOptions{})
+	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelInfo})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
@@ -294,7 +288,7 @@ func TestPushError(t *testing.T) {
 		t.Error("It should not be running")
 	}
 
-	mockedPush.Start()
+	go mockedPush.Start()
 	msg := <-managerStatus
 	if msg != Ready {
 		t.Error("It should be ready")
@@ -312,13 +306,13 @@ func TestPushError(t *testing.T) {
 		t.Error("It should not be running")
 	}
 
-	mockedPush.Start()
-	if !mockedPush.IsRunning() {
-		t.Error("It should be running")
-	}
+	go mockedPush.Start()
 	msg = <-managerStatus
 	if msg != Ready {
 		t.Error("It should be ready")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
 	}
 	streamingStatus <- sseStatus.ErrorUnexpected
 	msg = <-managerStatus
@@ -442,7 +436,7 @@ func TestFeedbackLoop(t *testing.T) {
 		stopped:               make(chan struct{}, 1),
 	}
 
-	mockedPush.Start()
+	go mockedPush.Start()
 
 	time.Sleep(1 * time.Second)
 	if !mockedPush.IsRunning() {
@@ -452,9 +446,6 @@ func TestFeedbackLoop(t *testing.T) {
 	mockedPush.Stop()
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
-	}
-	if atomic.LoadInt64(&shouldReceiveSwitchToPolling) != 1 {
-		t.Error("It should be one")
 	}
 	if atomic.LoadInt64(&shouldReceiveSwitchToPolling) != 1 {
 		t.Error("It should be one")

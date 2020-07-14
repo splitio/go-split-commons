@@ -179,33 +179,18 @@ func (p *PushManager) connectToStreaming(errResult chan error, token string, cha
 	}
 }
 
-// Start push services
-func (p *PushManager) Start() {
-	if p.IsRunning() {
-		p.logger.Info("PushManager is already running, skipping Start")
-		return
-	}
-	if len(p.stopped) > 0 {
-		<-p.stopped
-	}
-	if len(p.cancelTokenExpiration) > 0 {
-		<-p.cancelTokenExpiration
-	}
-	errResult := make(chan error, 1)
+func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []string, error) {
 	token := p.performAuthentication(errResult)
 	if token == nil {
-		p.cancelStreaming()
-		return
+		return "", []string{}, errors.New("Could not perform authentication")
 	}
 	channels, err := token.ChannelList()
 	if err != nil {
-		p.cancelStreaming()
-		return
+		return "", []string{}, errors.New("Could not perform authentication")
 	}
 	nextTokenExpiration, err := token.CalculateNextTokenExpiration()
 	if err != nil {
-		p.cancelStreaming()
-		return
+		return "", []string{}, errors.New("Could not perform authentication")
 	}
 	go func() {
 		for {
@@ -219,7 +204,50 @@ func (p *PushManager) Start() {
 			}
 		}
 	}()
-	err = p.connectToStreaming(errResult, token.Token, channels)
+	return token.Token, channels, nil
+}
+
+func (p *PushManager) streamingStatusWatcher() {
+	for {
+		select {
+		case <-p.streamingStatus:
+			p.cancelStreaming()
+			return
+		case publisherStatus := <-p.publishers:
+			switch publisherStatus {
+			case PublisherNotPresent:
+				p.managerStatus <- PushIsDown
+			case PublisherAvailable:
+				p.managerStatus <- PushIsUp
+			default:
+				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
+			}
+		case <-p.stopped:
+			return
+		}
+	}
+}
+
+// Start push services
+func (p *PushManager) Start() {
+	if p.IsRunning() {
+		p.logger.Info("PushManager is already running, skipping Start")
+		return
+	}
+	if len(p.stopped) > 0 {
+		<-p.stopped
+	}
+	if len(p.cancelTokenExpiration) > 0 {
+		<-p.cancelTokenExpiration
+	}
+
+	errResult := make(chan error, 1)
+	token, channels, err := p.fetchStreamingToken(errResult)
+	if err != nil {
+		p.cancelStreaming()
+		return
+	}
+	err = p.connectToStreaming(errResult, token, channels)
 	if err != nil {
 		p.cancelStreaming()
 		return
@@ -228,29 +256,7 @@ func (p *PushManager) Start() {
 	p.segmentWorker.Start()
 	p.managerStatus <- Ready
 
-	go func() {
-		for {
-			select {
-			case msg := <-p.streamingStatus:
-				switch msg {
-				default:
-					p.cancelStreaming()
-					return
-				}
-			case publisherStatus := <-p.publishers:
-				switch publisherStatus {
-				case PublisherNotPresent:
-					p.managerStatus <- PushIsDown
-				case PublisherAvailable:
-					p.managerStatus <- PushIsUp
-				default:
-					p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
-				}
-			case <-p.stopped:
-				return
-			}
-		}
-	}()
+	go p.streamingStatusWatcher()
 }
 
 // Stop push services

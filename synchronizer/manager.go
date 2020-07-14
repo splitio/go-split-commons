@@ -21,10 +21,8 @@ const (
 )
 
 const (
-	// Created flags
-	Created = iota
-	// Starting flags
-	Starting
+	// Idle flags
+	Idle = iota
 	// Streaming flags
 	Streaming
 	// Polling flags
@@ -56,7 +54,7 @@ func NewSynchronizerManager(
 	}
 
 	status := atomic.Value{}
-	status.Store(Created)
+	status.Store(Idle)
 	manager := &Manager{
 		synchronizer:  synchronizer,
 		logger:        logger,
@@ -79,13 +77,21 @@ func NewSynchronizerManager(
 
 func (s *Manager) startPolling() {
 	s.pushManager.StopWorkers()
-	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicFetching()
 	s.status.Store(Polling)
 }
 
+// IsRunning returns true if is in Streaming or Polling
+func (s *Manager) IsRunning() bool {
+	return s.status.Load().(int) != Idle
+}
+
 // Start starts synchronization through Split
 func (s *Manager) Start() {
+	if s.IsRunning() {
+		s.logger.Info("Manager is already running, skipping start")
+		return
+	}
 	if len(s.managerStatus) > 0 {
 		<-s.managerStatus
 	}
@@ -94,6 +100,7 @@ func (s *Manager) Start() {
 		s.managerStatus <- Error
 		return
 	}
+	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
 	if s.config.StreamingEnabled {
 		s.logger.Info("Start Streaming")
@@ -117,7 +124,6 @@ func (s *Manager) Start() {
 					s.synchronizer.StopPeriodicFetching()
 				}
 				s.logger.Info("SSE Streaming is ready")
-				s.managerStatus <- Ready
 				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
 			// Error occurs and it will switch to polling
@@ -150,7 +156,6 @@ func (s *Manager) Start() {
 			}
 		}
 	} else {
-		s.managerStatus <- Ready
 		s.logger.Info("Start periodic polling")
 		s.synchronizer.StartPeriodicFetching()
 		s.status.Store(Polling)
@@ -165,4 +170,5 @@ func (s *Manager) Stop() {
 	}
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
+	s.status.Store(Idle)
 }
