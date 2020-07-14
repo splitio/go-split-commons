@@ -69,6 +69,9 @@ func (s *SplitFetcher) SynchronizeSplits(till *int64) error {
 		if changeNumber == 0 {
 			changeNumber = -1
 		}
+		if till != nil && *till < changeNumber {
+			return nil
+		}
 
 		before := time.Now()
 		splits, err := s.splitFetcher.Fetch(changeNumber)

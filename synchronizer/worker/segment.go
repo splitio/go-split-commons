@@ -82,6 +82,9 @@ func (s *SegmentFetcher) SynchronizeSegment(name string, till *int64) error {
 		if changeNumber == 0 {
 			changeNumber = -1
 		}
+		if till != nil && *till < changeNumber {
+			return nil
+		}
 
 		before := time.Now()
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
