@@ -11,18 +11,10 @@ import (
 )
 
 const (
-	streamingURL = "https://streaming.split.io/sse"
-	version      = "1.1"
-	keepAlive    = 120
-	occupancy    = "[?occupancy=metrics.publishers]control_pri,[?occupancy=metrics.publishers]control_sec"
+	version   = "1.1"
+	keepAlive = 120
+	occupancy = "[?occupancy=metrics.publishers]control_pri,[?occupancy=metrics.publishers]control_sec"
 )
-
-func getStreamingURL(cfg *conf.AdvancedConfig) string {
-	if cfg != nil && cfg.StreamingServiceURL != "" {
-		return cfg.StreamingServiceURL
-	}
-	return streamingURL
-}
 
 // StreamingClient struct
 type StreamingClient struct {
@@ -39,7 +31,7 @@ type StreamingClient struct {
 func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logger logging.LoggerInterface) *StreamingClient {
 	sseStatus := make(chan int, 1)
 	stopped := make(chan struct{}, 1)
-	sseClient, _ := sse.NewSSEClient(getStreamingURL(cfg), sseStatus, stopped, keepAlive, logger)
+	sseClient, _ := sse.NewSSEClient(cfg.StreamingServiceURL, sseStatus, stopped, keepAlive, logger)
 	running := atomic.Value{}
 	running.Store(false)
 

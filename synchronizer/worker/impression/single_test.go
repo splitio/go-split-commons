@@ -185,7 +185,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impressionRecorder := api.NewHTTPImpressionRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

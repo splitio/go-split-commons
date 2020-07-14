@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strings"
+
 	sdk "github.com/splitio/go-client/splitio/conf"
 	"github.com/splitio/go-split-commons/conf"
 )
@@ -28,6 +30,12 @@ func NormalizeSDKConf(sdkConfig sdk.AdvancedConfig) conf.AdvancedConfig {
 	}
 	if sdkConfig.SegmentWorkers > 0 {
 		config.SegmentWorkers = sdkConfig.SegmentWorkers
+	}
+	if strings.TrimSpace(sdkConfig.EventsURL) != "" {
+		config.EventsURL = sdkConfig.EventsURL
+	}
+	if strings.TrimSpace(sdkConfig.SdkURL) != "" {
+		config.SdkURL = sdkConfig.SdkURL
 	}
 
 	return config

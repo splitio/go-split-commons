@@ -1002,7 +1002,6 @@ func TestMultipleErrors(t *testing.T) {
 	}
 
 	streamingStatus <- push.PushIsDown
-	<-managerStatus
 	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")

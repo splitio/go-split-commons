@@ -26,9 +26,9 @@ func GetDefaultAdvancedConfig() AdvancedConfig {
 		SegmentWorkers:         defaultSegmentWorkers,
 		SplitUpdateQueueSize:   defaultSplitUpdateQueueSize,
 		StreamingEnabled:       defaultStreamingEnabled,
-		AuthServiceURL:         "",
-		EventsURL:              "",
-		SdkURL:                 "",
-		StreamingServiceURL:    "",
+		AuthServiceURL:         "https://auth.split-stage.io",
+		EventsURL:              "https://events.split.io/api",
+		SdkURL:                 "https://sdk.split.io/api",
+		StreamingServiceURL:    "https://streaming.split.io/sse",
 	}
 }

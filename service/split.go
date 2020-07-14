@@ -19,7 +19,7 @@ type SplitAPI struct {
 // NewSplitAPI creates new splitAPI
 func NewSplitAPI(
 	apikey string,
-	conf *conf.AdvancedConfig,
+	conf conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *SplitAPI {
 	return &SplitAPI{

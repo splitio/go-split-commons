@@ -38,13 +38,12 @@ type HTTPSplitFetcher struct {
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
 func NewHTTPSplitFetcher(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPSplitFetcher {
-	sdkURL, _ := getUrls(cfg)
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, sdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
 			logger: logger,
 		},
 	}
@@ -88,13 +87,12 @@ type HTTPSegmentFetcher struct {
 // NewHTTPSegmentFetcher instantiates and returns a new HTTPSegmentFetcher.
 func NewHTTPSegmentFetcher(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPSegmentFetcher {
-	sdkURL, _ := getUrls(cfg)
 	return &HTTPSegmentFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, sdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
 			logger: logger,
 		},
 	}

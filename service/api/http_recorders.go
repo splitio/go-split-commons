@@ -77,11 +77,10 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata 
 // NewHTTPImpressionRecorder instantiates an HTTPImpressionRecorder
 func NewHTTPImpressionRecorder(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPImpressionRecorder {
-	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
@@ -149,11 +148,10 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Met
 // NewHTTPMetricsRecorder instantiates an HTTPMetricsRecorder
 func NewHTTPMetricsRecorder(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPMetricsRecorder {
-	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
 	return &HTTPMetricsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
@@ -187,11 +185,10 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 // NewHTTPEventsRecorder instantiates an HTTPEventsRecorder
 func NewHTTPEventsRecorder(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPEventsRecorder {
-	_, eventsURL := getUrls(cfg)
-	client := NewHTTPClient(apikey, cfg, eventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,

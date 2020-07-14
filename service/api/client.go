@@ -14,29 +14,10 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-const prodSdkURL = "https://sdk.split.io/api"
-const prodEventsURL = "https://events.split.io/api"
-const defaultHTTPTimeout = 30
-
 // Client interface for HTTPClient
 type Client interface {
 	Get(service string) ([]byte, error)
 	Post(service string, body []byte, headers map[string]string) error
-}
-
-func getUrls(cfg *conf.AdvancedConfig) (sdkURL string, eventsURL string) {
-	if cfg != nil && cfg.SdkURL != "" {
-		sdkURL = cfg.SdkURL
-	} else {
-		sdkURL = prodSdkURL
-	}
-
-	if cfg != nil && cfg.EventsURL != "" {
-		eventsURL = cfg.EventsURL
-	} else {
-		eventsURL = prodEventsURL
-	}
-	return sdkURL, eventsURL
 }
 
 // HTTPClient structure to wrap up the net/http.Client
@@ -51,16 +32,12 @@ type HTTPClient struct {
 // NewHTTPClient instance of HttpClient
 func NewHTTPClient(
 	apikey string,
-	cfg *conf.AdvancedConfig,
+	cfg conf.AdvancedConfig,
 	endpoint string,
 	logger logging.LoggerInterface,
 ) Client {
 	var timeout int
-	if cfg.HTTPTimeout != 0 {
-		timeout = cfg.HTTPTimeout
-	} else {
-		timeout = defaultHTTPTimeout
-	}
+	timeout = cfg.HTTPTimeout
 	client := &http.Client{Timeout: time.Duration(timeout) * time.Second}
 	return &HTTPClient{
 		url:        endpoint,

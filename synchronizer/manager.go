@@ -79,7 +79,6 @@ func (s *Manager) startPolling() {
 	s.pushManager.StopWorkers()
 	s.synchronizer.StartPeriodicFetching()
 	s.status.Store(Polling)
-	s.managerStatus <- Ready
 }
 
 // IsRunning returns true if is in Streaming or Polling
@@ -101,6 +100,7 @@ func (s *Manager) Start() {
 		s.managerStatus <- Error
 		return
 	}
+	s.logger.Debug("SyncAll Ready")
 	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
 	if s.config.StreamingEnabled {
