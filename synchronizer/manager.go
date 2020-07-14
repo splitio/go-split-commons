@@ -21,10 +21,8 @@ const (
 )
 
 const (
-	// Created flags
-	Created = iota
-	// Starting flags
-	Starting
+	// Idle flags
+	Idle = iota
 	// Streaming flags
 	Streaming
 	// Polling flags
@@ -37,7 +35,7 @@ type Manager struct {
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
 	pushManager     *push.PushManager
-	managerStatus   chan<- int
+	managerStatus   chan int
 	streamingStatus chan int
 	status          atomic.Value
 }
@@ -54,22 +52,27 @@ func NewSynchronizerManager(
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
-	streamingStatus := make(chan int, 1000)
-	pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
-	if err != nil {
-		return nil, err
-	}
+
 	status := atomic.Value{}
-	status.Store(Created)
-	return &Manager{
-		synchronizer:    synchronizer,
-		logger:          logger,
-		streamingStatus: streamingStatus,
-		config:          config,
-		pushManager:     pushManager,
-		managerStatus:   managerStatus,
-		status:          status,
-	}, nil
+	status.Store(Idle)
+	manager := &Manager{
+		synchronizer:  synchronizer,
+		logger:        logger,
+		config:        config,
+		managerStatus: managerStatus,
+		status:        status,
+	}
+	if config.StreamingEnabled {
+		streamingStatus := make(chan int, 1000)
+		pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
+		if err != nil {
+			return nil, err
+		}
+		manager.pushManager = pushManager
+		manager.streamingStatus = streamingStatus
+	}
+
+	return manager, nil
 }
 
 func (s *Manager) startPolling() {
@@ -78,16 +81,27 @@ func (s *Manager) startPolling() {
 	s.status.Store(Polling)
 }
 
+// IsRunning returns true if is in Streaming or Polling
+func (s *Manager) IsRunning() bool {
+	return s.status.Load().(int) != Idle
+}
+
 // Start starts synchronization through Split
 func (s *Manager) Start() {
+	if s.IsRunning() {
+		s.logger.Info("Manager is already running, skipping start")
+		return
+	}
+	if len(s.managerStatus) > 0 {
+		<-s.managerStatus
+	}
 	err := s.synchronizer.SyncAll()
 	if err != nil {
 		s.managerStatus <- Error
 		return
 	}
-	s.synchronizer.StartPeriodicDataRecording()
 	s.managerStatus <- Ready
-
+	s.synchronizer.StartPeriodicDataRecording()
 	if s.config.StreamingEnabled {
 		s.logger.Info("Start Streaming")
 		go s.pushManager.Start()
@@ -110,7 +124,6 @@ func (s *Manager) Start() {
 					s.synchronizer.StopPeriodicFetching()
 				}
 				s.logger.Info("SSE Streaming is ready")
-				s.managerStatus <- StreamingReady
 				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
 			// Error occurs and it will switch to polling
@@ -137,20 +150,25 @@ func (s *Manager) Start() {
 					s.status.Store(Streaming)
 					go s.synchronizer.SyncAll()
 				}
+			case push.TokenExpiration:
+				s.pushManager.Stop()
+				s.pushManager.Start()
 			}
 		}
 	} else {
 		s.logger.Info("Start periodic polling")
-		s.startPolling()
+		s.synchronizer.StartPeriodicFetching()
+		s.status.Store(Polling)
 	}
 }
 
 // Stop stop synchronizaation through Split
 func (s *Manager) Stop() {
 	s.logger.Info("STOPPING MANAGER TASKS")
-	if s.pushManager.IsRunning() {
+	if s.pushManager != nil && s.pushManager.IsRunning() {
 		s.pushManager.Stop()
 	}
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
+	s.status.Store(Idle)
 }

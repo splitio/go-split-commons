@@ -67,7 +67,7 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 		},
 	})
 	stat := atomic.Value{}
-	stat.Store(Created)
+	stat.Store(Idle)
 	managerTest := Manager{
 		synchronizer:    mockSync,
 		logger:          logger,
@@ -156,7 +156,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		})
 
 	status := atomic.Value{}
-	status.Store(Created)
+	status.Store(Idle)
 	managerTest := Manager{
 		syncMock.MockSynchronizer{
 			SyncAllCall: func() error {
@@ -462,7 +462,6 @@ func TestPolling(t *testing.T) {
 
 func TestStreaming(t *testing.T) {
 	var shouldBeReady int64
-	shouldBeReadyStreaming := 0
 	var impressionsCalled int64
 	var eventsCalled int64
 	var countersCalled int64
@@ -685,16 +684,10 @@ func TestStreaming(t *testing.T) {
 	default:
 		t.Error("Wrong msg received")
 	}
-	msg = <-statusChannel
-	switch msg {
-	case StreamingReady:
-		shouldBeReadyStreaming++
-	default:
-		t.Error("Wrong msg received")
-	}
 
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load().(int) != Streaming {
-		t.Error("It should started in Polling mode")
+		t.Error("It should started in Streaming mode")
 	}
 
 	time.Sleep(1 * time.Second)
@@ -725,9 +718,11 @@ func TestStreaming(t *testing.T) {
 	if atomic.LoadInt64(&shouldBeReady) != 1 {
 		t.Error("It should be ready eventually")
 	}
-	if shouldBeReadyStreaming != 1 {
-		t.Error("It should be ready eventually")
-	}
+	/*
+		if shouldBeReadyStreaming != 1 {
+			t.Error("It should be ready eventually")
+		}
+	*/
 	if atomic.LoadInt64(&kilLocallyCalled) != 1 {
 		t.Error("It should be called once")
 	}
@@ -911,10 +906,12 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	if msg != Ready {
 		t.Error("It should send ready")
 	}
-	msg = <-statusChannel
-	if msg != StreamingReady {
-		t.Error("It should send streaming ready")
-	}
+	/*
+		msg = <-statusChannel
+		if msg != StreamingReady {
+			t.Error("It should send streaming ready")
+		}
+	*/
 
 	time.Sleep(1 * time.Second)
 	if managerTest.status.Load().(int) != Streaming {

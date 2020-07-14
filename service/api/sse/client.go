@@ -32,12 +32,14 @@ type StreamingClient struct {
 	streamingStatus chan<- int
 	running         atomic.Value
 	logger          logging.LoggerInterface
+	stopped         chan struct{}
 }
 
 // NewStreamingClient creates new SSE Client
 func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logger logging.LoggerInterface) *StreamingClient {
 	sseStatus := make(chan int, 1)
-	sseClient, _ := sse.NewSSEClient(getStreamingURL(cfg), sseStatus, make(chan struct{}, 1), keepAlive, logger)
+	stopped := make(chan struct{}, 1)
+	sseClient, _ := sse.NewSSEClient(getStreamingURL(cfg), sseStatus, stopped, keepAlive, logger)
 	running := atomic.Value{}
 	running.Store(false)
 
@@ -48,6 +50,7 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logg
 		streamingStatus: streamingStatus,
 		logger:          logger,
 		running:         running,
+		stopped:         stopped,
 	}
 }
 
@@ -95,6 +98,8 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 // StopStreaming stops streaming
 func (s *StreamingClient) StopStreaming() {
 	s.sseClient.Shutdown()
+	<-s.stopped
+	s.logger.Info("Stopped streaming")
 	s.running.Store(false)
 }
 

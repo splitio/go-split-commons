@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 )
+
+const gracePeriod = 10 * time.Minute
 
 // Token dto
 type Token struct {
@@ -16,6 +19,8 @@ type Token struct {
 // TokenPayload payload dto
 type TokenPayload struct {
 	Capabilitites string `json:"x-ably-capability"`
+	Exp           int64  `json:"exp"`
+	Iat           int64  `json:"iat"`
 }
 
 // ParsedCapabilities capabilities
@@ -28,7 +33,7 @@ func (t *Token) ChannelList() ([]string, error) {
 	}
 
 	tokenParts := strings.Split(t.Token, ".")
-	if len(tokenParts) < 1 {
+	if len(tokenParts) < 2 {
 		return nil, errors.New("Cannot decode token")
 	}
 	decodedPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
@@ -54,4 +59,29 @@ func (t *Token) ChannelList() ([]string, error) {
 	}
 
 	return channelList, nil
+}
+
+// CalculateNextTokenExpiration calculates next token expiration
+func (t *Token) CalculateNextTokenExpiration() (time.Duration, error) {
+	if !t.PushEnabled || t.Token == "" {
+		return 0, errors.New("Push disabled or no token set")
+	}
+
+	tokenParts := strings.Split(t.Token, ".")
+	if len(tokenParts) < 2 {
+		return 0, errors.New("Cannot decode token")
+	}
+	decodedPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
+	if err != nil {
+		return 0, err
+	}
+
+	var parsedPayload TokenPayload
+	err = json.Unmarshal(decodedPayload, &parsedPayload)
+	if err != nil {
+		return 0, err
+	}
+
+	tokenDuration := parsedPayload.Exp - parsedPayload.Iat
+	return time.Duration(tokenDuration)*time.Second - gracePeriod, nil
 }
