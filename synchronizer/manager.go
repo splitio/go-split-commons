@@ -36,7 +36,7 @@ type Manager struct {
 	synchronizer    Synchronizer
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
-	pushManager     *push.PushManager
+	pushManager     push.Manager
 	managerStatus   chan int
 	streamingStatus chan int
 	status          atomic.Value
@@ -79,9 +79,9 @@ func NewSynchronizerManager(
 
 func (s *Manager) startPolling() {
 	s.pushManager.StopWorkers()
-	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicFetching()
 	s.status.Store(Polling)
+	s.managerStatus <- Ready
 }
 
 // Start starts synchronization through Split

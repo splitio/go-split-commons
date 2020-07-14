@@ -64,7 +64,7 @@ func NewPushManager(
 	config *conf.AdvancedConfig,
 	managerStatus chan int,
 	authClient service.AuthClient,
-) (*PushManager, error) {
+) (Manager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
 	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
