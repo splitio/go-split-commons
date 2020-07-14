@@ -63,7 +63,7 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 
 	status := make(chan int, 1)
 	stat := atomic.Value{}
-	stat.Store(Created)
+	stat.Store(Idle)
 	managerTest := Manager{
 		synchronizer:    mockSync,
 		logger:          logger,
@@ -152,7 +152,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		})
 
 	status := atomic.Value{}
-	status.Store(Created)
+	status.Store(Idle)
 	managerTest := Manager{
 		syncMock.MockSynchronizer{
 			SyncAllCall: func() error {
@@ -679,8 +679,9 @@ func TestStreaming(t *testing.T) {
 		t.Error("Wrong msg received")
 	}
 
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load().(int) != Streaming {
-		t.Error("It should started in Polling mode")
+		t.Error("It should started in Streaming mode")
 	}
 
 	time.Sleep(1 * time.Second)
