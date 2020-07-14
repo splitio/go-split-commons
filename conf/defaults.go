@@ -11,6 +11,10 @@ const (
 	defaultStreamingEnabled       = true
 	defaultSplitUpdateQueueSize   = 5000
 	defaultSegmentUpdateQueueSize = 5000
+	defaultAuthServiceURL         = "https://auth.split-stage.io"
+	defaultEventsURL              = "https://events.split.io/api"
+	defaultSdkURL                 = "https://sdk.split.io/api"
+	defaultStreamingServiceURL    = "https://streaming.split.io/sse"
 )
 
 // GetDefaultAdvancedConfig returns default conf
@@ -26,9 +30,9 @@ func GetDefaultAdvancedConfig() AdvancedConfig {
 		SegmentWorkers:         defaultSegmentWorkers,
 		SplitUpdateQueueSize:   defaultSplitUpdateQueueSize,
 		StreamingEnabled:       defaultStreamingEnabled,
-		AuthServiceURL:         "https://auth.split-stage.io",
-		EventsURL:              "https://events.split.io/api",
-		SdkURL:                 "https://sdk.split.io/api",
-		StreamingServiceURL:    "https://streaming.split.io/sse",
+		AuthServiceURL:         defaultAuthServiceURL,
+		EventsURL:              defaultEventsURL,
+		SdkURL:                 defaultSdkURL,
+		StreamingServiceURL:    defaultStreamingServiceURL,
 	}
 }
