@@ -235,12 +235,13 @@ func (p *PushManager) Start() {
 		return
 	}
 	if len(p.stopped) > 0 {
-		<-p.stopped
+		<-p.stopped // Discarding previous stopped
 	}
 	if len(p.cancelTokenExpiration) > 0 {
-		<-p.cancelTokenExpiration
+		<-p.cancelTokenExpiration // Discarding previous token expiration
 	}
 
+	// errResult listener for fetching token and connecting to SSE
 	errResult := make(chan error, 1)
 	token, channels, err := p.fetchStreamingToken(errResult)
 	if err != nil {
@@ -252,10 +253,15 @@ func (p *PushManager) Start() {
 		p.cancelStreaming()
 		return
 	}
+
+	// Everything is good, starting workers
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
+
+	// Sending Ready
 	p.managerStatus <- Ready
 
+	// Starting streaming status watcher, it will listen 1) errors in SSE, 2) publishers changes, 3) stop
 	go p.streamingStatusWatcher()
 }
 

@@ -153,6 +153,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 
 	status := atomic.Value{}
 	status.Store(Idle)
+	managerStatus := make(chan int, 1)
 	managerTest := Manager{
 		syncMock.MockSynchronizer{
 			SyncAllCall: func() error {
@@ -168,13 +169,14 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		logger,
 		advanced,
 		pushManager,
-		make(chan int, 1),
+		managerStatus,
 		streamingStatus,
 		status,
 	}
 
-	managerTest.Start()
-
+	go managerTest.Start()
+	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load().(int) != Polling {
 		t.Error("It should started in Polling mode")
 	}
@@ -918,7 +920,7 @@ func TestMultipleErrors(t *testing.T) {
 	streamingStatus := make(chan int, 1)
 	managerStatus := make(chan int, 1)
 	status := atomic.Value{}
-	status.Store(Created)
+	status.Store(Idle)
 
 	var startCall int64
 	stopWorkersCall := 0
@@ -962,9 +964,10 @@ func TestMultipleErrors(t *testing.T) {
 	}
 
 	go managerTest.Start()
+	<-managerStatus
 	time.Sleep(100 * time.Millisecond)
 	streamingStatus <- push.BackoffAuth
-	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
@@ -982,7 +985,7 @@ func TestMultipleErrors(t *testing.T) {
 	}
 
 	streamingStatus <- push.Ready
-	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
@@ -1000,6 +1003,7 @@ func TestMultipleErrors(t *testing.T) {
 
 	streamingStatus <- push.PushIsDown
 	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}

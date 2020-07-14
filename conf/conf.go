@@ -2,8 +2,6 @@ package conf
 
 import (
 	"crypto/tls"
-
-	"github.com/splitio/go-client/splitio/conf"
 )
 
 // RedisConfig struct is used to cofigure the redis parameters
@@ -81,32 +79,4 @@ type AdvancedConfig struct {
 	StreamingServiceURL    string
 	SplitUpdateQueueSize   int64
 	SegmentUpdateQueueSize int64
-}
-
-// NormalizeSDKConf compares against SDK Config to set defaults
-func NormalizeSDKConf(sdkConfig conf.AdvancedConfig) AdvancedConfig {
-	config := GetDefaultAdvancedConfig()
-	if sdkConfig.HTTPTimeout > 0 {
-		config.HTTPTimeout = sdkConfig.HTTPTimeout
-	}
-	if sdkConfig.EventsBulkSize > 0 {
-		config.EventsBulkSize = sdkConfig.EventsBulkSize
-	}
-	if sdkConfig.EventsQueueSize > 0 {
-		config.EventsQueueSize = sdkConfig.EventsQueueSize
-	}
-	if sdkConfig.ImpressionsBulkSize > 0 {
-		config.ImpressionsBulkSize = sdkConfig.ImpressionsBulkSize
-	}
-	if sdkConfig.ImpressionsQueueSize > 0 {
-		config.ImpressionsQueueSize = sdkConfig.ImpressionsQueueSize
-	}
-	if sdkConfig.SegmentQueueSize > 0 {
-		config.SegmentQueueSize = sdkConfig.SegmentQueueSize
-	}
-	if sdkConfig.SegmentWorkers > 0 {
-		config.SegmentWorkers = sdkConfig.SegmentWorkers
-	}
-
-	return config
 }
