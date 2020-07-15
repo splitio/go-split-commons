@@ -1018,4 +1018,13 @@ func TestMultipleErrors(t *testing.T) {
 	if stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
 		t.Error("Unexpected state")
 	}
+
+	streamingStatus <- push.StreamingDisabled
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if startPeriodicFetchingCall != 3 || stopWorkersCall != 3 {
+		t.Error("Unexpected state")
+	}
 }

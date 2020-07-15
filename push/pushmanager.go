@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -34,6 +35,12 @@ const (
 	BackoffSSE
 	// TokenExpiration flag to restart push services
 	TokenExpiration
+	// StreamingPaused flag for pausing streaming
+	StreamingPaused
+	// StreamingResumed flag for resuming streaming
+	StreamingResumed
+	// StreamingDisabled flag for disabling streaming
+	StreamingDisabled
 	// Error represents some error in SSE streaming
 	Error
 )
@@ -53,6 +60,8 @@ type PushManager struct {
 	cancelSSEBackoff      chan struct{}
 	cancelTokenExpiration chan struct{}
 	stopped               chan struct{}
+	control               chan int
+	status                atomic.Value
 }
 
 // NewPushManager creates new PushManager
@@ -67,7 +76,8 @@ func NewPushManager(
 ) (Manager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	control := make(chan int, 1)
+	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger, control)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +101,8 @@ func NewPushManager(
 	}
 
 	streamingStatus := make(chan int, 1000)
+	status := atomic.Value{}
+	status.Store(Ready)
 	return &PushManager{
 		authClient:            authClient,
 		sseClient:             sse.NewStreamingClient(config, streamingStatus, logger),
@@ -105,6 +117,8 @@ func NewPushManager(
 		cancelSSEBackoff:      make(chan struct{}, 1),
 		cancelTokenExpiration: make(chan struct{}, 1),
 		stopped:               make(chan struct{}, 1),
+		control:               control,
+		status:                status,
 	}, nil
 }
 
@@ -216,11 +230,39 @@ func (p *PushManager) streamingStatusWatcher() {
 		case publisherStatus := <-p.publishers:
 			switch publisherStatus {
 			case PublisherNotPresent:
-				p.managerStatus <- PushIsDown
+				if p.status.Load().(int) != StreamingPaused {
+					p.managerStatus <- PushIsDown
+				}
 			case PublisherAvailable:
-				p.managerStatus <- PushIsUp
+				if p.status.Load().(int) != StreamingPaused {
+					p.managerStatus <- PushIsUp
+				}
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
+			}
+		case controlStatus := <-p.control:
+			p.logger.Debug("CONTROL STATUS", controlStatus)
+			switch controlStatus {
+			case streamingPaused:
+				if p.status.Load().(int) != StreamingPaused {
+					p.status.Store(StreamingPaused)
+					p.managerStatus <- PushIsDown
+				}
+			case streamingResumed:
+				if p.status.Load().(int) == StreamingPaused {
+					p.status.Store(StreamingResumed)
+					publishersAvailable := p.eventHandler.keeper.Publishers("control_pri")
+					if publishersAvailable != nil && *publishersAvailable > 0 {
+						p.managerStatus <- PushIsUp
+					}
+				}
+			case streamingDisabled:
+				p.logger.Debug("SENT")
+				p.managerStatus <- StreamingDisabled
+				// p.cancelStreaming()
+				// return
+			default:
+				p.logger.Debug(fmt.Sprintf("Unexpected control status received %d", controlStatus))
 			}
 		case <-p.stopped:
 			return

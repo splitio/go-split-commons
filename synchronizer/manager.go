@@ -127,10 +127,12 @@ func (s *Manager) Start() {
 				s.logger.Info("SSE Streaming is ready")
 				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
+			case push.StreamingDisabled:
+				fallthrough
 			// Error occurs and it will switch to polling
 			case push.Error:
 				s.pushManager.Stop()
-				s.logger.Info("Start periodic polling due error in Streaming")
+				s.logger.Info("Start periodic polling in Streaming")
 				s.startPolling()
 				return
 			// Publisher sends that there is no Notification Managers available
@@ -138,14 +140,14 @@ func (s *Manager) Start() {
 				// If streaming is already running, proceeding to stop workers
 				// and keeping SSE running
 				if s.status.Load().(int) == Streaming {
-					s.logger.Info("Start periodic polling due error in Streaming")
+					s.logger.Info("Start periodic polling in Streaming")
 					s.startPolling()
 				}
 			// Publisher sends that there are at least one Notification Manager available
 			case push.PushIsUp:
 				// If streaming is not already running, proceeding to start workers
 				if s.status.Load().(int) != Streaming {
-					s.logger.Info("Stop periodic polling due Publishers Available")
+					s.logger.Info("Stop periodic polling")
 					s.pushManager.StartWorkers()
 					s.synchronizer.StopPeriodicFetching()
 					s.status.Store(Streaming)
