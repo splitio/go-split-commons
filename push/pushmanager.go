@@ -40,19 +40,19 @@ const (
 
 // PushManager struct for managing push services
 type PushManager struct {
-	authClient            service.AuthClient
-	sseClient             *sse.StreamingClient
-	segmentWorker         *SegmentUpdateWorker
-	splitWorker           *SplitUpdateWorker
-	eventHandler          *EventHandler
-	managerStatus         chan<- int
-	streamingStatus       chan int
-	publishers            chan int
-	logger                logging.LoggerInterface
-	cancelAuthBackoff     chan struct{}
-	cancelSSEBackoff      chan struct{}
-	cancelTokenExpiration chan struct{}
-	stopped               chan struct{}
+	authClient             service.AuthClient
+	sseClient              *sse.StreamingClient
+	segmentWorker          *SegmentUpdateWorker
+	splitWorker            *SplitUpdateWorker
+	eventHandler           *EventHandler
+	managerStatus          chan<- int
+	streamingStatus        chan int
+	publishers             chan int
+	logger                 logging.LoggerInterface
+	cancelAuthBackoff      chan struct{}
+	cancelSSEBackoff       chan struct{}
+	cancelTokenExpiration  chan struct{}
+	cancelStreamingWatcher chan struct{}
 }
 
 // NewPushManager creates new PushManager
@@ -92,19 +92,19 @@ func NewPushManager(
 
 	streamingStatus := make(chan int, 1000)
 	return &PushManager{
-		authClient:            authClient,
-		sseClient:             sse.NewStreamingClient(config, streamingStatus, logger),
-		segmentWorker:         segmentWorker,
-		splitWorker:           splitWorker,
-		managerStatus:         managerStatus,
-		streamingStatus:       streamingStatus,
-		eventHandler:          eventHandler,
-		publishers:            publishers,
-		logger:                logger,
-		cancelAuthBackoff:     make(chan struct{}, 1),
-		cancelSSEBackoff:      make(chan struct{}, 1),
-		cancelTokenExpiration: make(chan struct{}, 1),
-		stopped:               make(chan struct{}, 1),
+		authClient:             authClient,
+		sseClient:              sse.NewStreamingClient(config, streamingStatus, logger),
+		segmentWorker:          segmentWorker,
+		splitWorker:            splitWorker,
+		managerStatus:          managerStatus,
+		streamingStatus:        streamingStatus,
+		eventHandler:           eventHandler,
+		publishers:             publishers,
+		logger:                 logger,
+		cancelAuthBackoff:      make(chan struct{}, 1),
+		cancelSSEBackoff:       make(chan struct{}, 1),
+		cancelTokenExpiration:  make(chan struct{}, 1),
+		cancelStreamingWatcher: make(chan struct{}, 1),
 	}, nil
 }
 
@@ -114,8 +114,10 @@ func (p *PushManager) cancelStreaming() {
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
-	if len(p.cancelAuthBackoff) > 0 {
-		<-p.cancelAuthBackoff
+	select {
+	case <-p.cancelAuthBackoff:
+		// Discarding previous msg
+	default:
 	}
 	tokenResult := make(chan *dtos.Token, 1)
 	cancelAuthBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
@@ -148,8 +150,10 @@ func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
 }
 
 func (p *PushManager) connectToStreaming(errResult chan error, token string, channels []string) error {
-	if len(p.cancelSSEBackoff) > 0 {
-		<-p.cancelSSEBackoff
+	select {
+	case <-p.cancelSSEBackoff:
+		// Discarding previous msg
+	default:
 	}
 	sseResult := make(chan struct{}, 1)
 	cancelSSEBackoff := common.WithBackoffCancelling(1*time.Second, maxPeriod, func() bool {
@@ -222,7 +226,7 @@ func (p *PushManager) streamingStatusWatcher() {
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 			}
-		case <-p.stopped:
+		case <-p.cancelStreamingWatcher:
 			return
 		}
 	}
@@ -234,11 +238,15 @@ func (p *PushManager) Start() {
 		p.logger.Info("PushManager is already running, skipping Start")
 		return
 	}
-	if len(p.stopped) > 0 {
-		<-p.stopped // Discarding previous stopped
+	select {
+	case <-p.cancelStreamingWatcher:
+		// Discarding previous msg
+	default:
 	}
-	if len(p.cancelTokenExpiration) > 0 {
-		<-p.cancelTokenExpiration // Discarding previous token expiration
+	select {
+	case <-p.cancelTokenExpiration:
+		// Discarding previous token expiration
+	default:
 	}
 
 	// errResult listener for fetching token and connecting to SSE
@@ -267,9 +275,6 @@ func (p *PushManager) Start() {
 
 // Stop push services
 func (p *PushManager) Stop() {
-	defer func() {
-		p.stopped <- struct{}{}
-	}()
 	p.logger.Info("Stopping Push Services")
 	p.cancelAuthBackoff <- struct{}{}
 	p.cancelSSEBackoff <- struct{}{}
@@ -278,6 +283,7 @@ func (p *PushManager) Stop() {
 		p.sseClient.StopStreaming()
 	}
 	p.StopWorkers()
+	p.cancelStreamingWatcher <- struct{}{}
 }
 
 // IsRunning returns true if the services are running

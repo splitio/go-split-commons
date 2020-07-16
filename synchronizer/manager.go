@@ -92,8 +92,10 @@ func (s *Manager) Start() {
 		s.logger.Info("Manager is already running, skipping start")
 		return
 	}
-	if len(s.managerStatus) > 0 {
-		<-s.managerStatus
+	select {
+	case <-s.managerStatus:
+		// Discarding previous status before starting
+	default:
 	}
 	err := s.synchronizer.SyncAll()
 	if err != nil {
