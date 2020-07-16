@@ -66,7 +66,7 @@ func TestPushInvalidAuth(t *testing.T) {
 
 	push.Start()
 	msg := <-status
-	if msg != Error {
+	if msg != NonRetriableError {
 		t.Error("It should be err")
 	}
 }
@@ -181,7 +181,7 @@ func TestPushLogic(t *testing.T) {
 		switch msg {
 		case Ready:
 			atomic.AddInt64(&shouldReceiveReady, 1)
-		case Error:
+		case NonRetriableError:
 			atomic.AddInt64(&shouldReceiveError, 1)
 		}
 	}()
@@ -212,10 +212,7 @@ func TestPushLogic(t *testing.T) {
 }
 
 func TestPushError(t *testing.T) {
-	var shouldReceiveSegmentChange int64
-	var shouldReceiveSplitChange int64
-
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelInfo})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
@@ -253,11 +250,9 @@ func TestPushError(t *testing.T) {
 	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
 
 	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
-		atomic.AddInt64(&shouldReceiveSegmentChange, 1)
 		return nil
 	}, logger)
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, func(till *int64) error {
-		atomic.AddInt64(&shouldReceiveSplitChange, 1)
 		return nil
 	}, logger)
 
@@ -288,6 +283,7 @@ func TestPushError(t *testing.T) {
 		t.Error("It should not be running")
 	}
 
+	// Testing Reconnection KeepAlive
 	go mockedPush.Start()
 	msg := <-managerStatus
 	if msg != Ready {
@@ -298,14 +294,18 @@ func TestPushError(t *testing.T) {
 	}
 	streamingStatus <- sseStatus.ErrorKeepAlive
 	msg = <-managerStatus
-	if msg != Error {
-		t.Error("It should be error")
+	if msg != Reconnect {
+		t.Error("It should be reconnect")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
 	}
 	mockedPush.Stop()
 	if mockedPush.IsRunning() {
 		t.Error("It should not be running")
 	}
 
+	// Testing Reconnection ErrorInternal
 	go mockedPush.Start()
 	msg = <-managerStatus
 	if msg != Ready {
@@ -314,17 +314,77 @@ func TestPushError(t *testing.T) {
 	if !mockedPush.IsRunning() {
 		t.Error("It should be running")
 	}
-	streamingStatus <- sseStatus.ErrorUnexpected
+	streamingStatus <- sseStatus.ErrorInternal
 	msg = <-managerStatus
-	if msg != Error {
+	if msg != Reconnect {
+		t.Error("It should be reconnect")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+	mockedPush.Stop()
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
+	}
+
+	// Testing Reconnection ErrorReadingStream
+	go mockedPush.Start()
+	msg = <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+	streamingStatus <- sseStatus.ErrorReadingStream
+	msg = <-managerStatus
+	if msg != Reconnect {
+		t.Error("It should be reconnect")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+	mockedPush.Stop()
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
+	}
+
+	// Testing Error without reconnection
+	go mockedPush.Start()
+	msg = <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+	streamingStatus <- sseStatus.ErrorOnClientCreation
+	msg = <-managerStatus
+	if msg != NonRetriableError {
 		t.Error("It should be error")
 	}
 	mockedPush.Stop()
-	if atomic.LoadInt64(&shouldReceiveSegmentChange) != 0 {
-		t.Error("It should be one")
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
 	}
-	if atomic.LoadInt64(&shouldReceiveSplitChange) != 0 {
-		t.Error("It should be one")
+
+	// Testing Error without reconnection
+	go mockedPush.Start()
+	msg = <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
+	if !mockedPush.IsRunning() {
+		t.Error("It should be running")
+	}
+	streamingStatus <- sseStatus.ErrorRequestPerformed
+	msg = <-managerStatus
+	if msg != NonRetriableError {
+		t.Error("It should be error")
+	}
+	mockedPush.Stop()
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
 	}
 }
 
@@ -407,7 +467,7 @@ func TestFeedbackLoop(t *testing.T) {
 				atomic.AddInt64(&shouldReceiveSwitchToPolling, 1)
 			case PushIsUp:
 				atomic.AddInt64(&shouldReceiveSwitchToStreaming, 1)
-			case Error:
+			case NonRetriableError:
 				atomic.AddInt64(&shouldReceiveError, 1)
 			}
 		}

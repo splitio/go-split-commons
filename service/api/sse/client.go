@@ -90,9 +90,9 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 // StopStreaming stops streaming
 func (s *StreamingClient) StopStreaming() {
 	s.sseClient.Shutdown()
-	<-s.stopped
 	s.logger.Info("Stopped streaming")
 	s.running.Store(false)
+	<-s.stopped
 }
 
 // IsRunning returns true if it's running

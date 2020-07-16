@@ -34,8 +34,10 @@ const (
 	BackoffSSE
 	// TokenExpiration flag to restart push services
 	TokenExpiration
-	// Error represents some error in SSE streaming
-	Error
+	// Reconnect flag to reconnect
+	Reconnect
+	// NonRetriableError represents an error that will force switching to polling
+	NonRetriableError
 )
 
 // PushManager struct for managing push services
@@ -110,7 +112,7 @@ func NewPushManager(
 
 func (p *PushManager) cancelStreaming() {
 	p.logger.Error("Error, switching to polling")
-	p.managerStatus <- Error
+	p.managerStatus <- NonRetriableError
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
@@ -214,10 +216,18 @@ func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []strin
 func (p *PushManager) streamingStatusWatcher() {
 	for {
 		select {
-		case <-p.streamingStatus:
-			p.cancelStreaming()
-			return
-		case publisherStatus := <-p.publishers:
+		case status := <-p.streamingStatus: // Streaming SSE Status
+			switch status {
+			case sseStatus.ErrorKeepAlive: // On ConnectionTimedOut -> Reconnect
+				fallthrough
+			case sseStatus.ErrorInternal: // On Error >= 500 -> Reconnect
+				fallthrough
+			case sseStatus.ErrorReadingStream: // On IOF -> Reconnect
+				p.managerStatus <- Reconnect
+			default: // Whatever other errors -> Send Error to disconnect
+				p.cancelStreaming()
+			}
+		case publisherStatus := <-p.publishers: // Publisher Available/Not Available
 			switch publisherStatus {
 			case PublisherNotPresent:
 				p.managerStatus <- PushIsDown
@@ -226,7 +236,7 @@ func (p *PushManager) streamingStatusWatcher() {
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 			}
-		case <-p.cancelStreamingWatcher:
+		case <-p.cancelStreamingWatcher: // Stopping Watcher
 			return
 		}
 	}
@@ -239,13 +249,11 @@ func (p *PushManager) Start() {
 		return
 	}
 	select {
-	case <-p.cancelStreamingWatcher:
-		// Discarding previous msg
+	case <-p.cancelStreamingWatcher: // Discarding previous msg
 	default:
 	}
 	select {
-	case <-p.cancelTokenExpiration:
-		// Discarding previous token expiration
+	case <-p.cancelTokenExpiration: // Discarding previous token expiration
 	default:
 	}
 
@@ -279,11 +287,11 @@ func (p *PushManager) Stop() {
 	p.cancelAuthBackoff <- struct{}{}
 	p.cancelSSEBackoff <- struct{}{}
 	p.cancelTokenExpiration <- struct{}{}
+	p.cancelStreamingWatcher <- struct{}{}
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
 	p.StopWorkers()
-	p.cancelStreamingWatcher <- struct{}{}
 }
 
 // IsRunning returns true if the services are running
