@@ -216,24 +216,18 @@ func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []strin
 func (p *PushManager) streamingStatusWatcher() {
 	for {
 		select {
-		// Streaming SSE Status
-		case status := <-p.streamingStatus:
+		case status := <-p.streamingStatus: // Streaming SSE Status
 			switch status {
-			// On ConnectionTimedOut -> Reconnect
-			case sseStatus.ErrorKeepAlive:
+			case sseStatus.ErrorKeepAlive: // On ConnectionTimedOut -> Reconnect
 				fallthrough
-			// On Error >= 500 -> Reconnect
-			case sseStatus.ErrorInternal:
+			case sseStatus.ErrorInternal: // On Error >= 500 -> Reconnect
 				fallthrough
-			// On IOF -> Reconnect
-			case sseStatus.ErrorReadingStream:
+			case sseStatus.ErrorReadingStream: // On IOF -> Reconnect
 				p.managerStatus <- Reconnect
-			// Whatever other errors -> Send Error to disconnect
-			default:
+			default: // Whatever other errors -> Send Error to disconnect
 				p.cancelStreaming()
 			}
-		// Publisher Available/Not Available
-		case publisherStatus := <-p.publishers:
+		case publisherStatus := <-p.publishers: // Publisher Available/Not Available
 			switch publisherStatus {
 			case PublisherNotPresent:
 				p.managerStatus <- PushIsDown
@@ -242,8 +236,7 @@ func (p *PushManager) streamingStatusWatcher() {
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 			}
-		// Stopping Watcher
-		case <-p.cancelStreamingWatcher:
+		case <-p.cancelStreamingWatcher: // Stopping Watcher
 			return
 		}
 	}
@@ -256,13 +249,11 @@ func (p *PushManager) Start() {
 		return
 	}
 	select {
-	case <-p.cancelStreamingWatcher:
-		// Discarding previous msg
+	case <-p.cancelStreamingWatcher: // Discarding previous msg
 	default:
 	}
 	select {
-	case <-p.cancelTokenExpiration:
-		// Discarding previous token expiration
+	case <-p.cancelTokenExpiration: // Discarding previous token expiration
 	default:
 	}
 
