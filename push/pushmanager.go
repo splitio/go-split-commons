@@ -36,8 +36,8 @@ const (
 	TokenExpiration
 	// Reconnect flag to reconnect
 	Reconnect
-	// Error represents some error in SSE streaming
-	Error
+	// NonRetriableError represents an error that will force switching to polling
+	NonRetriableError
 )
 
 // PushManager struct for managing push services
@@ -112,7 +112,7 @@ func NewPushManager(
 
 func (p *PushManager) cancelStreaming() {
 	p.logger.Error("Error, switching to polling")
-	p.managerStatus <- Error
+	p.managerStatus <- NonRetriableError
 }
 
 func (p *PushManager) performAuthentication(errResult chan error) *dtos.Token {
@@ -296,11 +296,11 @@ func (p *PushManager) Stop() {
 	p.cancelAuthBackoff <- struct{}{}
 	p.cancelSSEBackoff <- struct{}{}
 	p.cancelTokenExpiration <- struct{}{}
+	p.cancelStreamingWatcher <- struct{}{}
 	if p.sseClient.IsRunning() {
 		p.sseClient.StopStreaming()
 	}
 	p.StopWorkers()
-	p.cancelStreamingWatcher <- struct{}{}
 }
 
 // IsRunning returns true if the services are running

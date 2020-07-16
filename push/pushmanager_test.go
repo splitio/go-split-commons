@@ -66,7 +66,7 @@ func TestPushInvalidAuth(t *testing.T) {
 
 	push.Start()
 	msg := <-status
-	if msg != Error {
+	if msg != NonRetriableError {
 		t.Error("It should be err")
 	}
 }
@@ -181,7 +181,7 @@ func TestPushLogic(t *testing.T) {
 		switch msg {
 		case Ready:
 			atomic.AddInt64(&shouldReceiveReady, 1)
-		case Error:
+		case NonRetriableError:
 			atomic.AddInt64(&shouldReceiveError, 1)
 		}
 	}()
@@ -360,7 +360,7 @@ func TestPushError(t *testing.T) {
 	}
 	streamingStatus <- sseStatus.ErrorOnClientCreation
 	msg = <-managerStatus
-	if msg != Error {
+	if msg != NonRetriableError {
 		t.Error("It should be error")
 	}
 	mockedPush.Stop()
@@ -379,7 +379,7 @@ func TestPushError(t *testing.T) {
 	}
 	streamingStatus <- sseStatus.ErrorRequestPerformed
 	msg = <-managerStatus
-	if msg != Error {
+	if msg != NonRetriableError {
 		t.Error("It should be error")
 	}
 	mockedPush.Stop()
@@ -467,7 +467,7 @@ func TestFeedbackLoop(t *testing.T) {
 				atomic.AddInt64(&shouldReceiveSwitchToPolling, 1)
 			case PushIsUp:
 				atomic.AddInt64(&shouldReceiveSwitchToStreaming, 1)
-			case Error:
+			case NonRetriableError:
 				atomic.AddInt64(&shouldReceiveError, 1)
 			}
 		}

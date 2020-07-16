@@ -130,8 +130,8 @@ func (s *Manager) Start() {
 				s.logger.Info("SSE Streaming is ready")
 				s.status.Store(Streaming)
 				go s.synchronizer.SyncAll()
-			// Error occurs and it will switch to polling
-			case push.Error:
+			// NonRetriableError occurs and it will switch to polling
+			case push.NonRetriableError:
 				s.pushManager.Stop()
 				s.logger.Info("Start periodic polling due error in Streaming")
 				s.startPolling()
@@ -160,7 +160,7 @@ func (s *Manager) Start() {
 			// Token expired -> reconnecting
 			case push.TokenExpiration:
 				s.pushManager.Stop()
-				s.pushManager.Start()
+				go s.pushManager.Start()
 			}
 		}
 	} else {

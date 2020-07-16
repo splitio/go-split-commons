@@ -1030,7 +1030,7 @@ func TestMultipleErrors(t *testing.T) {
 		t.Error("Unexpected state")
 	}
 
-	streamingStatus <- push.Error
+	streamingStatus <- push.NonRetriableError
 	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
