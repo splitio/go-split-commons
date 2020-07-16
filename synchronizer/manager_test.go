@@ -954,6 +954,7 @@ func TestMultipleErrors(t *testing.T) {
 			},
 			StopCall: func() {
 				atomic.AddInt64(&stopCall, 1)
+				stopWorkersCall++
 			},
 			StartWorkersCall: func() {
 				startWorkersCall++
@@ -971,7 +972,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -980,7 +981,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -989,15 +990,16 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if stopPeriodicFetchingCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
+
 	streamingStatus <- push.TokenExpiration
 	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 1 || stopWorkersCall != 2 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1006,7 +1008,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if startPeriodicFetchingCall != 2 || stopWorkersCall != 2 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1015,7 +1017,25 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.Reconnect
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Streaming {
+		t.Error("It should be running in Streaming mode")
+	}
+	if atomic.LoadInt64(&stopCall) != 2 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 2 || stopWorkersCall != 4 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.Error
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if atomic.LoadInt64(&stopCall) != 3 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 3 || stopWorkersCall != 6 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
 		t.Error("Unexpected state")
 	}
 }

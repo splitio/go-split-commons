@@ -34,6 +34,8 @@ const (
 	BackoffSSE
 	// TokenExpiration flag to restart push services
 	TokenExpiration
+	// Reconnect flag to reconnect
+	Reconnect
 	// Error represents some error in SSE streaming
 	Error
 )
@@ -214,9 +216,23 @@ func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []strin
 func (p *PushManager) streamingStatusWatcher() {
 	for {
 		select {
-		case <-p.streamingStatus:
-			p.cancelStreaming()
-			return
+		// Streaming SSE Status
+		case status := <-p.streamingStatus:
+			switch status {
+			// On ConnectionTimedOut -> Reconnect
+			case sseStatus.ErrorKeepAlive:
+				fallthrough
+			// On Error >= 500 -> Reconnect
+			case sseStatus.ErrorInternal:
+				fallthrough
+			// On IOF -> Reconnect
+			case sseStatus.ErrorReadingStream:
+				p.managerStatus <- Reconnect
+			// Whatever other errors -> Send Error to disconnect
+			default:
+				p.cancelStreaming()
+			}
+		// Publisher Available/Not Available
 		case publisherStatus := <-p.publishers:
 			switch publisherStatus {
 			case PublisherNotPresent:
@@ -226,6 +242,7 @@ func (p *PushManager) streamingStatusWatcher() {
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
 			}
+		// Stopping Watcher
 		case <-p.cancelStreamingWatcher:
 			return
 		}

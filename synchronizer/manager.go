@@ -115,6 +115,7 @@ func (s *Manager) Start() {
 			// Backoff is running -> start polling until auth is ok
 			case push.BackoffAuth:
 				fallthrough
+			// Backoff is running -> start polling until sse is connected
 			case push.BackoffSSE:
 				if s.status.Load().(int) != Polling {
 					s.logger.Info("Start periodic polling due backoff")
@@ -153,6 +154,10 @@ func (s *Manager) Start() {
 					s.status.Store(Streaming)
 					go s.synchronizer.SyncAll()
 				}
+			// Reconnect received due error in streaming -> reconnecting
+			case push.Reconnect:
+				fallthrough
+			// Token expired -> reconnecting
 			case push.TokenExpiration:
 				s.pushManager.Stop()
 				s.pushManager.Start()
