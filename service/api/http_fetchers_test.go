@@ -26,7 +26,7 @@ func TestSpitChangesFetch(t *testing.T) {
 
 	splitFetcher := NewHTTPSplitFetcher(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -67,7 +67,7 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 
 	splitFetcher := NewHTTPSplitFetcher(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -90,7 +90,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 
 	segmentFetcher := NewHTTPSegmentFetcher(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -118,7 +118,7 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 
 	segmentFetcher := NewHTTPSegmentFetcher(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

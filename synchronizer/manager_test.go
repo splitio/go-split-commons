@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/push"
+	pushMock "github.com/splitio/go-split-commons/push/mocks"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/service/mocks"
 	httpMocks "github.com/splitio/go-split-commons/service/mocks"
@@ -45,8 +46,8 @@ func TestSyncError(t *testing.T) {
 func TestPollingWithStreamingFalse(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
-	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
+	advanced := conf.GetDefaultAdvancedConfig()
+	advanced.StreamingEnabled = false
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	mockSync := syncMock.MockSynchronizer{
 		SyncAllCall: func() error {
@@ -61,11 +62,6 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 	}
 
 	status := make(chan int, 1)
-	push, _ := push.NewPushManager(logger, nil, nil, storageMock.MockSplitStorage{}, &advanced, status, mocks.MockAuthClient{
-		AuthenticateCall: func() (*dtos.Token, error) {
-			return nil, nil
-		},
-	})
 	stat := atomic.Value{}
 	stat.Store(Idle)
 	managerTest := Manager{
@@ -73,7 +69,7 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 		logger:          logger,
 		config:          advanced,
 		managerStatus:   make(chan int, 1),
-		pushManager:     push,
+		pushManager:     pushMock.MockManager{},
 		streamingStatus: status,
 		status:          stat,
 	}
@@ -92,8 +88,8 @@ func TestPollingWithStreamingFalse(t *testing.T) {
 func TestPollingWithStreamingPushFalse(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
-	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
+	advanced := conf.GetDefaultAdvancedConfig()
+	advanced.StreamingEnabled = false
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	mockSync := syncMock.MockSynchronizer{
 		SyncAllCall: func() error {
@@ -140,8 +136,8 @@ func TestPollingWithStreamingPushFalse(t *testing.T) {
 func TestPollingWithStreamingPushError(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
-	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: true, StreamingServiceURL: "some", SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
+	advanced := conf.GetDefaultAdvancedConfig()
+	advanced.StreamingServiceURL = "wrong"
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	streamingStatus := make(chan int, 1)
@@ -157,6 +153,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 
 	status := atomic.Value{}
 	status.Store(Idle)
+	managerStatus := make(chan int, 1)
 	managerTest := Manager{
 		syncMock.MockSynchronizer{
 			SyncAllCall: func() error {
@@ -172,15 +169,14 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 		logger,
 		advanced,
 		pushManager,
-		make(chan int, 1),
+		managerStatus,
 		streamingStatus,
 		status,
 	}
 
 	go managerTest.Start()
-
-	time.Sleep(1 * time.Second)
-
+	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load().(int) != Polling {
 		t.Error("It should started in Polling mode")
 	}
@@ -204,7 +200,7 @@ func TestPolling(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100,
-		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, StreamingServiceURL: "some", SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
+		SegmentQueueSize: 50, SegmentWorkers: 5, StreamingEnabled: false, SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
@@ -718,11 +714,6 @@ func TestStreaming(t *testing.T) {
 	if atomic.LoadInt64(&shouldBeReady) != 1 {
 		t.Error("It should be ready eventually")
 	}
-	/*
-		if shouldBeReadyStreaming != 1 {
-			t.Error("It should be ready eventually")
-		}
-	*/
 	if atomic.LoadInt64(&kilLocallyCalled) != 1 {
 		t.Error("It should be called once")
 	}
@@ -906,12 +897,6 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	if msg != Ready {
 		t.Error("It should send ready")
 	}
-	/*
-		msg = <-statusChannel
-		if msg != StreamingReady {
-			t.Error("It should send streaming ready")
-		}
-	*/
 
 	time.Sleep(1 * time.Second)
 	if managerTest.status.Load().(int) != Streaming {
@@ -925,5 +910,112 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	}
 	if atomic.LoadInt64(&segmentFetchCalled) != 4 {
 		t.Error("It should be called fourth times")
+	}
+}
+
+func TestMultipleErrors(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	advanced := conf.GetDefaultAdvancedConfig()
+
+	streamingStatus := make(chan int, 1)
+	managerStatus := make(chan int, 1)
+	status := atomic.Value{}
+	status.Store(Idle)
+
+	var startCall int64
+	stopWorkersCall := 0
+	startPeriodicFetchingCall := 0
+	stopPeriodicFetchingCall := 0
+	var stopCall int64
+	startWorkersCall := 0
+
+	managerTest := Manager{
+		synchronizer: syncMock.MockSynchronizer{
+			SyncAllCall: func() error {
+				return nil
+			},
+			StartPeriodicDataRecordingCall: func() {},
+			StartPeriodicFetchingCall: func() {
+				startPeriodicFetchingCall++
+			},
+			StopPeriodicFetchingCall: func() {
+				stopPeriodicFetchingCall++
+			},
+		},
+		config:        advanced,
+		logger:        logger,
+		managerStatus: managerStatus,
+		pushManager: pushMock.MockManager{
+			StartCall: func() {
+				atomic.AddInt64(&startCall, 1)
+			},
+			StopWorkersCall: func() {
+				stopWorkersCall++
+			},
+			StopCall: func() {
+				atomic.AddInt64(&stopCall, 1)
+			},
+			StartWorkersCall: func() {
+				startWorkersCall++
+			},
+		},
+		status:          status,
+		streamingStatus: streamingStatus,
+	}
+
+	go managerTest.Start()
+	<-managerStatus
+	time.Sleep(100 * time.Millisecond)
+	streamingStatus <- push.BackoffAuth
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.BackoffSSE
+	// It should keep current state since is already in Polling mode
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.Ready
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Streaming {
+		t.Error("It should be running in Streaming mode")
+	}
+	if stopPeriodicFetchingCall != 1 {
+		t.Error("Unexpected state")
+	}
+	streamingStatus <- push.TokenExpiration
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Streaming {
+		t.Error("It should be running in Streaming mode")
+	}
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.PushIsDown
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if startPeriodicFetchingCall != 2 || stopWorkersCall != 2 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.PushIsUp
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Streaming {
+		t.Error("It should be running in Streaming mode")
+	}
+	if stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+		t.Error("Unexpected state")
 	}
 }

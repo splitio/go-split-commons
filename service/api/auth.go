@@ -8,15 +8,6 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-const prodAuthURL = "https://auth.split-stage.io"
-
-func getAuthURL(cfg *conf.AdvancedConfig) string {
-	if cfg != nil && cfg.AuthServiceURL != "" {
-		return cfg.AuthServiceURL
-	}
-	return prodAuthURL
-}
-
 // AuthAPIClient struct is responsible for authenticating client for push services
 type AuthAPIClient struct {
 	client Client
@@ -24,9 +15,9 @@ type AuthAPIClient struct {
 }
 
 // NewAuthAPIClient instantiates and return an AuthAPIClient
-func NewAuthAPIClient(apikey string, cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *AuthAPIClient {
+func NewAuthAPIClient(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) *AuthAPIClient {
 	return &AuthAPIClient{
-		client: NewHTTPClient(apikey, cfg, getAuthURL(cfg), logger),
+		client: NewHTTPClient(apikey, cfg, cfg.AuthServiceURL, logger),
 		logger: logger,
 	}
 }

@@ -413,3 +413,70 @@ func TestSegmentSyncProcess(t *testing.T) {
 		t.Error("Should be called once")
 	}
 }
+
+func TestSegmentTill(t *testing.T) {
+	addedS1 := []string{"item1", "item2", "item3", "item4"}
+	var call int64
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.PutMany([]dtos.SplitDTO{
+		{
+			Name: "split1",
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "WHITELIST",
+					Label:         "Cond1",
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Combiner: "AND",
+						Matchers: []dtos.MatcherDTO{
+							{
+								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+									SegmentName: "segment1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, 1)
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			return &dtos.SegmentChangesDTO{
+				Name:    name,
+				Added:   addedS1,
+				Removed: []string{},
+				Since:   2,
+				Till:    2,
+			}, nil
+		},
+	}
+
+	segmentSync := NewSegmentFetcher(
+		splitStorage,
+		segmentStorage,
+		segmentMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {},
+			IncLatencyCall: func(metricName string, index int) {},
+		},
+		logging.NewLogger(&logging.LoggerOptions{}),
+	)
+
+	var till int64
+	till = int64(1)
+	err := segmentSync.SynchronizeSegment("segment1", &till)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	err = segmentSync.SynchronizeSegment("segment1", &till)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if atomic.LoadInt64(&call) != 1 {
+		t.Error("It should be called once")
+	}
+}

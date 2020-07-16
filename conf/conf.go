@@ -1,6 +1,8 @@
 package conf
 
-import "crypto/tls"
+import (
+	"crypto/tls"
+)
 
 // RedisConfig struct is used to cofigure the redis parameters
 type RedisConfig struct {

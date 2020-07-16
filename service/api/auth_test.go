@@ -108,7 +108,7 @@ func TestAuthLogic(t *testing.T) {
 
 	authClient := NewAuthAPIClient(
 		"",
-		&conf.AdvancedConfig{},
+		conf.AdvancedConfig{},
 		logger,
 	)
 

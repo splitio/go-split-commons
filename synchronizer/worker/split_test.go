@@ -218,3 +218,46 @@ func TestSplitSyncProcess(t *testing.T) {
 		t.Error("It should exists")
 	}
 }
+
+func TestSplitTill(t *testing.T) {
+	var call int64
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			return &dtos.SplitChangesDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1},
+				Since:  2,
+				Till:   2,
+			}, nil
+		},
+	}
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+
+	splitSync := NewSplitFetcher(
+		splitStorage,
+		splitMockFetcher,
+		storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {},
+			IncLatencyCall: func(metricName string, index int) {},
+		},
+		logging.NewLogger(&logging.LoggerOptions{}),
+	)
+
+	var till int64
+	till = int64(1)
+	err := splitSync.SynchronizeSplits(&till)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	err = splitSync.SynchronizeSplits(&till)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if atomic.LoadInt64(&call) != 1 {
+		t.Error("It should be called once")
+	}
+}

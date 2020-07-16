@@ -98,7 +98,7 @@ func TestPostImpressions(t *testing.T) {
 
 	impressionRecorder := NewHTTPImpressionRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -155,7 +155,7 @@ func TestPostMetricsLatency(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -216,7 +216,7 @@ func TestPostMetricsCounters(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},
@@ -272,7 +272,7 @@ func TestPostMetricsGauge(t *testing.T) {
 
 	metricsRecorder := NewHTTPMetricsRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

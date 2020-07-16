@@ -238,7 +238,7 @@ func TestMetricSyncProcess(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	metricRecorder := api.NewHTTPMetricsRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

@@ -34,7 +34,7 @@ type Manager struct {
 	synchronizer    Synchronizer
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
-	pushManager     *push.PushManager
+	pushManager     push.Manager
 	managerStatus   chan int
 	streamingStatus chan int
 	status          atomic.Value
@@ -92,14 +92,17 @@ func (s *Manager) Start() {
 		s.logger.Info("Manager is already running, skipping start")
 		return
 	}
-	if len(s.managerStatus) > 0 {
-		<-s.managerStatus
+	select {
+	case <-s.managerStatus:
+		// Discarding previous status before starting
+	default:
 	}
 	err := s.synchronizer.SyncAll()
 	if err != nil {
 		s.managerStatus <- Error
 		return
 	}
+	s.logger.Debug("SyncAll Ready")
 	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
 	if s.config.StreamingEnabled {
