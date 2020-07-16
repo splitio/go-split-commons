@@ -26,7 +26,7 @@
   version = "v0.9.1"
 
 [[projects]]
-  branch = "reconnect"
+  branch = "modularization"
   digest = "1:333390b45b2690e7c66e47bff119ee1969c94553d645efa71a40bd5695c71dab"
   name = "github.com/splitio/go-toolkit"
   packages = [
@@ -43,7 +43,7 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "dd6225bdf9603d7338e9c2ce07c7b3bfa503d2e0"
+  revision = "b5dbe015646449f33419d57cfe1e69cd1dfcad7b"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"

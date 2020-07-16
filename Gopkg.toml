@@ -1,3 +1,3 @@
 [[constraint]]
-  branch = "reconnect"
+  branch = "modularization"
   name = "github.com/splitio/go-toolkit"
