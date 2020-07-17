@@ -179,7 +179,7 @@ func (p *PushManager) connectToStreaming(errResult chan error, token string, cha
 		return nil
 	case err := <-errResult:
 		p.logger.Error(err.Error())
-		return errors.New("Error connecting streaming")
+		return err
 	case <-p.cancelSSEBackoff:
 		return nil
 	}

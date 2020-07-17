@@ -59,6 +59,7 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 			status := <-s.sseStatus
 			switch status {
 			case sse.OK:
+				s.logger.Info("SSE OK")
 				s.running.Store(true)
 				s.streamingStatus <- sse.OK
 			case sse.ErrorConnectToStreaming:
