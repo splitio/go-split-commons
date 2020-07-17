@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -774,10 +773,7 @@ func TestBackoffSSE(t *testing.T) {
 }
 
 func TestControlLogic(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{
-		StandardLoggerFlags: log.LUTC | log.Ldate | log.Lmicroseconds | log.Lshortfile,
-		LogLevel:            logging.LevelInfo,
-	})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
 	}
