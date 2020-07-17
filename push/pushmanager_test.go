@@ -810,7 +810,7 @@ func TestControlLogic(t *testing.T) {
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		sseMock, _ = ioutil.ReadFile("../testdata/streamingPaused.json")
 		mockedData = make(map[string]interface{})
 		_ = json.Unmarshal(sseMock, &mockedData)
@@ -818,7 +818,7 @@ func TestControlLogic(t *testing.T) {
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		sseMock, _ = ioutil.ReadFile("../testdata/streamingResumed.json")
 		mockedData = make(map[string]interface{})
 		_ = json.Unmarshal(sseMock, &mockedData)
@@ -826,7 +826,7 @@ func TestControlLogic(t *testing.T) {
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		sseMock, _ = ioutil.ReadFile("../testdata/streamingDisabled.json")
 		mockedData = make(map[string]interface{})
 		_ = json.Unmarshal(sseMock, &mockedData)
