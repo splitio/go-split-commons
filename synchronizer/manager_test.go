@@ -478,34 +478,35 @@ func TestStreaming(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 3; i++ {
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				mockedData := make(map[string]interface{})
-				mockedData["event"] = "keepalive"
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 2:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 3:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse3.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-			flusher.Flush()
-		}
+		sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		mockedData = make(map[string]interface{})
+		mockedData["event"] = "keepalive"
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/sse2.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/sse3.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
 	}))
 	defer ts.Close()
 
@@ -736,24 +737,21 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 3; i++ {
-			time.Sleep(time.Duration(100) * time.Millisecond)
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-			flusher.Flush()
-		}
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/occupancy2.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
 	}))
 	defer ts.Close()
 
@@ -941,6 +939,7 @@ func TestMultipleErrors(t *testing.T) {
 			StopPeriodicFetchingCall: func() {
 				stopPeriodicFetchingCall++
 			},
+			StopPeriodicDataRecordingCall: func() {},
 		},
 		config:        advanced,
 		logger:        logger,
@@ -954,9 +953,13 @@ func TestMultipleErrors(t *testing.T) {
 			},
 			StopCall: func() {
 				atomic.AddInt64(&stopCall, 1)
+				stopWorkersCall++
 			},
 			StartWorkersCall: func() {
 				startWorkersCall++
+			},
+			IsRunningCall: func() bool {
+				return true
 			},
 		},
 		status:          status,
@@ -971,7 +974,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -980,7 +983,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -989,15 +992,16 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if stopPeriodicFetchingCall != 1 {
+	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
+
 	streamingStatus <- push.TokenExpiration
 	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 1 || stopWorkersCall != 2 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1006,7 +1010,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if startPeriodicFetchingCall != 2 || stopWorkersCall != 2 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1015,16 +1019,38 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
 		t.Error("Unexpected state")
 	}
+
+	streamingStatus <- push.Reconnect
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Streaming {
+		t.Error("It should be running in Streaming mode")
+	}
+	if atomic.LoadInt64(&stopCall) != 2 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 2 || stopWorkersCall != 4 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	streamingStatus <- push.NonRetriableError
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if atomic.LoadInt64(&stopCall) != 3 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 3 || stopWorkersCall != 6 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+		t.Error("Unexpected state")
+	}
+
+	managerTest.Stop()
+	go managerTest.Start()
+	<-managerStatus
 
 	streamingStatus <- push.StreamingDisabled
 	time.Sleep(100 * time.Millisecond)
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if startPeriodicFetchingCall != 3 || stopWorkersCall != 3 {
-		t.Error("Unexpected state")
+	if startPeriodicFetchingCall != 4 || stopWorkersCall != 9 {
+		t.Error("Unexpected state", startPeriodicFetchingCall, stopWorkersCall)
 	}
 }

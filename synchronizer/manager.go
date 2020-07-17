@@ -92,8 +92,10 @@ func (s *Manager) Start() {
 		s.logger.Info("Manager is already running, skipping start")
 		return
 	}
-	if len(s.managerStatus) > 0 {
-		<-s.managerStatus
+	select {
+	case <-s.managerStatus:
+		// Discarding previous status before starting
+	default:
 	}
 	err := s.synchronizer.SyncAll()
 	if err != nil {
@@ -113,6 +115,7 @@ func (s *Manager) Start() {
 			// Backoff is running -> start polling until auth is ok
 			case push.BackoffAuth:
 				fallthrough
+			// Backoff is running -> start polling until sse is connected
 			case push.BackoffSSE:
 				if s.status.Load().(int) != Polling {
 					s.logger.Info("Start periodic polling due backoff")
@@ -129,8 +132,8 @@ func (s *Manager) Start() {
 				go s.synchronizer.SyncAll()
 			case push.StreamingDisabled:
 				fallthrough
-			// Error occurs and it will switch to polling
-			case push.Error:
+			// NonRetriableError occurs and it will switch to polling
+			case push.NonRetriableError:
 				s.pushManager.Stop()
 				s.logger.Info("Start periodic polling in Streaming")
 				s.startPolling()
@@ -153,9 +156,13 @@ func (s *Manager) Start() {
 					s.status.Store(Streaming)
 					go s.synchronizer.SyncAll()
 				}
+			// Reconnect received due error in streaming -> reconnecting
+			case push.Reconnect:
+				fallthrough
+			// Token expired -> reconnecting
 			case push.TokenExpiration:
 				s.pushManager.Stop()
-				s.pushManager.Start()
+				go s.pushManager.Start()
 			}
 		}
 	} else {
