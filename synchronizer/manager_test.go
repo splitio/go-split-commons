@@ -912,7 +912,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 }
 
 func TestMultipleErrors(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := conf.GetDefaultAdvancedConfig()
 
 	streamingStatus := make(chan int, 1)

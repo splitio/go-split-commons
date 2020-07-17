@@ -17,7 +17,7 @@ func TestProcessor(t *testing.T) {
 	splitName := "split"
 	segment := "segment"
 
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
 	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
 	splitStorage := mocks.MockSplitStorage{
