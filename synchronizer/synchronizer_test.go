@@ -47,7 +47,6 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
 		workers,
 		logger,
 		nil,
@@ -56,7 +55,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	if err == nil {
 		t.Error("It should return error")
 	}
-	if splitFetchCalled != 1 {
+	if atomic.LoadInt64(&splitFetchCalled) != 1 {
 		t.Error("It should be called once")
 	}
 }
@@ -135,7 +134,6 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
 		workers,
 		logger,
 		nil,
@@ -144,10 +142,10 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	if err == nil {
 		t.Error("It should return error")
 	}
-	if splitFetchCalled != 1 {
+	if atomic.LoadInt64(&splitFetchCalled) != 1 {
 		t.Error("It should be called once")
 	}
-	if segmentFetchCalled != 2 {
+	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
 		t.Error("It should be called twice")
 	}
 }
@@ -244,7 +242,6 @@ func TestSyncAllOk(t *testing.T) {
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
 		workers,
 		logger,
 		nil,
@@ -353,30 +350,25 @@ func TestPeriodicFetching(t *testing.T) {
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 100, EventsSync: 100, GaugeSync: 100, ImpressionSync: 100, LatencySync: 100, SegmentSync: 10, SplitSync: 2},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
 		workers,
 		logger,
 		nil,
 	)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 2200)
-	if splitFetchCalled != 2 {
+	if atomic.LoadInt64(&splitFetchCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(splitFetchCalled)
 	}
-	if segmentFetchCalled != 2 {
+	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(segmentFetchCalled)
 	}
 	syncForTest.StopPeriodicFetching()
 	time.Sleep(time.Second * 3)
-	if splitFetchCalled != 2 {
+	if atomic.LoadInt64(&splitFetchCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(splitFetchCalled)
 	}
-	if segmentFetchCalled != 2 {
+	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(segmentFetchCalled)
 	}
 }
 
@@ -497,53 +489,42 @@ func TestPeriodicRecording(t *testing.T) {
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 100, SplitSync: 100},
 		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
-		&splitAPI,
 		workers,
 		logger,
 		nil,
 	)
 	syncForTest.StartPeriodicDataRecording()
 	time.Sleep(time.Second * 1)
-	if impressionsCalled != 1 {
+	if atomic.LoadInt64(&impressionsCalled) != 1 {
 		t.Error("It should be called once")
-		t.Error(impressionsCalled)
 	}
-	if eventsCalled != 1 {
+	if atomic.LoadInt64(&eventsCalled) != 1 {
 		t.Error("It should be called once")
-		t.Error(eventsCalled)
 	}
-	if countersCalled != 1 {
+	if atomic.LoadInt64(&countersCalled) != 1 {
 		t.Error("It should be called once")
-		t.Error(countersCalled)
 	}
-	if gaugesCalled != 1 {
+	if atomic.LoadInt64(&gaugesCalled) != 1 {
 		t.Error("It should be called once")
-		t.Error(gaugesCalled)
 	}
-	if latenciesCalled != 1 {
+	if atomic.LoadInt64(&latenciesCalled) != 1 {
 		t.Error("It should be called once")
-		t.Error(latenciesCalled)
 	}
 	syncForTest.StopPeriodicDataRecording()
 	time.Sleep(time.Second * 1)
-	if impressionsCalled != 3 {
+	if atomic.LoadInt64(&impressionsCalled) != 3 {
 		t.Error("It should be called three times")
-		t.Error(impressionsCalled)
 	}
-	if eventsCalled != 4 {
+	if atomic.LoadInt64(&eventsCalled) != 4 {
 		t.Error("It should be called fourth times")
-		t.Error(eventsCalled)
 	}
-	if countersCalled != 2 {
+	if atomic.LoadInt64(&countersCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(countersCalled)
 	}
-	if gaugesCalled != 2 {
+	if atomic.LoadInt64(&gaugesCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(gaugesCalled)
 	}
-	if latenciesCalled != 2 {
+	if atomic.LoadInt64(&latenciesCalled) != 2 {
 		t.Error("It should be called twice")
-		t.Error(latenciesCalled)
 	}
 }

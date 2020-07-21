@@ -122,6 +122,11 @@ func (r *SplitStorage) FetchMany(features []string) map[string]*dtos.SplitDTO {
 	return splits
 }
 
+// KillLocally mock
+func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string) {
+	// @TODO Implement for Sync
+}
+
 // incr stores/increments trafficType in Redis
 func (r *SplitStorage) incr(trafficType string) error {
 	key := strings.Replace(redisTrafficType, "{trafficType}", trafficType, 1)

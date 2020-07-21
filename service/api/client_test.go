@@ -19,7 +19,7 @@ func TestGet(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	httpClient := NewHTTPClient("", &conf.AdvancedConfig{}, ts.URL, logger)
+	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger)
 	txt, errg := httpClient.Get("/")
 	if errg != nil {
 		t.Error(errg)
@@ -41,7 +41,7 @@ func TestGetGZIP(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	httpClient := NewHTTPClient("", &conf.AdvancedConfig{}, ts.URL, logger)
+	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger)
 	txt, errg := httpClient.Get("/")
 	if errg != nil {
 		t.Error(errg)
@@ -59,7 +59,7 @@ func TestPost(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	httpClient := NewHTTPClient("", &conf.AdvancedConfig{}, ts.URL, logger)
+	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger)
 	errp := httpClient.Post("/", []byte("some text"), nil)
 	if errp != nil {
 		t.Error(errp)

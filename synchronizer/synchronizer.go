@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
@@ -58,7 +57,6 @@ func setupTasks(
 func NewSynchronizer(
 	confTask conf.TaskPeriods,
 	confAdvanced conf.AdvancedConfig,
-	splitAPI *service.SplitAPI,
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,

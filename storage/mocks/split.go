@@ -10,8 +10,9 @@ type MockSplitStorage struct {
 	AllCall               func() []dtos.SplitDTO
 	ChangeNumberCall      func() (int64, error)
 	FetchManyCall         func(splitNames []string) map[string]*dtos.SplitDTO
+	KillLocallyCall       func(splitName string, defaultTreatment string)
 	PutManyCall           func(splits []dtos.SplitDTO, changeNumber int64)
-	RemoveCall            func(splitname string)
+	RemoveCall            func(splitName string)
 	SegmentNamesCall      func() *set.ThreadUnsafeSet
 	SetChangeNumberCall   func(changeNumber int64) error
 	SplitCall             func(splitName string) *dtos.SplitDTO
@@ -32,6 +33,11 @@ func (m MockSplitStorage) ChangeNumber() (int64, error) {
 // FetchMany mock
 func (m MockSplitStorage) FetchMany(splitNames []string) map[string]*dtos.SplitDTO {
 	return m.FetchManyCall(splitNames)
+}
+
+// KillLocally mock
+func (m MockSplitStorage) KillLocally(splitName string, defaultTreatment string) {
+	m.KillLocallyCall(splitName, defaultTreatment)
 }
 
 // PutMany mock
