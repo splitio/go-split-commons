@@ -80,7 +80,7 @@ func NewHTTPImpressionRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPImpressionRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
@@ -151,7 +151,7 @@ func NewHTTPMetricsRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPMetricsRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPMetricsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
@@ -188,7 +188,7 @@ func NewHTTPEventsRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPEventsRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,

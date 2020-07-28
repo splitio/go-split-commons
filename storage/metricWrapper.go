@@ -1,0 +1,113 @@
+package storage
+
+import (
+	"errors"
+	"strings"
+
+	"github.com/splitio/go-toolkit/logging"
+)
+
+// MetricWrapper struct
+type MetricWrapper struct {
+	Telemetry     MetricsStorage
+	LocalTelemtry MetricsStorage
+	Logger        logging.LoggerInterface
+	dictionary    map[string]string
+}
+
+const (
+	// SplitChangesCounter counters
+	SplitChangesCounter = iota
+	// SplitChangesLatency latencies
+	SplitChangesLatency
+	// SegmentChangesCounter counters
+	SegmentChangesCounter
+	// SegmentChangesLatency latencies
+	SegmentChangesLatency
+	// TestImpressionsCounter counter
+	TestImpressionsCounter
+	// TestImpressionsLatency latencies
+	TestImpressionsLatency
+	// PostEventsCounter counter
+	PostEventsCounter
+	//PostEventsLatency latencies
+	PostEventsLatency
+)
+
+const (
+	splitChangesCounter         = "splitChangeFetcher.status.{status}"
+	localSplitChangesCounter    = "backend::request.{status}"
+	splitChangesLatency         = "splitChangeFetcher.time"
+	localSplitChangesLatency    = "backend::/api/splitChanges"
+	segmentChangesLatency       = "segmentChangeFetcher.time"
+	localSegmentChangesLatency  = "backend::/api/segmentChanges"
+	segmentChangesCounter       = "segmentChangeFetcher.status.{status}"
+	localSegmentChangesCounter  = "backend::request.{status}"
+	testImpressionsCounter      = "testImpressions.status.{status}"
+	localTestImpressionsCounter = "backend::request.{status}"
+	testImpressionsLatency      = "testImpressions.time"
+	localTestImpressionsLatency = "backend::/api/testImpressions/bulk"
+	postEventsCounter           = "events.status.{status}"
+	localPostEventsCounter      = "backend::request.{status}"
+	postEventsLatency           = "events.time"
+	localPostEventsLatency      = "backend::/api/events/bulk"
+)
+
+// NewMetricWrapper builds new wrapper
+func NewMetricWrapper(telemetry MetricsStorage, localTelemtry MetricsStorage, logger logging.LoggerInterface) *MetricWrapper {
+	return &MetricWrapper{
+		LocalTelemtry: localTelemtry,
+		Logger:        logger,
+		Telemetry:     telemetry,
+	}
+}
+
+func (m *MetricWrapper) getKey(key int) (string, string, error) {
+	switch key {
+	case SplitChangesCounter:
+		return splitChangesCounter, localSplitChangesCounter, nil
+	case SplitChangesLatency:
+		return splitChangesLatency, localSplitChangesLatency, nil
+	case SegmentChangesCounter:
+		return segmentChangesCounter, localSegmentChangesCounter, nil
+	case SegmentChangesLatency:
+		return segmentChangesLatency, localSegmentChangesLatency, nil
+	case TestImpressionsCounter:
+		return testImpressionsCounter, localTestImpressionsCounter, nil
+	case TestImpressionsLatency:
+		return testImpressionsLatency, localTestImpressionsLatency, nil
+	case PostEventsCounter:
+		return postEventsCounter, localPostEventsCounter, nil
+	case PostEventsLatency:
+		return postEventsLatency, localPostEventsLatency, nil
+	default:
+		return "", "", errors.New("Key does not exist")
+	}
+}
+
+// StoreCounters stores counters
+func (m *MetricWrapper) StoreCounters(key int, value string) {
+	common, local, err := m.getKey(key)
+	if err != nil {
+		return
+	}
+	if m.LocalTelemtry != nil {
+		m.LocalTelemtry.IncCounter(strings.Replace(local, "{status}", value, 1))
+	}
+	if value == "ok" {
+		value = "200"
+	}
+	m.Telemetry.IncCounter(strings.Replace(common, "{status}", value, 1))
+}
+
+// StoreLatencies stores counters
+func (m *MetricWrapper) StoreLatencies(key int, bucket int) {
+	common, local, err := m.getKey(key)
+	if err != nil {
+		return
+	}
+	if m.LocalTelemtry != nil {
+		m.LocalTelemtry.IncLatency(local, bucket)
+	}
+	m.Telemetry.IncLatency(common, bucket)
+}

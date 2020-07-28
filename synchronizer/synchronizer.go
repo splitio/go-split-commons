@@ -5,6 +5,7 @@ import (
 	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
 	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
@@ -23,7 +24,7 @@ type splitTasks struct {
 type Workers struct {
 	SplitFetcher       *worker.SplitFetcher
 	SegmentFetcher     *worker.SegmentFetcher
-	TelemetryRecorder  *worker.MetricRecorder
+	TelemetryRecorder  metric.MetricRecorder
 	ImpressionRecorder impression.ImpressionRecorder
 	EventRecorder      event.EventRecorder
 }

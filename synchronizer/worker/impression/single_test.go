@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/storage/mutexqueue"
 	"github.com/splitio/go-toolkit/logging"
@@ -33,7 +34,7 @@ func TestImpressionRecorderError(t *testing.T) {
 	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
-		storageMock.MockMetricStorage{},
+		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -59,7 +60,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
-		storageMock.MockMetricStorage{},
+		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -117,18 +118,19 @@ func TestImpressionRecorder(t *testing.T) {
 	impressionSync := NewRecorderSingle(
 		impressionMockStorage,
 		impressionMockRecorder,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "testImpressions.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		},
+		storage.NewMetricWrapper(
+			storageMock.MockMetricStorage{
+				IncCounterCall: func(key string) {
+					if key != "testImpressions.status.200" && key != "backend::request.ok" {
+						t.Error("Unexpected counter key to increase")
+					}
+				},
+				IncLatencyCall: func(metricName string, index int) {
+					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
+						t.Error("Unexpected latency key to track")
+					}
+				},
+			}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -226,7 +228,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 	impressionSync := NewRecorderSingle(
 		impressionStorage,
 		impressionRecorder,
-		storageMock.MockMetricStorage{
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{
 			IncCounterCall: func(key string) {
 				if key != "testImpressions.status.200" && key != "backend::request.ok" {
 					t.Error("Unexpected counter key to increase")
@@ -237,7 +239,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 					t.Error("Unexpected latency key to track")
 				}
 			},
-		},
+		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)

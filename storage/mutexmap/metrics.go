@@ -11,20 +11,20 @@ type MMMetricsStorage struct {
 	gaugeData      map[string]float64
 	gaugeMutex     *sync.Mutex
 	counterData    map[string]int64
-	countersMutex  *sync.Mutex
+	countersMutex  *sync.RWMutex
 	latenciesData  map[string][]int64
-	latenciesMutex *sync.Mutex
+	latenciesMutex *sync.RWMutex
 }
 
 // NewMMMetricsStorage instantiates a new MMMetricsStorage
 func NewMMMetricsStorage() *MMMetricsStorage {
 	return &MMMetricsStorage{
 		counterData:    make(map[string]int64),
-		countersMutex:  &sync.Mutex{},
+		countersMutex:  &sync.RWMutex{},
 		gaugeData:      make(map[string]float64),
 		gaugeMutex:     &sync.Mutex{},
 		latenciesData:  make(map[string][]int64),
-		latenciesMutex: &sync.Mutex{},
+		latenciesMutex: &sync.RWMutex{},
 	}
 }
 
@@ -84,6 +84,20 @@ func (m *MMMetricsStorage) PopCounters() []dtos.CounterDTO {
 	return counters
 }
 
+// PeekCounters returns Counters
+func (m *MMMetricsStorage) PeekCounters() map[string]int64 {
+	m.countersMutex.RLock()
+	defer m.countersMutex.RUnlock()
+	return m.counterData
+}
+
+// PeekLatencies returns Latencies
+func (m *MMMetricsStorage) PeekLatencies() map[string][]int64 {
+	m.latenciesMutex.RLock()
+	defer m.latenciesMutex.RUnlock()
+	return m.latenciesData
+}
+
 // IncLatency increments the latency for a specific key and bucket. If the key doesn't exist it's initialized to
 // an empty array of 23 items.
 func (m *MMMetricsStorage) IncLatency(metricName string, index int) {
@@ -117,4 +131,19 @@ func (m *MMMetricsStorage) PopLatencies() []dtos.LatenciesDTO {
 		})
 	}
 	return latencies
+}
+
+// PopGaugesWithMetadata mock
+func (m *MMMetricsStorage) PopGaugesWithMetadata() (*dtos.GaugeDataBulk, error) {
+	return nil, nil
+}
+
+// PopLatenciesWithMetadata mock
+func (m *MMMetricsStorage) PopLatenciesWithMetadata() (*dtos.LatencyDataBulk, error) {
+	return nil, nil
+}
+
+// PopCountersWithMetadata mock
+func (m *MMMetricsStorage) PopCountersWithMetadata() (*dtos.CounterDataBulk, error) {
+	return nil, nil
 }

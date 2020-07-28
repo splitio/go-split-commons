@@ -40,10 +40,11 @@ func NewHTTPSplitFetcher(
 	apikey string,
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *HTTPSplitFetcher {
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 	}
@@ -89,10 +90,11 @@ func NewHTTPSegmentFetcher(
 	apikey string,
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *HTTPSegmentFetcher {
 	return &HTTPSegmentFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 	}

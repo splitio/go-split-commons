@@ -47,6 +47,13 @@ func (s *MQImpressionsStorage) Empty() bool {
 	return s.queue.Len() == 0
 }
 
+// Count returns len
+func (s *MQImpressionsStorage) Count() int64 {
+	s.mutexQueue.Lock()
+	defer s.mutexQueue.Unlock()
+	return int64(s.queue.Len())
+}
+
 // LogImpressions inserts impressions into the queue
 func (s *MQImpressionsStorage) LogImpressions(impressions []dtos.Impression) error {
 	s.mutexQueue.Lock()

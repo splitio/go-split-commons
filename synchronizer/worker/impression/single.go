@@ -2,7 +2,6 @@ package impression
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -16,7 +15,7 @@ import (
 type RecorderSingle struct {
 	impressionStorage  storage.ImpressionStorageConsumer
 	impressionRecorder service.ImpressionsRecorder
-	metricStorage      storage.MetricsStorageProducer
+	metricsWrapper     *storage.MetricWrapper
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
 }
@@ -25,14 +24,14 @@ type RecorderSingle struct {
 func NewRecorderSingle(
 	impressionStorage storage.ImpressionStorageConsumer,
 	impressionRecorder service.ImpressionsRecorder,
-	metricStorage storage.MetricsStorageProducer,
+	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) ImpressionRecorder {
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
-		metricStorage:      metricStorage,
+		metricsWrapper:     metricsWrapper,
 		logger:             logger,
 		metadata:           metadata,
 	}
@@ -54,13 +53,13 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	err = i.impressionRecorder.Record(queuedImpressions, i.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
-			i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
+			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(err.(*dtos.HTTPError).Code))
 		}
 		return err
 	}
 	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-	i.metricStorage.IncLatency(testImpressionsLatencies, bucket)
-	i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", "200", 1))
+	i.metricsWrapper.StoreLatencies(storage.TestImpressionsLatency, bucket)
+	i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, "ok")
 	return nil
 }
 

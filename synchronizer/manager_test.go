@@ -17,11 +17,13 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/service/mocks"
 	httpMocks "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	syncMock "github.com/splitio/go-split-commons/synchronizer/mocks"
 	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -367,15 +369,16 @@ func TestPolling(t *testing.T) {
 			return true
 		},
 	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
-			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			TelemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+			SplitFetcher:       worker.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     worker.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 		},
 		logger,
 		nil,
@@ -647,15 +650,16 @@ func TestStreaming(t *testing.T) {
 			return true
 		},
 	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricStorageMock, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
-			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			TelemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 		},
 		logger,
 		nil,
@@ -871,15 +875,16 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 			return true
 		},
 	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	syncForTest := NewSynchronizer(
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricStorageMock, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricStorageMock, logger),
-			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricStorageMock, logger, dtos.Metadata{}),
-			TelemetryRecorder:  worker.NewMetricRecorder(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 		},
 		logger,
 		nil,

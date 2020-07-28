@@ -40,12 +40,14 @@ type SegmentStorageConsumer interface {
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions
 type ImpressionStorageProducer interface {
+	Drop(size *int64) error
 	LogImpressions(impressions []dtos.Impression) error
 }
 
 // ImpressionStorageConsumer interface should be implemented by structs that offer popping impressions
 type ImpressionStorageConsumer interface {
 	Empty() bool
+	Count() int64
 	PopN(n int64) ([]dtos.Impression, error)
 	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
 }
@@ -59,19 +61,26 @@ type MetricsStorageProducer interface {
 
 // MetricsStorageConsumer interface should be implemented by structs that offer popping metrics
 type MetricsStorageConsumer interface {
+	PeekCounters() map[string]int64
+	PeekLatencies() map[string][]int64
 	PopGauges() []dtos.GaugeDTO
 	PopLatencies() []dtos.LatenciesDTO
 	PopCounters() []dtos.CounterDTO
+	PopGaugesWithMetadata() (*dtos.GaugeDataBulk, error)
+	PopLatenciesWithMetadata() (*dtos.LatencyDataBulk, error)
+	PopCountersWithMetadata() (*dtos.CounterDataBulk, error)
 }
 
 // EventStorageProducer interface should be implemented by structs that accept incoming events
 type EventStorageProducer interface {
+	Drop(size *int64) error
 	Push(event dtos.EventDTO, size int) error
 }
 
 // EventStorageConsumer interface should be implemented by structs that offer popping impressions
 type EventStorageConsumer interface {
 	Empty() bool
+	Count() int64
 	PopN(n int64) ([]dtos.EventDTO, error)
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }

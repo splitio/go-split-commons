@@ -34,8 +34,8 @@ func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metad
 	}
 }
 
-// size returns the size of the impressions queue
-func (r *ImpressionStorage) size() int64 {
+// Count returns the size of the impressions queue
+func (r *ImpressionStorage) Count() int64 {
 	val, err := r.client.LLen(r.redisKey)
 	if err != nil {
 		return 0
@@ -43,9 +43,20 @@ func (r *ImpressionStorage) size() int64 {
 	return val
 }
 
+// Drop drops impressions from queue
+func (r *ImpressionStorage) Drop(size *int64) error {
+	elMutex.Lock()
+	defer elMutex.Unlock()
+	if size == nil {
+		_, err := r.client.Del(r.redisKey)
+		return err
+	}
+	return r.client.LTrim(r.redisKey, *size, -1)
+}
+
 // Empty returns true if redis list is zero length
 func (r *ImpressionStorage) Empty() bool {
-	return r.size() == 0
+	return r.Count() == 0
 }
 
 // push stores impressions in redis

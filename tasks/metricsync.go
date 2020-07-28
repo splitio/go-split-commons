@@ -1,14 +1,14 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/synchronizer/worker"
+	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 // NewRecordTelemetryTask creates a new telemtry recording task
 func NewRecordTelemetryTask(
-	recorder *worker.MetricRecorder,
+	recorder metric.MetricRecorder,
 	period int,
 	logger logging.LoggerInterface,
 ) *asynctask.AsyncTask {

@@ -1,4 +1,4 @@
-package worker
+package metric
 
 import (
 	"encoding/json"
@@ -46,7 +46,7 @@ func TestMetricSynchronizerError(t *testing.T) {
 		},
 	}
 
-	metricSync := NewMetricRecorder(
+	metricSync := NewRecorderSingle(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
 			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
@@ -67,7 +67,7 @@ func TestMetricSynchronizerError(t *testing.T) {
 		t.Error("It should return err")
 	}
 
-	metricSync2 := NewMetricRecorder(
+	metricSync2 := NewRecorderSingle(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
 			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
@@ -88,7 +88,7 @@ func TestMetricSynchronizerError(t *testing.T) {
 		t.Error("It should return err")
 	}
 
-	metricSync3 := NewMetricRecorder(
+	metricSync3 := NewRecorderSingle(
 		metricMockStorage,
 		recorderMock.MockMetricRecorder{
 			RecordCountersCall: func(counters []dtos.CounterDTO, metadata dtos.Metadata) error {
@@ -165,7 +165,7 @@ func TestMetricSynchronizer(t *testing.T) {
 		},
 	}
 
-	metricSync := NewMetricRecorder(
+	metricSync := NewRecorderSingle(
 		metricMockStorage,
 		metricMockRecorder,
 		dtos.Metadata{},
@@ -251,7 +251,7 @@ func TestMetricSyncProcess(t *testing.T) {
 	metricStorage.IncLatency("metric1", 5)
 	metricStorage.IncCounter("counter1")
 
-	metricSync := NewMetricRecorder(
+	metricSync := NewRecorderSingle(
 		metricStorage,
 		metricRecorder,
 		dtos.Metadata{},

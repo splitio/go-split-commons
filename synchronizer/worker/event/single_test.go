@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/storage/mutexqueue"
 	"github.com/splitio/go-toolkit/logging"
@@ -33,7 +34,7 @@ func TestSynhronizeEventError(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storageMock.MockMetricStorage{},
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -64,7 +65,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storageMock.MockMetricStorage{},
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -120,7 +121,7 @@ func TestSynhronizeEvent(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storageMock.MockMetricStorage{
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{
 			IncCounterCall: func(key string) {
 				if key != "events.status.200" && key != "backend::request.ok" {
 					t.Error("Unexpected counter key to increase")
@@ -131,7 +132,7 @@ func TestSynhronizeEvent(t *testing.T) {
 					t.Error("Unexpected latency key to track")
 				}
 			},
-		},
+		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -203,7 +204,7 @@ func TestSynhronizeEventSync(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventStorage,
 		eventRecorder,
-		storageMock.MockMetricStorage{
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{
 			IncCounterCall: func(key string) {
 				if key != "events.status.200" && key != "backend::request.ok" {
 					t.Error("Unexpected counter key to increase")
@@ -214,7 +215,7 @@ func TestSynhronizeEventSync(t *testing.T) {
 					t.Error("Unexpected latency key to track")
 				}
 			},
-		},
+		}, nil, nil),
 		logger,
 		dtos.Metadata{},
 	)

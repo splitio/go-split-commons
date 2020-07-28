@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/logging"
@@ -57,7 +58,7 @@ func TestEventSyncTask(t *testing.T) {
 		event.NewEventRecorderSingle(
 			eventMockStorage,
 			eventMockRecorder,
-			storageMock.MockMetricStorage{
+			storage.NewMetricWrapper(storageMock.MockMetricStorage{
 				IncCounterCall: func(key string) {
 					if key != "events.status.200" && key != "backend::request.ok" {
 						t.Error("Unexpected counter key to increase")
@@ -68,7 +69,7 @@ func TestEventSyncTask(t *testing.T) {
 						t.Error("Unexpected latency key to track")
 					}
 				},
-			},
+			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 		),

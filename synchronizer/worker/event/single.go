@@ -2,7 +2,6 @@ package event
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -14,27 +13,27 @@ import (
 
 // RecorderSingle struct for event sync
 type RecorderSingle struct {
-	eventStorage  storage.EventStorageConsumer
-	eventRecorder service.EventsRecorder
-	metricStorage storage.MetricsStorageProducer
-	logger        logging.LoggerInterface
-	metadata      dtos.Metadata
+	eventStorage   storage.EventStorageConsumer
+	eventRecorder  service.EventsRecorder
+	metricsWrapper *storage.MetricWrapper
+	logger         logging.LoggerInterface
+	metadata       dtos.Metadata
 }
 
 // NewEventRecorderSingle creates new event synchronizer for posting events
 func NewEventRecorderSingle(
 	eventStorage storage.EventStorageConsumer,
 	eventRecorder service.EventsRecorder,
-	metricStorage storage.MetricsStorageProducer,
+	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) EventRecorder {
 	return &RecorderSingle{
-		eventStorage:  eventStorage,
-		eventRecorder: eventRecorder,
-		metricStorage: metricStorage,
-		logger:        logger,
-		metadata:      metadata,
+		eventStorage:   eventStorage,
+		eventRecorder:  eventRecorder,
+		metricsWrapper: metricsWrapper,
+		logger:         logger,
+		metadata:       metadata,
 	}
 }
 
@@ -55,13 +54,13 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
-			e.metricStorage.IncCounter(strings.Replace(postEventsCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
+			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, string(err.(*dtos.HTTPError).Code))
 		}
 		return err
 	}
 	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-	e.metricStorage.IncLatency(postEventsLatencies, bucket)
-	e.metricStorage.IncCounter(strings.Replace(postEventsCounters, "{status}", "200", 1))
+	e.metricsWrapper.StoreLatencies(storage.PostEventsLatency, bucket)
+	e.metricsWrapper.StoreCounters(storage.PostEventsCounter, "ok")
 	return nil
 }
 

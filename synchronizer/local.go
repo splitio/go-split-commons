@@ -33,8 +33,9 @@ func NewLocal(
 		PopLatenciesCall: func() []dtos.LatenciesDTO { return make([]dtos.LatenciesDTO, 0, 0) },
 		PutGaugeCall:     func(key string, gauge float64) {},
 	}
+	metricsWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	workers := Workers{
-		SplitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
+		SplitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
 	}
 	return &Local{
 		splitTasks: splitTasks{
