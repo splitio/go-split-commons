@@ -1,3 +1,3 @@
 [[constraint]]
-  branch = "polishingsse"
+  branch = "rev/tinchotest"
   name = "github.com/splitio/go-toolkit"
