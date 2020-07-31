@@ -63,6 +63,10 @@ func (s *StreamingClient) ConnectStreaming(token string, channelList []string, h
 	case <-s.stopped:
 	default:
 	}
+	select {
+	case <-s.sseStatus:
+	default:
+	}
 
 	go func() {
 		defer func() { // When this goroutine exits, StopStreaming is freed
