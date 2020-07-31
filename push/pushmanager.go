@@ -336,7 +336,7 @@ func (p *PushManager) Stop() {
 	p.cancelTokenExpiration <- struct{}{}
 	p.cancelStreamingWatcher <- struct{}{}
 	if p.sseClient.IsRunning() {
-		p.sseClient.StopStreaming()
+		p.sseClient.StopStreaming(true)
 	}
 	p.StopWorkers()
 }
