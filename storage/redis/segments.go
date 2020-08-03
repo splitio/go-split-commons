@@ -82,3 +82,13 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 	r.SetChangeNumber(name, till)
 	return nil
 }
+
+// SegmentContainsKey returns true if the segment contains a specific key
+func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (bool, error) {
+	segmentKey := strings.Replace(redisSegment, "{segment}", segmentName, 1)
+	exists := r.client.SIsMember(segmentKey, key)
+	if !exists {
+		return exists, fmt.Errorf("segment %s not found in storage", segmentName)
+	}
+	return exists, nil
+}
