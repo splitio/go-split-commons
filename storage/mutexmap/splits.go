@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/datastructures/set"
-	"github.com/splitio/go-toolkit/deepcopy"
 )
 
 // MMSplitStorage struct contains is an in-memory implementation of split storage
@@ -37,10 +36,7 @@ func (m *MMSplitStorage) All() []dtos.SplitDTO {
 	defer m.mutex.RUnlock()
 	splitList := make([]dtos.SplitDTO, 0)
 	for _, split := range m.data {
-		splitCopy, ok := deepcopy.Copy(split).(dtos.SplitDTO)
-		if ok {
-			splitList = append(splitList, splitCopy)
-		}
+		splitList = append(splitList, split)
 	}
 	return splitList
 }
@@ -57,8 +53,7 @@ func (m *MMSplitStorage) _get(splitName string) *dtos.SplitDTO {
 	if !exists {
 		return nil
 	}
-	c := deepcopy.Copy(item).(dtos.SplitDTO)
-	return &c
+	return &item
 }
 
 // FetchMany fetches features in redis and returns an array of split dtos

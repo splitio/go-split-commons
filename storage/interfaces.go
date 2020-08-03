@@ -34,7 +34,7 @@ type SegmentStorageProducer interface {
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
 	Keys(segmentName string) *set.ThreadUnsafeSet
-	// MISSING IsInSegment(name, key)
+	SegmentContainsKey(segmentName string, key string) (bool, error)
 }
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions

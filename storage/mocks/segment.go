@@ -4,10 +4,11 @@ import "github.com/splitio/go-toolkit/datastructures/set"
 
 // MockSegmentStorage is a mocked implementation of Segment Storage
 type MockSegmentStorage struct {
-	ChangeNumberCall    func(segmentName string) (int64, error)
-	KeysCall            func(segmentName string) *set.ThreadUnsafeSet
-	UpdateCall          func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
-	SetChangeNumberCall func(segmentName string, till int64) error
+	ChangeNumberCall       func(segmentName string) (int64, error)
+	KeysCall               func(segmentName string) *set.ThreadUnsafeSet
+	UpdateCall             func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error
+	SegmentContainsKeyCall func(segmentName string, key string) (bool, error)
+	SetChangeNumberCall    func(segmentName string, till int64) error
 }
 
 // ChangeNumber mock
@@ -23,6 +24,11 @@ func (m MockSegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 // Update mock
 func (m MockSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 	return m.UpdateCall(name, toAdd, toRemove, changeNumber)
+}
+
+// SegmentContainsKey mock
+func (m MockSegmentStorage) SegmentContainsKey(segmentName string, key string) (bool, error) {
+	return m.SegmentContainsKeyCall(segmentName, key)
 }
 
 // SetChangeNumber mock
