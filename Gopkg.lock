@@ -18,16 +18,36 @@
   version = "v6.15.7"
 
 [[projects]]
-  digest = "1:c45802472e0c06928cd997661f2af610accd85217023b1d5f6331bebce0671d3"
-  name = "github.com/pkg/errors"
-  packages = ["."]
+  branch = "synchronizer"
+  digest = "1:177569b542155847c7856710ce4c2d390035921f988c15bace24bafd6bca9539"
+  name = "github.com/splitio/go-split-commons"
+  packages = [
+    "conf",
+    "dtos",
+    "push",
+    "push/mocks",
+    "service",
+    "service/api",
+    "service/api/mocks",
+    "service/api/sse",
+    "service/mocks",
+    "storage",
+    "storage/mocks",
+    "storage/mutexmap",
+    "storage/mutexqueue",
+    "synchronizer/mocks",
+    "synchronizer/worker",
+    "synchronizer/worker/event",
+    "synchronizer/worker/impression",
+    "synchronizer/worker/metric",
+    "tasks",
+    "util",
+  ]
   pruneopts = ""
-  revision = "614d223910a179a466c1767a985424175c39b465"
-  version = "v0.9.1"
+  revision = "8e5b3db62980fd7582e3faccdfee302e993eb476"
 
 [[projects]]
-  branch = "polishingsse"
-  digest = "1:ff4d724c5304ff832a0d4127841cfb6441c29e38c169533305a15cda4af8340d"
+  digest = "1:a68f26feff9052b42339b87fbed062062040833b161c12518bde8ed7535bd1bc"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
@@ -43,7 +63,8 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "f4d10ecf64b0e993826d8d805c8f8ad25a4385ca"
+  revision = "67ec04d8f3e7a49906c1b4b815f37dab0b142b8e"
+  version = "2.1.0"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -57,7 +78,25 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/pkg/errors",
+    "github.com/splitio/go-split-commons/conf",
+    "github.com/splitio/go-split-commons/dtos",
+    "github.com/splitio/go-split-commons/push",
+    "github.com/splitio/go-split-commons/push/mocks",
+    "github.com/splitio/go-split-commons/service",
+    "github.com/splitio/go-split-commons/service/api",
+    "github.com/splitio/go-split-commons/service/api/mocks",
+    "github.com/splitio/go-split-commons/service/api/sse",
+    "github.com/splitio/go-split-commons/service/mocks",
+    "github.com/splitio/go-split-commons/storage",
+    "github.com/splitio/go-split-commons/storage/mocks",
+    "github.com/splitio/go-split-commons/storage/mutexmap",
+    "github.com/splitio/go-split-commons/storage/mutexqueue",
+    "github.com/splitio/go-split-commons/synchronizer/mocks",
+    "github.com/splitio/go-split-commons/synchronizer/worker",
+    "github.com/splitio/go-split-commons/synchronizer/worker/event",
+    "github.com/splitio/go-split-commons/synchronizer/worker/impression",
+    "github.com/splitio/go-split-commons/tasks",
+    "github.com/splitio/go-split-commons/util",
     "github.com/splitio/go-toolkit/asynctask",
     "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",

@@ -478,34 +478,35 @@ func TestStreaming(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 3; i++ {
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				mockedData := make(map[string]interface{})
-				mockedData["event"] = "keepalive"
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 2:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 3:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse3.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-			flusher.Flush()
-		}
+		sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		mockedData = make(map[string]interface{})
+		mockedData["event"] = "keepalive"
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/sse2.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/sse3.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
 	}))
 	defer ts.Close()
 
@@ -736,24 +737,21 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 3; i++ {
-			time.Sleep(time.Duration(100) * time.Millisecond)
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-			flusher.Flush()
-		}
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(time.Duration(10) * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/occupancy2.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
 	}))
 	defer ts.Close()
 
@@ -914,7 +912,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 }
 
 func TestMultipleErrors(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{LogLevel: logging.LevelDebug})
+	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := conf.GetDefaultAdvancedConfig()
 
 	streamingStatus := make(chan int, 1)
@@ -941,6 +939,7 @@ func TestMultipleErrors(t *testing.T) {
 			StopPeriodicFetchingCall: func() {
 				stopPeriodicFetchingCall++
 			},
+			StopPeriodicDataRecordingCall: func() {},
 		},
 		config:        advanced,
 		logger:        logger,
@@ -958,6 +957,9 @@ func TestMultipleErrors(t *testing.T) {
 			},
 			StartWorkersCall: func() {
 				startWorkersCall++
+			},
+			IsRunningCall: func() bool {
+				return true
 			},
 		},
 		status:          status,
@@ -1037,5 +1039,18 @@ func TestMultipleErrors(t *testing.T) {
 	}
 	if atomic.LoadInt64(&stopCall) != 3 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 3 || stopWorkersCall != 6 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
 		t.Error("Unexpected state")
+	}
+
+	managerTest.Stop()
+	go managerTest.Start()
+	<-managerStatus
+
+	streamingStatus <- push.StreamingDisabled
+	time.Sleep(100 * time.Millisecond)
+	if managerTest.status.Load() != Polling {
+		t.Error("It should be running in Polling mode")
+	}
+	if startPeriodicFetchingCall != 4 || stopWorkersCall != 9 {
+		t.Error("Unexpected state", startPeriodicFetchingCall, stopWorkersCall)
 	}
 }
