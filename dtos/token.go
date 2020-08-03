@@ -69,9 +69,9 @@ func (t *Token) ChannelList() ([]string, error) {
 	for channelName := range parsedCapabilities {
 		if isMetadataType(parsedCapabilities[channelName]) {
 			channelList = append(channelList, fmt.Sprintf("%s%s", occupancy, channelName))
-			continue
+		} else {
+			channelList = append(channelList, channelName)
 		}
-		channelList = append(channelList, channelName)
 	}
 
 	return channelList, nil
