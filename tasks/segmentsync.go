@@ -1,7 +1,9 @@
 package tasks
 
 import (
+	"errors"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-toolkit/asynctask"
@@ -40,26 +42,40 @@ func NewFetchSegmentsTask(
 	queueSize int,
 	logger logging.LoggerInterface,
 ) *asynctask.AsyncTask {
-	admin := workerpool.NewWorkerAdmin(queueSize, logger)
+
+	admin := atomic.Value{}
 
 	// After all segments are in sync, add workers to the pool that will keep them up to date
 	// periodically
-	for i := 0; i < workerCount; i++ {
-		worker := NewSegmentWorker(
-			fmt.Sprintf("SegmentWorker_%d", i),
-			0,
-			fetcher.SynchronizeSegment,
-		)
-		admin.AddWorker(worker)
+	onInit := func(logger logging.LoggerInterface) error {
+		admin.Store(workerpool.NewWorkerAdmin(queueSize, logger))
+		for i := 0; i < workerCount; i++ {
+			worker := NewSegmentWorker(
+				fmt.Sprintf("SegmentWorker_%d", i),
+				0,
+				fetcher.SynchronizeSegment,
+			)
+			admin.Load().(*workerpool.WorkerAdmin).AddWorker(worker)
+		}
+		return nil
 	}
 
 	update := func(logger logging.LoggerInterface) error {
-		return updateSegments(fetcher, admin, logger)
+		wa, ok := admin.Load().(*workerpool.WorkerAdmin)
+		if !ok || wa == nil {
+			return errors.New("unable to type-assert worker manager")
+		}
+		return updateSegments(fetcher, wa, logger)
 	}
 
 	cleanup := func(logger logging.LoggerInterface) {
-		admin.StopAll()
+		wa, ok := admin.Load().(*workerpool.WorkerAdmin)
+		if !ok || wa == nil {
+			logger.Error("unable to type-assert worker manager")
+			return
+		}
+		wa.StopAll(true)
 	}
 
-	return asynctask.NewAsyncTask("UpdateSegments", update, period, nil, cleanup, logger)
+	return asynctask.NewAsyncTask("UpdateSegments", update, period, onInit, cleanup, logger)
 }

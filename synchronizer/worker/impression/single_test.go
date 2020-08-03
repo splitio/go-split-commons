@@ -2,13 +2,13 @@ package impression
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 
-	"errors"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
