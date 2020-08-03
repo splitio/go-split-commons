@@ -8,6 +8,7 @@ import (
 
 // SplitAPI struct for fetchers and recorders
 type SplitAPI struct {
+	AuthClient         AuthClient
 	SplitFetcher       SplitFetcher
 	SegmentFetcher     SegmentFetcher
 	ImpressionRecorder ImpressionsRecorder
@@ -18,10 +19,11 @@ type SplitAPI struct {
 // NewSplitAPI creates new splitAPI
 func NewSplitAPI(
 	apikey string,
-	conf *conf.AdvancedConfig,
+	conf conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *SplitAPI {
 	return &SplitAPI{
+		AuthClient:         api.NewAuthAPIClient(apikey, conf, logger),
 		SplitFetcher:       api.NewHTTPSplitFetcher(apikey, conf, logger),
 		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, conf, logger),
 		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, logger),

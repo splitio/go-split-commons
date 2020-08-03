@@ -1,0 +1,8 @@
+{
+    "id": "St40RHV9u9:0:0",
+    "clientId": "pri:NTIxMjUxMjI0",
+    "timestamp": 1591988399435,
+    "encoding": "json",
+    "channel": "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments",
+    "data": "{\"type\":\"SEGMENT_UPDATE\",\"changeNumber\":1591988398533,\"segmentName\":\"TEST_SEGMENT\"}"
+}

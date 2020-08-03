@@ -1,6 +1,7 @@
-0.0.1 (, 2020)
+1.0.0 (Aug 3, 2020)
  - Added storages.
  - Added dtos.
  - Added synchronizer manager.
  - Added tasks.
  - Added workers.
+ - Added push manager.

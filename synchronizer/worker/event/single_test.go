@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/pkg/errors"
+	"errors"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
@@ -184,7 +184,7 @@ func TestSynhronizeEventSync(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	eventRecorder := api.NewHTTPEventsRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

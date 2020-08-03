@@ -2,13 +2,13 @@ package impression
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
@@ -185,7 +185,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impressionRecorder := api.NewHTTPImpressionRecorder(
 		"",
-		&conf.AdvancedConfig{
+		conf.AdvancedConfig{
 			EventsURL: ts.URL,
 			SdkURL:    ts.URL,
 		},

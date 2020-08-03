@@ -18,42 +18,24 @@
   version = "v6.15.7"
 
 [[projects]]
-  digest = "1:c45802472e0c06928cd997661f2af610accd85217023b1d5f6331bebce0671d3"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = ""
-  revision = "614d223910a179a466c1767a985424175c39b465"
-  version = "v0.9.1"
-
-[[projects]]
-  branch = "modularization"
-  digest = "1:e3989245071ea320718d7f199d056d9d3bc247937bef2f0cc34b8ae913f38dd2"
+  digest = "1:6cea8010b300e32b56d9bc0405ce00b2caef52b18b95cfa63cc6f8c0868967f4"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
+    "common",
     "datastructures/set",
     "deepcopy",
     "logging",
+    "queuecache",
     "redis",
     "redis/helpers",
     "redis/mocks",
+    "sse",
     "workerpool",
   ]
   pruneopts = ""
-  revision = "f2a2688be5ffaf0593f7549a48e7c3b4dc5aaedc"
-
-[[projects]]
-  digest = "1:25767798b44837eea0f7b801d327ccd3136dfade65e780b8ed94b606fbaea65a"
-  name = "github.com/splitio/split-synchronizer"
-  packages = [
-    "appcontext",
-    "conf",
-    "log",
-    "splitio",
-  ]
-  pruneopts = ""
-  revision = "1e7b3999d26aa75d4f2443357a79e98a76c95e44"
-  version = "2.0.0"
+  revision = "e3870ebc825db67b204f486e61a9bfdab25bb2b9"
+  version = "2.1.0"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -67,16 +49,17 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/pkg/errors",
     "github.com/splitio/go-toolkit/asynctask",
+    "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/deepcopy",
     "github.com/splitio/go-toolkit/logging",
+    "github.com/splitio/go-toolkit/queuecache",
     "github.com/splitio/go-toolkit/redis",
     "github.com/splitio/go-toolkit/redis/helpers",
     "github.com/splitio/go-toolkit/redis/mocks",
+    "github.com/splitio/go-toolkit/sse",
     "github.com/splitio/go-toolkit/workerpool",
-    "github.com/splitio/split-synchronizer/log",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

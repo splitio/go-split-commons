@@ -4,6 +4,11 @@ import (
 	"github.com/splitio/go-split-commons/dtos"
 )
 
+// AuthClient inteface to be implemneted by AuthClient
+type AuthClient interface {
+	Authenticate() (*dtos.Token, error)
+}
+
 // SplitFetcher interface to be implemented by Split Fetchers
 type SplitFetcher interface {
 	Fetch(changeNumber int64) (*dtos.SplitChangesDTO, error)

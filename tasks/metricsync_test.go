@@ -76,13 +76,13 @@ func TestCounterSyncTask(t *testing.T) {
 
 	metricTask.Stop(false)
 	time.Sleep(time.Second * 1)
-	if popCounters <= 0 {
+	if atomic.LoadInt64(&popCounters) <= 0 {
 		t.Error("Request not received")
 	}
-	if popGauge <= 0 {
+	if atomic.LoadInt64(&popGauge) <= 0 {
 		t.Error("Request not received")
 	}
-	if popLatency <= 0 {
+	if atomic.LoadInt64(&popLatency) <= 0 {
 		t.Error("Request not received")
 	}
 	if metricTask.IsRunning() {
