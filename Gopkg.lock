@@ -18,8 +18,8 @@
   version = "v6.15.7"
 
 [[projects]]
-  branch = "push"
-  digest = "1:d83c752b7a38e6ede6f972e11483541269a2c4088e7067694d760dd3b5cf54f0"
+  branch = "synchronizer"
+  digest = "1:177569b542155847c7856710ce4c2d390035921f988c15bace24bafd6bca9539"
   name = "github.com/splitio/go-split-commons"
   packages = [
     "conf",
@@ -39,15 +39,15 @@
     "synchronizer/worker",
     "synchronizer/worker/event",
     "synchronizer/worker/impression",
+    "synchronizer/worker/metric",
     "tasks",
     "util",
   ]
   pruneopts = ""
-  revision = "8c0fb068f5acc2dd91f7e7e90d62b753cf9d17e8"
+  revision = "8e5b3db62980fd7582e3faccdfee302e993eb476"
 
 [[projects]]
-  branch = "rev/tinchotest"
-  digest = "1:30aa3bf98f3ae07f80c27058dd887a7385b43c6d3adbc0784dc2c80cde91e614"
+  digest = "1:a68f26feff9052b42339b87fbed062062040833b161c12518bde8ed7535bd1bc"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
@@ -63,7 +63,8 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "3bde446c6ccb9377f12976d11ffbc37866ee2eea"
+  revision = "67ec04d8f3e7a49906c1b4b815f37dab0b142b8e"
+  version = "2.1.0"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
