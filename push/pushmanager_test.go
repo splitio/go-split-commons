@@ -113,6 +113,7 @@ func TestPushSSEChannels(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
+		fmt.Fprintf(w, "data: keepalive")
 		flusher.Flush()
 	}))
 	defer ts.Close()
@@ -346,6 +347,7 @@ func TestPushError(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
+		fmt.Fprintf(w, "data: keepalive")
 		flusher.Flush()
 	}))
 	defer ts.Close()
@@ -657,6 +659,7 @@ func TestWorkers(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
+		fmt.Fprintf(w, "data: keepalive")
 		flusher.Flush()
 	}))
 	defer ts.Close()
