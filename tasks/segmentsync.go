@@ -44,13 +44,16 @@ func NewFetchSegmentsTask(
 
 	// After all segments are in sync, add workers to the pool that will keep them up to date
 	// periodically
-	for i := 0; i < workerCount; i++ {
-		worker := NewSegmentWorker(
-			fmt.Sprintf("SegmentWorker_%d", i),
-			0,
-			fetcher.SynchronizeSegment,
-		)
-		admin.AddWorker(worker)
+	onInit := func(logger logging.LoggerInterface) error {
+		for i := 0; i < workerCount; i++ {
+			worker := NewSegmentWorker(
+				fmt.Sprintf("SegmentWorker_%d", i),
+				0,
+				fetcher.SynchronizeSegment,
+			)
+			admin.AddWorker(worker)
+		}
+		return nil
 	}
 
 	update := func(logger logging.LoggerInterface) error {
@@ -58,8 +61,8 @@ func NewFetchSegmentsTask(
 	}
 
 	cleanup := func(logger logging.LoggerInterface) {
-		admin.StopAll()
+		admin.StopAll(true)
 	}
 
-	return asynctask.NewAsyncTask("UpdateSegments", update, period, nil, cleanup, logger)
+	return asynctask.NewAsyncTask("UpdateSegments", update, period, onInit, cleanup, logger)
 }
