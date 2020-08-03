@@ -13,7 +13,6 @@ import (
 const (
 	version   = "1.1"
 	keepAlive = 120
-	occupancy = "[?occupancy=metrics.publishers]control_pri,[?occupancy=metrics.publishers]control_sec"
 )
 
 // StreamingClient struct
@@ -48,7 +47,7 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, streamingStatus chan int, logg
 // ConnectStreaming connects to streaming
 func (s *StreamingClient) ConnectStreaming(token string, channelList []string, handleIncomingMessage func(e map[string]interface{})) {
 	params := make(map[string]string)
-	params["channels"] = strings.Join(append(channelList, occupancy), ",")
+	params["channels"] = strings.Join(append(channelList), ",")
 	params["accessToken"] = token
 	params["v"] = version
 

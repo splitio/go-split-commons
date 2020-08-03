@@ -42,22 +42,22 @@ func TestTokenChannels(t *testing.T) {
 		t.Error("It should be nil")
 	}
 	channels := set.NewThreadSafeSet()
-	for r := range result {
+	for _, r := range result {
 		channels.Add(r)
 	}
 	if result == nil || len(result) != 4 {
 		t.Error("It should not be nil")
 	}
-	if channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_segments") {
+	if !channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_segments") {
 		t.Error("It should exist")
 	}
-	if channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_splits") {
+	if !channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_splits") {
 		t.Error("It should exist")
 	}
-	if channels.Has("control_pri") {
+	if !channels.Has("[?occupancy=metrics.publishers]control_pri") {
 		t.Error("It should exist")
 	}
-	if channels.Has("control_sec") {
+	if !channels.Has("[?occupancy=metrics.publishers]control_sec") {
 		t.Error("It should exist")
 	}
 }
