@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -34,6 +35,12 @@ const (
 	BackoffSSE
 	// TokenExpiration flag to restart push services
 	TokenExpiration
+	// StreamingPaused flag for pausing streaming
+	StreamingPaused
+	// StreamingResumed flag for resuming streaming
+	StreamingResumed
+	// StreamingDisabled flag for disabling streaming
+	StreamingDisabled
 	// Reconnect flag to reconnect
 	Reconnect
 	// NonRetriableError represents an error that will force switching to polling
@@ -55,6 +62,8 @@ type PushManager struct {
 	cancelSSEBackoff       chan struct{}
 	cancelTokenExpiration  chan struct{}
 	cancelStreamingWatcher chan struct{}
+	control                chan int
+	status                 atomic.Value
 }
 
 // NewPushManager creates new PushManager
@@ -69,7 +78,8 @@ func NewPushManager(
 ) (Manager, error) {
 	splitQueue := make(chan dtos.SplitChangeNotification, config.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, config.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	control := make(chan int, 1)
+	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger, control)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +103,8 @@ func NewPushManager(
 	}
 
 	streamingStatus := make(chan int, 1000)
+	status := atomic.Value{}
+	status.Store(Ready)
 	return &PushManager{
 		authClient:             authClient,
 		sseClient:              sse.NewStreamingClient(config, streamingStatus, logger),
@@ -107,6 +119,8 @@ func NewPushManager(
 		cancelSSEBackoff:       make(chan struct{}, 1),
 		cancelTokenExpiration:  make(chan struct{}, 1),
 		cancelStreamingWatcher: make(chan struct{}, 1),
+		control:                control,
+		status:                 status,
 	}, nil
 }
 
@@ -230,15 +244,55 @@ func (p *PushManager) streamingStatusWatcher() {
 		case publisherStatus := <-p.publishers: // Publisher Available/Not Available
 			switch publisherStatus {
 			case PublisherNotPresent:
-				p.managerStatus <- PushIsDown
+				if p.status.Load().(int) != StreamingPaused {
+					p.managerStatus <- PushIsDown
+				}
 			case PublisherAvailable:
-				p.managerStatus <- PushIsUp
+				if p.status.Load().(int) != StreamingPaused {
+					p.managerStatus <- PushIsUp
+				}
 			default:
 				p.logger.Debug(fmt.Sprintf("Unexpected publisher status received %d", publisherStatus))
+			}
+		case controlStatus := <-p.control:
+			switch controlStatus {
+			case streamingPaused:
+				p.logger.Info("Received Pause Streaming Notification")
+				if p.status.Load().(int) != StreamingPaused {
+					p.logger.Info("Sending Pause Streaming")
+					p.status.Store(StreamingPaused)
+					p.managerStatus <- PushIsDown
+				}
+			case streamingResumed:
+				p.logger.Info("Received Resume Streaming Notification")
+				if p.status.Load().(int) == StreamingPaused {
+					p.status.Store(StreamingResumed)
+					publishersAvailable := p.eventHandler.keeper.Publishers("control_pri")
+					if publishersAvailable != nil && *publishersAvailable > 0 {
+						p.logger.Info("Sending Resume Streaming")
+						p.managerStatus <- PushIsUp
+					}
+				}
+			case streamingDisabled:
+				p.logger.Info("Received Streaming Disabled Notification")
+				p.managerStatus <- StreamingDisabled
+			default:
+				p.logger.Debug(fmt.Sprintf("Unexpected control status received %d", controlStatus))
 			}
 		case <-p.cancelStreamingWatcher: // Stopping Watcher
 			return
 		}
+	}
+}
+
+func (p *PushManager) drainStatus() {
+	select {
+	case <-p.cancelStreamingWatcher: // Discarding previous msg
+	default:
+	}
+	select {
+	case <-p.cancelTokenExpiration: // Discarding previous token expiration
+	default:
 	}
 }
 
@@ -248,14 +302,7 @@ func (p *PushManager) Start() {
 		p.logger.Info("PushManager is already running, skipping Start")
 		return
 	}
-	select {
-	case <-p.cancelStreamingWatcher: // Discarding previous msg
-	default:
-	}
-	select {
-	case <-p.cancelTokenExpiration: // Discarding previous token expiration
-	default:
-	}
+	p.drainStatus()
 
 	// errResult listener for fetching token and connecting to SSE
 	errResult := make(chan error, 1)
@@ -289,7 +336,7 @@ func (p *PushManager) Stop() {
 	p.cancelTokenExpiration <- struct{}{}
 	p.cancelStreamingWatcher <- struct{}{}
 	if p.sseClient.IsRunning() {
-		p.sseClient.StopStreaming()
+		p.sseClient.StopStreaming(true)
 	}
 	p.StopWorkers()
 }

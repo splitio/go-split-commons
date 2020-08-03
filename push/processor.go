@@ -10,32 +10,49 @@ import (
 )
 
 const (
-	segmentQueueCheck = 5000
-	splitQueueCheck   = 5000
+	segmentQueueCheck     = 5000
+	splitQueueCheck       = 5000
+	streamingPausedType   = "STREAMING_PAUSED"
+	streamingResumedType  = "STREAMING_RESUMED"
+	streamingDisabledType = "STREAMING_DISABLED"
+)
+
+const (
+	// StreamingPaused The SDK should stop processing incoming UPDATE-type events
+	streamingPaused = iota
+	// StreamingResumed The SDK should resume processing UPDATE-type events (if not already)
+	streamingResumed
+	// StreamingDisabled The SDK should disable streaming completely and don’t try to reconnect until the SDK is re-instantiated
+	streamingDisabled
 )
 
 // Processor struct for notification processor
 type Processor struct {
-	segmentQueue chan dtos.SegmentChangeNotification
-	splitQueue   chan dtos.SplitChangeNotification
-	splitStorage storage.SplitStorageProducer
-	logger       logging.LoggerInterface
+	segmentQueue  chan dtos.SegmentChangeNotification
+	splitQueue    chan dtos.SplitChangeNotification
+	splitStorage  storage.SplitStorageProducer
+	controlStatus chan<- int
+	logger        logging.LoggerInterface
 }
 
 // NewProcessor creates new processor
-func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer, logger logging.LoggerInterface) (*Processor, error) {
+func NewProcessor(segmentQueue chan dtos.SegmentChangeNotification, splitQueue chan dtos.SplitChangeNotification, splitStorage storage.SplitStorageProducer, logger logging.LoggerInterface, controlStatus chan int) (*Processor, error) {
 	if cap(segmentQueue) < segmentQueueCheck {
 		return nil, errors.New("Small size of segmentQueue")
 	}
 	if cap(splitQueue) < splitQueueCheck {
 		return nil, errors.New("Small size of splitQueue")
 	}
+	if cap(controlStatus) < 1 {
+		return nil, errors.New("Small size for control chan")
+	}
 
 	return &Processor{
-		segmentQueue: segmentQueue,
-		splitQueue:   splitQueue,
-		splitStorage: splitStorage,
-		logger:       logger,
+		segmentQueue:  segmentQueue,
+		splitQueue:    splitQueue,
+		splitStorage:  splitStorage,
+		controlStatus: controlStatus,
+		logger:        logger,
 	}, nil
 }
 
@@ -75,8 +92,19 @@ func (p *Processor) Process(i dtos.IncomingNotification) error {
 			return errors.New("ControlType could not be nil, discarded")
 		}
 		control := dtos.NewControlNotification(i.Channel, *i.ControlType)
-		fmt.Println(control)
-		// processControl
+		switch control.ControlType {
+		case streamingDisabledType:
+			p.logger.Debug("Received notification for disabling streaming")
+			p.controlStatus <- streamingDisabled
+		case streamingPausedType:
+			p.logger.Debug("Received notification for pausing streaming")
+			p.controlStatus <- streamingPaused
+		case streamingResumedType:
+			p.logger.Debug("Received notification for resuming streaming")
+			p.controlStatus <- streamingResumed
+		default:
+			p.logger.Debug(fmt.Sprintf("%s Unexpected type of Control Notification", control.ControlType))
+		}
 	default:
 		return fmt.Errorf("Unknown IncomingNotification type: %T", i)
 	}

@@ -1,7 +1,9 @@
 package push
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/storage/mocks"
@@ -23,7 +25,8 @@ func TestHandleIncomingMessage(t *testing.T) {
 		},
 	}
 
-	processor, err := NewProcessor(segmentQueue, splitQueue, mockSplitStorage, logger)
+	controlStatus := make(chan int, 1)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mockSplitStorage, logger, controlStatus)
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -100,5 +103,37 @@ func TestHandleIncomingMessage(t *testing.T) {
 	}
 	if keeper.managers["control_pri"] != 2 {
 		t.Error("Unexpected amount of publishers")
+	}
+
+	var streamingDisabledCall int64
+	var streamingResumedCall int64
+	var streamingPausedCall int64
+	go func() {
+		for {
+			select {
+			case msg := <-controlStatus:
+				switch msg {
+				case streamingPaused:
+					atomic.AddInt64(&streamingPausedCall, 1)
+				case streamingResumed:
+					atomic.AddInt64(&streamingResumedCall, 1)
+				case streamingDisabled:
+					atomic.AddInt64(&streamingDisabledCall, 1)
+				default:
+					t.Error("Unexpected event received")
+				}
+			}
+		}
+	}()
+
+	e8 := wrapEvent("[?occupancy=metrics.publishers]control_pri", "{\"type\":\"CONTROL\",\"controlType\":\"STREAMING_PAUSED\"}", nil)
+	eventHandler.HandleIncomingMessage(e8)
+	e9 := wrapEvent("[?occupancy=metrics.publishers]control_pri", "{\"type\":\"CONTROL\",\"controlType\":\"STREAMING_RESUMED\"}", nil)
+	eventHandler.HandleIncomingMessage(e9)
+	e10 := wrapEvent("[?occupancy=metrics.publishers]control_pri", "{\"type\":\"CONTROL\",\"controlType\":\"STREAMING_DISABLED\"}", nil)
+	eventHandler.HandleIncomingMessage(e10)
+	time.Sleep(100 * time.Millisecond)
+	if atomic.LoadInt64(&streamingPausedCall) != 1 {
+		t.Error("It should send a message for pausing streaming")
 	}
 }

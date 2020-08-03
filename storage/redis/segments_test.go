@@ -10,7 +10,6 @@ import (
 	"github.com/splitio/go-toolkit/redis/mocks"
 )
 
-// ADD TEST FOR UPDATECALL
 func TestSegmentKeysErrort(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.segment.someSegment"
 

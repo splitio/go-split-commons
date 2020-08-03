@@ -4,11 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
 
 const gracePeriod = 10 * time.Minute
+const metadataPlaceHolder = "channel-metadata:publishers"
+const occupancy = "[?occupancy=metrics.publishers]"
 
 // Token dto
 type Token struct {
@@ -25,6 +28,15 @@ type TokenPayload struct {
 
 // ParsedCapabilities capabilities
 type ParsedCapabilities map[string][]string
+
+func isMetadataType(capabilities []string) bool {
+	for _, capability := range capabilities {
+		if capability == metadataPlaceHolder {
+			return true
+		}
+	}
+	return false
+}
 
 // ChannelList grabs the channel list from capabilities
 func (t *Token) ChannelList() ([]string, error) {
@@ -55,7 +67,11 @@ func (t *Token) ChannelList() ([]string, error) {
 
 	channelList := make([]string, 0, len(parsedCapabilities))
 	for channelName := range parsedCapabilities {
-		channelList = append(channelList, channelName)
+		if isMetadataType(parsedCapabilities[channelName]) {
+			channelList = append(channelList, fmt.Sprintf("%s%s", occupancy, channelName))
+		} else {
+			channelList = append(channelList, channelName)
+		}
 	}
 
 	return channelList, nil

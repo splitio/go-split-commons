@@ -35,7 +35,7 @@ type SegmentStorageProducer interface {
 type SegmentStorageConsumer interface {
 	ChangeNumber(segmentName string) (int64, error)
 	Keys(segmentName string) *set.ThreadUnsafeSet
-	// MISSING IsInSegment(name, key)
+	SegmentContainsKey(segmentName string, key string) (bool, error)
 }
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions

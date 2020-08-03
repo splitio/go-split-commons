@@ -111,7 +111,7 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *SynchronizerImpl) StopPeriodicFetching() {
 	s.splitTasks.splitSyncTask.Stop(false)
-	s.splitTasks.segmentSyncTask.Stop(false)
+	s.splitTasks.segmentSyncTask.Stop(true)
 }
 
 // StartPeriodicDataRecording starts periodic recorders tasks

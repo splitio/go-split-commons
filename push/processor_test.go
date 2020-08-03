@@ -1,7 +1,9 @@
 package push
 
 import (
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/storage/mocks"
@@ -28,7 +30,8 @@ func TestProcessor(t *testing.T) {
 			}
 		},
 	}
-	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger)
+	controlStatus := make(chan int, 1)
+	processor, err := NewProcessor(segmentQueue, splitQueue, splitStorage, logger, controlStatus)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -55,16 +58,6 @@ func TestProcessor(t *testing.T) {
 	err = processor.Process(c0)
 	if err == nil {
 		t.Error("It should return error")
-	}
-
-	c1 := dtos.IncomingNotification{
-		Channel:     "control_pri",
-		Type:        dtos.Control,
-		ControlType: &controlType,
-	}
-	err = processor.Process(c1)
-	if err != nil {
-		t.Error("It should not return error")
 	}
 
 	sk0 := dtos.IncomingNotification{
@@ -174,5 +167,81 @@ func TestProcessor(t *testing.T) {
 	}
 	if len(splitQueue) != 2 {
 		t.Error("It should be 2")
+	}
+
+	c1 := dtos.IncomingNotification{
+		Channel:     "control_pri",
+		Type:        dtos.Control,
+		ControlType: &controlType,
+	}
+	err = processor.Process(c1)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+
+	var streamingDisabledCall int64
+	var streamingResumedCall int64
+	var streamingPausedCall int64
+	go func() {
+		for {
+			select {
+			case msg := <-controlStatus:
+				switch msg {
+				case streamingPaused:
+					atomic.AddInt64(&streamingPausedCall, 1)
+				case streamingResumed:
+					atomic.AddInt64(&streamingResumedCall, 1)
+				case streamingDisabled:
+					atomic.AddInt64(&streamingDisabledCall, 1)
+				default:
+					t.Error("Unexpected event received")
+				}
+			}
+		}
+	}()
+
+	disabled := streamingDisabledType
+	c2 := dtos.IncomingNotification{
+		Channel:     "control_pri",
+		Type:        dtos.Control,
+		ControlType: &disabled,
+	}
+	err = processor.Process(c2)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	time.Sleep(100 * time.Millisecond)
+	if atomic.LoadInt64(&streamingDisabledCall) != 1 {
+		t.Error("It should send a message for disabling streaming")
+	}
+
+	paused := streamingPausedType
+	c3 := dtos.IncomingNotification{
+		Channel:     "control_pri",
+		Type:        dtos.Control,
+		ControlType: &paused,
+	}
+	err = processor.Process(c3)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	time.Sleep(100 * time.Millisecond)
+	if atomic.LoadInt64(&streamingPausedCall) != 1 {
+		t.Error("It should send a message for pausing streaming")
+	}
+
+	resumed := streamingResumedType
+	c4 := dtos.IncomingNotification{
+		Channel:     "control_pri",
+		Type:        dtos.Control,
+		ControlType: &resumed,
+	}
+	err = processor.Process(c4)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	time.Sleep(100 * time.Millisecond)
+	if atomic.LoadInt64(&streamingResumedCall) != 1 {
+		t.Error("It should send a message for resuming streaming")
 	}
 }
