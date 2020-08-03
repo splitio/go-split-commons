@@ -111,8 +111,7 @@ func TestStreamingOk(t *testing.T) {
 		t.Error("It should be running")
 	}
 
-	mockedClient.StopStreaming()
-	time.Sleep(1 * time.Second)
+	mockedClient.StopStreaming(true)
 	if mockedClient.IsRunning() {
 		t.Error("It should not be running")
 	}

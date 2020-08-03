@@ -84,7 +84,7 @@ func TestPushLogic(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -105,28 +105,27 @@ func TestPushLogic(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i <= 2; i++ {
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				mockedData := make(map[string]interface{})
-				mockedData["event"] = "keepalive"
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 2:
-				sseMock, _ := ioutil.ReadFile("../testdata/sse2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-			flusher.Flush()
-		}
+		sseMock, _ := ioutil.ReadFile("../testdata/sse.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		mockedData = make(map[string]interface{})
+		mockedData["event"] = "keepalive"
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		mockedData = make(map[string]interface{})
+		sseMock, _ = ioutil.ReadFile("../testdata/sse2.json")
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
 	}))
 	defer ts.Close()
 
@@ -219,7 +218,7 @@ func TestPushError(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -401,7 +400,7 @@ func TestFeedbackLoop(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -423,22 +422,19 @@ func TestFeedbackLoop(t *testing.T) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 
-		for i := 0; i < 2; i++ {
-			switch i {
-			case 0:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			case 1:
-				sseMock, _ := ioutil.ReadFile("../testdata/occupancy2.json")
-				var mockedData map[string]interface{}
-				_ = json.Unmarshal(sseMock, &mockedData)
-				mockedStr, _ := json.Marshal(mockedData)
-				fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
-			}
-		}
+		sseMock, _ := ioutil.ReadFile("../testdata/occupancy.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(10 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/occupancy2.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
 	}))
 	defer ts.Close()
@@ -473,6 +469,9 @@ func TestFeedbackLoop(t *testing.T) {
 		}
 	}()
 
+	status := atomic.Value{}
+	status.Store(Ready)
+
 	mockedPush := PushManager{
 		authClient: authMocks.MockAuthClient{
 			AuthenticateCall: func() (*dtos.Token, error) {
@@ -494,6 +493,7 @@ func TestFeedbackLoop(t *testing.T) {
 		cancelSSEBackoff:       make(chan struct{}, 1),
 		cancelTokenExpiration:  make(chan struct{}, 1),
 		cancelStreamingWatcher: make(chan struct{}, 1),
+		status:                 status,
 	}
 
 	go mockedPush.Start()
@@ -526,7 +526,7 @@ func TestWorkers(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -699,7 +699,7 @@ func TestBackoffSSE(t *testing.T) {
 
 	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
 	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
-	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -770,4 +770,138 @@ func TestBackoffSSE(t *testing.T) {
 	if backoff != 2 {
 		t.Error("It should call backoff twice")
 	}
+}
+
+func TestControlLogic(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	advanced := &conf.AdvancedConfig{
+		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
+	}
+
+	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
+	controlStatus := make(chan int, 1)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, controlStatus)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	parser := NewNotificationParser(logger)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	publishers := make(chan int, 1)
+	keeper := NewKeeper(publishers)
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, err := w.(http.Flusher)
+		if !err {
+			t.Error("Unexpected error")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+
+		sseMock, _ := ioutil.ReadFile("../testdata/occupancy2.json")
+		var mockedData map[string]interface{}
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ := json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(50 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/streamingPaused.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(50 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/streamingResumed.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+
+		time.Sleep(50 * time.Millisecond)
+		sseMock, _ = ioutil.ReadFile("../testdata/streamingDisabled.json")
+		mockedData = make(map[string]interface{})
+		_ = json.Unmarshal(sseMock, &mockedData)
+		mockedStr, _ = json.Marshal(mockedData)
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
+
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
+
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
+		return nil
+	}, logger)
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, func(till *int64) error {
+		return nil
+	}, logger)
+
+	managerStatus := make(chan int, 1)
+	status := atomic.Value{}
+	status.Store(Ready)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		},
+		sseClient:              mockedClient,
+		eventHandler:           eventHandler,
+		logger:                 logger,
+		segmentWorker:          segmentWorker,
+		splitWorker:            splitWorker,
+		managerStatus:          managerStatus,
+		streamingStatus:        streamingStatus,
+		publishers:             publishers,
+		cancelAuthBackoff:      make(chan struct{}, 1),
+		cancelSSEBackoff:       make(chan struct{}, 1),
+		cancelTokenExpiration:  make(chan struct{}, 1),
+		cancelStreamingWatcher: make(chan struct{}, 1),
+		status:                 status,
+		control:                controlStatus,
+	}
+
+	go mockedPush.Start()
+	msg := <-managerStatus
+	if msg != Ready {
+		t.Error("It should receive Ready")
+	}
+	msg = <-managerStatus
+	if msg != PushIsUp {
+		t.Error("It should send publishers")
+	}
+	msg = <-managerStatus
+	if msg != PushIsDown {
+		t.Error("It should stop workers")
+	}
+	if mockedPush.status.Load().(int) != StreamingPaused {
+		t.Error("It should be paused")
+	}
+	msg = <-managerStatus
+	if msg != PushIsUp {
+		t.Error("It should start workers")
+	}
+	if mockedPush.status.Load().(int) != StreamingResumed {
+		t.Error("It should be resumed")
+	}
+	msg = <-managerStatus
+	if msg != StreamingDisabled {
+		t.Error("It should send StreamingDisabled")
+	}
+	mockedPush.Stop()
 }

@@ -18,16 +18,8 @@
   version = "v6.15.7"
 
 [[projects]]
-  digest = "1:c45802472e0c06928cd997661f2af610accd85217023b1d5f6331bebce0671d3"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = ""
-  revision = "614d223910a179a466c1767a985424175c39b465"
-  version = "v0.9.1"
-
-[[projects]]
-  branch = "polishingsse"
-  digest = "1:ff4d724c5304ff832a0d4127841cfb6441c29e38c169533305a15cda4af8340d"
+  branch = "rev/tinchotest"
+  digest = "1:30aa3bf98f3ae07f80c27058dd887a7385b43c6d3adbc0784dc2c80cde91e614"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
@@ -43,7 +35,7 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "f4d10ecf64b0e993826d8d805c8f8ad25a4385ca"
+  revision = "3bde446c6ccb9377f12976d11ffbc37866ee2eea"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -57,7 +49,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/pkg/errors",
     "github.com/splitio/go-toolkit/asynctask",
     "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",
