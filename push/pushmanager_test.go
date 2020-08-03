@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,9 +17,33 @@ import (
 	"github.com/splitio/go-split-commons/service/api/sse"
 	authMocks "github.com/splitio/go-split-commons/service/mocks"
 	"github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 	sseStatus "github.com/splitio/go-toolkit/sse"
 )
+
+func isValidChannels(t *testing.T, channelsString string) {
+	result := strings.Split(channelsString, ",")
+	channels := set.NewThreadSafeSet()
+	for _, r := range result {
+		channels.Add(r)
+	}
+	if result == nil || len(result) != 4 {
+		t.Error("It should not be nil")
+	}
+	if !channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_segments") {
+		t.Error("It should exist")
+	}
+	if !channels.Has("NzM2MDI5Mzc0_MTgyNTg1MTgwNg==_splits") {
+		t.Error("It should exist")
+	}
+	if !channels.Has("[?occupancy=metrics.publishers]control_pri") {
+		t.Error("It should exist")
+	}
+	if !channels.Has("[?occupancy=metrics.publishers]control_sec") {
+		t.Error("It should exist")
+	}
+}
 
 func TestPushManagerError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -71,6 +96,86 @@ func TestPushInvalidAuth(t *testing.T) {
 	}
 }
 
+func TestPushSSEChannels(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	advanced := &conf.AdvancedConfig{
+		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
+		flusher, err := w.(http.Flusher)
+		if !err {
+			t.Error("Unexpected error")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+
+		flusher.Flush()
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
+
+	streamingStatus := make(chan int, 1)
+	mockedClient := sse.NewStreamingClient(advanced, streamingStatus, logger)
+
+	splitQueue := make(chan dtos.SplitChangeNotification, advanced.SplitUpdateQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeNotification, advanced.SegmentUpdateQueueSize)
+	processor, err := NewProcessor(segmentQueue, splitQueue, mocks.MockSplitStorage{}, logger, make(chan int, 1))
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	parser := NewNotificationParser(logger)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	keeper := NewKeeper(make(chan int, 1))
+	eventHandler := NewEventHandler(keeper, parser, processor, logger)
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, func(segmentName string, till *int64) error {
+		return nil
+	}, logger)
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, func(till *int64) error {
+		return nil
+	}, logger)
+
+	managerStatus := make(chan int, 1)
+	mockedPush := PushManager{
+		authClient: authMocks.MockAuthClient{
+			AuthenticateCall: func() (*dtos.Token, error) {
+				return &dtos.Token{
+					Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+					PushEnabled: true,
+				}, nil
+			},
+		},
+		sseClient:              mockedClient,
+		eventHandler:           eventHandler,
+		logger:                 logger,
+		segmentWorker:          segmentWorker,
+		splitWorker:            splitWorker,
+		managerStatus:          managerStatus,
+		streamingStatus:        streamingStatus,
+		cancelAuthBackoff:      make(chan struct{}, 1),
+		cancelSSEBackoff:       make(chan struct{}, 1),
+		cancelTokenExpiration:  make(chan struct{}, 1),
+		cancelStreamingWatcher: make(chan struct{}, 1),
+	}
+
+	go mockedPush.Start()
+	msg := <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
+	}
+
+	mockedPush.Stop()
+	if mockedPush.IsRunning() {
+		t.Error("It should not be running")
+	}
+}
+
 func TestPushLogic(t *testing.T) {
 	var shouldReceiveSegmentChange int64
 	var shouldReceiveSplitChange int64
@@ -96,6 +201,7 @@ func TestPushLogic(t *testing.T) {
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -230,6 +336,7 @@ func TestPushError(t *testing.T) {
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -413,6 +520,7 @@ func TestFeedbackLoop(t *testing.T) {
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -539,6 +647,7 @@ func TestWorkers(t *testing.T) {
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -794,6 +903,7 @@ func TestControlLogic(t *testing.T) {
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		isValidChannels(t, r.URL.Query().Get("channels"))
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
