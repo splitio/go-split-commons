@@ -20,10 +20,11 @@ import (
 	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	syncMock "github.com/splitio/go-split-commons/synchronizer/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
+	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/synchronizer/worker/split"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -374,8 +375,8 @@ func TestPolling(t *testing.T) {
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			SplitFetcher:       split.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     segment.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
@@ -656,8 +657,8 @@ func TestStreaming(t *testing.T) {
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
@@ -878,8 +879,8 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
 		Workers{
-			SplitFetcher:       worker.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
-			SegmentFetcher:     worker.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+			SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+			SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 			EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 			TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),

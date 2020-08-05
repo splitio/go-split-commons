@@ -5,7 +5,7 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker"
+	"github.com/splitio/go-split-commons/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -35,7 +35,7 @@ func NewLocal(
 	}
 	metricsWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	workers := Workers{
-		SplitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
+		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
 	}
 	return &Local{
 		splitTasks: splitTasks{

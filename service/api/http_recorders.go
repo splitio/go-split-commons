@@ -13,7 +13,8 @@ type httpRecorderBase struct {
 	logger logging.LoggerInterface
 }
 
-func (h *httpRecorderBase) recordRaw(url string, data []byte, metadata dtos.Metadata) error {
+// RecordRaw records raw data
+func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata) error {
 	headers := make(map[string]string)
 	headers["SplitSDKVersion"] = metadata.SDKVersion
 	if metadata.MachineName != "NA" && metadata.MachineName != "unknown" {
@@ -65,7 +66,7 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata 
 		return err
 	}
 
-	err = i.recordRaw("/testImpressions/bulk", data, metadata)
+	err = i.RecordRaw("/testImpressions/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting impressions", err.Error())
 		return err
@@ -102,7 +103,7 @@ func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO, metadat
 		return err
 	}
 
-	err = m.recordRaw("/metrics/counters", data, metadata)
+	err = m.RecordRaw("/metrics/counters", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting counters", err.Error())
 		return err
@@ -119,7 +120,7 @@ func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO, met
 		return err
 	}
 
-	err = m.recordRaw("/metrics/times", data, metadata)
+	err = m.RecordRaw("/metrics/times", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting latencies", err.Error())
 		return err
@@ -136,7 +137,7 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Met
 		return err
 	}
 
-	err = m.recordRaw("/metrics/gauge", data, metadata)
+	err = m.RecordRaw("/metrics/gauge", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting gauges", err.Error())
 		return err
@@ -173,7 +174,7 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 		return err
 	}
 
-	err = i.recordRaw("/events/bulk", data, metadata)
+	err = i.RecordRaw("/events/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting events", err.Error())
 		return err

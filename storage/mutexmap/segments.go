@@ -83,3 +83,6 @@ func (m *MMSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRem
 	m.SetChangeNumber(name, till)
 	return nil
 }
+
+// CountRemovedKeys method
+func (m *MMSegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }

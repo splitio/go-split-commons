@@ -15,3 +15,8 @@ type SegmentKeyDTO struct {
 	LastModified int64
 	Removed      bool
 }
+
+// MySegmentDTO struct mapping segment data for mySegments endpoint
+type MySegmentDTO struct {
+	Name string `json:"name"`
+}

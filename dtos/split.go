@@ -99,8 +99,3 @@ type KeySelectorDTO struct {
 	TrafficType string  `json:"trafficType"`
 	Attribute   *string `json:"attribute"`
 }
-
-// MySegmentDTO struct mapping segment data for mySegments endpoint
-type MySegmentDTO struct {
-	Name string `json:"name"`
-}

@@ -34,6 +34,7 @@ type SegmentStorageProducer interface {
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
 	ChangeNumber(segmentName string) (int64, error)
+	CountRemovedKeys(segmentName string) int64
 	Keys(segmentName string) *set.ThreadUnsafeSet
 	SegmentContainsKey(segmentName string, key string) (bool, error)
 }

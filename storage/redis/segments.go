@@ -89,3 +89,6 @@ func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (boo
 	exists := r.client.SIsMember(segmentKey, key)
 	return exists, nil
 }
+
+// CountRemovedKeys method
+func (r *SegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }

@@ -1,4 +1,4 @@
-package worker
+package split
 
 import (
 	"time"
@@ -10,8 +10,8 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-// SplitFetcher struct for split sync
-type SplitFetcher struct {
+// SplitFetcherSimple struct for split sync
+type SplitFetcherSimple struct {
 	splitStorage   storage.SplitStorage
 	splitFetcher   service.SplitFetcher
 	metricsWrapper *storage.MetricWrapper
@@ -24,8 +24,8 @@ func NewSplitFetcher(
 	splitFetcher service.SplitFetcher,
 	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
-) *SplitFetcher {
-	return &SplitFetcher{
+) SplitFetcher {
+	return &SplitFetcherSimple{
 		splitStorage:   splitStorage,
 		splitFetcher:   splitFetcher,
 		metricsWrapper: metricsWrapper,
@@ -33,7 +33,7 @@ func NewSplitFetcher(
 	}
 }
 
-func (s *SplitFetcher) processUpdate(splits *dtos.SplitChangesDTO) {
+func (s *SplitFetcherSimple) processUpdate(splits *dtos.SplitChangesDTO) {
 	inactiveSplits := make([]dtos.SplitDTO, 0)
 	activeSplits := make([]dtos.SplitDTO, 0)
 	for _, split := range splits.Splits {
@@ -54,7 +54,7 @@ func (s *SplitFetcher) processUpdate(splits *dtos.SplitChangesDTO) {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SplitFetcher) SynchronizeSplits(till *int64) error {
+func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 	// @TODO: add delays
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
@@ -69,14 +69,14 @@ func (s *SplitFetcher) SynchronizeSplits(till *int64) error {
 		splits, err := s.splitFetcher.Fetch(changeNumber)
 		if err != nil {
 			if _, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, string(err.(*dtos.HTTPError).Code))
+				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, string(err.(*dtos.HTTPError).Code), false)
 			}
 			return err
 		}
 		s.processUpdate(splits)
 		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-		s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, "ok")
-		s.metricsWrapper.StoreLatencies(storage.SplitChangesLatency, bucket)
+		s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, "ok", false)
+		s.metricsWrapper.StoreLatencies(storage.SplitChangesLatency, bucket, false)
 		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {
 			return nil
 		}
