@@ -69,14 +69,14 @@ func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 		splits, err := s.splitFetcher.Fetch(changeNumber)
 		if err != nil {
 			if _, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, string(err.(*dtos.HTTPError).Code), false)
+				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, string(err.(*dtos.HTTPError).Code))
 			}
 			return err
 		}
 		s.processUpdate(splits)
 		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-		s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, "ok", false)
-		s.metricsWrapper.StoreLatencies(storage.SplitChangesLatency, bucket, false)
+		s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, "ok")
+		s.metricsWrapper.StoreLatencies(storage.SplitChangesLatency, bucket)
 		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {
 			return nil
 		}

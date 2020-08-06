@@ -53,13 +53,13 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	err = i.impressionRecorder.Record(queuedImpressions, i.metadata)
 	if err != nil {
 		if _, ok := err.(*dtos.HTTPError); ok {
-			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(err.(*dtos.HTTPError).Code), false)
+			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(err.(*dtos.HTTPError).Code))
 		}
 		return err
 	}
 	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-	i.metricsWrapper.StoreLatencies(storage.TestImpressionsLatency, bucket, false)
-	i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, "ok", false)
+	i.metricsWrapper.StoreLatencies(storage.TestImpressionsLatency, bucket)
+	i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, "ok")
 	return nil
 }
 
