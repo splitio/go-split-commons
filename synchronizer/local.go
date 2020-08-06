@@ -12,7 +12,7 @@ import (
 
 // Local implements Local Synchronizer
 type Local struct {
-	splitTasks          splitTasks
+	splitTasks          SplitTasks
 	workers             Workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
@@ -38,8 +38,8 @@ func NewLocal(
 		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
 	}
 	return &Local{
-		splitTasks: splitTasks{
-			splitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, period, logger),
+		splitTasks: SplitTasks{
+			SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, period, logger),
 		},
 		workers: workers,
 		logger:  logger,
@@ -53,12 +53,12 @@ func (s *Local) SyncAll() error {
 
 // StartPeriodicFetching starts periodic fetchers tasks
 func (s *Local) StartPeriodicFetching() {
-	s.splitTasks.splitSyncTask.Start()
+	s.splitTasks.SplitSyncTask.Start()
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *Local) StopPeriodicFetching() {
-	s.splitTasks.splitSyncTask.Stop(false)
+	s.splitTasks.SplitSyncTask.Stop(false)
 }
 
 // StartPeriodicDataRecording starts periodic recorders tasks

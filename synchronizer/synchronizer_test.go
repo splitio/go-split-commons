@@ -17,6 +17,7 @@ import (
 	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
 	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -40,6 +41,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 			return -1, nil
 		},
 	}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{}, nil, logger)
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
@@ -48,9 +50,16 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 		TelemetryRecorder:  metric.NewRecorderSingle(storageMock.MockMetricStorage{}, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
+		splitTasks,
 		workers,
 		logger,
 		nil,
@@ -128,6 +137,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			}
 		},
 	}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(metricMockStorage, nil, logger)
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
@@ -136,9 +146,16 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
+		splitTasks,
 		workers,
 		logger,
 		nil,
@@ -237,6 +254,7 @@ func TestSyncAllOk(t *testing.T) {
 			}
 		},
 	}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(metricMockStorage, nil, logger)
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
@@ -245,9 +263,16 @@ func TestSyncAllOk(t *testing.T) {
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
+		splitTasks,
 		workers,
 		logger,
 		nil,
@@ -346,6 +371,7 @@ func TestPeriodicFetching(t *testing.T) {
 			}
 		},
 	}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(metricMockStorage, nil, logger)
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
@@ -354,9 +380,16 @@ func TestPeriodicFetching(t *testing.T) {
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 100, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 100, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 2, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 100, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 100, EventsSync: 100, GaugeSync: 100, ImpressionSync: 100, LatencySync: 100, SegmentSync: 10, SplitSync: 2},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
+		splitTasks,
 		workers,
 		logger,
 		nil,
@@ -486,6 +519,7 @@ func TestPeriodicRecording(t *testing.T) {
 			return true
 		},
 	}
+	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(metricMockStorage, nil, logger)
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(storageMock.MockSplitStorage{}, splitAPI.SplitFetcher, metricTestWrapper, logger),
@@ -494,9 +528,16 @@ func TestPeriodicRecording(t *testing.T) {
 		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 100, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 100, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 100, SplitSync: 100},
-		conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5},
+		advanced,
+		splitTasks,
 		workers,
 		logger,
 		nil,

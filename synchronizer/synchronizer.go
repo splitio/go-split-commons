@@ -12,13 +12,13 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-// splitTasks struct for tasks
-type splitTasks struct {
-	splitSyncTask      *asynctask.AsyncTask
-	segmentSyncTask    *asynctask.AsyncTask
-	telemetrySyncTask  *asynctask.AsyncTask
-	impressionSyncTask *asynctask.AsyncTask
-	eventSyncTask      *asynctask.AsyncTask
+// SplitTasks struct for tasks
+type SplitTasks struct {
+	SplitSyncTask      *asynctask.AsyncTask
+	SegmentSyncTask    *asynctask.AsyncTask
+	TelemetrySyncTask  *asynctask.AsyncTask
+	ImpressionSyncTask tasks.Task
+	EventSyncTask      tasks.Task
 }
 
 // Workers struct for workers
@@ -32,7 +32,7 @@ type Workers struct {
 
 // SynchronizerImpl implements Synchronizer
 type SynchronizerImpl struct {
-	splitTasks          splitTasks
+	splitTasks          SplitTasks
 	workers             Workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
@@ -40,35 +40,10 @@ type SynchronizerImpl struct {
 	eventBulkSize       int64
 }
 
-func setupTasks(
-	workers Workers,
-	confTask conf.TaskPeriods,
-	confAdvanced conf.AdvancedConfig,
-	logger logging.LoggerInterface,
-) splitTasks {
-	splitTasks := splitTasks{}
-	if workers.SplitFetcher != nil {
-		splitTasks.splitSyncTask = tasks.NewFetchSplitsTask(workers.SplitFetcher, confTask.SplitSync, logger)
-	}
-	if workers.SegmentFetcher != nil {
-		splitTasks.segmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, confTask.SegmentSync, confAdvanced.SegmentWorkers, confAdvanced.SegmentQueueSize, logger)
-	}
-	if workers.TelemetryRecorder != nil {
-		splitTasks.telemetrySyncTask = tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, confTask.CounterSync, logger)
-	}
-	if workers.ImpressionRecorder != nil {
-		splitTasks.impressionSyncTask = tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, confTask.ImpressionSync, logger, confAdvanced.ImpressionsBulkSize)
-	}
-	if workers.EventRecorder != nil {
-		splitTasks.eventSyncTask = tasks.NewRecordEventsTask(workers.EventRecorder, confAdvanced.EventsBulkSize, confTask.EventsSync, logger)
-	}
-	return splitTasks
-}
-
 // NewSynchronizer creates new SynchronizerImpl
 func NewSynchronizer(
-	confTask conf.TaskPeriods,
 	confAdvanced conf.AdvancedConfig,
+	splitTasks SplitTasks,
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
@@ -76,7 +51,7 @@ func NewSynchronizer(
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
 		eventBulkSize:       confAdvanced.EventsBulkSize,
-		splitTasks:          setupTasks(workers, confTask, confAdvanced, logger),
+		splitTasks:          splitTasks,
 		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
@@ -115,21 +90,21 @@ func (s *SynchronizerImpl) SyncAll() error {
 
 // StartPeriodicFetching starts periodic fetchers tasks
 func (s *SynchronizerImpl) StartPeriodicFetching() {
-	if s.splitTasks.splitSyncTask != nil {
-		s.splitTasks.splitSyncTask.Start()
+	if s.splitTasks.SplitSyncTask != nil {
+		s.splitTasks.SplitSyncTask.Start()
 	}
-	if s.splitTasks.segmentSyncTask != nil {
-		s.splitTasks.segmentSyncTask.Start()
+	if s.splitTasks.SegmentSyncTask != nil {
+		s.splitTasks.SegmentSyncTask.Start()
 	}
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *SynchronizerImpl) StopPeriodicFetching() {
-	if s.splitTasks.splitSyncTask != nil {
-		s.splitTasks.splitSyncTask.Stop(false)
+	if s.splitTasks.SplitSyncTask != nil {
+		s.splitTasks.SplitSyncTask.Stop(false)
 	}
-	if s.splitTasks.segmentSyncTask != nil {
-		s.splitTasks.segmentSyncTask.Stop(true)
+	if s.splitTasks.SegmentSyncTask != nil {
+		s.splitTasks.SegmentSyncTask.Stop(true)
 	}
 }
 
@@ -139,27 +114,27 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 		go s.dataFlusher()
 	}
 
-	if s.splitTasks.impressionSyncTask != nil {
-		s.splitTasks.impressionSyncTask.Start()
+	if s.splitTasks.ImpressionSyncTask != nil {
+		s.splitTasks.ImpressionSyncTask.Start()
 	}
-	if s.splitTasks.telemetrySyncTask != nil {
-		s.splitTasks.telemetrySyncTask.Start()
+	if s.splitTasks.TelemetrySyncTask != nil {
+		s.splitTasks.TelemetrySyncTask.Start()
 	}
-	if s.splitTasks.eventSyncTask != nil {
-		s.splitTasks.eventSyncTask.Start()
+	if s.splitTasks.EventSyncTask != nil {
+		s.splitTasks.EventSyncTask.Start()
 	}
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
 func (s *SynchronizerImpl) StopPeriodicDataRecording() {
-	if s.splitTasks.impressionSyncTask != nil {
-		s.splitTasks.impressionSyncTask.Stop(true)
+	if s.splitTasks.ImpressionSyncTask != nil {
+		s.splitTasks.ImpressionSyncTask.Stop(true)
 	}
-	if s.splitTasks.telemetrySyncTask != nil {
-		s.splitTasks.telemetrySyncTask.Stop(false)
+	if s.splitTasks.TelemetrySyncTask != nil {
+		s.splitTasks.TelemetrySyncTask.Stop(false)
 	}
-	if s.splitTasks.eventSyncTask != nil {
-		s.splitTasks.eventSyncTask.Stop(true)
+	if s.splitTasks.EventSyncTask != nil {
+		s.splitTasks.EventSyncTask.Stop(true)
 	}
 }
 
