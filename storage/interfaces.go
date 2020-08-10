@@ -7,7 +7,6 @@ import (
 
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
-	ChangeNumber() (int64, error)
 	KillLocally(splitName string, defaultTreatment string)
 	PutMany(splits []dtos.SplitDTO, changeNumber int64)
 	Remove(splitName string)
