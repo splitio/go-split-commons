@@ -1,3 +1,3 @@
 [[constraint]]
-  version = "=2.1.0"
+  branch = "prefixOnLevels"
   name = "github.com/splitio/go-toolkit"
