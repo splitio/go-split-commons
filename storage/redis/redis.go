@@ -36,6 +36,7 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 			return nil, errors.New("Missing redis sentinel master name")
 		}
 
+		universalOptions.MasterName = config.SentinelMaster
 		universalOptions.Addrs = config.SentinelAddresses
 	} else {
 		if len(config.ClusterNodes) > 0 {
