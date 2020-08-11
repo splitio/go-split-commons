@@ -1,6 +1,7 @@
 package split
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -59,6 +60,7 @@ func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 	for {
 		changeNumber, err := s.splitStorage.ChangeNumber()
 		if err != nil {
+			s.logger.Error(fmt.Sprintf("Error fetching changenumber %s", err.Error()))
 			return err
 		}
 		if changeNumber == 0 {
