@@ -1,7 +1,6 @@
 package split
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -58,11 +57,7 @@ func (s *SplitFetcherSimple) processUpdate(splits *dtos.SplitChangesDTO) {
 func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 	// @TODO: add delays
 	for {
-		changeNumber, err := s.splitStorage.ChangeNumber()
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("Error fetching changenumber %s", err.Error()))
-			return err
-		}
+		changeNumber, _ := s.splitStorage.ChangeNumber()
 		if changeNumber == 0 {
 			changeNumber = -1
 		}
