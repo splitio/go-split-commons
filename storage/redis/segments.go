@@ -74,10 +74,16 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 	defer r.mutext.Unlock()
 	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
 	if !toRemove.IsEmpty() {
-		r.client.SRem(segmentKey, toRemove.List()...)
+		_, err := r.client.SRem(segmentKey, toRemove.List()...)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
+		}
 	}
 	if !toAdd.IsEmpty() {
-		r.client.SAdd(segmentKey, toAdd.List()...)
+		_, err := r.client.SAdd(segmentKey, toAdd.List()...)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
+		}
 	}
 	r.SetChangeNumber(name, till)
 	return nil
