@@ -11,7 +11,7 @@ const (
 	defaultStreamingEnabled       = true
 	defaultSplitUpdateQueueSize   = 5000
 	defaultSegmentUpdateQueueSize = 5000
-	defaultAuthServiceURL         = "https://auth.split-stage.io"
+	defaultAuthServiceURL         = "https://auth.split.io"
 	defaultEventsURL              = "https://events.split.io/api"
 	defaultSdkURL                 = "https://sdk.split.io/api"
 	defaultStreamingServiceURL    = "https://streaming.split.io/sse"
