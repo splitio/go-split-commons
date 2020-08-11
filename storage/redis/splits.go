@@ -101,7 +101,7 @@ func (r *SplitStorage) FetchMany(features []string) map[string]*dtos.SplitDTO {
 	}
 	rawSplits, err := r.client.MGet(keysToFetch)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not fetch features from redis: %s", err.Error()))
+		r.logger.Error(fmt.Sprintf(" features from redis: %s", err.Error()))
 		return nil
 	}
 
@@ -229,14 +229,14 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 	val, err := r.client.Get(keyToFetch)
 
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not fetch feature \"%s\" from redis: %s", feature, err.Error()))
+		r.logger.Error(fmt.Sprintf("Could not fetch feature %s from redis: %s", feature, err.Error()))
 		return nil
 	}
 
 	var split dtos.SplitDTO
 	err = json.Unmarshal([]byte(val), &split)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not parse feature \"%s\" fetched from redis", feature))
+		r.logger.Error(fmt.Sprintf("Could not parse feature %s fetched from redis", feature))
 		return nil
 	}
 

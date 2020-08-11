@@ -57,7 +57,10 @@ func (s *SplitFetcherSimple) processUpdate(splits *dtos.SplitChangesDTO) {
 func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 	// @TODO: add delays
 	for {
-		changeNumber, _ := s.splitStorage.ChangeNumber()
+		changeNumber, err := s.splitStorage.ChangeNumber()
+		if err != nil {
+			return err
+		}
 		if changeNumber == 0 {
 			changeNumber = -1
 		}

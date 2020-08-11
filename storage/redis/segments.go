@@ -48,7 +48,7 @@ func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 	keyToFetch := strings.Replace(redisSegment, "{segment}", segmentName, 1)
 	segmentKeys, err := r.client.SMembers(keyToFetch)
 	if len(segmentKeys) <= 0 {
-		r.logger.Warning(fmt.Sprintf("Nonexsitent segment requested: \"%s\"", segmentName))
+		r.logger.Warning(fmt.Sprintf("Nonexsitent segment requested: %s", segmentName))
 		return nil
 	}
 	if err != nil {
