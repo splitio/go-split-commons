@@ -183,7 +183,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 
 	go managerTest.Start()
 	<-managerStatus
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 	if managerTest.status.Load().(int) != Polling {
 		t.Error("It should started in Polling mode")
 	}
