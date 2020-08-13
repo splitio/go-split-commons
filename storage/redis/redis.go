@@ -32,6 +32,7 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 	}
 
 	if len(config.SentinelAddresses) > 0 {
+		logger.Info("To start as Sentinel Mode")
 		if config.SentinelMaster == "" {
 			return nil, errors.New("Missing redis sentinel master name")
 		}
@@ -40,6 +41,7 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 		universalOptions.Addrs = config.SentinelAddresses
 	} else {
 		if len(config.ClusterNodes) > 0 {
+			logger.Info("To start as Cluster Mode")
 			var keyHashTag = "{SPLITIO}"
 
 			if config.ClusterKeyHashTag != "" {
@@ -56,6 +58,7 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 			prefix = keyHashTag + prefix
 			universalOptions.Addrs = config.ClusterNodes
 		} else {
+			logger.Info("To start as Single Mode")
 			universalOptions.Addrs = []string{fmt.Sprintf("%s:%d", config.Host, config.Port)}
 		}
 	}
@@ -67,5 +70,5 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 	}
 	helpers.EnsureConnected(rClient)
 
-	return redis.NewPrefixedRedisClient(rClient, config.Prefix)
+	return redis.NewPrefixedRedisClient(rClient, prefix)
 }
