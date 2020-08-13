@@ -183,18 +183,27 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 			if len(impressions) != 3 {
 				t.Error("Wrong length of impressions passed")
 			}
-			if impressions[0].KeyName != "someKey1" {
-				t.Error("Wrong impression received")
-			}
-			if impressions[1].KeyName != "someKey2" {
-				t.Error("Wrong impression received")
-			}
-			if impressions[2].KeyName != "someKey3" {
-				t.Error("Wrong impression received")
+			for _, impression := range impressions {
+				switch impression.TestName {
+				case "someFeature1":
+					if impression.KeyImpressions[0].KeyName != "someKey1" {
+						t.Error("Wrong impression received")
+					}
+				case "someFeature2":
+					if impression.KeyImpressions[0].KeyName != "someKey2" {
+						t.Error("Wrong impression received")
+					}
+				case "someFeature3":
+					if impression.KeyImpressions[0].KeyName != "someKey3" {
+						t.Error("Wrong impression received")
+					}
+				default:
+					t.Error("Wrong featureName")
+				}
 			}
 			return nil
 		},
