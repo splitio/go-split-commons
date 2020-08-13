@@ -359,7 +359,7 @@ func TestFeedbackLoop(t *testing.T) {
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		sseMock, _ = ioutil.ReadFile("../testdata/occupancy2.json")
 		mockedData = make(map[string]interface{})
 		_ = json.Unmarshal(sseMock, &mockedData)
