@@ -21,7 +21,7 @@ type SegmentFetcher interface {
 
 // ImpressionsRecorder interface to be implemented by Impressions loggers
 type ImpressionsRecorder interface {
-	Record(impressions []dtos.Impression, metadata dtos.Metadata) error
+	Record(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error
 }
 
 // MetricsRecorder interface to be implemented by Metrics loggers

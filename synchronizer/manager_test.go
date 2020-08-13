@@ -248,7 +248,7 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				if len(impressions) != 1 {
 					t.Error("Wrong length")
@@ -565,7 +565,7 @@ func TestStreaming(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				return nil
 			},
@@ -821,7 +821,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				return nil
 			},
 		},
