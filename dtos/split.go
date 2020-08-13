@@ -90,8 +90,8 @@ type WhitelistMatcherDataDTO struct {
 
 // DependencyMatcherDataDTO structure to map matcher definition fetched from JSON message.
 type DependencyMatcherDataDTO struct {
-	Split      string
-	Treatments []string
+	Split      string   `json:"split"`
+	Treatments []string `json:"treatments"`
 }
 
 // KeySelectorDTO structure to map a Key slector definition fetched from JSON message.
