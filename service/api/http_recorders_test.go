@@ -64,36 +64,53 @@ func TestPostImpressions(t *testing.T) {
 			return
 		}
 
-		if impressionsInPost[0].TestName != "some_test" ||
-			impressionsInPost[0].KeyImpressions[0].KeyName != "some_key_1" ||
-			impressionsInPost[0].KeyImpressions[1].KeyName != "some_key_2" {
+		if len(impressionsInPost) != 2 {
 			t.Error("Posted impressions arrived mal-formed")
+		}
+
+		for _, impressions := range impressionsInPost {
+			switch impressions.TestName {
+			case "some_test_2":
+				if impressions.KeyImpressions[0].KeyName != "some_key_1" {
+					t.Error("Wrong impression")
+				}
+			case "some_test":
+				if impressions.KeyImpressions[0].KeyName != "some_key_2" {
+					t.Error("Wrong impression")
+				}
+			default:
+				t.Error("Unexpected Impression")
+			}
 		}
 
 		fmt.Fprintln(w, "ok")
 	}))
 	defer ts.Close()
 
-	imp1 := dtos.Impression{
-		FeatureName:  "some_test",
-		KeyName:      "some_key_1",
-		Treatment:    "on",
-		Time:         1234567890,
-		ChangeNumber: 9876543210,
-		Label:        "some_label_1",
-		BucketingKey: "some_bucket_key_1",
+	imp1 := dtos.ImpressionsDTO{
+		TestName: "some_test_2",
+		KeyImpressions: []dtos.ImpressionDTO{{
+			KeyName:      "some_key_1",
+			Treatment:    "on",
+			Time:         1234567890,
+			ChangeNumber: 9876543210,
+			Label:        "some_label_1",
+			BucketingKey: "some_bucket_key_1",
+		}},
 	}
-	imp2 := dtos.Impression{
-		FeatureName:  "some_test",
-		KeyName:      "some_key_2",
-		Treatment:    "off",
-		Time:         1234567890,
-		ChangeNumber: 9876543210,
-		Label:        "some_label_2",
-		BucketingKey: "some_bucket_key_2",
+	imp2 := dtos.ImpressionsDTO{
+		TestName: "some_test",
+		KeyImpressions: []dtos.ImpressionDTO{{
+			KeyName:      "some_key_2",
+			Treatment:    "off",
+			Time:         1234567890,
+			ChangeNumber: 9876543210,
+			Label:        "some_label_2",
+			BucketingKey: "some_bucket_key_2",
+		}},
 	}
 
-	impressions := make([]dtos.Impression, 0)
+	impressions := make([]dtos.ImpressionsDTO, 0)
 	impressions = append(impressions, imp1, imp2)
 
 	impressionRecorder := NewHTTPImpressionRecorder(

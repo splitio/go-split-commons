@@ -31,35 +31,8 @@ type HTTPImpressionRecorder struct {
 }
 
 // Record sends an array (or slice) of impressionsRecord to the backend
-func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata dtos.Metadata) error {
-	impressionsToPost := make(map[string][]dtos.ImpressionDTO)
-	for _, impression := range impressions {
-		keyImpression := dtos.ImpressionDTO{
-			KeyName:      impression.KeyName,
-			Treatment:    impression.Treatment,
-			Time:         impression.Time,
-			ChangeNumber: impression.ChangeNumber,
-			Label:        impression.Label,
-			BucketingKey: impression.BucketingKey,
-		}
-		v, ok := impressionsToPost[impression.FeatureName]
-		if ok {
-			v = append(v, keyImpression)
-		} else {
-			v = []dtos.ImpressionDTO{keyImpression}
-		}
-		impressionsToPost[impression.FeatureName] = v
-	}
-
-	bulkImpressions := make([]dtos.ImpressionsDTO, 0)
-	for testName, testImpressions := range impressionsToPost {
-		bulkImpressions = append(bulkImpressions, dtos.ImpressionsDTO{
-			TestName:       testName,
-			KeyImpressions: testImpressions,
-		})
-	}
-
-	data, err := json.Marshal(bulkImpressions)
+func (i *HTTPImpressionRecorder) Record(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+	data, err := json.Marshal(impressions)
 	if err != nil {
 		i.logger.Error("Error marshaling JSON", err.Error())
 		return err

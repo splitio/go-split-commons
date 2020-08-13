@@ -42,6 +42,15 @@ func TestImpressionSyncTask(t *testing.T) {
 		Time:         123456789,
 		Treatment:    "someTreatment3",
 	}
+	impression4 := dtos.Impression{
+		BucketingKey: "someBucketingKey3",
+		ChangeNumber: 123456789,
+		FeatureName:  "someFeature2",
+		KeyName:      "someKey22",
+		Label:        "someLabel",
+		Time:         123456789,
+		Treatment:    "someTreatment3",
+	}
 
 	impressionMockStorage := storageMock.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
@@ -49,7 +58,7 @@ func TestImpressionSyncTask(t *testing.T) {
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
 			}
-			return []dtos.Impression{impression1, impression2, impression3}, nil
+			return []dtos.Impression{impression1, impression2, impression3, impression4}, nil
 		},
 		EmptyCall: func() bool {
 			if call == 1 {
@@ -60,18 +69,27 @@ func TestImpressionSyncTask(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 			if len(impressions) != 3 {
 				t.Error("Wrong length of impressions passed")
 			}
-			if impressions[0].KeyName != "someKey1" {
-				t.Error("Wrong impression received")
-			}
-			if impressions[1].KeyName != "someKey2" {
-				t.Error("Wrong impression received")
-			}
-			if impressions[2].KeyName != "someKey3" {
-				t.Error("Wrong impression received")
+			for _, impression := range impressions {
+				switch impression.TestName {
+				case "someFeature1":
+					if impression.KeyImpressions[0].KeyName != "someKey1" {
+						t.Error("Wrong impression received")
+					}
+				case "someFeature2":
+					if len(impression.KeyImpressions) != 2 {
+						t.Error("Wrong impressions")
+					}
+				case "someFeature3":
+					if impression.KeyImpressions[0].KeyName != "someKey3" {
+						t.Error("Wrong impression received")
+					}
+				default:
+					t.Error("Wrong featureName")
+				}
 			}
 			return nil
 		},
