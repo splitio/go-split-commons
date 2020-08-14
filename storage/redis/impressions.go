@@ -45,8 +45,8 @@ func (r *ImpressionStorage) Count() int64 {
 
 // Drop drops impressions from queue
 func (r *ImpressionStorage) Drop(size *int64) error {
-	elMutex.Lock()
-	defer elMutex.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	if size == nil {
 		_, err := r.client.Del(r.redisKey)
 		return err

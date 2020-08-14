@@ -18,21 +18,33 @@ type EventsStorage struct {
 	logger   logging.LoggerInterface
 	metadata dtos.Metadata
 	redisKey string
+	mutex    *sync.RWMutex
 }
 
-var elMutex = &sync.Mutex{}
+// maxAccumulatedSize is the maximum number of bytes to be fetched from cache before posting to the backend
+const maxAccumulatedSize = 5 * 1024 * 1024
 
-// MaxAccumulatedSize is the maximum number of bytes to be fetched from cache before posting to the backend
-const MaxAccumulatedSize = 5 * 1024 * 1024
+// maxEventSize is the maximum allowed event size
+const maxEventSize = 32 * 1024
 
-// MaxEventSize is the maximum allowed event size
-const MaxEventSize = 32 * 1024
+// NewEventStorageConsumer storage for consumer
+func NewEventStorageConsumer(redisClient *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *EventsStorage {
+	return &EventsStorage{
+		cache:    queuecache.InMemoryQueueCacheOverlay{},
+		client:   redisClient,
+		logger:   logger,
+		metadata: metadata,
+		redisKey: redisEvents,
+		mutex:    &sync.RWMutex{},
+	}
+}
 
 // NewEventsStorage returns an instance of RedisEventsStorage
 func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *EventsStorage {
+	mutex := &sync.RWMutex{}
 	refillFunc := func(count int) ([]interface{}, error) {
-		elMutex.Lock()
-		defer elMutex.Unlock()
+		mutex.Lock()
+		defer mutex.Unlock()
 		lrange, err := redisClient.LRange(redisEvents, 0, int64(count-1))
 		if err != nil {
 			logger.Error("Fetching events", err)
@@ -64,6 +76,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 		logger:   logger,
 		metadata: metadata,
 		redisKey: redisEvents,
+		mutex:    mutex,
 	}
 }
 
@@ -90,46 +103,7 @@ func (r *EventsStorage) Push(event dtos.EventDTO, _ int) error {
 
 // PopN return N elements from 0 to N
 func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
-	toReturn := make([]dtos.EventDTO, 0)
-	/*
-		r.mutex.Lock()
-		lrange, err := r.client.LRange(r.redisKey, 0, n-1)
-		if err != nil {
-			r.logger.Error("Fetching events", err.Error())
-			r.mutex.Unlock()
-			return nil, err
-		}
-		totalFetchedEvents := int64(len(lrange))
-
-		idxFrom := n
-		if totalFetchedEvents < n {
-			idxFrom = totalFetchedEvents
-		}
-
-		err = r.client.LTrim(r.redisKey, idxFrom, -1)
-		if err != nil {
-			r.logger.Error("Trim events", err.Error())
-			r.mutex.Unlock()
-			return nil, err
-		}
-		r.mutex.Unlock()
-
-		//JSON unmarshal
-		for _, se := range lrange {
-			storedEventDTO := dtos.QueueStoredEventDTO{}
-			err := json.Unmarshal([]byte(se), &storedEventDTO)
-			if err != nil {
-				r.logger.Error("Error decoding event JSON", err.Error())
-				continue
-			}
-			if storedEventDTO.Metadata.MachineIP == r.metadataMessage.MachineIP &&
-				storedEventDTO.Metadata.MachineName == r.metadataMessage.MachineName &&
-				storedEventDTO.Metadata.SDKVersion == r.metadataMessage.SDKVersion {
-				toReturn = append(toReturn, storedEventDTO.Event)
-			}
-		}
-	*/
-	return toReturn, nil
+	return make([]dtos.EventDTO, 0), nil
 }
 
 // PopNWithMetadata pop N elements from queue
@@ -139,9 +113,9 @@ func (r *EventsStorage) PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, e
 	fetchedCount := 0
 	accumulatedSize := 0
 	writeIndex := 0
-	for r.Count() > 0 && int64(fetchedCount) < n && accumulatedSize+MaxEventSize < MaxAccumulatedSize && err == nil {
+	for r.Count() > 0 && int64(fetchedCount) < n && accumulatedSize+maxEventSize < maxAccumulatedSize && err == nil {
 		numberOfItemsToFetch := int(math.Min(
-			float64((MaxAccumulatedSize-accumulatedSize)/MaxEventSize),
+			float64((maxAccumulatedSize-accumulatedSize)/maxEventSize),
 			float64(n-int64(fetchedCount)),
 		))
 		elems, err := r.cache.Fetch(numberOfItemsToFetch)
@@ -188,8 +162,8 @@ func (r *EventsStorage) Empty() bool {
 
 // Drop drops events from queue
 func (r *EventsStorage) Drop(size *int64) error {
-	elMutex.Lock()
-	defer elMutex.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	if size == nil {
 		_, err := r.client.Del(r.redisKey)
 		return err

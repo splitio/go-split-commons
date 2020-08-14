@@ -58,24 +58,6 @@ func (r *SplitStorage) All() []dtos.SplitDTO {
 		splits = append(splits, split)
 	}
 
-	// @TODO Change to MGET
-	/*
-		for _, key := range keys {
-			raw, err := r.client.Get(key)
-			if err != nil {
-				r.logger.Error(fmt.Sprintf("Fetching key \"%s\", skipping.", key))
-				continue
-			}
-
-			var split dtos.SplitDTO
-			err = json.Unmarshal([]byte(raw), &split)
-			if err != nil {
-				r.logger.Error(fmt.Sprintf("Error parsing json for split %s", key))
-				continue
-			}
-			splits = append(splits, split)
-		}
-	*/
 	return splits
 }
 
@@ -156,6 +138,8 @@ func (r *SplitStorage) decr(trafficType string) error {
 
 // PutMany bulk stores splits in redis
 func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
 	for _, split := range splits {
 		keyToStore := strings.Replace(redisSplit, "{split}", split.Name, 1)
 		raw, err := json.Marshal(split)

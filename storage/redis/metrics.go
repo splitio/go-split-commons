@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
@@ -21,6 +22,7 @@ type MetricsStorage struct {
 	gaugeMultiTemplate      string
 	countersMultiTemplate   string
 	latenciesMultiTemplate  string
+	mutex                   *sync.RWMutex
 }
 
 // NewMetricsStorage creates a new RedisSplitStorage and returns a reference to it
@@ -52,6 +54,7 @@ func NewMetricsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Met
 		gaugeMultiTemplate:      gaugeMultiTemplate,
 		countersMultiTemplate:   countersMultiTemplate,
 		latenciesMultiTemplate:  latenciesMultiTemplate,
+		mutex:                   &sync.RWMutex{},
 	}
 }
 
@@ -101,6 +104,8 @@ func (r *MetricsStorage) PopLatencies() []dtos.LatenciesDTO {
 }
 
 func (r *MetricsStorage) popByPattern(pattern string, useTransaction bool) (map[string]interface{}, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	keys, err := r.client.Keys(pattern)
 	if err != nil {
 		r.logger.Error(err.Error())
