@@ -5,7 +5,12 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/provisional"
 	"github.com/splitio/go-toolkit/logging"
+)
+
+const (
+	maxImpressionCacheSize = 500000
 )
 
 type httpRecorderBase struct {
@@ -28,6 +33,7 @@ func (h *httpRecorderBase) recordRaw(url string, data []byte, metadata dtos.Meta
 // HTTPImpressionRecorder is a struct responsible for submitting impression bulks to the backend
 type HTTPImpressionRecorder struct {
 	httpRecorderBase
+	impressionObserver provisional.ImpressionObserver
 }
 
 // Record sends an array (or slice) of impressionsRecord to the backend
@@ -42,6 +48,8 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata 
 			Label:        impression.Label,
 			BucketingKey: impression.BucketingKey,
 		}
+
+		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
 		v, ok := impressionsToPost[impression.FeatureName]
 		if ok {
 			v = append(v, keyImpression)
@@ -81,11 +89,13 @@ func NewHTTPImpressionRecorder(
 	logger logging.LoggerInterface,
 ) *HTTPImpressionRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	observer, _ := provisional.NewImpressionObserver(maxImpressionCacheSize)
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
 			logger: logger,
 		},
+		impressionObserver: observer,
 	}
 }
 
