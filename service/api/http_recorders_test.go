@@ -37,6 +37,7 @@ func TestImpressionRecord(t *testing.T) {
 func TestPostImpressions(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
+	var expectedPT int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		sdkVersion := r.Header.Get("SplitSDKVersion")
@@ -68,6 +69,14 @@ func TestPostImpressions(t *testing.T) {
 			impressionsInPost[0].KeyImpressions[0].KeyName != "some_key_1" ||
 			impressionsInPost[0].KeyImpressions[1].KeyName != "some_key_2" {
 			t.Error("Posted impressions arrived mal-formed")
+		}
+
+		for _, ti := range impressionsInPost {
+			for _, ki := range ti.KeyImpressions {
+				if ki.Pt != expectedPT {
+					t.Error("incorrect pt")
+				}
+			}
 		}
 
 		fmt.Fprintln(w, "ok")
@@ -104,7 +113,15 @@ func TestPostImpressions(t *testing.T) {
 		},
 		logger,
 	)
+
+	expectedPT = 0
 	err2 := impressionRecorder.Record(impressions, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "SOME_MACHINE_NAME"})
+	if err2 != nil {
+		t.Error(err2)
+	}
+
+	expectedPT = imp1.Time
+	err2 = impressionRecorder.Record(impressions, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "SOME_MACHINE_NAME"})
 	if err2 != nil {
 		t.Error(err2)
 	}
