@@ -259,3 +259,101 @@ func TestImpressionRecorderSync(t *testing.T) {
 		t.Error("It should call once")
 	}
 }
+
+func TestImpressionLastSeen(t *testing.T) {
+	var requestReceived int64
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/impressions" && r.Method != "POST" {
+			t.Error("Invalid request. Should be POST to /impressions")
+		}
+		atomic.AddInt64(&requestReceived, 1)
+
+		body, err := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+		if err != nil {
+			t.Error("Error reading body")
+			return
+		}
+
+		var impressions []dtos.ImpressionsDTO
+		err = json.Unmarshal(body, &impressions)
+		if err != nil {
+			t.Errorf("Error parsing json: %s", err)
+			return
+		}
+
+		if len(impressions) != 1 {
+			t.Error("Incorrect number of features")
+			return
+		}
+
+		result := make(map[string]dtos.ImpressionsDTO, 0)
+		for _, impression := range impressions {
+			result[impression.TestName] = impression
+		}
+
+		imp1, ok := result["someFeature1"]
+		if !ok || len(imp1.KeyImpressions) != 1 {
+			t.Error("Incorrect impressions received")
+			for _, ki := range imp1.KeyImpressions {
+				if atomic.LoadInt64(&requestReceived) == 1 {
+					if ki.Pt != 0 {
+						t.Error("Unexpected lastSeen")
+					}
+				} else {
+					if ki.Pt != 123456789 {
+						t.Error("Unexpected lastSeen")
+					}
+				}
+			}
+		}
+	}))
+	defer ts.Close()
+
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	impressionRecorder := api.NewHTTPImpressionRecorder(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts.URL,
+			SdkURL:    ts.URL,
+		},
+		logger,
+	)
+
+	impression1 := dtos.Impression{
+		BucketingKey: "someBucketingKey1",
+		ChangeNumber: 123456789,
+		FeatureName:  "someFeature1",
+		KeyName:      "someKey1",
+		Label:        "someLabel",
+		Time:         123456789,
+		Treatment:    "someTreatment1",
+	}
+
+	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger)
+	impressionStorage.LogImpressions([]dtos.Impression{impression1})
+
+	impressionSync := NewRecorderSingle(
+		impressionStorage,
+		impressionRecorder,
+		storage.NewMetricWrapper(storageMock.MockMetricStorage{
+			IncCounterCall: func(key string) {
+				if key != "testImpressions.status.200" && key != "backend::request.ok" {
+					t.Error("Unexpected counter key to increase")
+				}
+			},
+			IncLatencyCall: func(metricName string, index int) {
+				if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
+					t.Error("Unexpected latency key to track")
+				}
+			},
+		}, nil, nil),
+		logging.NewLogger(&logging.LoggerOptions{}),
+		dtos.Metadata{},
+	)
+
+	impressionSync.SynchronizeImpressions(50)
+
+	impressionStorage.LogImpressions([]dtos.Impression{impression1})
+	impressionSync.SynchronizeImpressions(50)
+}

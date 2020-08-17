@@ -76,9 +76,9 @@ func NewSynchronizerManager(
 }
 
 func (s *Manager) startPolling() {
+	s.status.Store(Polling)
 	s.pushManager.StopWorkers()
 	s.synchronizer.StartPeriodicFetching()
-	s.status.Store(Polling)
 }
 
 // IsRunning returns true if is in Streaming or Polling

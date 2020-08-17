@@ -5,10 +5,15 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/provisional"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-split-commons/util"
 	"github.com/splitio/go-toolkit/logging"
+)
+
+const (
+	maxImpressionCacheSize = 500000
 )
 
 // RecorderSingle struct for impression sync
@@ -18,6 +23,7 @@ type RecorderSingle struct {
 	metricsWrapper     *storage.MetricWrapper
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
+	impressionObserver provisional.ImpressionObserver
 }
 
 // NewRecorderSingle creates new impression synchronizer for posting impressions
@@ -28,12 +34,15 @@ func NewRecorderSingle(
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) ImpressionRecorder {
+	observer, _ := provisional.NewImpressionObserver(maxImpressionCacheSize)
+
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
 		metricsWrapper:     metricsWrapper,
 		logger:             logger,
 		metadata:           metadata,
+		impressionObserver: observer,
 	}
 }
 
@@ -60,6 +69,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			Label:        impression.Label,
 			BucketingKey: impression.BucketingKey,
 		}
+		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
 		v, ok := impressionsToPost[impression.FeatureName]
 		if ok {
 			v = append(v, keyImpression)
