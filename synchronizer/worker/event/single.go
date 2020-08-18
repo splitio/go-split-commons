@@ -53,8 +53,8 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 	before := time.Now()
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
-		if _, ok := err.(*dtos.HTTPError); ok {
-			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, string(err.(*dtos.HTTPError).Code))
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, string(httpError.Code))
 		}
 		return err
 	}

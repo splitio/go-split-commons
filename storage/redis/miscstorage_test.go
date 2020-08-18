@@ -1,51 +1,98 @@
 package redis
 
-/*
+import (
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/redis"
+	"github.com/splitio/go-toolkit/redis/mocks"
+)
+
 func TestGetApikeyHash(t *testing.T) {
-	conf.Initialize()
-	conf.Data.Redis.Prefix = "some_prefix"
-	conf.Data.Redis.Db = 1
-	Initialize(conf.Data.Redis)
-	Client.Set("some_prefix.SPLITIO.hash", "3376912823", 0)
-	miscStorarage := NewMiscStorageAdapter(Client, "some_prefix")
-	if str, _ := miscStorarage.GetApikeyHash(); str != "3376912823" {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	client := mocks.MockClient{
+		GetCall: func(key string) redis.Result {
+			if key != "someprefix.SPLITIO.hash" {
+				t.Error("Unexpected key")
+			}
+			return &mocks.MockResultOutput{
+				ResultStringCall: func() (string, error) {
+					return "3376912823", nil
+				},
+			}
+		},
+	}
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &client,
+		Prefix: "someprefix",
+	}
+	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
+	if str, _ := miscStorage.GetApikeyHash(); str != "3376912823" {
 		t.Error("Invalid hash fetched!")
 	}
-
-	Client.Del("some_prefix.SPLITIO.hash")
 }
 
 func TestSetApikeyHash(t *testing.T) {
-	conf.Initialize()
-	conf.Data.Redis.Prefix = "some_prefix"
-	conf.Data.Redis.Db = 1
-	Initialize(conf.Data.Redis)
-	miscStorarage := NewMiscStorageAdapter(Client, "some_prefix")
-	miscStorarage.SetApikeyHash("12345678")
-	if apikeyHash := Client.Get("some_prefix.SPLITIO.hash").Val(); apikeyHash != "12345678" {
-		t.Error("Invalid hash fetched!")
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	client := mocks.MockClient{
+		SetCall: func(key string, value interface{}, expiration time.Duration) redis.Result {
+			if key != "someprefix.SPLITIO.hash" {
+				t.Error("Unexpected key")
+			}
+			if value != "12345678" {
+				t.Error("Unexpected Value")
+			}
+			if expiration != 0 {
+				t.Error("Wrong expiration")
+			}
+			return &mocks.MockResultOutput{
+				ErrCall: func() error { return nil },
+			}
+		},
+		GetCall: func(key string) redis.Result {
+			if key != "someprefix.SPLITIO.hash" {
+				t.Error("Unexpected key")
+			}
+			return &mocks.MockResultOutput{
+				ResultStringCall: func() (string, error) {
+					return "3376912823", nil
+				},
+			}
+		},
 	}
-
-	Client.Del("some_prefix.SPLITIO.hash")
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &client,
+		Prefix: "someprefix",
+	}
+	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
+	err := miscStorage.SetApikeyHash("12345678")
+	if err != nil {
+		t.Error("It should not return err")
+	}
 }
 
 func TestClearAll(t *testing.T) {
-	conf.Initialize()
-	conf.Data.Redis.Prefix = "some_prefix"
-	conf.Data.Redis.Db = 1
-	Initialize(conf.Data.Redis)
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	client := mocks.MockClient{
+		EvalCall: func(script string, keys []string, args ...interface{}) redis.Result {
+			if !strings.Contains(script, "redis.call('KEYS', 'someprefix*')") {
+				t.Error("It should perform a delete with someprefix")
+			}
+			return &mocks.MockResultOutput{
+				ErrCall: func() error { return nil },
+			}
+		},
+	}
+	mockPrefixedClient := &redis.PrefixedRedisClient{
+		Client: &client,
+		Prefix: "someprefix",
+	}
+	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
 
-	Client.Set("some_prefix.SPLITIO.split.feature1", "asd", 0)
-	Client.Set("some_prefix.SPLITIO.hash", "3376912823", 0)
-	Client.Set("some_prefix.SPLITIO.impressions", "abc", 0)
-	Client.Set("some_prefix.SPLITIO.events", "der", 0)
-	Client.Set("some_prefix.SPLITIO.splits.till", "-1", 0)
-
-	miscStorarage := NewMiscStorageAdapter(Client, "some_prefix")
-	miscStorarage.ClearAll()
-
-	if keys := Client.Keys("some_prefix.SPLITIO*").Val(); len(keys) != 0 {
-		t.Error("Everything should have been wiped")
+	err := miscStorage.ClearAll()
+	if err != nil {
+		t.Error("It should not return err")
 	}
 }
-*/

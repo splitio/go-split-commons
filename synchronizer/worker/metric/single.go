@@ -29,7 +29,6 @@ func NewRecorderSingle(
 }
 
 func (m *RecorderSingle) synchronizeLatencies() error {
-	// TODO store local metric stats
 	latencies := m.metricStorage.PopLatencies()
 	if len(latencies) > 0 {
 		err := m.metricRecorder.RecordLatencies(latencies, m.metadata)
@@ -39,7 +38,6 @@ func (m *RecorderSingle) synchronizeLatencies() error {
 }
 
 func (m *RecorderSingle) synchronizeGauges() error {
-	// TODO store local metric stats
 	var errs []error
 	for _, gauge := range m.metricStorage.PopGauges() {
 		err := m.metricRecorder.RecordGauge(gauge, m.metadata)
@@ -54,7 +52,6 @@ func (m *RecorderSingle) synchronizeGauges() error {
 }
 
 func (m *RecorderSingle) synchronizeCounters() error {
-	// TODO store local metric stats
 	counters := m.metricStorage.PopCounters()
 	if len(counters) > 0 {
 		err := m.metricRecorder.RecordCounters(counters, m.metadata)

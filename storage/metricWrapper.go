@@ -9,10 +9,9 @@ import (
 
 // MetricWrapper struct
 type MetricWrapper struct {
-	Telemetry     MetricsStorage
-	LocalTelemtry MetricsStorage
-	Logger        logging.LoggerInterface
-	dictionary    map[string]string
+	Telemetry      MetricsStorage
+	LocalTelemetry MetricsStorage
+	logger         logging.LoggerInterface
 }
 
 const (
@@ -63,11 +62,11 @@ const (
 )
 
 // NewMetricWrapper builds new wrapper
-func NewMetricWrapper(telemetry MetricsStorage, localTelemtry MetricsStorage, logger logging.LoggerInterface) *MetricWrapper {
+func NewMetricWrapper(telemetry MetricsStorage, localTelemetry MetricsStorage, logger logging.LoggerInterface) *MetricWrapper {
 	return &MetricWrapper{
-		LocalTelemtry: localTelemtry,
-		Logger:        logger,
-		Telemetry:     telemetry,
+		LocalTelemetry: localTelemetry,
+		logger:         logger,
+		Telemetry:      telemetry,
 	}
 }
 
@@ -104,8 +103,8 @@ func (m *MetricWrapper) StoreCounters(key int, value string) {
 	if err != nil {
 		return
 	}
-	if m.LocalTelemtry != nil {
-		m.LocalTelemtry.IncCounter(strings.Replace(local, "{status}", value, 1))
+	if m.LocalTelemetry != nil {
+		m.LocalTelemetry.IncCounter(strings.Replace(local, "{status}", value, 1))
 	}
 	if value == "ok" {
 		value = "200"
@@ -119,8 +118,8 @@ func (m *MetricWrapper) StoreLatencies(key int, bucket int) {
 	if err != nil {
 		return
 	}
-	if m.LocalTelemtry != nil {
-		m.LocalTelemtry.IncLatency(local, bucket)
+	if m.LocalTelemetry != nil {
+		m.LocalTelemetry.IncLatency(local, bucket)
 	}
 	m.Telemetry.IncLatency(common, bucket)
 }
