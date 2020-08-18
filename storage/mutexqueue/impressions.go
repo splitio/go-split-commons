@@ -101,3 +101,8 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
 	return []dtos.ImpressionQueueObject{}, nil
 }
+
+// Drop drops
+func (s *MQImpressionsStorage) Drop(size *int64) error {
+	return nil
+}

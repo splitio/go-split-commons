@@ -129,3 +129,8 @@ func (s *MQEventsStorage) Count() int64 {
 
 	return int64(s.queue.Len())
 }
+
+// Drop drops
+func (s *MQEventsStorage) Drop(size *int64) error {
+	return nil
+}

@@ -9,6 +9,7 @@ type MockImpressionStorage struct {
 	LogImpressionsCall   func(impressions []dtos.Impression) error
 	PopNCall             func(n int64) ([]dtos.Impression, error)
 	PopNWithMetadataCall func(n int64) ([]dtos.ImpressionQueueObject, error)
+	DropCall             func(size *int64) error
 }
 
 // Empty mock
@@ -34,4 +35,9 @@ func (m MockImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
 // PopNWithMetadata mock
 func (m MockImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
 	return m.PopNWithMetadataCall(n)
+}
+
+// Drop mock
+func (m MockImpressionStorage) Drop(size *int64) error {
+	return m.Drop(size)
 }
