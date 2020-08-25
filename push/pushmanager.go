@@ -218,15 +218,13 @@ func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []strin
 		tokenExpirationTimer := time.NewTimer(idleDuration)
 		defer tokenExpirationTimer.Stop()
 
-		for {
-			select {
-			case <-tokenExpirationTimer.C: // Timedout
-				p.logger.Info("Token expired")
-				p.managerStatus <- TokenExpiration
-				return
-			case <-p.cancelTokenExpiration:
-				return
-			}
+		select {
+		case <-tokenExpirationTimer.C: // Timedout
+			p.logger.Info("Token expired")
+			p.managerStatus <- TokenExpiration
+			return
+		case <-p.cancelTokenExpiration:
+			return
 		}
 	}()
 	return token.Token, channels, nil

@@ -99,10 +99,10 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 
 // PopNWithMetadata pop N elements from queue
 func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
-	return []dtos.ImpressionQueueObject{}, nil
+	panic("Not implemented for inmemory")
 }
 
 // Drop drops
 func (s *MQImpressionsStorage) Drop(size *int64) error {
-	return nil
+	panic("Not implemented for inmemory")
 }

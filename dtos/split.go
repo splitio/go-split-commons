@@ -4,10 +4,9 @@ import "encoding/json"
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
-	Till      int64              `json:"till"`
-	Since     int64              `json:"since"`
-	Splits    []SplitDTO         `json:"splits"`
-	RawSplits []*json.RawMessage `json:"rawSplits"`
+	Till   int64      `json:"till"`
+	Since  int64      `json:"since"`
+	Splits []SplitDTO `json:"splits"`
 }
 
 // SplitDTO structure to map an Split definition fetched from JSON message.

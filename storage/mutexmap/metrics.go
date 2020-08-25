@@ -135,15 +135,15 @@ func (m *MMMetricsStorage) PopLatencies() []dtos.LatenciesDTO {
 
 // PopGaugesWithMetadata mock
 func (m *MMMetricsStorage) PopGaugesWithMetadata() (*dtos.GaugeDataBulk, error) {
-	return nil, nil
+	panic("Not implemented for inmemory")
 }
 
 // PopLatenciesWithMetadata mock
 func (m *MMMetricsStorage) PopLatenciesWithMetadata() (*dtos.LatencyDataBulk, error) {
-	return nil, nil
+	panic("Not implemented for inmemory")
 }
 
 // PopCountersWithMetadata mock
 func (m *MMMetricsStorage) PopCountersWithMetadata() (*dtos.CounterDataBulk, error) {
-	return nil, nil
+	panic("Not implemented for inmemory")
 }

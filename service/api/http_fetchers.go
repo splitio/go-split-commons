@@ -65,18 +65,6 @@ func (f *HTTPSplitFetcher) Fetch(since int64) (*dtos.SplitChangesDTO, error) {
 		return nil, err
 	}
 
-	// RAW DATA --------------
-	var objmap map[string]*json.RawMessage
-	if err = json.Unmarshal(data, &objmap); err != nil {
-		f.logger.Error(err)
-		return nil, err
-	}
-
-	if err = json.Unmarshal(*objmap["splits"], &splitChangesDto.RawSplits); err != nil {
-		f.logger.Error(err)
-		return nil, err
-	}
-	//-------------------------
 	return &splitChangesDto, nil
 }
 

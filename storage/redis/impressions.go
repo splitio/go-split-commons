@@ -107,8 +107,7 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 
 // PopN return N elements from 0 to N
 func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
-	toReturn := make([]dtos.Impression, 0, 0)
-	return toReturn, nil
+	panic("Not implemented for redis")
 }
 
 // PopNWithMetadata pop N elements from queue

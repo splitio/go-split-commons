@@ -103,7 +103,7 @@ func (r *EventsStorage) Push(event dtos.EventDTO, _ int) error {
 
 // PopN return N elements from 0 to N
 func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
-	return make([]dtos.EventDTO, 0), nil
+	panic("Not implemented for redis")
 }
 
 // PopNWithMetadata pop N elements from queue

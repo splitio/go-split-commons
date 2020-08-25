@@ -27,6 +27,7 @@ type MetricsStorage struct {
 
 // NewMetricsStorage creates a new RedisSplitStorage and returns a reference to it
 func NewMetricsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *MetricsStorage {
+	// @Todo Split Storages between Go-Client and Redis
 	gaugeSingleTemplate := strings.Replace(redisGauge, "{sdkVersion}", metadata.SDKVersion, 1)
 	gaugeSingleTemplate = strings.Replace(gaugeSingleTemplate, "{instanceId}", metadata.MachineName, 1)
 	countersSingleTemplate := strings.Replace(redisCounter, "{sdkVersion}", metadata.SDKVersion, 1)
@@ -90,17 +91,17 @@ func (r *MetricsStorage) PutGauge(key string, gauge float64) {
 
 // PopCounters some
 func (r *MetricsStorage) PopCounters() []dtos.CounterDTO {
-	return make([]dtos.CounterDTO, 0)
+	panic("Not implemented for redis")
 }
 
 // PopGauges some
 func (r *MetricsStorage) PopGauges() []dtos.GaugeDTO {
-	return make([]dtos.GaugeDTO, 0)
+	panic("Not implemented for redis")
 }
 
 // PopLatencies some
 func (r *MetricsStorage) PopLatencies() []dtos.LatenciesDTO {
-	return make([]dtos.LatenciesDTO, 0)
+	panic("Not implemented for redis")
 }
 
 func (r *MetricsStorage) popByPattern(pattern string, useTransaction bool) (map[string]interface{}, error) {
