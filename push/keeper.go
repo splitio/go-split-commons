@@ -68,13 +68,18 @@ func (k *Keeper) UpdateManagers(manager string, publishers int) {
 	defer k.mutex.Unlock()
 	k.managers[parsedManager] = publishers
 
-	if parsedManager == "control_pri" {
-		if publishers <= 0 {
-			k.publishers <- PublisherNotPresent
-			return
+	isAvailable := false
+	for _, publishers := range k.managers {
+		if publishers > 0 {
+			isAvailable = true
+			break
 		}
-		k.publishers <- PublisherAvailable
 	}
+	if !isAvailable {
+		k.publishers <- PublisherNotPresent
+		return
+	}
+	k.publishers <- PublisherAvailable
 }
 
 // LastNotification return the latest notification saved
