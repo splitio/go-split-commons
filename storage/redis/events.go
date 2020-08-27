@@ -13,12 +13,13 @@ import (
 
 // EventsStorage redis implementation of EventsStorage interface
 type EventsStorage struct {
-	cache    queuecache.InMemoryQueueCacheOverlay
-	client   *redis.PrefixedRedisClient
-	logger   logging.LoggerInterface
-	metadata dtos.Metadata
-	redisKey string
-	mutex    *sync.RWMutex
+	cache       queuecache.InMemoryQueueCacheOverlay
+	client      *redis.PrefixedRedisClient
+	logger      logging.LoggerInterface
+	metadata    dtos.Metadata
+	redisKey    string
+	refillMutex *sync.RWMutex
+	mutex       *sync.RWMutex
 }
 
 // maxAccumulatedSize is the maximum number of bytes to be fetched from cache before posting to the backend
@@ -30,21 +31,22 @@ const maxEventSize = 32 * 1024
 // NewEventStorageConsumer storage for consumer
 func NewEventStorageConsumer(redisClient *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *EventsStorage {
 	return &EventsStorage{
-		cache:    queuecache.InMemoryQueueCacheOverlay{},
-		client:   redisClient,
-		logger:   logger,
-		metadata: metadata,
-		redisKey: redisEvents,
-		mutex:    &sync.RWMutex{},
+		cache:       queuecache.InMemoryQueueCacheOverlay{},
+		client:      redisClient,
+		logger:      logger,
+		metadata:    metadata,
+		redisKey:    redisEvents,
+		refillMutex: &sync.RWMutex{},
+		mutex:       &sync.RWMutex{},
 	}
 }
 
 // NewEventsStorage returns an instance of RedisEventsStorage
 func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *EventsStorage {
-	mutex := &sync.RWMutex{}
+	refillMutex := &sync.RWMutex{}
 	refillFunc := func(count int) ([]interface{}, error) {
-		mutex.Lock()
-		defer mutex.Unlock()
+		refillMutex.Lock()
+		defer refillMutex.Unlock()
 		lrange, err := redisClient.LRange(redisEvents, 0, int64(count-1))
 		if err != nil {
 			logger.Error("Fetching events", err)
@@ -71,12 +73,13 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 	}
 
 	return &EventsStorage{
-		cache:    *queuecache.New(10000, refillFunc),
-		client:   redisClient,
-		logger:   logger,
-		metadata: metadata,
-		redisKey: redisEvents,
-		mutex:    mutex,
+		cache:       *queuecache.New(10000, refillFunc),
+		client:      redisClient,
+		logger:      logger,
+		metadata:    metadata,
+		redisKey:    redisEvents,
+		refillMutex: refillMutex,
+		mutex:       &sync.RWMutex{},
 	}
 }
 
@@ -108,6 +111,8 @@ func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
 
 // PopNWithMetadata pop N elements from queue
 func (r *EventsStorage) PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	toReturn := make([]dtos.QueueStoredEventDTO, n)
 	var err error
 	fetchedCount := 0
