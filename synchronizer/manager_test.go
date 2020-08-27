@@ -144,7 +144,13 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
 	advanced := conf.GetDefaultAdvancedConfig()
-	advanced.StreamingServiceURL = "wrong"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	streamingStatus := make(chan int, 1)
