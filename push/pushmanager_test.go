@@ -317,11 +317,6 @@ func TestPushLogic(t *testing.T) {
 }
 
 func TestFeedbackLoop(t *testing.T) {
-	var shouldReceiveReady int64
-	var shouldReceiveError int64
-	var shouldReceiveSwitchToPolling int64
-	var shouldReceiveSwitchToStreaming int64
-
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := &conf.AdvancedConfig{
 		SegmentUpdateQueueSize: 5000, SplitUpdateQueueSize: 5000,
@@ -383,22 +378,6 @@ func TestFeedbackLoop(t *testing.T) {
 
 	managerStatus := make(chan int, 1)
 
-	go func() {
-		for {
-			msg := <-managerStatus
-			switch msg {
-			case Ready:
-				atomic.AddInt64(&shouldReceiveReady, 1)
-			case PushIsDown:
-				atomic.AddInt64(&shouldReceiveSwitchToPolling, 1)
-			case PushIsUp:
-				atomic.AddInt64(&shouldReceiveSwitchToStreaming, 1)
-			case NonRetriableError:
-				atomic.AddInt64(&shouldReceiveError, 1)
-			}
-		}
-	}()
-
 	status := atomic.Value{}
 	status.Store(Ready)
 
@@ -427,24 +406,19 @@ func TestFeedbackLoop(t *testing.T) {
 	}
 
 	go mockedPush.Start()
-
-	time.Sleep(1 * time.Second)
-	if !mockedPush.IsRunning() {
-		t.Error("It should be running")
+	msg := <-managerStatus
+	if msg != Ready {
+		t.Error("It should be ready")
 	}
 
-	mockedPush.Stop()
-	if mockedPush.IsRunning() {
-		t.Error("It should not be running")
+	msg = <-managerStatus
+	if msg != PushIsDown {
+		t.Error("It should receive push down")
 	}
-	if atomic.LoadInt64(&shouldReceiveSwitchToPolling) != 1 {
-		t.Error("It should be one")
-	}
-	if atomic.LoadInt64(&shouldReceiveReady) != 1 {
-		t.Error("It should be one")
-	}
-	if atomic.LoadInt64(&shouldReceiveError) != 0 {
-		t.Error("It should not return error")
+
+	msg = <-managerStatus
+	if msg != PushIsUp {
+		t.Error("It should receive push up")
 	}
 }
 
