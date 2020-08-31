@@ -5,15 +5,15 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker"
+	"github.com/splitio/go-split-commons/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 // Local implements Local Synchronizer
 type Local struct {
-	splitTasks          splitTasks
-	workers             workers
+	splitTasks          SplitTasks
+	workers             Workers
 	logger              logging.LoggerInterface
 	inMememoryFullQueue chan string
 }
@@ -33,12 +33,13 @@ func NewLocal(
 		PopLatenciesCall: func() []dtos.LatenciesDTO { return make([]dtos.LatenciesDTO, 0, 0) },
 		PutGaugeCall:     func(key string, gauge float64) {},
 	}
-	workers := workers{
-		splitFetcher: worker.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricStorageMock, logger),
+	metricsWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
+	workers := Workers{
+		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
 	}
 	return &Local{
-		splitTasks: splitTasks{
-			splitSyncTask: tasks.NewFetchSplitsTask(workers.splitFetcher, period, logger),
+		splitTasks: SplitTasks{
+			SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, period, logger),
 		},
 		workers: workers,
 		logger:  logger,
@@ -47,17 +48,17 @@ func NewLocal(
 
 // SyncAll syncs splits and segments
 func (s *Local) SyncAll() error {
-	return s.workers.splitFetcher.SynchronizeSplits(nil)
+	return s.workers.SplitFetcher.SynchronizeSplits(nil)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
 func (s *Local) StartPeriodicFetching() {
-	s.splitTasks.splitSyncTask.Start()
+	s.splitTasks.SplitSyncTask.Start()
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *Local) StopPeriodicFetching() {
-	s.splitTasks.splitSyncTask.Stop(false)
+	s.splitTasks.SplitSyncTask.Stop(false)
 }
 
 // StartPeriodicDataRecording starts periodic recorders tasks
@@ -70,7 +71,7 @@ func (s *Local) StopPeriodicDataRecording() {
 
 // SynchronizeSplits syncs splits
 func (s *Local) SynchronizeSplits(till *int64) error {
-	return s.workers.splitFetcher.SynchronizeSplits(till)
+	return s.workers.SplitFetcher.SynchronizeSplits(till)
 }
 
 // SynchronizeSegment syncs segment

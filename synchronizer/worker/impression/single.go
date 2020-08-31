@@ -2,39 +2,47 @@ package impression
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/provisional"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
 	"github.com/splitio/go-split-commons/util"
 	"github.com/splitio/go-toolkit/logging"
 )
 
+const (
+	maxImpressionCacheSize = 500000
+)
+
 // RecorderSingle struct for impression sync
 type RecorderSingle struct {
-	impressionStorage  storage.ImpressionStorage
+	impressionStorage  storage.ImpressionStorageConsumer
 	impressionRecorder service.ImpressionsRecorder
-	metricStorage      storage.MetricsStorage
+	metricsWrapper     *storage.MetricWrapper
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
+	impressionObserver provisional.ImpressionObserver
 }
 
 // NewRecorderSingle creates new impression synchronizer for posting impressions
 func NewRecorderSingle(
-	impressionStorage storage.ImpressionStorage,
+	impressionStorage storage.ImpressionStorageConsumer,
 	impressionRecorder service.ImpressionsRecorder,
-	metricStorage storage.MetricsStorage,
+	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) ImpressionRecorder {
+	observer, _ := provisional.NewImpressionObserver(maxImpressionCacheSize)
+
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
-		metricStorage:      metricStorage,
+		metricsWrapper:     metricsWrapper,
 		logger:             logger,
 		metadata:           metadata,
+		impressionObserver: observer,
 	}
 }
 
@@ -50,17 +58,46 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 		i.logger.Debug("No impressions fetched from queue. Nothing to send")
 		return nil
 	}
+
+	impressionsToPost := make(map[string][]dtos.ImpressionDTO)
+	for _, impression := range queuedImpressions {
+		keyImpression := dtos.ImpressionDTO{
+			KeyName:      impression.KeyName,
+			Treatment:    impression.Treatment,
+			Time:         impression.Time,
+			ChangeNumber: impression.ChangeNumber,
+			Label:        impression.Label,
+			BucketingKey: impression.BucketingKey,
+		}
+		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
+		v, ok := impressionsToPost[impression.FeatureName]
+		if ok {
+			v = append(v, keyImpression)
+		} else {
+			v = []dtos.ImpressionDTO{keyImpression}
+		}
+		impressionsToPost[impression.FeatureName] = v
+	}
+
+	bulkImpressions := make([]dtos.ImpressionsDTO, 0)
+	for testName, testImpressions := range impressionsToPost {
+		bulkImpressions = append(bulkImpressions, dtos.ImpressionsDTO{
+			TestName:       testName,
+			KeyImpressions: testImpressions,
+		})
+	}
+
 	before := time.Now()
-	err = i.impressionRecorder.Record(queuedImpressions, i.metadata)
+	err = i.impressionRecorder.Record(bulkImpressions, i.metadata)
 	if err != nil {
-		if _, ok := err.(*dtos.HTTPError); ok {
-			i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(httpError.Code))
 		}
 		return err
 	}
 	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-	i.metricStorage.IncLatency(testImpressionsLatencies, bucket)
-	i.metricStorage.IncCounter(strings.Replace(testImpressionsCounters, "{status}", "200", 1))
+	i.metricsWrapper.StoreLatencies(storage.TestImpressionsLatency, bucket)
+	i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, "ok")
 	return nil
 }
 

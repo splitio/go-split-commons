@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api/mocks"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -110,6 +111,7 @@ func TestAuthLogic(t *testing.T) {
 		"",
 		conf.AdvancedConfig{},
 		logger,
+		dtos.Metadata{},
 	)
 
 	token, err := authClient.Authenticate()

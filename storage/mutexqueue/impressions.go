@@ -40,6 +40,20 @@ func (s *MQImpressionsStorage) sendSignalIsFull() {
 	}
 }
 
+// Empty returns if slice len if zero
+func (s *MQImpressionsStorage) Empty() bool {
+	s.mutexQueue.Lock()
+	defer s.mutexQueue.Unlock()
+	return s.queue.Len() == 0
+}
+
+// Count returns len
+func (s *MQImpressionsStorage) Count() int64 {
+	s.mutexQueue.Lock()
+	defer s.mutexQueue.Unlock()
+	return int64(s.queue.Len())
+}
+
 // LogImpressions inserts impressions into the queue
 func (s *MQImpressionsStorage) LogImpressions(impressions []dtos.Impression) error {
 	s.mutexQueue.Lock()
@@ -83,9 +97,12 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 	return toReturn, nil
 }
 
-// Empty returns if slice len if zero
-func (s *MQImpressionsStorage) Empty() bool {
-	s.mutexQueue.Lock()
-	defer s.mutexQueue.Unlock()
-	return s.queue.Len() == 0
+// PopNWithMetadata pop N elements from queue
+func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+	panic("Not implemented for inmemory")
+}
+
+// Drop drops
+func (s *MQImpressionsStorage) Drop(size *int64) error {
+	panic("Not implemented for inmemory")
 }

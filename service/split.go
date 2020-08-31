@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/service/api"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -21,11 +22,12 @@ func NewSplitAPI(
 	apikey string,
 	conf conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *SplitAPI {
 	return &SplitAPI{
-		AuthClient:         api.NewAuthAPIClient(apikey, conf, logger),
-		SplitFetcher:       api.NewHTTPSplitFetcher(apikey, conf, logger),
-		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, conf, logger),
+		AuthClient:         api.NewAuthAPIClient(apikey, conf, logger, metadata),
+		SplitFetcher:       api.NewHTTPSplitFetcher(apikey, conf, logger, metadata),
+		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, conf, logger, metadata),
 		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, logger),
 		EventRecorder:      api.NewHTTPEventsRecorder(apikey, conf, logger),
 		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, conf, logger),

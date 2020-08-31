@@ -48,7 +48,7 @@ func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 	keyToFetch := strings.Replace(redisSegment, "{segment}", segmentName, 1)
 	segmentKeys, err := r.client.SMembers(keyToFetch)
 	if len(segmentKeys) <= 0 {
-		r.logger.Warning(fmt.Sprintf("Nonexsitant segment requested: \"%s\"", segmentName))
+		r.logger.Warning(fmt.Sprintf("Nonexsitent segment requested: %s", segmentName))
 		return nil
 	}
 	if err != nil {
@@ -74,10 +74,16 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 	defer r.mutext.Unlock()
 	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
 	if !toRemove.IsEmpty() {
-		r.client.SRem(segmentKey, toRemove.List()...)
+		_, err := r.client.SRem(segmentKey, toRemove.List()...)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
+		}
 	}
 	if !toAdd.IsEmpty() {
-		r.client.SAdd(segmentKey, toAdd.List()...)
+		_, err := r.client.SAdd(segmentKey, toAdd.List()...)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
+		}
 	}
 	r.SetChangeNumber(name, till)
 	return nil
@@ -89,3 +95,6 @@ func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (boo
 	exists := r.client.SIsMember(segmentKey, key)
 	return exists, nil
 }
+
+// CountRemovedKeys method
+func (r *SegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }

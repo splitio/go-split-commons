@@ -40,10 +40,11 @@ func NewHTTPSplitFetcher(
 	apikey string,
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *HTTPSplitFetcher {
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 	}
@@ -64,18 +65,6 @@ func (f *HTTPSplitFetcher) Fetch(since int64) (*dtos.SplitChangesDTO, error) {
 		return nil, err
 	}
 
-	// RAW DATA --------------
-	var objmap map[string]*json.RawMessage
-	if err = json.Unmarshal(data, &objmap); err != nil {
-		f.logger.Error(err)
-		return nil, err
-	}
-
-	if err = json.Unmarshal(*objmap["splits"], &splitChangesDto.RawSplits); err != nil {
-		f.logger.Error(err)
-		return nil, err
-	}
-	//-------------------------
 	return &splitChangesDto, nil
 }
 
@@ -89,10 +78,11 @@ func NewHTTPSegmentFetcher(
 	apikey string,
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) *HTTPSegmentFetcher {
 	return &HTTPSegmentFetcher{
 		httpFetcherBase: httpFetcherBase{
-			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger),
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 	}

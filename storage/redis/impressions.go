@@ -34,6 +34,31 @@ func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metad
 	}
 }
 
+// Count returns the size of the impressions queue
+func (r *ImpressionStorage) Count() int64 {
+	val, err := r.client.LLen(r.redisKey)
+	if err != nil {
+		return 0
+	}
+	return val
+}
+
+// Drop drops impressions from queue
+func (r *ImpressionStorage) Drop(size *int64) error {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	if size == nil {
+		_, err := r.client.Del(r.redisKey)
+		return err
+	}
+	return r.client.LTrim(r.redisKey, *size, -1)
+}
+
+// Empty returns true if redis list is zero length
+func (r *ImpressionStorage) Empty() bool {
+	return r.Count() == 0
+}
+
 // push stores impressions in redis
 func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error {
 	var impressionsJSON []interface{}
@@ -82,20 +107,43 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 
 // PopN return N elements from 0 to N
 func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
-	toReturn := make([]dtos.Impression, 0, 0)
-	return toReturn, nil
+	panic("Not implemented for redis")
 }
 
-// size returns the size of the impressions queue
-func (r *ImpressionStorage) size() int64 {
-	val, err := r.client.LLen(r.redisKey)
+// PopNWithMetadata pop N elements from queue
+func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	toReturn := make([]dtos.ImpressionQueueObject, 0, n)
+	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
 	if err != nil {
-		return 0
+		r.logger.Error("Error fetching impressions")
+		return toReturn, err
 	}
-	return val
-}
 
-// Empty returns true if redis list is zero length
-func (r *ImpressionStorage) Empty() bool {
-	return r.size() == 0
+	fetchedCount := int64(len(lrange))
+	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
+	if err != nil {
+		r.logger.Error("Error trimming impressions")
+		return toReturn, err
+	}
+
+	// This operation will simply do nothing if the key no longer exists (queue is empty)
+	// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
+	// popped correctly. This will result in impressions getting lost but will prevent the queue from taking
+	// a huge amount of memory.
+	r.client.Expire(r.redisKey, impressionsTTLRefresh)
+
+	for _, asStr := range lrange {
+		storedImpressionDTO := dtos.ImpressionQueueObject{}
+		err = json.Unmarshal([]byte(asStr), &storedImpressionDTO)
+		if err != nil {
+			r.logger.Error("Error decoding event JSON", err.Error())
+			continue
+		}
+		toReturn = append(toReturn, storedImpressionDTO)
+	}
+
+	return toReturn, nil
 }

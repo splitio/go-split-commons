@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/synchronizer/worker"
+	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
 	"github.com/splitio/go-toolkit/workerpool"
 )
 
 func updateSegments(
-	fetcher *worker.SegmentFetcher,
+	fetcher segment.SegmentFetcher,
 	admin *workerpool.WorkerAdmin,
 	logger logging.LoggerInterface,
 ) error {
@@ -36,7 +36,7 @@ func updateSegments(
 
 // NewFetchSegmentsTask creates a new segment fetching and storing task
 func NewFetchSegmentsTask(
-	fetcher *worker.SegmentFetcher,
+	fetcher segment.SegmentFetcher,
 	period int,
 	workerCount int,
 	queueSize int,

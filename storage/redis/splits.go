@@ -58,24 +58,6 @@ func (r *SplitStorage) All() []dtos.SplitDTO {
 		splits = append(splits, split)
 	}
 
-	// @TODO Change to MGET
-	/*
-		for _, key := range keys {
-			raw, err := r.client.Get(key)
-			if err != nil {
-				r.logger.Error(fmt.Sprintf("Fetching key \"%s\", skipping.", key))
-				continue
-			}
-
-			var split dtos.SplitDTO
-			err = json.Unmarshal([]byte(raw), &split)
-			if err != nil {
-				r.logger.Error(fmt.Sprintf("Error parsing json for split %s", key))
-				continue
-			}
-			splits = append(splits, split)
-		}
-	*/
 	return splits
 }
 
@@ -156,6 +138,8 @@ func (r *SplitStorage) decr(trafficType string) error {
 
 // PutMany bulk stores splits in redis
 func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
 	for _, split := range splits {
 		keyToStore := strings.Replace(redisSplit, "{split}", split.Name, 1)
 		raw, err := json.Marshal(split)
@@ -163,6 +147,15 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 			r.logger.Error(fmt.Sprintf("Could not dump feature \"%s\" to json", split.Name))
 			continue
 		}
+
+		existing := r.Split(split.Name)
+		if existing != nil {
+			// If it's an update, we decrement the traffic type count of the existing split,
+			// and then add the updated one (as part of the normal flow), in case it's different.
+			r.decr(existing.TrafficTypeName)
+		}
+
+		r.incr(split.TrafficTypeName)
 
 		err = r.client.Set(keyToStore, raw, 0)
 		if err != nil {
@@ -175,23 +168,17 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 	}
 }
 
-func (r *SplitStorage) remove(keys ...string) error {
-	withNamespace := make([]string, len(keys))
-	for index, key := range keys {
-		withNamespace[index] = strings.Replace(redisSplit, "{split}", key, 1)
-	}
-	val, err := r.client.Del(withNamespace...)
-	if err != nil {
-		r.logger.Error("Error removing splits in redis")
-		return err
-	}
-	r.logger.Verbose(val, " splits removed fromr redis")
-	return nil
-}
-
 // Remove removes split item from redis
 func (r *SplitStorage) Remove(splitName string) {
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
 	keyToDelete := strings.Replace(redisSplit, "{split}", splitName, 1)
+	existing := r.Split(splitName)
+	if existing == nil {
+		r.logger.Info("Tried to delete split " + splitName + " which doesn't exist. ignoring")
+		return
+	}
+	r.decr(existing.TrafficTypeName)
 	_, err := r.client.Del(keyToDelete)
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("Error deleting split \"%s\".", splitName))
@@ -226,14 +213,14 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 	val, err := r.client.Get(keyToFetch)
 
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not fetch feature \"%s\" from redis: %s", feature, err.Error()))
+		r.logger.Error(fmt.Sprintf("Could not fetch feature %s from redis: %s", feature, err.Error()))
 		return nil
 	}
 
 	var split dtos.SplitDTO
 	err = json.Unmarshal([]byte(val), &split)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not parse feature \"%s\" fetched from redis", feature))
+		r.logger.Error(fmt.Sprintf("Could not parse feature %s fetched from redis", feature))
 		return nil
 	}
 
@@ -271,14 +258,4 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 		return false
 	}
 	return val > 0
-}
-
-// RegisterSegment add the segment name into redis set
-func (r *SplitStorage) RegisterSegment(name string) error {
-	// @TODO DEPRECATE
-	_, err := r.client.SAdd("SPLITIO.segments.registered", name)
-	if err != nil {
-		r.logger.Debug("Error saving segment", name, err)
-	}
-	return err
 }

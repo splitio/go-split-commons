@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -31,6 +32,7 @@ func TestSpitChangesFetch(t *testing.T) {
 			SdkURL:    ts.URL,
 		},
 		logger,
+		dtos.Metadata{},
 	)
 
 	splitChangesDTO, err := splitFetcher.Fetch(-1)
@@ -72,6 +74,7 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 			SdkURL:    ts.URL,
 		},
 		logger,
+		dtos.Metadata{},
 	)
 
 	_, err := splitFetcher.Fetch(-1)
@@ -95,6 +98,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 			SdkURL:    ts.URL,
 		},
 		logger,
+		dtos.Metadata{},
 	)
 
 	segmentFetched, err := segmentFetcher.Fetch("employees", -1)
@@ -123,6 +127,7 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 			SdkURL:    ts.URL,
 		},
 		logger,
+		dtos.Metadata{},
 	)
 
 	_, err := segmentFetcher.Fetch("employees", -1)

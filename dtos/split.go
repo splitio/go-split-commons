@@ -4,10 +4,9 @@ import "encoding/json"
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
-	Till      int64      `json:"till"`
-	Since     int64      `json:"since"`
-	Splits    []SplitDTO `json:"splits"`
-	RawSplits []*json.RawMessage
+	Till   int64      `json:"till"`
+	Since  int64      `json:"since"`
+	Splits []SplitDTO `json:"splits"`
 }
 
 // SplitDTO structure to map an Split definition fetched from JSON message.
@@ -90,17 +89,12 @@ type WhitelistMatcherDataDTO struct {
 
 // DependencyMatcherDataDTO structure to map matcher definition fetched from JSON message.
 type DependencyMatcherDataDTO struct {
-	Split      string
-	Treatments []string
+	Split      string   `json:"split"`
+	Treatments []string `json:"treatments"`
 }
 
 // KeySelectorDTO structure to map a Key slector definition fetched from JSON message.
 type KeySelectorDTO struct {
 	TrafficType string  `json:"trafficType"`
 	Attribute   *string `json:"attribute"`
-}
-
-// MySegmentDTO struct mapping segment data for mySegments endpoint
-type MySegmentDTO struct {
-	Name string `json:"name"`
 }

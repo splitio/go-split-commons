@@ -9,7 +9,7 @@ import (
 )
 
 func TestUpdateManagers(t *testing.T) {
-	keeper := NewKeeper(make(chan int, 1))
+	keeper := NewKeeper(make(chan int, 5))
 
 	for i := 0; i < 5; i++ {
 		keeper.UpdateManagers(fmt.Sprintf("some_%d", i), i)
@@ -30,7 +30,7 @@ func TestUpdateManagers(t *testing.T) {
 }
 
 func TestUpdateLastNotification(t *testing.T) {
-	keeper := NewKeeper(make(chan int, 1))
+	keeper := NewKeeper(make(chan int, 5))
 
 	for i := 0; i < 5; i++ {
 		keeper.UpdateLastNotification(fmt.Sprintf("some_%d", i), int64(i))
@@ -47,7 +47,7 @@ func TestUpdateLastNotification(t *testing.T) {
 
 func TestKeeperMultipleOps(t *testing.T) {
 	iterations := 3000
-	keeper := NewKeeper(make(chan int, 1))
+	keeper := NewKeeper(make(chan int, 3000))
 
 	mainWG := sync.WaitGroup{}
 	mainWG.Add(iterations)

@@ -1,8 +1,7 @@
-package worker
+package segment
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -14,19 +13,12 @@ import (
 	"github.com/splitio/go-toolkit/logging"
 )
 
-const (
-	segmentChangesLatencies        = "segmentChangeFetcher.time"
-	segmentChangesLatenciesBackend = "backend::/api/segmentChanges" // @TODO add local
-	segmentChangesCounters         = "segmentChangeFetcher.status.{status}"
-	segmentChangesLocalCounters    = "backend::request.{status}" // @TODO add local
-)
-
-// SegmentFetcher struct for segment sync
-type SegmentFetcher struct {
-	splitStorage   storage.SplitStorage
+// SegmentFetcherSimple struct for segment sync
+type SegmentFetcherSimple struct {
+	splitStorage   storage.SplitStorageConsumer
 	segmentStorage storage.SegmentStorage
 	segmentFetcher service.SegmentFetcher
-	metricStorage  storage.MetricsStorage
+	metricsWrapper *storage.MetricWrapper
 	logger         logging.LoggerInterface
 }
 
@@ -35,19 +27,19 @@ func NewSegmentFetcher(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,
-	metricStorage storage.MetricsStorage,
+	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
-) *SegmentFetcher {
-	return &SegmentFetcher{
+) SegmentFetcher {
+	return &SegmentFetcherSimple{
 		splitStorage:   splitStorage,
 		segmentStorage: segmentStorage,
 		segmentFetcher: segmentFetcher,
-		metricStorage:  metricStorage,
+		metricsWrapper: metricsWrapper,
 		logger:         logger,
 	}
 }
 
-func (s *SegmentFetcher) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
+func (s *SegmentFetcherSimple) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 	name := segmentChanges.Name
 	oldSegment := s.segmentStorage.Keys(name)
 	if oldSegment == nil {
@@ -75,9 +67,9 @@ func (s *SegmentFetcher) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 }
 
 // SynchronizeSegment syncs segment
-func (s *SegmentFetcher) SynchronizeSegment(name string, till *int64) error {
+func (s *SegmentFetcherSimple) SynchronizeSegment(name string, till *int64) error {
 	for {
-		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
+		s.logger.Info(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {
 			changeNumber = -1
@@ -89,16 +81,16 @@ func (s *SegmentFetcher) SynchronizeSegment(name string, till *int64) error {
 		before := time.Now()
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
 		if err != nil {
-			if _, ok := err.(*dtos.HTTPError); ok {
-				s.metricStorage.IncCounter(strings.Replace(segmentChangesCounters, "{status}", string(err.(*dtos.HTTPError).Code), 1))
+			if httpError, ok := err.(*dtos.HTTPError); ok {
+				s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, string(httpError.Code))
 			}
 			return err
 		}
 
 		s.processUpdate(segmentChanges)
 		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-		s.metricStorage.IncLatency(segmentChangesLatencies, bucket)
-		s.metricStorage.IncCounter(strings.Replace(segmentChangesCounters, "{status}", "200", 1))
+		s.metricsWrapper.StoreLatencies(storage.SegmentChangesLatency, bucket)
+		s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, "ok")
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
 			return nil
 		}
@@ -106,7 +98,7 @@ func (s *SegmentFetcher) SynchronizeSegment(name string, till *int64) error {
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *SegmentFetcher) SynchronizeSegments() error {
+func (s *SegmentFetcherSimple) SynchronizeSegments() error {
 	// @TODO: add delays
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
@@ -142,6 +134,6 @@ func (s *SegmentFetcher) SynchronizeSegments() error {
 }
 
 // SegmentNames returns all segments
-func (s *SegmentFetcher) SegmentNames() []interface{} {
+func (s *SegmentFetcherSimple) SegmentNames() []interface{} {
 	return s.splitStorage.SegmentNames().List()
 }

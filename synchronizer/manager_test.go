@@ -17,8 +17,15 @@ import (
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/service/mocks"
 	httpMocks "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	syncMock "github.com/splitio/go-split-commons/synchronizer/mocks"
+	"github.com/splitio/go-split-commons/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
+	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/tasks"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -137,7 +144,13 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 	var periodicDataRecording int64
 	var periodicDataFetching int64
 	advanced := conf.GetDefaultAdvancedConfig()
-	advanced.StreamingServiceURL = "wrong"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	advanced.StreamingServiceURL = ts.URL
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	streamingStatus := make(chan int, 1)
@@ -176,7 +189,7 @@ func TestPollingWithStreamingPushError(t *testing.T) {
 
 	go managerTest.Start()
 	<-managerStatus
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 	if managerTest.status.Load().(int) != Polling {
 		t.Error("It should started in Polling mode")
 	}
@@ -241,7 +254,7 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				if len(impressions) != 1 {
 					t.Error("Wrong length")
@@ -273,104 +286,118 @@ func TestPolling(t *testing.T) {
 			},
 		},
 	}
+	eventStorageMock := storageMock.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			if n != 100 {
+				t.Error("It should be 100")
+			}
+			return []dtos.EventDTO{{
+				EventTypeID:     "someEvent",
+				Key:             "someKey",
+				Properties:      nil,
+				Timestamp:       123456789,
+				TrafficTypeName: "someTrafficType",
+				Value:           nil,
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			if eventsCalled < 4 {
+				return false
+			}
+			return true
+		},
+	}
+	mockSplitStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return -1, nil
+		},
+		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 3 {
+				t.Error("Wrong changenumber")
+			}
+			if len(splits) != 2 {
+				t.Error("Wrong length of passed splits")
+			}
+		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet {
+			segmentNames := set.NewSet("segment1", "segment2")
+			return segmentNames
+		},
+	}
+	metricStorageMock := storageMock.MockMetricStorage{
+		PopCountersCall: func() []dtos.CounterDTO {
+			return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
+		},
+		PopGaugesCall: func() []dtos.GaugeDTO {
+			return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
+		},
+		PopLatenciesCall: func() []dtos.LatenciesDTO {
+			return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
+		},
+		IncLatencyCall: func(metricName string, index int) {},
+		IncCounterCall: func(key string) {},
+		PutGaugeCall:   func(key string, gauge float64) {},
+	}
+	segmentStorageMock := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return -1, nil
+		},
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
+			if segmentName != "segment1" && segmentName != "segment2" {
+				t.Error("Wrong name")
+			}
+			return nil
+		},
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			if name != "segment1" && name != "segment2" {
+				t.Error("Wrong name")
+			}
+			return nil
+		},
+	}
+	impressionStorageMock := storageMock.MockImpressionStorage{
+		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			if n != 100 {
+				t.Error("It should be 100")
+			}
+			return []dtos.Impression{{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "someFeature",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         123456789,
+				Treatment:    "someTreatment",
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			if impressionsCalled < 3 {
+				return false
+			}
+			return true
+		},
+	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
+	workers := Workers{
+		SplitFetcher:       split.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
+		SegmentFetcher:     segment.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
-		&splitAPI,
-		storageMock.MockSplitStorage{
-			ChangeNumberCall: func() (int64, error) {
-				return -1, nil
-			},
-			PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
-				if changeNumber != 3 {
-					t.Error("Wrong changenumber")
-				}
-				if len(splits) != 2 {
-					t.Error("Wrong length of passed splits")
-				}
-			},
-			SegmentNamesCall: func() *set.ThreadUnsafeSet {
-				segmentNames := set.NewSet("segment1", "segment2")
-				return segmentNames
-			},
-		},
-		storageMock.MockSegmentStorage{
-			ChangeNumberCall: func(segmentName string) (int64, error) {
-				return -1, nil
-			},
-			KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
-				if segmentName != "segment1" && segmentName != "segment2" {
-					t.Error("Wrong name")
-				}
-				return nil
-			},
-			UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
-				if name != "segment1" && name != "segment2" {
-					t.Error("Wrong name")
-				}
-				return nil
-			},
-		},
-		storageMock.MockMetricStorage{
-			PopCountersCall: func() []dtos.CounterDTO {
-				return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
-			},
-			PopGaugesCall: func() []dtos.GaugeDTO {
-				return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
-			},
-			PopLatenciesCall: func() []dtos.LatenciesDTO {
-				return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
-			},
-			IncLatencyCall: func(metricName string, index int) {},
-			IncCounterCall: func(key string) {},
-			PutGaugeCall:   func(key string, gauge float64) {},
-		},
-		storageMock.MockImpressionStorage{
-			PopNCall: func(n int64) ([]dtos.Impression, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
-				return []dtos.Impression{{
-					BucketingKey: "someBucketingKey",
-					ChangeNumber: 123456789,
-					FeatureName:  "someFeature",
-					KeyName:      "someKey",
-					Label:        "someLabel",
-					Time:         123456789,
-					Treatment:    "someTreatment",
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				if impressionsCalled < 3 {
-					return false
-				}
-				return true
-			},
-		},
-		storageMock.MockEventStorage{
-			PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-				if n != 100 {
-					t.Error("It should be 100")
-				}
-				return []dtos.EventDTO{{
-					EventTypeID:     "someEvent",
-					Key:             "someKey",
-					Properties:      nil,
-					Timestamp:       123456789,
-					TrafficTypeName: "someTrafficType",
-					Value:           nil,
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				if eventsCalled < 4 {
-					return false
-				}
-				return true
-			},
-		},
+		splitTasks,
+		workers,
 		logger,
 		nil,
-		&dtos.Metadata{},
 	)
 
 	statusChannel := make(chan int, 1)
@@ -544,7 +571,7 @@ func TestStreaming(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				return nil
 			},
@@ -564,7 +591,17 @@ func TestStreaming(t *testing.T) {
 			},
 		},
 	}
-
+	segmentStorageMock := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return -1, nil
+		},
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
+			return nil
+		},
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			return nil
+		},
+	}
 	splitStorageMock := storageMock.MockSplitStorage{
 		KillLocallyCall: func(splitName, defaultTreatment string) {
 			atomic.AddInt64(&kilLocallyCalled, 1)
@@ -585,71 +622,72 @@ func TestStreaming(t *testing.T) {
 			return set.NewSet("segment1")
 		},
 	}
-
+	metricStorageMock := storageMock.MockMetricStorage{
+		PopCountersCall: func() []dtos.CounterDTO {
+			return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
+		},
+		PopGaugesCall: func() []dtos.GaugeDTO {
+			return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
+		},
+		PopLatenciesCall: func() []dtos.LatenciesDTO {
+			return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
+		},
+		IncLatencyCall: func(metricName string, index int) {},
+		IncCounterCall: func(key string) {},
+		PutGaugeCall:   func(key string, gauge float64) {},
+	}
+	impressionStorageMock := storageMock.MockImpressionStorage{
+		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			return []dtos.Impression{{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "someFeature",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         123456789,
+				Treatment:    "someTreatment",
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			return true
+		},
+	}
+	eventStorageMock := storageMock.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			return []dtos.EventDTO{{
+				EventTypeID:     "someEvent",
+				Key:             "someKey",
+				Properties:      nil,
+				Timestamp:       123456789,
+				TrafficTypeName: "someTrafficType",
+				Value:           nil,
+			}}, nil
+		},
+		EmptyCall: func() bool {
+			return true
+		},
+	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
+	workers := Workers{
+		SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
-		&splitAPI,
-		splitStorageMock,
-		storageMock.MockSegmentStorage{
-			ChangeNumberCall: func(segmentName string) (int64, error) {
-				return -1, nil
-			},
-			KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
-				return nil
-			},
-			UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
-				return nil
-			},
-		},
-		storageMock.MockMetricStorage{
-			PopCountersCall: func() []dtos.CounterDTO {
-				return []dtos.CounterDTO{{MetricName: "counter", Count: 1}}
-			},
-			PopGaugesCall: func() []dtos.GaugeDTO {
-				return []dtos.GaugeDTO{{MetricName: "gauge", Gauge: 1}}
-			},
-			PopLatenciesCall: func() []dtos.LatenciesDTO {
-				return []dtos.LatenciesDTO{{MetricName: "latency", Latencies: []int64{1, 2, 3, 4}}}
-			},
-			IncLatencyCall: func(metricName string, index int) {},
-			IncCounterCall: func(key string) {},
-			PutGaugeCall:   func(key string, gauge float64) {},
-		},
-		storageMock.MockImpressionStorage{
-			PopNCall: func(n int64) ([]dtos.Impression, error) {
-				return []dtos.Impression{{
-					BucketingKey: "someBucketingKey",
-					ChangeNumber: 123456789,
-					FeatureName:  "someFeature",
-					KeyName:      "someKey",
-					Label:        "someLabel",
-					Time:         123456789,
-					Treatment:    "someTreatment",
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				return true
-			},
-		},
-		storageMock.MockEventStorage{
-			PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-				return []dtos.EventDTO{{
-					EventTypeID:     "someEvent",
-					Key:             "someKey",
-					Properties:      nil,
-					Timestamp:       123456789,
-					TrafficTypeName: "someTrafficType",
-					Value:           nil,
-				}}, nil
-			},
-			EmptyCall: func() bool {
-				return true
-			},
-		},
+		splitTasks,
+		workers,
 		logger,
 		nil,
-		&dtos.Metadata{},
 	)
 
 	statusChannel := make(chan int, 1)
@@ -789,7 +827,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.Impression, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
 				return nil
 			},
 		},
@@ -818,56 +856,68 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 			return set.NewSet("one")
 		},
 	}
-
+	segmentStorageMock := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return -1, nil
+		},
+		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
+			return nil
+		},
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			return nil
+		},
+	}
+	metricStorageMock := storageMock.MockMetricStorage{
+		PopCountersCall: func() []dtos.CounterDTO {
+			return []dtos.CounterDTO{}
+		},
+		PopGaugesCall: func() []dtos.GaugeDTO {
+			return []dtos.GaugeDTO{}
+		},
+		PopLatenciesCall: func() []dtos.LatenciesDTO {
+			return []dtos.LatenciesDTO{}
+		},
+		IncLatencyCall: func(metricName string, index int) {},
+		IncCounterCall: func(key string) {},
+		PutGaugeCall:   func(key string, gauge float64) {},
+	}
+	impressionStorageMock := storageMock.MockImpressionStorage{
+		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			return []dtos.Impression{}, nil
+		},
+		EmptyCall: func() bool {
+			return true
+		},
+	}
+	eventStorageMock := storageMock.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			return []dtos.EventDTO{}, nil
+		},
+		EmptyCall: func() bool {
+			return true
+		},
+	}
+	metricTestWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
+	workers := Workers{
+		SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
+		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
+	}
+	splitTasks := SplitTasks{
+		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
+		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
+		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+	}
 	syncForTest := NewSynchronizer(
-		conf.TaskPeriods{CounterSync: 10, EventsSync: 10, GaugeSync: 10, ImpressionSync: 10, LatencySync: 10, SegmentSync: 10, SplitSync: 10},
 		advanced,
-		&splitAPI,
-		splitStorageMock,
-		storageMock.MockSegmentStorage{
-			ChangeNumberCall: func(segmentName string) (int64, error) {
-				return -1, nil
-			},
-			KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
-				return nil
-			},
-			UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
-				return nil
-			},
-		},
-		storageMock.MockMetricStorage{
-			PopCountersCall: func() []dtos.CounterDTO {
-				return []dtos.CounterDTO{}
-			},
-			PopGaugesCall: func() []dtos.GaugeDTO {
-				return []dtos.GaugeDTO{}
-			},
-			PopLatenciesCall: func() []dtos.LatenciesDTO {
-				return []dtos.LatenciesDTO{}
-			},
-			IncLatencyCall: func(metricName string, index int) {},
-			IncCounterCall: func(key string) {},
-			PutGaugeCall:   func(key string, gauge float64) {},
-		},
-		storageMock.MockImpressionStorage{
-			PopNCall: func(n int64) ([]dtos.Impression, error) {
-				return []dtos.Impression{}, nil
-			},
-			EmptyCall: func() bool {
-				return true
-			},
-		},
-		storageMock.MockEventStorage{
-			PopNCall: func(n int64) ([]dtos.EventDTO, error) {
-				return []dtos.EventDTO{}, nil
-			},
-			EmptyCall: func() bool {
-				return true
-			},
-		},
+		splitTasks,
+		workers,
 		logger,
 		nil,
-		&dtos.Metadata{},
 	)
 
 	statusChannel := make(chan int, 1)
@@ -921,11 +971,11 @@ func TestMultipleErrors(t *testing.T) {
 	status.Store(Idle)
 
 	var startCall int64
-	stopWorkersCall := 0
-	startPeriodicFetchingCall := 0
-	stopPeriodicFetchingCall := 0
+	var stopWorkersCall int64
+	var startPeriodicFetchingCall int64
+	var stopPeriodicFetchingCall int64
 	var stopCall int64
-	startWorkersCall := 0
+	var startWorkersCall int64
 
 	managerTest := Manager{
 		synchronizer: syncMock.MockSynchronizer{
@@ -934,10 +984,10 @@ func TestMultipleErrors(t *testing.T) {
 			},
 			StartPeriodicDataRecordingCall: func() {},
 			StartPeriodicFetchingCall: func() {
-				startPeriodicFetchingCall++
+				atomic.AddInt64(&startPeriodicFetchingCall, 1)
 			},
 			StopPeriodicFetchingCall: func() {
-				stopPeriodicFetchingCall++
+				atomic.AddInt64(&stopPeriodicFetchingCall, 1)
 			},
 			StopPeriodicDataRecordingCall: func() {},
 		},
@@ -949,14 +999,14 @@ func TestMultipleErrors(t *testing.T) {
 				atomic.AddInt64(&startCall, 1)
 			},
 			StopWorkersCall: func() {
-				stopWorkersCall++
+				atomic.AddInt64(&stopWorkersCall, 1)
 			},
 			StopCall: func() {
 				atomic.AddInt64(&stopCall, 1)
-				stopWorkersCall++
+				atomic.AddInt64(&stopWorkersCall, 1)
 			},
 			StartWorkersCall: func() {
-				startWorkersCall++
+				atomic.AddInt64(&startWorkersCall, 1)
 			},
 			IsRunningCall: func() bool {
 				return true
@@ -974,7 +1024,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
+	if atomic.LoadInt64(&startCall) != 1 || atomic.LoadInt64(&stopWorkersCall) != 1 || atomic.LoadInt64(&startPeriodicFetchingCall) != 1 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -983,7 +1033,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || stopWorkersCall != 1 || startPeriodicFetchingCall != 1 || stopPeriodicFetchingCall != 0 || atomic.LoadInt64(&stopCall) != 0 || startWorkersCall != 0 {
+	if atomic.LoadInt64(&startCall) != 1 || atomic.LoadInt64(&stopWorkersCall) != 1 || atomic.LoadInt64(&startPeriodicFetchingCall) != 1 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 0 || atomic.LoadInt64(&stopCall) != 0 || atomic.LoadInt64(&startWorkersCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -992,7 +1042,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&startCall) != 1 || startPeriodicFetchingCall != 1 || stopWorkersCall != 1 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 || atomic.LoadInt64(&stopCall) != 0 {
+	if atomic.LoadInt64(&startCall) != 1 || atomic.LoadInt64(&startPeriodicFetchingCall) != 1 || atomic.LoadInt64(&stopWorkersCall) != 1 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 1 || atomic.LoadInt64(&startWorkersCall) != 0 || atomic.LoadInt64(&stopCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1001,7 +1051,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 1 || stopWorkersCall != 2 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || atomic.LoadInt64(&startPeriodicFetchingCall) != 1 || atomic.LoadInt64(&stopWorkersCall) != 2 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 1 || atomic.LoadInt64(&startWorkersCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1010,7 +1060,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 1 || startWorkersCall != 0 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || atomic.LoadInt64(&startPeriodicFetchingCall) != 2 || atomic.LoadInt64(&stopWorkersCall) != 3 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 1 || atomic.LoadInt64(&startWorkersCall) != 0 {
 		t.Error("Unexpected state")
 	}
 
@@ -1019,7 +1069,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || startPeriodicFetchingCall != 2 || stopWorkersCall != 3 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+	if atomic.LoadInt64(&stopCall) != 1 || atomic.LoadInt64(&startCall) != 2 || atomic.LoadInt64(&startPeriodicFetchingCall) != 2 || atomic.LoadInt64(&stopWorkersCall) != 3 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 2 || atomic.LoadInt64(&startWorkersCall) != 1 {
 		t.Error("Unexpected state")
 	}
 
@@ -1028,7 +1078,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Streaming {
 		t.Error("It should be running in Streaming mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 2 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 2 || stopWorkersCall != 4 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+	if atomic.LoadInt64(&stopCall) != 2 || atomic.LoadInt64(&startCall) != 3 || atomic.LoadInt64(&startPeriodicFetchingCall) != 2 || atomic.LoadInt64(&stopWorkersCall) != 4 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 2 || atomic.LoadInt64(&startWorkersCall) != 1 {
 		t.Error("Unexpected state")
 	}
 
@@ -1037,7 +1087,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if atomic.LoadInt64(&stopCall) != 3 || atomic.LoadInt64(&startCall) != 3 || startPeriodicFetchingCall != 3 || stopWorkersCall != 6 || stopPeriodicFetchingCall != 2 || startWorkersCall != 1 {
+	if atomic.LoadInt64(&stopCall) != 3 || atomic.LoadInt64(&startCall) != 3 || atomic.LoadInt64(&startPeriodicFetchingCall) != 3 || atomic.LoadInt64(&stopWorkersCall) != 6 || atomic.LoadInt64(&stopPeriodicFetchingCall) != 2 || atomic.LoadInt64(&startWorkersCall) != 1 {
 		t.Error("Unexpected state")
 	}
 
@@ -1050,7 +1100,7 @@ func TestMultipleErrors(t *testing.T) {
 	if managerTest.status.Load() != Polling {
 		t.Error("It should be running in Polling mode")
 	}
-	if startPeriodicFetchingCall != 4 || stopWorkersCall != 9 {
-		t.Error("Unexpected state", startPeriodicFetchingCall, stopWorkersCall)
+	if atomic.LoadInt64(&startPeriodicFetchingCall) != 4 || atomic.LoadInt64(&stopWorkersCall) != 9 {
+		t.Error("Unexpected state")
 	}
 }

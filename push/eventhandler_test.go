@@ -31,7 +31,7 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should not return error")
 	}
 	parser := NewNotificationParser(logger)
-	publishers := make(chan int, 1)
+	publishers := make(chan int, 1000)
 	keeper := NewKeeper(publishers)
 
 	eventHandler := NewEventHandler(keeper, parser, processor, logger)

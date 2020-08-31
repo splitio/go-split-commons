@@ -213,15 +213,18 @@ func (p *PushManager) fetchStreamingToken(errResult chan error) (string, []strin
 		return "", []string{}, errors.New("Could not perform authentication")
 	}
 	go func() {
-		for {
-			select {
-			case <-time.After(nextTokenExpiration):
-				p.logger.Info("Token expired")
-				p.managerStatus <- TokenExpiration
-				return
-			case <-p.cancelTokenExpiration:
-				return
-			}
+		// Create timeout timer for calculating next token expiration
+		idleDuration := nextTokenExpiration
+		tokenExpirationTimer := time.NewTimer(idleDuration)
+		defer tokenExpirationTimer.Stop()
+
+		select {
+		case <-tokenExpirationTimer.C: // Timedout
+			p.logger.Info("Token expired")
+			p.managerStatus <- TokenExpiration
+			return
+		case <-p.cancelTokenExpiration:
+			return
 		}
 	}()
 	return token.Token, channels, nil

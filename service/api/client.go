@@ -27,6 +27,7 @@ type HTTPClient struct {
 	headers    map[string]string
 	logger     logging.LoggerInterface
 	apikey     string
+	metadata   dtos.Metadata
 }
 
 // NewHTTPClient instance of HttpClient
@@ -35,6 +36,7 @@ func NewHTTPClient(
 	cfg conf.AdvancedConfig,
 	endpoint string,
 	logger logging.LoggerInterface,
+	metadata dtos.Metadata,
 ) Client {
 	var timeout int
 	timeout = cfg.HTTPTimeout
@@ -44,6 +46,7 @@ func NewHTTPClient(
 		httpClient: client,
 		logger:     logger,
 		apikey:     apikey,
+		metadata:   metadata,
 	}
 }
 
@@ -61,6 +64,10 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 	c.logger.Debug(fmt.Sprintf("Headers: %v", req.Header))
 
 	req.Header.Add("Authorization", "Bearer "+authorization)
+
+	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
+	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
+	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

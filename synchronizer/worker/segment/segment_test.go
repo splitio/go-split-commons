@@ -1,4 +1,4 @@
-package worker
+package segment
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
 	storageMock "github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/storage/mutexmap"
 	"github.com/splitio/go-toolkit/datastructures/set"
@@ -36,22 +37,23 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		},
 	}
 
+	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
+		IncCounterCall: func(key string) {
+			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
+				t.Error("Unexpected counter key to increase")
+			}
+		},
+		IncLatencyCall: func(metricName string, index int) {
+			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
+				t.Error("Unexpected latency key to track")
+			}
+		},
+	}, nil, nil)
 	segmentSync := NewSegmentFetcher(
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		},
+		metricsWrapperTest,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -153,22 +155,23 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
+	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
+		IncCounterCall: func(key string) {
+			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
+				t.Error("Unexpected counter key to increase")
+			}
+		},
+		IncLatencyCall: func(metricName string, index int) {
+			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+				t.Error("Unexpected latency key to track")
+			}
+		},
+	}, nil, nil)
 	segmentSync := NewSegmentFetcher(
 		splitMockStorage,
 		segmentMockStorage,
 		segmentMockFetcher,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		},
+		metricsWrapperTest,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -243,22 +246,23 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		},
 	}
 
+	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
+		IncCounterCall: func(key string) {
+			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
+				t.Error("Unexpected counter key to increase")
+			}
+		},
+		IncLatencyCall: func(metricName string, index int) {
+			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+				t.Error("Unexpected latency key to track")
+			}
+		},
+	}, nil, nil)
 	segmentSync := NewSegmentFetcher(
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		},
+		metricsWrapperTest,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -372,22 +376,23 @@ func TestSegmentSyncProcess(t *testing.T) {
 		},
 	}
 
+	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
+		IncCounterCall: func(key string) {
+			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
+				t.Error("Unexpected counter key to increase")
+			}
+		},
+		IncLatencyCall: func(metricName string, index int) {
+			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
+				t.Error("Unexpected latency key to track")
+			}
+		},
+	}, nil, nil)
 	segmentSync := NewSegmentFetcher(
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		},
+		metricsWrapperTest,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -455,14 +460,15 @@ func TestSegmentTill(t *testing.T) {
 		},
 	}
 
+	metricWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
+		IncCounterCall: func(key string) {},
+		IncLatencyCall: func(metricName string, index int) {},
+	}, nil, nil)
 	segmentSync := NewSegmentFetcher(
 		splitStorage,
 		segmentStorage,
 		segmentMockFetcher,
-		storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {},
-			IncLatencyCall: func(metricName string, index int) {},
-		},
+		metricWrapperTest,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 )
 
 func TestStreamingError(t *testing.T) {
-	var sseErrorReceived int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,25 +30,16 @@ func TestStreamingError(t *testing.T) {
 	streamingStatus := make(chan int, 1)
 	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
 
-	go func() {
-		msg := <-streamingStatus
-		atomic.AddInt64(&sseErrorReceived, 1)
-		if msg != sse.ErrorInternal {
-			t.Error("Unexpected error")
-		}
-	}()
-
-	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		t.Error("Should not execute callback")
 	})
-
-	time.Sleep(200 * time.Millisecond)
+	msg := <-streamingStatus
+	if msg != sse.ErrorInternal {
+		t.Error("Unexpected error")
+	}
 
 	if mockedClient.IsRunning() {
 		t.Error("It should not be running")
-	}
-	if atomic.LoadInt64(&sseErrorReceived) != 1 {
-		t.Error("It should be one")
 	}
 }
 
@@ -63,8 +52,6 @@ func TestStreamingOk(t *testing.T) {
 	mockedStr, _ := json.Marshal(mockedData)
 
 	streamingStatus := make(chan int, 1)
-	var sseReadyReceived int64
-	var sseErrorReceived int64
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -88,38 +75,26 @@ func TestStreamingOk(t *testing.T) {
 
 	var result map[string]interface{}
 	mutexTest := sync.RWMutex{}
-	mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
 		defer mutexTest.Unlock()
 		mutexTest.Lock()
 		result = e
 	})
 
-	go func() {
-		for {
-			status := <-streamingStatus
-			switch status {
-			case sse.OK:
-				atomic.AddInt64(&sseReadyReceived, 1)
-			default:
-				atomic.AddInt64(&sseErrorReceived, 1)
-			}
-		}
-	}()
+	status := <-streamingStatus
+	if status != sse.OK {
+		t.Error("It should not be error")
 
-	time.Sleep(500 * time.Millisecond)
+	}
 	if !mockedClient.IsRunning() {
 		t.Error("It should be running")
 	}
 
+	time.Sleep(100 * time.Millisecond)
+
 	mockedClient.StopStreaming(true)
 	if mockedClient.IsRunning() {
 		t.Error("It should not be running")
-	}
-	if atomic.LoadInt64(&sseErrorReceived) != 0 {
-		t.Error("It should not have error")
-	}
-	if atomic.LoadInt64(&sseReadyReceived) != 1 {
-		t.Error("It should be ready")
 	}
 
 	mutexTest.RLock()

@@ -5,12 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/provisional"
 	"github.com/splitio/go-toolkit/logging"
-)
-
-const (
-	maxImpressionCacheSize = 500000
 )
 
 type httpRecorderBase struct {
@@ -18,7 +13,8 @@ type httpRecorderBase struct {
 	logger logging.LoggerInterface
 }
 
-func (h *httpRecorderBase) recordRaw(url string, data []byte, metadata dtos.Metadata) error {
+// RecordRaw records raw data
+func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata) error {
 	headers := make(map[string]string)
 	headers["SplitSDKVersion"] = metadata.SDKVersion
 	if metadata.MachineName != "NA" && metadata.MachineName != "unknown" {
@@ -33,47 +29,17 @@ func (h *httpRecorderBase) recordRaw(url string, data []byte, metadata dtos.Meta
 // HTTPImpressionRecorder is a struct responsible for submitting impression bulks to the backend
 type HTTPImpressionRecorder struct {
 	httpRecorderBase
-	impressionObserver provisional.ImpressionObserver
 }
 
 // Record sends an array (or slice) of impressionsRecord to the backend
-func (i *HTTPImpressionRecorder) Record(impressions []dtos.Impression, metadata dtos.Metadata) error {
-	impressionsToPost := make(map[string][]dtos.ImpressionDTO)
-	for _, impression := range impressions {
-		keyImpression := dtos.ImpressionDTO{
-			KeyName:      impression.KeyName,
-			Treatment:    impression.Treatment,
-			Time:         impression.Time,
-			ChangeNumber: impression.ChangeNumber,
-			Label:        impression.Label,
-			BucketingKey: impression.BucketingKey,
-		}
-
-		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
-		v, ok := impressionsToPost[impression.FeatureName]
-		if ok {
-			v = append(v, keyImpression)
-		} else {
-			v = []dtos.ImpressionDTO{keyImpression}
-		}
-		impressionsToPost[impression.FeatureName] = v
-	}
-
-	bulkImpressions := make([]dtos.ImpressionsDTO, 0)
-	for testName, testImpressions := range impressionsToPost {
-		bulkImpressions = append(bulkImpressions, dtos.ImpressionsDTO{
-			TestName:       testName,
-			KeyImpressions: testImpressions,
-		})
-	}
-
-	data, err := json.Marshal(bulkImpressions)
+func (i *HTTPImpressionRecorder) Record(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+	data, err := json.Marshal(impressions)
 	if err != nil {
 		i.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = i.recordRaw("/testImpressions/bulk", data, metadata)
+	err = i.RecordRaw("/testImpressions/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting impressions", err.Error())
 		return err
@@ -88,14 +54,12 @@ func NewHTTPImpressionRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPImpressionRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
-	observer, _ := provisional.NewImpressionObserver(maxImpressionCacheSize)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
 			logger: logger,
 		},
-		impressionObserver: observer,
 	}
 }
 
@@ -112,7 +76,7 @@ func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO, metadat
 		return err
 	}
 
-	err = m.recordRaw("/metrics/counters", data, metadata)
+	err = m.RecordRaw("/metrics/counters", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting counters", err.Error())
 		return err
@@ -129,7 +93,7 @@ func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO, met
 		return err
 	}
 
-	err = m.recordRaw("/metrics/times", data, metadata)
+	err = m.RecordRaw("/metrics/times", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting latencies", err.Error())
 		return err
@@ -146,7 +110,7 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Met
 		return err
 	}
 
-	err = m.recordRaw("/metrics/gauge", data, metadata)
+	err = m.RecordRaw("/metrics/gauge", data, metadata)
 	if err != nil {
 		m.logger.Error("Error posting gauges", err.Error())
 		return err
@@ -161,7 +125,7 @@ func NewHTTPMetricsRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPMetricsRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPMetricsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,
@@ -183,7 +147,7 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 		return err
 	}
 
-	err = i.recordRaw("/events/bulk", data, metadata)
+	err = i.RecordRaw("/events/bulk", data, metadata)
 	if err != nil {
 		i.logger.Error("Error posting events", err.Error())
 		return err
@@ -198,7 +162,7 @@ func NewHTTPEventsRecorder(
 	cfg conf.AdvancedConfig,
 	logger logging.LoggerInterface,
 ) *HTTPEventsRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger)
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,

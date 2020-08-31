@@ -18,13 +18,15 @@
   version = "v6.15.7"
 
 [[projects]]
-  digest = "1:7a736b9aa21a0835bde8dc7955b39e4e2891482b3fd5d06071b36c512e0a5d21"
+  digest = "1:ee52d3ebf676c5c1d0d67a6f62e857325ea98bc874c6ddb690621ba158776767"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
     "common",
     "datastructures/set",
     "logging",
+    "provisional/hashing",
+    "provisional/int64cache",
     "queuecache",
     "redis",
     "redis/helpers",
@@ -33,8 +35,8 @@
     "workerpool",
   ]
   pruneopts = ""
-  revision = "502423be65b97b25ba0e8f81b2b517369b4f19d9"
-  version = "2.1.0"
+  revision = "1090670ff2d8d571571a329f09390d1866a1ce02"
+  version = "2.1.2"
 
 [[projects]]
   digest = "1:43eca683d801087f3acacfd036474638bc5e293ff6078758d710d99c40ec3f7c"
@@ -52,6 +54,8 @@
     "github.com/splitio/go-toolkit/common",
     "github.com/splitio/go-toolkit/datastructures/set",
     "github.com/splitio/go-toolkit/logging",
+    "github.com/splitio/go-toolkit/provisional/hashing",
+    "github.com/splitio/go-toolkit/provisional/int64cache",
     "github.com/splitio/go-toolkit/queuecache",
     "github.com/splitio/go-toolkit/redis",
     "github.com/splitio/go-toolkit/redis/helpers",
