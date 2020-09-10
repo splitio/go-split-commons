@@ -361,6 +361,8 @@ func TestFeedbackLoop(t *testing.T) {
 		mockedStr, _ = json.Marshal(mockedData)
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
+
+		time.Sleep(5 * time.Second)
 	}))
 	defer ts.Close()
 
@@ -418,7 +420,7 @@ func TestFeedbackLoop(t *testing.T) {
 
 	msg = <-managerStatus
 	if msg != PushIsUp {
-		t.Error("It should receive push up")
+		t.Error("It should receive push up. Got: ", msg)
 	}
 }
 
@@ -880,6 +882,7 @@ func TestControlLogic(t *testing.T) {
 		mockedStr, _ = json.Marshal(mockedData)
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
+		time.Sleep(5 * time.Second)
 	}))
 	defer ts.Close()
 

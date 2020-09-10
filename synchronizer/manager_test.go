@@ -534,6 +534,7 @@ func TestStreaming(t *testing.T) {
 		mockedStr, _ = json.Marshal(mockedData)
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
+		time.Sleep(5 * time.Second)
 	}))
 	defer ts.Close()
 
@@ -790,6 +791,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		mockedStr, _ = json.Marshal(mockedData)
 		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
 		flusher.Flush()
+		time.Sleep(5 * time.Second)
 	}))
 	defer ts.Close()
 

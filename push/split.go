@@ -40,7 +40,7 @@ func NewSplitUpdateWorker(splitQueue chan dtos.SplitChangeNotification, handler 
 
 // Start starts worker
 func (s *SplitUpdateWorker) Start() {
-	s.logger.Info("Started SplitUpdateWorker")
+	s.logger.Debug("Started SplitUpdateWorker")
 	if s.IsRunning() {
 		s.logger.Info("Split worker is already running")
 		return

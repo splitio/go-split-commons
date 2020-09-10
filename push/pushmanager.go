@@ -260,14 +260,14 @@ func (p *PushManager) streamingStatusWatcher() {
 		case controlStatus := <-p.control:
 			switch controlStatus {
 			case streamingPaused:
-				p.logger.Info("Received Pause Streaming Notification")
+				p.logger.Debug("Received Pause Streaming Notification")
 				if p.status.Load().(int) != StreamingPaused {
 					p.logger.Info("Sending Pause Streaming")
 					p.status.Store(StreamingPaused)
 					p.managerStatus <- PushIsDown
 				}
 			case streamingResumed:
-				p.logger.Info("Received Resume Streaming Notification")
+				p.logger.Debug("Received Resume Streaming Notification")
 				if p.status.Load().(int) == StreamingPaused {
 					p.status.Store(StreamingResumed)
 					publishersAvailable := p.eventHandler.keeper.Publishers("control_pri")

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
@@ -49,6 +50,7 @@ func TestPushError(t *testing.T) {
 
 		fmt.Fprintf(w, "data: %s\n\n", "{}")
 		flusher.Flush()
+		time.Sleep(5 * time.Second)
 	}))
 	defer ts.Close()
 

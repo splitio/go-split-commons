@@ -175,7 +175,7 @@ func (r *SplitStorage) Remove(splitName string) {
 	keyToDelete := strings.Replace(redisSplit, "{split}", splitName, 1)
 	existing := r.Split(splitName)
 	if existing == nil {
-		r.logger.Info("Tried to delete split " + splitName + " which doesn't exist. ignoring")
+		r.logger.Warning("Tried to delete split " + splitName + " which doesn't exist. ignoring")
 		return
 	}
 	r.decr(existing.TrafficTypeName)

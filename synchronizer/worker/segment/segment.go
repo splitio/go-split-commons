@@ -69,7 +69,7 @@ func (s *SegmentFetcherSimple) processUpdate(segmentChanges *dtos.SegmentChanges
 // SynchronizeSegment syncs segment
 func (s *SegmentFetcherSimple) SynchronizeSegment(name string, till *int64) error {
 	for {
-		s.logger.Info(fmt.Sprintf("Synchronizing segment %s", name))
+		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {
 			changeNumber = -1
