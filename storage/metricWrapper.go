@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // MetricWrapper struct

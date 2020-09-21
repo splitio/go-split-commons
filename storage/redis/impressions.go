@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/logging"
-	"github.com/splitio/go-toolkit/redis"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v3/redis"
 )
 
 const impressionsTTLRefresh = time.Duration(3600) * time.Second

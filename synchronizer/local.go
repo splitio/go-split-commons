@@ -1,13 +1,13 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/tasks"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service"
+	"github.com/splitio/go-split-commons/v2/storage"
+	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v2/tasks"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // Local implements Local Synchronizer

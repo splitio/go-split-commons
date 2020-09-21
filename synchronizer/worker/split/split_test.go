@@ -5,12 +5,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/storage/mutexmap"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v2/storage"
+	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-split-commons/v2/storage/mutexmap"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func TestSplitSynchronizerError(t *testing.T) {

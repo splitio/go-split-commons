@@ -9,14 +9,14 @@ import (
 	"testing"
 
 	"errors"
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api"
-	recorderMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/storage/mutexqueue"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service/api"
+	recorderMock "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v2/storage"
+	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-split-commons/v2/storage/mutexqueue"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func TestSynhronizeEventError(t *testing.T) {

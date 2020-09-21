@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/datastructures/set"
-	"github.com/splitio/go-toolkit/logging"
-	"github.com/splitio/go-toolkit/redis"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
+	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v3/redis"
 )
 
 // SplitStorage is a redis-based implementation of split storage

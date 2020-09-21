@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/dtos"
-	recorderMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v2/storage"
+	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func TestImpressionSyncTask(t *testing.T) {

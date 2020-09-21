@@ -5,9 +5,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-toolkit/logging"
-	"github.com/splitio/go-toolkit/sse"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v3/sse"
 )
 
 const (

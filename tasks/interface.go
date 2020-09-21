@@ -3,7 +3,7 @@ package tasks
 import (
 	"sync"
 
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // Task interface

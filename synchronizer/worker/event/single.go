@@ -4,11 +4,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
-	"github.com/splitio/go-split-commons/util"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service"
+	"github.com/splitio/go-split-commons/v2/storage"
+	"github.com/splitio/go-split-commons/v2/util"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // RecorderSingle struct for event sync

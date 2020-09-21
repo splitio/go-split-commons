@@ -3,7 +3,7 @@ package push
 import (
 	"testing"
 
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func wrapEvent(channel string, data string, name *string) map[string]interface{} {

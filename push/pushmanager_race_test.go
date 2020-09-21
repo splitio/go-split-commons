@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api/sse"
-	authMocks "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-toolkit/logging"
-	sseStatus "github.com/splitio/go-toolkit/sse"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service/api/sse"
+	authMocks "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-toolkit/v3/logging"
+	sseStatus "github.com/splitio/go-toolkit/v3/sse"
 )
 
 func TestPushError(t *testing.T) {

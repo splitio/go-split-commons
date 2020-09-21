@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/v2/dtos"
 )
 
 func indexOf(array interface{}, callback func(item interface{}) bool) (int, bool) {

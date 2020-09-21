@@ -1,9 +1,9 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/synchronizer/worker/split"
-	"github.com/splitio/go-toolkit/asynctask"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
+	"github.com/splitio/go-toolkit/v3/asynctask"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // NewFetchSplitsTask creates a new splits fetching and storing task

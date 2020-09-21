@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-toolkit/logging"
-	"github.com/splitio/go-toolkit/redis"
-	"github.com/splitio/go-toolkit/redis/helpers"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v3/redis"
+	"github.com/splitio/go-toolkit/v3/redis/helpers"
 )
 
 // NewRedisClient returns a new Prefixed Redis Client

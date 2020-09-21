@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api/mocks"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service/api/mocks"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func TestAuthErr(t *testing.T) {

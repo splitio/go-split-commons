@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
-	"github.com/splitio/go-toolkit/asynctask"
-	"github.com/splitio/go-toolkit/logging"
-	"github.com/splitio/go-toolkit/workerpool"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/segment"
+	"github.com/splitio/go-toolkit/v3/asynctask"
+	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v3/workerpool"
 )
 
 func updateSegments(

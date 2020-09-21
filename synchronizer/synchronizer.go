@@ -1,15 +1,15 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
-	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/tasks"
-	"github.com/splitio/go-toolkit/asynctask"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/metric"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v2/tasks"
+	"github.com/splitio/go-toolkit/v3/asynctask"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // SplitTasks struct for tasks

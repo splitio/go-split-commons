@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/v2/dtos"
 )
 
 func TestMMSplitStorage(t *testing.T) {

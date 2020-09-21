@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
 )
 
 // MockSplitStorage is a mocked implementation of Split Storage

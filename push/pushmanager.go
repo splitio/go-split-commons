@@ -7,14 +7,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/service/api/sse"
-	"github.com/splitio/go-split-commons/storage"
-	"github.com/splitio/go-toolkit/common"
-	"github.com/splitio/go-toolkit/logging"
-	sseStatus "github.com/splitio/go-toolkit/sse"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service"
+	"github.com/splitio/go-split-commons/v2/service/api/sse"
+	"github.com/splitio/go-split-commons/v2/storage"
+	"github.com/splitio/go-toolkit/v3/common"
+	"github.com/splitio/go-toolkit/v3/logging"
+	sseStatus "github.com/splitio/go-toolkit/v3/sse"
 )
 
 const (

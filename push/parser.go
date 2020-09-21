@@ -1,8 +1,8 @@
 package push
 
 import (
-	"github.com/splitio/go-toolkit/common"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/v3/common"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 const (

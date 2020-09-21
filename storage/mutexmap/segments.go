@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
 )
 
 // MMSegmentStorage contains is an in-memory implementation of segment storage

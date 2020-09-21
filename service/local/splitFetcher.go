@@ -8,8 +8,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/logging"
 
 	yaml "gopkg.in/yaml.v2"
 )

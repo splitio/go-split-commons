@@ -3,8 +3,8 @@ package mutexmap
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
 )
 
 // MMSplitStorage struct contains is an in-memory implementation of split storage

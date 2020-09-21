@@ -4,11 +4,11 @@ import (
 	"errors"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/push"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/push"
+	"github.com/splitio/go-split-commons/v2/service"
+	"github.com/splitio/go-split-commons/v2/storage"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 const (

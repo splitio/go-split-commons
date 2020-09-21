@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/synchronizer/worker/event"
-	"github.com/splitio/go-toolkit/asynctask"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
+	"github.com/splitio/go-toolkit/v3/asynctask"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // NewRecordEventsTask creates a new events recording task

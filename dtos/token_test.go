@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
 )
 
 func TestTokenChannels(t *testing.T) {

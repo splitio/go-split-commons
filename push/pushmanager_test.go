@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api/sse"
-	authMocks "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-toolkit/datastructures/set"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/service/api/sse"
+	authMocks "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v2/storage/mocks"
+	"github.com/splitio/go-toolkit/v3/datastructures/set"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func isValidChannels(t *testing.T, channelsString string) {

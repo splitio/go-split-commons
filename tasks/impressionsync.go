@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
-	"github.com/splitio/go-toolkit/asynctask"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
+	"github.com/splitio/go-toolkit/v3/asynctask"
+	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // NewRecordImpressionsTask creates a new splits fetching and storing task
