@@ -68,8 +68,8 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			ChangeNumber: impression.ChangeNumber,
 			Label:        impression.Label,
 			BucketingKey: impression.BucketingKey,
+			Pt:           impression.Pt,
 		}
-		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
 		v, ok := impressionsToPost[impression.FeatureName]
 		if ok {
 			v = append(v, keyImpression)

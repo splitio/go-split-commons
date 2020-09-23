@@ -3,7 +3,6 @@ package provisional
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/splitio/go-split-commons/util"
 )
@@ -23,7 +22,7 @@ func NewImpressionsCounter() *ImpressionsCounter {
 }
 
 func makeKey(splitName string, timeFrame int64) string {
-	return fmt.Sprintf("%s::%d", splitName, util.TruncateTimeFrame(timeFrame/int64(time.Millisecond)))
+	return fmt.Sprintf("%s::%d", splitName, util.TruncateTimeFrame(timeFrame))
 }
 
 // Inc increments the quantity of impressions with the passed splitName and timeFrame

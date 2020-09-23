@@ -9,13 +9,13 @@ import (
 func TestMakeKey(t *testing.T) {
 	timestamp := time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 
-	key := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	key := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
 	expectedKey := fmt.Sprintf("someFeature::%d", timestamp)
 	if key != expectedKey {
 		t.Error("Unexpected key generated", key, expectedKey)
 	}
 
-	key2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	key2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
 	expectedKey2 := fmt.Sprintf("::%d", timestamp)
 	if key2 != expectedKey2 {
 		t.Error("Unexpected key generated", key2, expectedKey2)
@@ -29,7 +29,7 @@ func TestMakeKey(t *testing.T) {
 }
 
 func TestImpressionsCounter(t *testing.T) {
-	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano()
+	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 	impressionsCounter := NewImpressionsCounter()
 
 	impressionsCounter.Inc("feature1", timestamp, 1)
@@ -52,7 +52,7 @@ func TestImpressionsCounter(t *testing.T) {
 		t.Error("It should not have keys")
 	}
 
-	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano()
+	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 	impressionsCounter.Inc("feature1", timestamp, 1)
 	impressionsCounter.Inc("feature1", timestamp+1, 1)
 	impressionsCounter.Inc("feature1", timestamp+2, 1)
