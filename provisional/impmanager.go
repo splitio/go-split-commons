@@ -1,7 +1,6 @@
 package provisional
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -26,7 +25,7 @@ type ImpressionManagerImpl struct {
 
 func shouldAddPreviousTime(managerConfig conf.ManagerConfig) bool {
 	switch managerConfig.OperationMode {
-	case "inmemory-standalone":
+	case conf.Standalone:
 		return true
 	default:
 		return false
@@ -37,7 +36,7 @@ func shouldBeOptimized(managerConfig conf.ManagerConfig) bool {
 	if !shouldAddPreviousTime(managerConfig) {
 		return false
 	}
-	if managerConfig.ImpressionsMode == "OPTIMIZED" {
+	if managerConfig.ImpressionsMode == conf.Optimized {
 		return true
 	}
 	return false
@@ -73,7 +72,6 @@ func (i *ImpressionManagerImpl) ProcessImpression(impression dtos.Impression, im
 	}
 
 	if !i.isOptimized || impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {
-		fmt.Println("here")
 		*impressionsForLog = append(*impressionsForLog, impression)
 	}
 

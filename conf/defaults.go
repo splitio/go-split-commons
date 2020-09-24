@@ -17,6 +17,18 @@ const (
 	defaultStreamingServiceURL    = "https://streaming.split.io/sse"
 )
 
+const (
+	// Optimized will avoid sending duplicated events
+	Optimized = "Optimized"
+	// Debug will send all the impressions generated
+	Debug = "Debug"
+)
+
+const (
+	// Standalone mode
+	Standalone = "inmemory-standalone"
+)
+
 // GetDefaultAdvancedConfig returns default conf
 func GetDefaultAdvancedConfig() AdvancedConfig {
 	return AdvancedConfig{
