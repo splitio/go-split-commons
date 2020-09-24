@@ -9,27 +9,27 @@ import (
 func TestMakeKey(t *testing.T) {
 	timestamp := time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 
-	key := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
-	expectedKey := fmt.Sprintf("someFeature::%d", timestamp)
-	if key != expectedKey {
-		t.Error("Unexpected key generated", key, expectedKey)
+	actualKey := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	expectedKey := Key{featureName: "someFeature", timeFrame: timestamp}
+	if actualKey != expectedKey {
+		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey, expectedKey))
 	}
 
-	key2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
-	expectedKey2 := fmt.Sprintf("::%d", timestamp)
-	if key2 != expectedKey2 {
-		t.Error("Unexpected key generated", key2, expectedKey2)
+	actualKey2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	expectedKey2 := Key{featureName: "", timeFrame: timestamp}
+	if actualKey2 != expectedKey2 {
+		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey2, expectedKey2))
 	}
 
-	key3 := makeKey("someFeature", 0)
-	expectedKey3 := fmt.Sprintf("::%d", timestamp)
-	if key2 != expectedKey3 {
-		t.Error("Unexpected key generated", key3, expectedKey3)
+	actualKey3 := makeKey("someFeature", 0)
+	expectedKey3 := Key{featureName: "someFeature", timeFrame: 0}
+	if actualKey3 != expectedKey3 {
+		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey3, expectedKey3))
 	}
 }
 
 func TestImpressionsCounter(t *testing.T) {
-	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano()
 	impressionsCounter := NewImpressionsCounter()
 
 	impressionsCounter.Inc("feature1", timestamp, 1)
@@ -52,7 +52,7 @@ func TestImpressionsCounter(t *testing.T) {
 		t.Error("It should not have keys")
 	}
 
-	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano()
 	impressionsCounter.Inc("feature1", timestamp, 1)
 	impressionsCounter.Inc("feature1", timestamp+1, 1)
 	impressionsCounter.Inc("feature1", timestamp+2, 1)
