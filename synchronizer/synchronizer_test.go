@@ -742,6 +742,7 @@ func TestPeriodicRecordingWithCounter(t *testing.T) {
 	if atomic.LoadInt64(&counterCalled) != 1 {
 		t.Error("It should be called once")
 	}
+	impCounter.Inc("some", time.Now().UnixNano()/int64(time.Millisecond), 1)
 	syncForTest.StopPeriodicDataRecording()
 	time.Sleep(time.Second * 1)
 	if atomic.LoadInt64(&impressionsCalled) != 3 {
