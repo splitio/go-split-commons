@@ -40,32 +40,31 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			if len(pf.PerFeature) != 3 {
 				t.Error("It should be 3")
 			}
-			if pf.PerFeature[0].FeatureName != "some" {
-				t.Error("It should be some")
-			}
-			if pf.PerFeature[0].RawCount != 2 {
-				t.Error("It should be 2")
-			}
-			if pf.PerFeature[0].TimeFrame != util.TruncateTimeFrame(now/int64(time.Millisecond)) {
-				t.Error("Wrong truncated timeFrame")
-			}
-			if pf.PerFeature[1].FeatureName != "another" {
-				t.Error("It should be some")
-			}
-			if pf.PerFeature[1].RawCount != 1 {
-				t.Error("It should be 1")
-			}
-			if pf.PerFeature[1].TimeFrame != util.TruncateTimeFrame(now/int64(time.Millisecond)) {
-				t.Error("Wrong truncated timeFrame")
-			}
-			if pf.PerFeature[2].FeatureName != "some" {
-				t.Error("It should be some")
-			}
-			if pf.PerFeature[2].RawCount != 4 {
-				t.Error("It should be 4")
-			}
-			if pf.PerFeature[2].TimeFrame != util.TruncateTimeFrame(nextHour/int64(time.Millisecond)) {
-				t.Error("Wrong truncated timeFrame")
+			for _, x := range pf.PerFeature {
+				switch x.TimeFrame {
+				case util.TruncateTimeFrame(now / int64(time.Millisecond)):
+					switch x.FeatureName {
+					case "some":
+						if x.RawCount != 2 {
+							t.Error("It should be 2")
+						}
+					case "another":
+						if x.RawCount != 1 {
+							t.Error("It should be 1")
+						}
+					default:
+						t.Error("Unexpected incomming feature")
+					}
+				case util.TruncateTimeFrame(nextHour / int64(time.Millisecond)):
+					if x.FeatureName != "some" {
+						t.Error("It should be some")
+					}
+					if x.RawCount != 4 {
+						t.Error("It should be 4")
+					}
+				default:
+					t.Error("Unexpected incomming feature")
+				}
 			}
 
 			return nil
