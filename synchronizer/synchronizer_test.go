@@ -47,7 +47,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.Debug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(storageMock.MockMetricStorage{}, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -143,7 +143,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.Debug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -260,7 +260,7 @@ func TestSyncAllOk(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.Debug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -377,7 +377,7 @@ func TestPeriodicFetching(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.Debug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -430,7 +430,7 @@ func TestPeriodicRecording(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				if len(impressions) != 1 {
 					t.Error("Wrong length")
@@ -525,7 +525,7 @@ func TestPeriodicRecording(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(storageMock.MockSplitStorage{}, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(storageMock.MockSplitStorage{}, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(eventMockStorage, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.Debug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricMockStorage, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
