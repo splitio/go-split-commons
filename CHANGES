@@ -1,11 +1,14 @@
+1.2.2 (Sep XXX, 2020)
+ - Added impressions counter.
+
 1.2.1 (Sep 8, 2020)
- - Point to new version of go-toolkit with correct EOF handling in sse client
+ - Pointed to new version of go-toolkit with correct EOF handling in sse client.
 
 1.2.0 (Aug 31, 2020)
  - Added methods for synchronizer.
 
 1.1.0 (Aug 14, 2020)
- - Added impression observer
+ - Added impression observer.
 
 1.0.0 (Aug 3, 2020)
  - Added storages.
