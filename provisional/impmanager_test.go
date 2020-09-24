@@ -173,8 +173,8 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 
 func TestImpManagerInMemoryOptimized(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   "inmemory-standalone",
-		ImpressionsMode: "OPTIMIZED",
+		OperationMode:   conf.Standalone,
+		ImpressionsMode: conf.Optimized,
 	})
 	if err != nil {
 		t.Error("It should not return err")
@@ -214,7 +214,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 func TestImpManagerRedis(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   "redis-consumer",
-		ImpressionsMode: "DEBUG",
+		ImpressionsMode: conf.Debug,
 	})
 	if err != nil {
 		t.Error("It should not return err")
