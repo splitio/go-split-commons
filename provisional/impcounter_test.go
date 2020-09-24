@@ -29,7 +29,7 @@ func TestMakeKey(t *testing.T) {
 }
 
 func TestImpressionsCounter(t *testing.T) {
-	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	timestamp := time.Date(2020, 9, 2, 10, 10, 12, 0, time.UTC).UnixNano()
 	impressionsCounter := NewImpressionsCounter()
 
 	impressionsCounter.Inc("feature1", timestamp, 1)
@@ -52,7 +52,7 @@ func TestImpressionsCounter(t *testing.T) {
 		t.Error("It should not have keys")
 	}
 
-	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	nextHourTimestamp := time.Date(2020, 9, 2, 11, 10, 12, 0, time.UTC).UnixNano()
 	impressionsCounter.Inc("feature1", timestamp, 1)
 	impressionsCounter.Inc("feature1", timestamp+1, 1)
 	impressionsCounter.Inc("feature1", timestamp+2, 1)

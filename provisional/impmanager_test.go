@@ -136,8 +136,8 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 
 func TestImpManagerInMemoryDebug(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   "inmemory-standalone",
-		ImpressionsMode: "DEBUG",
+		OperationMode:   conf.Standalone,
+		ImpressionsMode: conf.Debug,
 	})
 	if err != nil {
 		t.Error("It should not return err")
