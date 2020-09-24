@@ -59,9 +59,7 @@ func NewImpressionManager(managerConfig conf.ManagerConfig) (ImpressionManager, 
 	return impManager, nil
 }
 
-// ProcessImpression processes impression
-func (i *ImpressionManagerImpl) ProcessImpression(impression dtos.Impression, impressionsForLog *[]dtos.Impression, impressionsForListener *[]dtos.Impression) {
-
+func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, impressionsForLog *[]dtos.Impression, impressionsForListener *[]dtos.Impression) {
 	if i.shouldAddPreviousTime {
 		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &impression) // Adds previous time if it is enabled
 	}
@@ -90,7 +88,7 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 	impressionsForLog := make([]dtos.Impression, 0, len(impressions))
 
 	for _, impression := range impressions {
-		i.ProcessImpression(impression, &impressionsForLog, &impressionsForListener)
+		i.processImpression(impression, &impressionsForLog, &impressionsForListener)
 	}
 
 	return ProcessResult{

@@ -30,13 +30,13 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 	if len(forLog) != 2 || len(forListener) != 2 {
 		t.Error("It should have two impressions")
 	}
@@ -71,13 +71,13 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 	if len(forLog) != 2 || len(forListener) != 2 {
 		t.Error("It should have two impressions")
 	}
@@ -112,13 +112,13 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	impManagerImpl.processImpression(imp1, &forLog, &forListener)
 	if len(forLog) != 1 {
 		t.Error("It should not add new impression")
 	}
