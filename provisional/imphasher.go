@@ -19,24 +19,24 @@ func unknownIfEmpty(s string) string {
 
 // ImpressionHasher interface
 type ImpressionHasher interface {
-	Process(featureName string, keyImpression *dtos.ImpressionDTO) (int64, error)
+	Process(featureName string, impression *dtos.Impression) (int64, error)
 }
 
 // ImpressionHasherImpl implements the hasher interface, mapping certain fields to an int64
 type ImpressionHasherImpl struct{}
 
 // Process an impression and return the 64 LSBs of a murmur3-128 digest
-func (h *ImpressionHasherImpl) Process(featureName string, keyImpression *dtos.ImpressionDTO) (int64, error) {
-	if keyImpression == nil {
+func (h *ImpressionHasherImpl) Process(featureName string, impression *dtos.Impression) (int64, error) {
+	if impression == nil {
 		return 0, fmt.Errorf("keyImpression cannot be nil")
 	}
 
 	toHash := fmt.Sprintf(hashKeyTemplate,
-		unknownIfEmpty(keyImpression.KeyName),
+		unknownIfEmpty(impression.KeyName),
 		unknownIfEmpty(featureName),
-		unknownIfEmpty(keyImpression.Treatment),
-		unknownIfEmpty(keyImpression.Label),
-		keyImpression.ChangeNumber)
+		unknownIfEmpty(impression.Treatment),
+		unknownIfEmpty(impression.Label),
+		impression.ChangeNumber)
 
 	h1, _ := hashing.Sum128([]byte(toHash))
 	return int64(h1), nil
