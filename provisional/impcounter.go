@@ -11,14 +11,14 @@ import (
 // ImpressionsCounter struct for storing generated impressions counts
 type ImpressionsCounter struct {
 	impressionsCounts map[string]int64
-	mutex             sync.RWMutex
+	mutex             *sync.RWMutex
 }
 
 // NewImpressionsCounter creates new ImpressionsCounter
 func NewImpressionsCounter() *ImpressionsCounter {
 	return &ImpressionsCounter{
 		impressionsCounts: make(map[string]int64),
-		mutex:             sync.RWMutex{},
+		mutex:             &sync.RWMutex{},
 	}
 }
 
