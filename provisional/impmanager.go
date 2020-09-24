@@ -12,7 +12,7 @@ const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
 
 // ImpressionManager interface
 type ImpressionManager interface {
-	ProcessImpressions(impressions []dtos.Impression) ProcessResult
+	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
 }
 
 // ImpressionManagerImpl implements
@@ -40,9 +40,7 @@ func NewImpressionManager(managerConfig conf.ManagerConfig) (ImpressionManager, 
 	return impManager, nil
 }
 
-// ProcessImpression processes impression
-func (i *ImpressionManagerImpl) ProcessImpression(impression dtos.Impression, impressionsForLog *[]dtos.Impression, impressionsForListener *[]dtos.Impression) {
-
+func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, forLog []dtos.Impression, forListener []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
 	if i.shouldAddPreviousTime {
 		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &impression) // Adds previous time if it is enabled
 	}
@@ -53,31 +51,24 @@ func (i *ImpressionManagerImpl) ProcessImpression(impression dtos.Impression, im
 	}
 
 	if !i.isOptimized || impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {
-		*impressionsForLog = append(*impressionsForLog, impression)
+		forLog = append(forLog, impression)
 	}
 
-	*impressionsForListener = append(*impressionsForListener, impression)
-}
+	forListener = append(forListener, impression)
 
-// ProcessResult struct for returning in impressions deduping
-type ProcessResult struct {
-	ImpressionsForListener []dtos.Impression
-	ImpressionsForLog      []dtos.Impression
+	return forLog, forListener
 }
 
 // ProcessImpressions bulk processes
-func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression) ProcessResult {
-	impressionsForListener := make([]dtos.Impression, 0, len(impressions))
-	impressionsForLog := make([]dtos.Impression, 0, len(impressions))
+func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
+	forLog := make([]dtos.Impression, 0, len(impressions))
+	forListener := make([]dtos.Impression, 0, len(impressions))
 
 	for _, impression := range impressions {
-		i.ProcessImpression(impression, &impressionsForLog, &impressionsForListener)
+		forLog, forListener = i.processImpression(impression, forLog, forListener)
 	}
 
-	return ProcessResult{
-		ImpressionsForListener: impressionsForListener,
-		ImpressionsForLog:      impressionsForLog,
-	}
+	return forLog, forListener
 }
 
 // ImpressionsCounter returns impressionsCounter

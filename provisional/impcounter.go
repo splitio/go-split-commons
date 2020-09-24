@@ -1,28 +1,37 @@
 package provisional
 
 import (
-	"fmt"
 	"sync"
+	"time"
 
 	"github.com/splitio/go-split-commons/util"
 )
 
+// Key struct for mapping each key to an amount
+type Key struct {
+	FeatureName string
+	TimeFrame   int64
+}
+
 // ImpressionsCounter struct for storing generated impressions counts
 type ImpressionsCounter struct {
-	impressionsCounts map[string]int64
+	impressionsCounts map[Key]int64
 	mutex             *sync.RWMutex
 }
 
 // NewImpressionsCounter creates new ImpressionsCounter
 func NewImpressionsCounter() *ImpressionsCounter {
 	return &ImpressionsCounter{
-		impressionsCounts: make(map[string]int64),
+		impressionsCounts: make(map[Key]int64),
 		mutex:             &sync.RWMutex{},
 	}
 }
 
-func makeKey(splitName string, timeFrame int64) string {
-	return fmt.Sprintf("%s::%d", splitName, util.TruncateTimeFrame(timeFrame))
+func makeKey(splitName string, timeFrame int64) Key {
+	return Key{
+		FeatureName: splitName,
+		TimeFrame:   util.TruncateTimeFrame(timeFrame / int64(time.Millisecond)),
+	}
 }
 
 // Inc increments the quantity of impressions with the passed splitName and timeFrame
@@ -35,11 +44,11 @@ func (i *ImpressionsCounter) Inc(splitName string, timeFrame int64, amount int64
 }
 
 // PopAll returns all the elements stored in the cache and resets the cache
-func (i *ImpressionsCounter) PopAll() map[string]int64 {
+func (i *ImpressionsCounter) PopAll() map[Key]int64 {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 	toReturn := i.impressionsCounts
-	i.impressionsCounts = make(map[string]int64)
+	i.impressionsCounts = make(map[Key]int64)
 	return toReturn
 }
 

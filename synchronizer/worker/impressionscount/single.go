@@ -1,9 +1,6 @@
 package impressionscount
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/splitio/go-split-commons/dtos"
 	"github.com/splitio/go-split-commons/provisional"
 	"github.com/splitio/go-split-commons/service"
@@ -39,20 +36,10 @@ func (m *RecorderSingle) SynchronizeImpressionsCount() error {
 
 	impressionsInTimeFrame := make([]dtos.ImpressionsInTimeFrameDTO, 0)
 	for key, count := range impressionsCount {
-		splitted := strings.Split(key, "::")
-		if len(splitted) != 2 {
-			continue
-		}
-		featureName := splitted[0]
-		asStringTimeFrame := splitted[1]
-		timeFrame, ok := strconv.ParseInt(asStringTimeFrame, 10, 64)
-		if ok != nil {
-			continue
-		}
 		impressionInTimeFrame := dtos.ImpressionsInTimeFrameDTO{
-			FeatureName: featureName,
+			FeatureName: key.FeatureName,
 			RawCount:    count,
-			TimeFrame:   timeFrame,
+			TimeFrame:   key.TimeFrame,
 		}
 		impressionsInTimeFrame = append(impressionsInTimeFrame, impressionInTimeFrame)
 	}

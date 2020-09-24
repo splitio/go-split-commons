@@ -30,13 +30,13 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 	if len(forLog) != 2 || len(forListener) != 2 {
 		t.Error("It should have two impressions")
 	}
@@ -71,13 +71,13 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 	if len(forLog) != 2 || len(forListener) != 2 {
 		t.Error("It should have two impressions")
 	}
@@ -112,13 +112,13 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 
 	forLog := make([]dtos.Impression, 0)
 	forListener := make([]dtos.Impression, 0)
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 
 	if len(forLog) != 1 || len(forListener) != 1 {
 		t.Error("It should add impression")
 	}
 
-	impManagerImpl.ProcessImpression(imp1, &forLog, &forListener)
+	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
 	if len(forLog) != 1 {
 		t.Error("It should not add new impression")
 	}
@@ -154,19 +154,19 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 		Treatment:    "someTreatment",
 	}
 
-	result := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result.ImpressionsForListener) != 1 || len(result.ImpressionsForLog) != 1 {
+	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if result.ImpressionsForListener[0].Pt != 0 {
+	if impressionsForListener[0].Pt != 0 {
 		t.Error("It should not have pt associated yet")
 	}
 
-	result2 := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result2.ImpressionsForListener) != 1 || len(result.ImpressionsForLog) != 1 {
+	impressionsForLog, impressionsForListener = impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if result2.ImpressionsForListener[0].Pt != now {
+	if impressionsForListener[0].Pt != now {
 		t.Error("It should have pt associated")
 	}
 }
@@ -191,22 +191,22 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 		Treatment:    "someTreatment",
 	}
 
-	result := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result.ImpressionsForListener) != 1 || len(result.ImpressionsForLog) != 1 {
+	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if result.ImpressionsForListener[0].Pt != 0 {
+	if impressionsForListener[0].Pt != 0 {
 		t.Error("It should not have pt associated yet")
 	}
 
-	result2 := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result2.ImpressionsForListener) != 1 {
+	impressionsForLog, impressionsForListener = impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 {
 		t.Error("It should return an impression")
 	}
-	if len(result2.ImpressionsForLog) != 0 {
+	if len(impressionsForLog) != 0 {
 		t.Error("It should not return an impression")
 	}
-	if result2.ImpressionsForListener[0].Pt != now {
+	if impressionsForListener[0].Pt != now {
 		t.Error("It should have pt associated")
 	}
 }
@@ -231,22 +231,22 @@ func TestImpManagerRedis(t *testing.T) {
 		Treatment:    "someTreatment",
 	}
 
-	result := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result.ImpressionsForListener) != 1 || len(result.ImpressionsForLog) != 1 {
+	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if result.ImpressionsForListener[0].Pt != 0 {
+	if impressionsForListener[0].Pt != 0 {
 		t.Error("It should not have pt associated")
 	}
 
-	result2 := impManager.ProcessImpressions([]dtos.Impression{*imp1})
-	if len(result2.ImpressionsForListener) != 1 {
+	impressionsForLog, impressionsForListener = impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 {
 		t.Error("It should return an impression")
 	}
-	if len(result2.ImpressionsForLog) != 1 {
+	if len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if result2.ImpressionsForListener[0].Pt != 0 {
+	if impressionsForListener[0].Pt != 0 {
 		t.Error("It should not have pt")
 	}
 }

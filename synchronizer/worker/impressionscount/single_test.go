@@ -33,8 +33,8 @@ func TestImpressionsCountRecorderError(t *testing.T) {
 }
 
 func TestImpressionsCountRecorder(t *testing.T) {
-	now := time.Now().UnixNano() / int64(time.Millisecond)
-	nextHour := time.Now().Add(1*time.Hour).UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
+	nextHour := time.Now().Add(1 * time.Hour).UnixNano()
 	impressionMockRecorder := mocks.MockImpressionRecorder{
 		RecordImpressionsCountCall: func(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error {
 			if len(pf.PerFeature) != 3 {
@@ -46,7 +46,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			if pf.PerFeature[0].RawCount != 2 {
 				t.Error("It should be 2")
 			}
-			if pf.PerFeature[0].TimeFrame != util.TruncateTimeFrame(now) {
+			if pf.PerFeature[0].TimeFrame != util.TruncateTimeFrame(now/int64(time.Millisecond)) {
 				t.Error("Wrong truncated timeFrame")
 			}
 			if pf.PerFeature[1].FeatureName != "another" {
@@ -55,7 +55,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			if pf.PerFeature[1].RawCount != 1 {
 				t.Error("It should be 1")
 			}
-			if pf.PerFeature[1].TimeFrame != util.TruncateTimeFrame(now) {
+			if pf.PerFeature[1].TimeFrame != util.TruncateTimeFrame(now/int64(time.Millisecond)) {
 				t.Error("Wrong truncated timeFrame")
 			}
 			if pf.PerFeature[2].FeatureName != "some" {
@@ -64,7 +64,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			if pf.PerFeature[2].RawCount != 4 {
 				t.Error("It should be 4")
 			}
-			if pf.PerFeature[2].TimeFrame != util.TruncateTimeFrame(nextHour) {
+			if pf.PerFeature[2].TimeFrame != util.TruncateTimeFrame(nextHour/int64(time.Millisecond)) {
 				t.Error("Wrong truncated timeFrame")
 			}
 
