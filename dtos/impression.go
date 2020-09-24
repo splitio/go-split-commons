@@ -34,3 +34,15 @@ type ImpressionsDTO struct {
 	TestName       string          `json:"testName"`
 	KeyImpressions []ImpressionDTO `json:"keyImpressions"`
 }
+
+// ImpressionsInTimeFrameDTO struct mapping impressionsCount in time window
+type ImpressionsInTimeFrameDTO struct {
+	FeatureName string `json:"f"`
+	TimeFrame   int64  `json:"m"`
+	RawCount    int64  `json:"rc"`
+}
+
+// ImpressionsCountDTO struct mapping impressions count to post
+type ImpressionsCountDTO struct {
+	PerFeature []ImpressionsInTimeFrameDTO `json:"pf"`
+}

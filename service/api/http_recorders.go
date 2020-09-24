@@ -53,6 +53,23 @@ func (i *HTTPImpressionRecorder) Record(impressions []dtos.ImpressionsDTO, metad
 	return nil
 }
 
+// RecordImpressionsCount sens impressionsCount
+func (i *HTTPImpressionRecorder) RecordImpressionsCount(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error {
+	data, err := json.Marshal(pf)
+	if err != nil {
+		i.logger.Error("Error marshaling JSON", err.Error())
+		return err
+	}
+
+	err = i.RecordRaw("/testImpressions/count", data, metadata, nil)
+	if err != nil {
+		i.logger.Error("Error posting impressionsCount", err.Error())
+		return err
+	}
+
+	return nil
+}
+
 // NewHTTPImpressionRecorder instantiates an HTTPImpressionRecorder
 func NewHTTPImpressionRecorder(
 	apikey string,
