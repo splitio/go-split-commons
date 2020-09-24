@@ -12,7 +12,7 @@ const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
 
 // ImpressionManager interface
 type ImpressionManager interface {
-	ProcessImpressions(impressions []dtos.Impression) ProcessResult
+	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
 }
 
 // ImpressionManagerImpl implements
@@ -76,14 +76,8 @@ func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, im
 	*impressionsForListener = append(*impressionsForListener, impression)
 }
 
-// ProcessResult struct for returning in impressions deduping
-type ProcessResult struct {
-	ImpressionsForListener []dtos.Impression
-	ImpressionsForLog      []dtos.Impression
-}
-
 // ProcessImpressions bulk processes
-func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression) ProcessResult {
+func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
 	impressionsForListener := make([]dtos.Impression, 0, len(impressions))
 	impressionsForLog := make([]dtos.Impression, 0, len(impressions))
 
@@ -91,8 +85,5 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 		i.processImpression(impression, &impressionsForLog, &impressionsForListener)
 	}
 
-	return ProcessResult{
-		ImpressionsForListener: impressionsForListener,
-		ImpressionsForLog:      impressionsForLog,
-	}
+	return impressionsForLog, impressionsForListener
 }
