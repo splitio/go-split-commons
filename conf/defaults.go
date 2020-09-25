@@ -19,14 +19,16 @@ const (
 
 const (
 	// ImpressionsModeOptimized will avoid sending duplicated events
-	ImpressionsModeOptimized = "Optimized"
+	ImpressionsModeOptimized = "optimized"
 	// ImpressionsModeDebug will send all the impressions generated
-	ImpressionsModeDebug = "Debug"
+	ImpressionsModeDebug = "debug"
 )
 
 const (
 	// Standalone mode
 	Standalone = "inmemory-standalone"
+	// ProducerSync mode
+	ProducerSync = "producer-sync"
 )
 
 // GetDefaultAdvancedConfig returns default conf

@@ -15,6 +15,7 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 		impressionsCounter:    NewImpressionsCounter(),
 		isOptimized:           false,
 		shouldAddPreviousTime: false,
+		listenerEnabled:       true,
 	}
 
 	now := time.Now().UnixNano()
@@ -56,6 +57,7 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 		impressionsCounter:    NewImpressionsCounter(),
 		isOptimized:           false,
 		shouldAddPreviousTime: true,
+		listenerEnabled:       true,
 	}
 
 	now := time.Now().UnixNano()
@@ -97,6 +99,7 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 		impressionsCounter:    NewImpressionsCounter(),
 		isOptimized:           true,
 		shouldAddPreviousTime: true,
+		listenerEnabled:       true,
 	}
 
 	now := time.Now().UnixNano()
@@ -134,10 +137,49 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 	}
 }
 
+func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
+	impManager, err := NewImpressionManager(conf.ManagerConfig{
+		OperationMode:   conf.Standalone,
+		ImpressionsMode: conf.ImpressionsModeDebug,
+		ListenerEnabled: false,
+	}, NewImpressionsCounter())
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	now := time.Now().UnixNano()
+	imp1 := &dtos.Impression{
+		BucketingKey: "someBucketingKey",
+		ChangeNumber: 123456789,
+		FeatureName:  "someFeature",
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         now,
+		Treatment:    "someTreatment",
+	}
+
+	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 0 {
+		t.Error("It should not return an impression")
+	}
+	if len(impressionsForLog) != 1 {
+		t.Error("It should return an impression")
+	}
+	if impressionsForLog[0].Pt != 0 {
+		t.Error("It should not have pt associated yet")
+	}
+
+	impressionsForLog, impressionsForListener = impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 0 || len(impressionsForLog) != 1 {
+		t.Error("It should return an impression")
+	}
+}
+
 func TestImpManagerInMemoryDebug(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
 		ImpressionsMode: conf.ImpressionsModeDebug,
+		ListenerEnabled: true,
 	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
@@ -175,6 +217,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
 		ImpressionsMode: conf.ImpressionsModeOptimized,
+		ListenerEnabled: true,
 	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
@@ -215,6 +258,7 @@ func TestImpManagerRedis(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   "redis-consumer",
 		ImpressionsMode: conf.ImpressionsModeDebug,
+		ListenerEnabled: true,
 	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
