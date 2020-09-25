@@ -23,25 +23,6 @@ type ImpressionManagerImpl struct {
 	isOptimized           bool
 }
 
-func shouldAddPreviousTime(managerConfig conf.ManagerConfig) bool {
-	switch managerConfig.OperationMode {
-	case conf.Standalone:
-		return true
-	default:
-		return false
-	}
-}
-
-func shouldBeOptimized(managerConfig conf.ManagerConfig) bool {
-	if !shouldAddPreviousTime(managerConfig) {
-		return false
-	}
-	if managerConfig.ImpressionsMode == conf.Optimized {
-		return true
-	}
-	return false
-}
-
 // NewImpressionManager creates new ImpManager
 func NewImpressionManager(managerConfig conf.ManagerConfig) (ImpressionManager, error) {
 	impressionObserver, err := NewImpressionObserver(lastSeenCacheSize)
@@ -52,8 +33,8 @@ func NewImpressionManager(managerConfig conf.ManagerConfig) (ImpressionManager, 
 	impManager := &ImpressionManagerImpl{
 		impressionObserver:    impressionObserver,
 		impressionsCounter:    NewImpressionsCounter(),
-		shouldAddPreviousTime: shouldAddPreviousTime(managerConfig),
-		isOptimized:           shouldBeOptimized(managerConfig),
+		shouldAddPreviousTime: util.ShouldAddPreviousTime(managerConfig),
+		isOptimized:           util.ShouldBeOptimized(managerConfig),
 	}
 
 	return impManager, nil
@@ -88,4 +69,9 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 	}
 
 	return forLog, forListener
+}
+
+// ImpressionsCounter returns impressionsCounter
+func (i *ImpressionManagerImpl) ImpressionsCounter() *ImpressionsCounter {
+	return i.impressionsCounter
 }

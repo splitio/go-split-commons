@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
 	"github.com/splitio/go-split-commons/storage"
@@ -70,7 +71,7 @@ func TestImpressionSyncTask(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 			if len(impressions) != 3 {
 				t.Error("Wrong length of impressions passed")
 			}
@@ -114,6 +115,7 @@ func TestImpressionSyncTask(t *testing.T) {
 			}, nil, nil),
 			logger,
 			dtos.Metadata{},
+			conf.ManagerConfig{ImpressionsMode: conf.Debug},
 		),
 		3,
 		logger,
@@ -183,7 +185,7 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 			if len(impressions) != 3 {
 				t.Error("Wrong length of impressions passed")
 			}
@@ -227,6 +229,7 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 			}, nil, nil),
 			logger,
 			dtos.Metadata{},
+			conf.ManagerConfig{ImpressionsMode: conf.Debug},
 		),
 		10,
 		logger,
