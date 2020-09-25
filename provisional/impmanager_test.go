@@ -17,7 +17,7 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 		shouldAddPreviousTime: false,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -58,7 +58,7 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 		shouldAddPreviousTime: true,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -99,7 +99,7 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 		shouldAddPreviousTime: true,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -143,7 +143,7 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -180,7 +180,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -220,7 +220,7 @@ func TestImpManagerRedis(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
