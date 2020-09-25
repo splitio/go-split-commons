@@ -1,7 +1,6 @@
 package provisional
 
 import (
-	"errors"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -30,15 +29,12 @@ func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *I
 	if err != nil {
 		return nil, err
 	}
-	if impressionCounter == nil {
-		return nil, errors.New("ImpressionsCounter cannot be nil")
-	}
 
 	impManager := &ImpressionManagerImpl{
 		impressionObserver:    impressionObserver,
 		impressionsCounter:    impressionCounter,
 		shouldAddPreviousTime: util.ShouldAddPreviousTime(managerConfig),
-		isOptimized:           util.ShouldBeOptimized(managerConfig),
+		isOptimized:           impressionCounter != nil && util.ShouldBeOptimized(managerConfig),
 	}
 
 	return impManager, nil
