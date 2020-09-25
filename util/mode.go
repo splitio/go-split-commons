@@ -17,7 +17,7 @@ func ShouldBeOptimized(managerConfig conf.ManagerConfig) bool {
 	if !ShouldAddPreviousTime(managerConfig) {
 		return false
 	}
-	if managerConfig.ImpressionsMode == conf.Optimized {
+	if managerConfig.ImpressionsMode == conf.ImpressionsModeOptimized {
 		return true
 	}
 	return false

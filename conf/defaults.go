@@ -18,10 +18,10 @@ const (
 )
 
 const (
-	// Optimized will avoid sending duplicated events
-	Optimized = "Optimized"
-	// Debug will send all the impressions generated
-	Debug = "Debug"
+	// ImpressionsModeOptimized will avoid sending duplicated events
+	ImpressionsModeOptimized = "Optimized"
+	// ImpressionsModeDebug will send all the impressions generated
+	ImpressionsModeDebug = "Debug"
 )
 
 const (

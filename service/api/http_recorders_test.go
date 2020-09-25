@@ -58,7 +58,7 @@ func TestPostImpressions(t *testing.T) {
 		}
 
 		splitSDKImpressionsMode := r.Header.Get("SplitSDKImpressionsMode")
-		if splitSDKImpressionsMode != conf.Debug {
+		if splitSDKImpressionsMode != conf.ImpressionsModeDebug {
 			t.Error("SDK Impressions Mode HEADER not match", splitSDKImpressionsMode)
 		}
 
@@ -139,7 +139,7 @@ func TestPostImpressions(t *testing.T) {
 	)
 
 	expectedPT = 0
-	err2 := impressionRecorder.Record(impressions, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "SOME_MACHINE_NAME"}, map[string]string{"SplitSDKImpressionsMode": conf.Debug})
+	err2 := impressionRecorder.Record(impressions, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "SOME_MACHINE_NAME"}, map[string]string{"SplitSDKImpressionsMode": conf.ImpressionsModeDebug})
 	if err2 != nil {
 		t.Error(err2)
 	}
