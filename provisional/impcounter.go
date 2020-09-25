@@ -2,7 +2,6 @@ package provisional
 
 import (
 	"sync"
-	"time"
 
 	"github.com/splitio/go-split-commons/util"
 )
@@ -30,7 +29,7 @@ func NewImpressionsCounter() *ImpressionsCounter {
 func makeKey(splitName string, timeFrame int64) Key {
 	return Key{
 		FeatureName: splitName,
-		TimeFrame:   util.TruncateTimeFrame(timeFrame / int64(time.Millisecond)),
+		TimeFrame:   util.TruncateTimeFrame(timeFrame),
 	}
 }
 

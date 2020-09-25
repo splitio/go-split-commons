@@ -42,7 +42,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			}
 			for _, x := range pf.PerFeature {
 				switch x.TimeFrame {
-				case util.TruncateTimeFrame(now / int64(time.Millisecond)):
+				case util.TruncateTimeFrame(now):
 					switch x.FeatureName {
 					case "some":
 						if x.RawCount != 2 {
@@ -55,7 +55,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 					default:
 						t.Error("Unexpected incomming feature")
 					}
-				case util.TruncateTimeFrame(nextHour / int64(time.Millisecond)):
+				case util.TruncateTimeFrame(nextHour):
 					if x.FeatureName != "some" {
 						t.Error("It should be some")
 					}
