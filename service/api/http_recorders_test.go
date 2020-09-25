@@ -15,7 +15,7 @@ import (
 )
 
 func TestImpressionRecord(t *testing.T) {
-	impressionTXT := `{"keyName":"some_key","treatment":"off","time":1234567890,"changeNumber":55555555,"label":"some label","bucketingKey":"some_bucket_key"}`
+	impressionTXT := `{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key"}`
 	impressionRecord := &dtos.ImpressionDTO{
 		KeyName:      "some_key",
 		Treatment:    "off",
@@ -34,7 +34,31 @@ func TestImpressionRecord(t *testing.T) {
 	}
 }
 
+func TestImpressionRecordBulk(t *testing.T) {
+	impressionTXT := `{"f":"some_feature","i":[{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key"}]}`
+	impressionRecords := &dtos.ImpressionsDTO{
+		TestName: "some_feature",
+		KeyImpressions: []dtos.ImpressionDTO{{
+			KeyName:      "some_key",
+			Treatment:    "off",
+			Time:         1234567890,
+			ChangeNumber: 55555555,
+			Label:        "some label",
+			BucketingKey: "some_bucket_key"}},
+	}
+
+	marshalImpression, err := json.Marshal(impressionRecords)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(marshalImpression) != impressionTXT {
+		t.Error("Error marshaling impression", string(marshalImpression), impressionTXT)
+	}
+}
+
 func TestPostImpressions(t *testing.T) {
+	impressionsTXT := `[{"f":"some_test_2","i":[{"k":"some_key_1","t":"on","m":1234567890,"c":9876543210,"r":"some_label_1","b":"some_bucket_key_1"}]},{"f":"some_test","i":[{"k":"some_key_2","t":"off","m":1234567890,"c":9876543210,"r":"some_label_2","b":"some_bucket_key_2"}]}]`
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	var expectedPT int64
@@ -63,6 +87,9 @@ func TestPostImpressions(t *testing.T) {
 		}
 
 		rBody, _ := ioutil.ReadAll(r.Body)
+		if string(rBody) != impressionsTXT {
+			t.Error("Wrong payload")
+		}
 		var impressionsInPost []dtos.ImpressionsDTO
 		err := json.Unmarshal(rBody, &impressionsInPost)
 		if err != nil {
