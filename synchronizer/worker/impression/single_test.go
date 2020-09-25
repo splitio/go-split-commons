@@ -37,7 +37,7 @@ func TestImpressionRecorderError(t *testing.T) {
 		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
-		conf.ManagerConfig{ImpressionsMode: conf.Debug},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -64,7 +64,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
-		conf.ManagerConfig{ImpressionsMode: conf.Debug},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -108,7 +108,7 @@ func TestImpressionRecorder(t *testing.T) {
 			if !ok {
 				t.Error("It should send extraHeaders")
 			}
-			if val != conf.Debug {
+			if val != conf.ImpressionsModeDebug {
 				t.Error("It should be debug")
 			}
 			if len(impressions) != 2 {
@@ -151,7 +151,7 @@ func TestImpressionRecorder(t *testing.T) {
 			}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
-		conf.ManagerConfig{ImpressionsMode: conf.Debug},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -168,7 +168,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 		}
 		atomic.AddInt64(&requestReceived, 1)
 
-		if r.Header.Get(splitSDKImpressionsMode) != conf.Optimized {
+		if r.Header.Get(splitSDKImpressionsMode) != conf.ImpressionsModeOptimized {
 			t.Error("Wrong header sent")
 		}
 
@@ -265,7 +265,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
-		conf.ManagerConfig{OperationMode: conf.Standalone, ImpressionsMode: conf.Optimized},
+		conf.ManagerConfig{OperationMode: conf.Standalone, ImpressionsMode: conf.ImpressionsModeOptimized},
 	)
 
 	impressionSync.SynchronizeImpressions(50)
@@ -283,7 +283,7 @@ func TestImpressionLastSeen(t *testing.T) {
 		}
 		atomic.AddInt64(&requestReceived, 1)
 
-		if r.Header.Get(splitSDKImpressionsMode) != conf.Debug {
+		if r.Header.Get(splitSDKImpressionsMode) != conf.ImpressionsModeDebug {
 			t.Error("Wrong header sent")
 		}
 
@@ -369,7 +369,7 @@ func TestImpressionLastSeen(t *testing.T) {
 		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
-		conf.ManagerConfig{ImpressionsMode: conf.Debug},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	impressionSync.SynchronizeImpressions(50)

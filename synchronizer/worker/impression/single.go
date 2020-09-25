@@ -36,9 +36,9 @@ func NewRecorderSingle(
 	metadata dtos.Metadata,
 	managerConfig conf.ManagerConfig,
 ) ImpressionRecorder {
-	mode := conf.Optimized
+	mode := conf.ImpressionsModeOptimized
 	if !util.ShouldBeOptimized(managerConfig) {
-		mode = conf.Debug
+		mode = conf.ImpressionsModeDebug
 	}
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,

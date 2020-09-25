@@ -17,7 +17,7 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 		shouldAddPreviousTime: false,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -58,7 +58,7 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 		shouldAddPreviousTime: true,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -99,7 +99,7 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 		shouldAddPreviousTime: true,
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -137,13 +137,13 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 func TestImpManagerInMemoryDebug(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.Debug,
-	})
+		ImpressionsMode: conf.ImpressionsModeDebug,
+	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -174,13 +174,13 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 func TestImpManagerInMemoryOptimized(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.Optimized,
-	})
+		ImpressionsMode: conf.ImpressionsModeOptimized,
+	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -214,13 +214,13 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 func TestImpManagerRedis(t *testing.T) {
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   "redis-consumer",
-		ImpressionsMode: conf.Debug,
-	})
+		ImpressionsMode: conf.ImpressionsModeDebug,
+	}, NewImpressionsCounter())
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,

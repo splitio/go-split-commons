@@ -1,6 +1,7 @@
 package provisional
 
 import (
+	"errors"
 	"time"
 
 	"github.com/splitio/go-split-commons/conf"
@@ -24,15 +25,18 @@ type ImpressionManagerImpl struct {
 }
 
 // NewImpressionManager creates new ImpManager
-func NewImpressionManager(managerConfig conf.ManagerConfig) (ImpressionManager, error) {
+func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *ImpressionsCounter) (ImpressionManager, error) {
 	impressionObserver, err := NewImpressionObserver(lastSeenCacheSize)
 	if err != nil {
 		return nil, err
 	}
+	if impressionCounter == nil {
+		return nil, errors.New("ImpressionsCounter cannot be nil")
+	}
 
 	impManager := &ImpressionManagerImpl{
 		impressionObserver:    impressionObserver,
-		impressionsCounter:    NewImpressionsCounter(),
+		impressionsCounter:    impressionCounter,
 		shouldAddPreviousTime: util.ShouldAddPreviousTime(managerConfig),
 		isOptimized:           util.ShouldBeOptimized(managerConfig),
 	}
@@ -45,7 +49,7 @@ func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, fo
 		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &impression) // Adds previous time if it is enabled
 	}
 
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	if i.isOptimized { // isOptimized
 		i.impressionsCounter.Inc(impression.FeatureName, now, 1) // Increments impression counter per featureName
 	}
@@ -69,9 +73,4 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 	}
 
 	return forLog, forListener
-}
-
-// ImpressionsCounter returns impressionsCounter
-func (i *ImpressionManagerImpl) ImpressionsCounter() *ImpressionsCounter {
-	return i.impressionsCounter
 }

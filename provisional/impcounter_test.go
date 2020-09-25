@@ -10,19 +10,19 @@ func TestMakeKey(t *testing.T) {
 	timestamp := time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 
 	actualKey := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
-	expectedKey := Key{featureName: "someFeature", timeFrame: timestamp}
+	expectedKey := Key{FeatureName: "someFeature", TimeFrame: timestamp}
 	if actualKey != expectedKey {
 		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey, expectedKey))
 	}
 
 	actualKey2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
-	expectedKey2 := Key{featureName: "", timeFrame: timestamp}
+	expectedKey2 := Key{FeatureName: "", TimeFrame: timestamp}
 	if actualKey2 != expectedKey2 {
 		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey2, expectedKey2))
 	}
 
 	actualKey3 := makeKey("someFeature", 0)
-	expectedKey3 := Key{featureName: "someFeature", timeFrame: 0}
+	expectedKey3 := Key{FeatureName: "someFeature", TimeFrame: 0}
 	if actualKey3 != expectedKey3 {
 		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey3, expectedKey3))
 	}
