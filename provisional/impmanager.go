@@ -21,6 +21,7 @@ type ImpressionManagerImpl struct {
 	impressionsCounter    *ImpressionsCounter
 	shouldAddPreviousTime bool
 	isOptimized           bool
+	listenerEnabled       bool
 }
 
 // NewImpressionManager creates new ImpManager
@@ -35,6 +36,7 @@ func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *I
 		impressionsCounter:    impressionCounter,
 		shouldAddPreviousTime: util.ShouldAddPreviousTime(managerConfig),
 		isOptimized:           impressionCounter != nil && util.ShouldBeOptimized(managerConfig),
+		listenerEnabled:       managerConfig.ListenerEnabled,
 	}
 
 	return impManager, nil
@@ -54,7 +56,9 @@ func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, fo
 		forLog = append(forLog, impression)
 	}
 
-	forListener = append(forListener, impression)
+	if i.listenerEnabled {
+		forListener = append(forListener, impression)
+	}
 
 	return forLog, forListener
 }

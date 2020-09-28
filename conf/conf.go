@@ -85,4 +85,5 @@ type AdvancedConfig struct {
 type ManagerConfig struct {
 	OperationMode   string
 	ImpressionsMode string
+	ListenerEnabled bool
 }
