@@ -698,7 +698,7 @@ func TestPeriodicRecordingWithCounter(t *testing.T) {
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	metricTestWrapper := storage.NewMetricWrapper(metricMockStorage, nil, logger)
 	impCounter := provisional.NewImpressionsCounter()
-	impCounter.Inc("some", time.Now().UnixNano(), 1)
+	impCounter.Inc("some", time.Now().UTC().UnixNano(), 1)
 	workers := Workers{
 		SplitFetcher:             split.NewSplitFetcher(storageMock.MockSplitStorage{}, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:           segment.NewSegmentFetcher(storageMock.MockSplitStorage{}, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, metricTestWrapper, logger),
@@ -742,7 +742,7 @@ func TestPeriodicRecordingWithCounter(t *testing.T) {
 	if atomic.LoadInt64(&counterCalled) != 1 {
 		t.Error("It should be called once")
 	}
-	impCounter.Inc("some", time.Now().UnixNano(), 1)
+	impCounter.Inc("some", time.Now().UTC().UnixNano(), 1)
 	syncForTest.StopPeriodicDataRecording()
 	time.Sleep(time.Second * 1)
 	if atomic.LoadInt64(&impressionsCalled) != 3 {

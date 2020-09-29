@@ -47,7 +47,7 @@ func (i *ImpressionManagerImpl) processImpression(impression dtos.Impression, fo
 		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &impression) // Adds previous time if it is enabled
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	if i.isOptimized { // isOptimized
 		i.impressionsCounter.Inc(impression.FeatureName, now, 1) // Increments impression counter per featureName
 	}

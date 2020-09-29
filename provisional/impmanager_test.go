@@ -18,7 +18,7 @@ func TestProcessImpressionAllDisabled(t *testing.T) {
 		listenerEnabled:       true,
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -60,7 +60,7 @@ func TestProcessImpressionOptimizedDisabled(t *testing.T) {
 		listenerEnabled:       true,
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -102,7 +102,7 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 		listenerEnabled:       true,
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -147,7 +147,7 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -185,7 +185,7 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -223,7 +223,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
@@ -264,7 +264,7 @@ func TestImpManagerRedis(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
