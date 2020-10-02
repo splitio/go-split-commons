@@ -14,7 +14,7 @@ type httpRecorderBase struct {
 }
 
 // RecordRaw records raw data
-func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata) error {
+func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata, extraHeaders map[string]string) error {
 	headers := make(map[string]string)
 	headers["SplitSDKVersion"] = metadata.SDKVersion
 	if metadata.MachineName != "NA" && metadata.MachineName != "unknown" {
@@ -22,6 +22,11 @@ func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Meta
 	}
 	if metadata.MachineIP != "NA" && metadata.MachineIP != "unknown" {
 		headers["SplitSDKMachineIP"] = metadata.MachineIP
+	}
+	if extraHeaders != nil {
+		for header, value := range extraHeaders {
+			headers[header] = value
+		}
 	}
 	return h.client.Post(url, data, headers)
 }
@@ -32,16 +37,36 @@ type HTTPImpressionRecorder struct {
 }
 
 // Record sends an array (or slice) of impressionsRecord to the backend
-func (i *HTTPImpressionRecorder) Record(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+func (i *HTTPImpressionRecorder) Record(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 	data, err := json.Marshal(impressions)
 	if err != nil {
 		i.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = i.RecordRaw("/testImpressions/bulk", data, metadata)
+	err = i.RecordRaw("/testImpressions/bulk", data, metadata, extraHeaders)
 	if err != nil {
 		i.logger.Error("Error posting impressions", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+// RecordImpressionsCount sens impressionsCount
+func (i *HTTPImpressionRecorder) RecordImpressionsCount(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error {
+	if len(pf.PerFeature) == 0 {
+		return nil
+	}
+	data, err := json.Marshal(pf)
+	if err != nil {
+		i.logger.Error("Error marshaling JSON", err.Error())
+		return err
+	}
+
+	err = i.RecordRaw("/testImpressions/count", data, metadata, nil)
+	if err != nil {
+		i.logger.Error("Error posting impressionsCount", err.Error())
 		return err
 	}
 
@@ -76,7 +101,7 @@ func (m *HTTPMetricsRecorder) RecordCounters(counters []dtos.CounterDTO, metadat
 		return err
 	}
 
-	err = m.RecordRaw("/metrics/counters", data, metadata)
+	err = m.RecordRaw("/metrics/counters", data, metadata, nil)
 	if err != nil {
 		m.logger.Error("Error posting counters", err.Error())
 		return err
@@ -93,7 +118,7 @@ func (m *HTTPMetricsRecorder) RecordLatencies(latencies []dtos.LatenciesDTO, met
 		return err
 	}
 
-	err = m.RecordRaw("/metrics/times", data, metadata)
+	err = m.RecordRaw("/metrics/times", data, metadata, nil)
 	if err != nil {
 		m.logger.Error("Error posting latencies", err.Error())
 		return err
@@ -110,7 +135,7 @@ func (m *HTTPMetricsRecorder) RecordGauge(gauge dtos.GaugeDTO, metadata dtos.Met
 		return err
 	}
 
-	err = m.RecordRaw("/metrics/gauge", data, metadata)
+	err = m.RecordRaw("/metrics/gauge", data, metadata, nil)
 	if err != nil {
 		m.logger.Error("Error posting gauges", err.Error())
 		return err
@@ -147,7 +172,7 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 		return err
 	}
 
-	err = i.RecordRaw("/events/bulk", data, metadata)
+	err = i.RecordRaw("/events/bulk", data, metadata, nil)
 	if err != nil {
 		i.logger.Error("Error posting events", err.Error())
 		return err

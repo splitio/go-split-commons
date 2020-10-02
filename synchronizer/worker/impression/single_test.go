@@ -37,6 +37,7 @@ func TestImpressionRecorderError(t *testing.T) {
 		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -63,6 +64,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 		storage.NewMetricWrapper(nil, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -101,7 +103,14 @@ func TestImpressionRecorder(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
-		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
+			val, ok := extraHeaders[splitSDKImpressionsMode]
+			if !ok {
+				t.Error("It should send extraHeaders")
+			}
+			if val != conf.ImpressionsModeDebug {
+				t.Error("It should be debug")
+			}
 			if len(impressions) != 2 {
 				t.Error("Wrong length of impressions passed")
 			}
@@ -142,6 +151,7 @@ func TestImpressionRecorder(t *testing.T) {
 			}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	err := impressionSync.SynchronizeImpressions(50)
@@ -157,6 +167,10 @@ func TestImpressionRecorderSync(t *testing.T) {
 			t.Error("Invalid request. Should be POST to /impressions")
 		}
 		atomic.AddInt64(&requestReceived, 1)
+
+		if r.Header.Get(splitSDKImpressionsMode) != conf.ImpressionsModeOptimized {
+			t.Error("Wrong header sent")
+		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		r.Body.Close()
@@ -251,6 +265,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
+		conf.ManagerConfig{OperationMode: conf.Standalone, ImpressionsMode: conf.ImpressionsModeOptimized},
 	)
 
 	impressionSync.SynchronizeImpressions(50)
@@ -267,6 +282,10 @@ func TestImpressionLastSeen(t *testing.T) {
 			t.Error("Invalid request. Should be POST to /impressions")
 		}
 		atomic.AddInt64(&requestReceived, 1)
+
+		if r.Header.Get(splitSDKImpressionsMode) != conf.ImpressionsModeDebug {
+			t.Error("Wrong header sent")
+		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		r.Body.Close()
@@ -350,6 +369,7 @@ func TestImpressionLastSeen(t *testing.T) {
 		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
+		conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 	)
 
 	impressionSync.SynchronizeImpressions(50)

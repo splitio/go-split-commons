@@ -10,7 +10,7 @@ import (
 
 // ImpressionObserver is used to check wether an impression has been previously seen
 type ImpressionObserver interface {
-	TestAndSet(featureName string, keyImpression *dtos.ImpressionDTO) (int64, error)
+	TestAndSet(featureName string, impression *dtos.Impression) (int64, error)
 }
 
 // ImpressionObserverImpl is an implementation of the ImpressionObserver interface
@@ -30,13 +30,13 @@ func (o *ImpressionObserverImpl) testAndSet(key int64, newValue int64) (int64, e
 }
 
 // TestAndSet hashes the impression, updates the cache and returns the previous value
-func (o *ImpressionObserverImpl) TestAndSet(featureName string, keyImpression *dtos.ImpressionDTO) (int64, error) {
-	hash, err := o.hasher.Process(featureName, keyImpression)
+func (o *ImpressionObserverImpl) TestAndSet(featureName string, impression *dtos.Impression) (int64, error) {
+	hash, err := o.hasher.Process(featureName, impression)
 	if err != nil {
 		return 0, fmt.Errorf("error hashing impression: %s", err.Error())
 	}
 
-	return o.testAndSet(hash, keyImpression.Time)
+	return o.testAndSet(hash, impression.Time)
 }
 
 // NewImpressionObserver constructs a new ImpressionObserver
@@ -56,6 +56,6 @@ func NewImpressionObserver(size int) (*ImpressionObserverImpl, error) {
 type ImpressionObserverNoOp struct{}
 
 // TestAndSet that does nothing
-func (o *ImpressionObserverNoOp) TestAndSet(featureName string, keyImpression *dtos.ImpressionDTO) (int64, error) {
+func (o *ImpressionObserverNoOp) TestAndSet(featureName string, impression *dtos.Impression) (int64, error) {
 	return 0, nil
 }

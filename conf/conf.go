@@ -80,3 +80,10 @@ type AdvancedConfig struct {
 	SplitUpdateQueueSize   int64
 	SegmentUpdateQueueSize int64
 }
+
+// ManagerConfig exposes configurable parameters for ImpressionManager
+type ManagerConfig struct {
+	OperationMode   string
+	ImpressionsMode string
+	ListenerEnabled bool
+}
