@@ -1,5 +1,6 @@
 1.2.2 (Oct 2, 2020)
- - Added impressions counter.
+ - Added impressions manager for deduping impressions.
+ - Added impressions count task.
 
 1.2.1 (Sep 8, 2020)
  - Pointed to new version of go-toolkit with correct EOF handling in sse client.
