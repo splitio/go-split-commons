@@ -79,6 +79,7 @@ func (m *MMSplitStorage) KillLocally(splitName string, defaultTreatment string, 
 	if split != nil && till < changeNumber {
 		split.DefaultTreatment = defaultTreatment
 		split.Killed = true
+		split.ChangeNumber = changeNumber
 		m.data[split.Name] = *split
 	}
 }
