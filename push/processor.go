@@ -85,7 +85,7 @@ func (p *Processor) Process(i dtos.IncomingNotification) error {
 			return errors.New("DefaultTreatment could not be nil, discarded")
 		}
 		splitUpdate := dtos.NewSplitChangeNotification(i.Channel, *i.ChangeNumber)
-		p.splitStorage.KillLocally(*i.SplitName, *i.DefaultTreatment)
+		p.splitStorage.KillLocally(*i.SplitName, *i.DefaultTreatment, *i.ChangeNumber)
 		p.splitQueue <- splitUpdate
 	case dtos.Control:
 		if i.ControlType == nil {

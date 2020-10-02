@@ -94,8 +94,14 @@ func TestSplitKillLocally(t *testing.T) {
 		t.Error("It should be defaultTreatment")
 	}
 
-	splitStorage.KillLocally("some", "anotherDefaultTreatment")
+	splitStorage.KillLocally("some", "anotherDefaultTreatment", 1)
 	fetchedKilled := splitStorage._get("some")
+	if fetchedKilled.Killed {
+		t.Error("It should not be killed")
+	}
+
+	splitStorage.KillLocally("some", "anotherDefaultTreatment", 22345678)
+	fetchedKilled = splitStorage._get("some")
 	if !fetchedKilled.Killed {
 		t.Error("It should be killed")
 	}
