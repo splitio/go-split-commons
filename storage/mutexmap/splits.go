@@ -68,13 +68,18 @@ func (m *MMSplitStorage) FetchMany(splitNames []string) map[string]*dtos.SplitDT
 }
 
 // KillLocally kills the split locally
-func (m *MMSplitStorage) KillLocally(splitName string, defaultTreatment string) {
+func (m *MMSplitStorage) KillLocally(splitName string, defaultTreatment string, changeNumber int64) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	split := m._get(splitName)
-	if split != nil {
+	till, err := m.ChangeNumber()
+	if err != nil {
+		return
+	}
+	if split != nil && till < changeNumber {
 		split.DefaultTreatment = defaultTreatment
 		split.Killed = true
+		split.ChangeNumber = changeNumber
 		m.data[split.Name] = *split
 	}
 }

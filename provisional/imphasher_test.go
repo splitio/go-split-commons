@@ -1,8 +1,9 @@
 package provisional
 
 import (
-	"github.com/splitio/go-split-commons/v2/dtos"
 	"testing"
+
+	"github.com/splitio/go-split-commons/v2/dtos"
 )
 
 func TestHasher(t *testing.T) {
@@ -10,7 +11,7 @@ func TestHasher(t *testing.T) {
 
 	seen := map[int64]struct{}{}
 
-	imp := dtos.ImpressionDTO{
+	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,
 		KeyName:      "someKey",

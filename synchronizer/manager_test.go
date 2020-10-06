@@ -254,7 +254,7 @@ func TestPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				if len(impressions) != 1 {
 					t.Error("Wrong length")
@@ -382,7 +382,7 @@ func TestPolling(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(mockSplitStorage, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(mockSplitStorage, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -572,7 +572,7 @@ func TestStreaming(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 				atomic.AddInt64(&impressionsCalled, 1)
 				return nil
 			},
@@ -604,13 +604,16 @@ func TestStreaming(t *testing.T) {
 		},
 	}
 	splitStorageMock := storageMock.MockSplitStorage{
-		KillLocallyCall: func(splitName, defaultTreatment string) {
+		KillLocallyCall: func(splitName, defaultTreatment string, changeNumber int64) {
 			atomic.AddInt64(&kilLocallyCalled, 1)
 			if splitName != "test" {
 				t.Error("Wrong split name passed")
 			}
 			if defaultTreatment != "some" {
 				t.Error("Wrong defaultTreatment passed")
+			}
+			if changeNumber != 1591996754396 {
+				t.Error("Wrong changeNumber passed")
 			}
 		},
 		ChangeNumberCall: func() (int64, error) {
@@ -673,7 +676,7 @@ func TestStreaming(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
@@ -829,7 +832,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 			},
 		},
 		ImpressionRecorder: httpMocks.MockImpressionRecorder{
-			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata) error {
+			RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
 				return nil
 			},
 		},
@@ -847,7 +850,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 	}
 
 	splitStorageMock := storageMock.MockSplitStorage{
-		KillLocallyCall: func(splitName, defaultTreatment string) {
+		KillLocallyCall: func(splitName, defaultTreatment string, changeNumber int64) {
 		},
 		ChangeNumberCall: func() (int64, error) {
 			return -1, nil
@@ -904,7 +907,7 @@ func TestStreamingAndSwitchToPolling(t *testing.T) {
 		SplitFetcher:       split.NewSplitFetcher(splitStorageMock, splitAPI.SplitFetcher, metricTestWrapper, logger),
 		SegmentFetcher:     segment.NewSegmentFetcher(splitStorageMock, segmentStorageMock, splitAPI.SegmentFetcher, metricTestWrapper, logger),
 		EventRecorder:      event.NewEventRecorderSingle(eventStorageMock, splitAPI.EventRecorder, metricTestWrapper, logger, dtos.Metadata{}),
-		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}),
+		ImpressionRecorder: impression.NewRecorderSingle(impressionStorageMock, splitAPI.ImpressionRecorder, metricTestWrapper, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}),
 		TelemetryRecorder:  metric.NewRecorderSingle(metricStorageMock, splitAPI.MetricRecorder, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{

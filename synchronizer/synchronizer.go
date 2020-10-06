@@ -4,6 +4,7 @@ import (
 	"github.com/splitio/go-split-commons/v2/conf"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impressionscount"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/metric"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
@@ -14,20 +15,22 @@ import (
 
 // SplitTasks struct for tasks
 type SplitTasks struct {
-	SplitSyncTask      *asynctask.AsyncTask
-	SegmentSyncTask    *asynctask.AsyncTask
-	TelemetrySyncTask  *asynctask.AsyncTask
-	ImpressionSyncTask tasks.Task
-	EventSyncTask      tasks.Task
+	SplitSyncTask            *asynctask.AsyncTask
+	SegmentSyncTask          *asynctask.AsyncTask
+	TelemetrySyncTask        *asynctask.AsyncTask
+	ImpressionSyncTask       tasks.Task
+	EventSyncTask            tasks.Task
+	ImpressionsCountSyncTask *asynctask.AsyncTask
 }
 
 // Workers struct for workers
 type Workers struct {
-	SplitFetcher       split.SplitFetcher
-	SegmentFetcher     segment.SegmentFetcher
-	TelemetryRecorder  metric.MetricRecorder
-	ImpressionRecorder impression.ImpressionRecorder
-	EventRecorder      event.EventRecorder
+	SplitFetcher             split.SplitFetcher
+	SegmentFetcher           segment.SegmentFetcher
+	TelemetryRecorder        metric.MetricRecorder
+	ImpressionRecorder       impression.ImpressionRecorder
+	EventRecorder            event.EventRecorder
+	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -123,6 +126,9 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Start()
 	}
+	if s.splitTasks.ImpressionsCountSyncTask != nil {
+		s.splitTasks.ImpressionsCountSyncTask.Start()
+	}
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
@@ -135,6 +141,9 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	}
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Stop(true)
+	}
+	if s.splitTasks.ImpressionsCountSyncTask != nil {
+		s.splitTasks.ImpressionsCountSyncTask.Stop(true)
 	}
 }
 

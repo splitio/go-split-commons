@@ -14,7 +14,7 @@ func TestImpressionObserver(t *testing.T) {
 		t.Error("there should not be an error: ", err.Error())
 	}
 
-	imp := dtos.ImpressionDTO{
+	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,
 		KeyName:      "someKey",
@@ -47,7 +47,7 @@ func TestImpressionObserver(t *testing.T) {
 
 	// add 5 new impressions and validate that the first one returns 0, *Miss again
 	for i := 0; i < 5; i++ {
-		observer.TestAndSet("someFeature", &dtos.ImpressionDTO{
+		observer.TestAndSet("someFeature", &dtos.Impression{
 			KeyName:      fmt.Sprintf("key_%d", i),
 			ChangeNumber: 123,
 			Label:        "someLabel",
@@ -67,5 +67,4 @@ func TestImpressionObserver(t *testing.T) {
 	if res != 0 {
 		t.Error("previous value should be default/empty/zero. Is ", res)
 	}
-
 }

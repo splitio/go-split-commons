@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/splitio/go-split-commons/v2/conf"
 	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/provisional"
 	"github.com/splitio/go-split-commons/v2/service"
 	"github.com/splitio/go-split-commons/v2/storage"
 	"github.com/splitio/go-split-commons/v2/util"
@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	maxImpressionCacheSize = 500000
+	maxImpressionCacheSize  = 500000
+	splitSDKImpressionsMode = "SplitSDKImpressionsMode"
 )
 
 // RecorderSingle struct for impression sync
@@ -23,7 +24,7 @@ type RecorderSingle struct {
 	metricsWrapper     *storage.MetricWrapper
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
-	impressionObserver provisional.ImpressionObserver
+	mode               string
 }
 
 // NewRecorderSingle creates new impression synchronizer for posting impressions
@@ -33,16 +34,19 @@ func NewRecorderSingle(
 	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
+	managerConfig conf.ManagerConfig,
 ) ImpressionRecorder {
-	observer, _ := provisional.NewImpressionObserver(maxImpressionCacheSize)
-
+	mode := conf.ImpressionsModeOptimized
+	if !util.ShouldBeOptimized(managerConfig) {
+		mode = conf.ImpressionsModeDebug
+	}
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
 		metricsWrapper:     metricsWrapper,
 		logger:             logger,
 		metadata:           metadata,
-		impressionObserver: observer,
+		mode:               mode,
 	}
 }
 
@@ -68,8 +72,8 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			ChangeNumber: impression.ChangeNumber,
 			Label:        impression.Label,
 			BucketingKey: impression.BucketingKey,
+			Pt:           impression.Pt,
 		}
-		keyImpression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, &keyImpression)
 		v, ok := impressionsToPost[impression.FeatureName]
 		if ok {
 			v = append(v, keyImpression)
@@ -88,7 +92,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	}
 
 	before := time.Now()
-	err = i.impressionRecorder.Record(bulkImpressions, i.metadata)
+	err = i.impressionRecorder.Record(bulkImpressions, i.metadata, map[string]string{splitSDKImpressionsMode: i.mode})
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
 			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(httpError.Code))
