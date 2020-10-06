@@ -84,20 +84,36 @@ func TestSplitKillLocally(t *testing.T) {
 		Algo:             1,
 		DefaultTreatment: "defaultTreatment",
 		Killed:           false,
+		ChangeNumber:     12345676,
 	}}, 12345678)
 
 	fetchedSplit := splitStorage._get("some")
 	if fetchedSplit.Killed {
 		t.Error("It should not be killed")
 	}
+	if fetchedSplit.ChangeNumber != 12345676 {
+		t.Error("It should not be updated")
+	}
 	if fetchedSplit.DefaultTreatment != "defaultTreatment" {
 		t.Error("It should be defaultTreatment")
 	}
 
-	splitStorage.KillLocally("some", "anotherDefaultTreatment")
+	splitStorage.KillLocally("some", "anotherDefaultTreatment", 1)
 	fetchedKilled := splitStorage._get("some")
+	if fetchedKilled.Killed {
+		t.Error("It should not be killed")
+	}
+	if fetchedKilled.ChangeNumber != 12345676 {
+		t.Error("It should not be updated")
+	}
+
+	splitStorage.KillLocally("some", "anotherDefaultTreatment", 22345678)
+	fetchedKilled = splitStorage._get("some")
 	if !fetchedKilled.Killed {
 		t.Error("It should be killed")
+	}
+	if fetchedKilled.ChangeNumber != 22345678 {
+		t.Error("It should be updated")
 	}
 	if fetchedKilled.DefaultTreatment != "anotherDefaultTreatment" {
 		t.Error("It should be anotherDefaultTreatment")

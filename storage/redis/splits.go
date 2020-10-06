@@ -105,7 +105,7 @@ func (r *SplitStorage) FetchMany(features []string) map[string]*dtos.SplitDTO {
 }
 
 // KillLocally mock
-func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string) {
+func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string, changeNumber int64) {
 	// @TODO Implement for Sync
 }
 

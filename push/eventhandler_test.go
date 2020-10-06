@@ -15,12 +15,15 @@ func TestHandleIncomingMessage(t *testing.T) {
 	segmentQueue := make(chan dtos.SegmentChangeNotification, 5000)
 	splitQueue := make(chan dtos.SplitChangeNotification, 5000)
 	mockSplitStorage := mocks.MockSplitStorage{
-		KillLocallyCall: func(splitName, defaultTreatment string) {
+		KillLocallyCall: func(splitName, defaultTreatment string, changeNumber int64) {
 			if splitName != "test" {
 				t.Error("Wrong splitName passed")
 			}
 			if defaultTreatment != "some" {
 				t.Error("Wrong defaultTreatment passed")
+			}
+			if changeNumber != 1591996754396 {
+				t.Error("Wrong changeNumber passed")
 			}
 		},
 	}
