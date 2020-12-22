@@ -6,5 +6,3 @@ require (
 	github.com/splitio/go-toolkit/v3 v3.0.1
 	gopkg.in/yaml.v2 v2.3.0
 )
-
-replace github.com/splitio/go-toolkit/v3 => /Users/martinredolatti/go/src/github.com/splitio/go-toolkit
