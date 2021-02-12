@@ -95,7 +95,7 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 		}
 
 		switch out {
-		case sse.ErrAlreadyRunning:
+		case sse.ErrNotIdle:
 			// If this happens we have a bug
 			streamingStatus <- StatusUnderlyingClientInUse
 		case sse.ErrReadingStream:

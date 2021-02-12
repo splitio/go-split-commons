@@ -134,29 +134,29 @@ func (s *ManagerImpl) Start() {
 
 		switch status {
 		case push.StatusUp:
+			s.logger.Info("streaming up and running")
 			s.synchronizer.StopPeriodicFetching()
 			s.synchronizer.SyncAll()
 			s.pushManager.StartWorkers()
 			s.status.Store(Streaming)
 			s.backoff.Reset()
-			// TODO: Log
 		case push.StatusDown:
+			s.logger.Info("streaming down, switchin to polling")
 			s.synchronizer.SyncAll()
 			s.startPolling()
-			// TODO: Log
 		case push.StatusRetryableError:
+			s.logger.Error("retryable error in streaming subsystem. Switching to polling and retrying with backoff")
 			s.pushManager.Stop()
 			s.synchronizer.SyncAll()
 			s.startPolling()
 			time.Sleep(s.backoff.Next())
-			// TODO: Log
 			s.pushManager.Start()
 		case push.StatusNonRetryableError:
+			s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
 			s.pushManager.StopWorkers()
 			s.pushManager.Stop()
 			s.synchronizer.SyncAll()
 			s.synchronizer.StartPeriodicFetching()
-			// TODO: log
 		}
 	}
 }
@@ -164,12 +164,9 @@ func (s *ManagerImpl) Start() {
 // Stop stop synchronizaation through Split
 func (s *ManagerImpl) Stop() {
 	s.logger.Info("STOPPING MANAGER TASKS")
-	// TODO
-	/*
-		if s.pushManager != nil && s.pushManager.IsRunning() {
-			s.pushManager.Stop()
-		}
-	*/
+	if s.pushManager != nil {
+		s.pushManager.Stop()
+	}
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
 	s.status.Store(Idle)

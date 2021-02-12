@@ -90,6 +90,7 @@ func (m *ManagerImpl) Start() {
 
 // Stop method stops the sse client and it's status monitoring goroutine
 func (m *ManagerImpl) Stop() {
+	m.statusTracker.NotifySSEShutdownExpected()
 	if m.nextRefresh != nil {
 		m.nextRefresh.Stop()
 	}

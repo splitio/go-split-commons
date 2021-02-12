@@ -30,7 +30,7 @@ func TestPushManagerCustom(t *testing.T) {
 		},
 	}
 	logger := logging.NewLogger(&logging.LoggerOptions{
-		LogLevel:            logging.LevelDebug,
+		LogLevel:            logging.LevelInfo,
 		StandardLoggerFlags: log.Llongfile,
 	})
 	feedback := make(chan int64, 100)
