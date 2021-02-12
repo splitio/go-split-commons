@@ -27,14 +27,14 @@ func TestStreamingError(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 
-	streamingStatus := make(chan int, 1)
-	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
+	mockedClient := NewStreamingClient(mocked, logger)
 
-	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	streamingStatus := make(chan int, 1)
+	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(sse.RawEvent) {
 		t.Error("Should not execute callback")
 	})
 	msg := <-streamingStatus
-	if msg != sse.ErrorInternal {
+	if msg != StatusConnectionFailed {
 		t.Error("Unexpected error")
 	}
 
@@ -51,7 +51,7 @@ func TestStreamingOk(t *testing.T) {
 	_ = json.Unmarshal(sseMock, &mockedData)
 	mockedStr, _ := json.Marshal(mockedData)
 
-	streamingStatus := make(chan int, 1)
+	streamingStatus := make(chan int, 10)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		flusher, err := w.(http.Flusher)
@@ -71,50 +71,32 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, streamingStatus, logger)
+	mockedClient := NewStreamingClient(mocked, logger)
 
-	var result map[string]interface{}
+	go func() {
+		for {
+			fmt.Println(<-streamingStatus)
+		}
+	}()
+
+	var result sse.RawEvent
 	mutexTest := sync.RWMutex{}
-	go mockedClient.ConnectStreaming("someToken", []string{}, func(e map[string]interface{}) {
+	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {
 		defer mutexTest.Unlock()
 		mutexTest.Lock()
 		result = e
 	})
 
-	status := <-streamingStatus
-	if status != sse.OK {
-		t.Error("It should not be error")
+	time.Sleep(1000 * time.Millisecond)
 
-	}
-	if !mockedClient.IsRunning() {
-		t.Error("It should be running")
-	}
-
-	time.Sleep(100 * time.Millisecond)
-
-	mockedClient.StopStreaming(true)
+	mockedClient.StopStreaming()
 	if mockedClient.IsRunning() {
 		t.Error("It should not be running")
 	}
 
 	mutexTest.RLock()
-	if result["id"] != mockedData["id"] {
-		t.Error("Unexpected id")
-	}
-	if result["clientId"] != mockedData["clientId"] {
-		t.Error("Unexpected clientId")
-	}
-	if result["timestamp"] != mockedData["timestamp"] {
-		t.Error("Unexpected timestamp")
-	}
-	if result["encoding"] != mockedData["encoding"] {
-		t.Error("Unexpected encoding")
-	}
-	if result["channel"] != mockedData["channel"] {
-		t.Error("Unexpected channel")
-	}
-	if result["data"] != mockedData["data"] {
-		t.Error("Unexpected data")
+	if result.Data() != string(mockedStr) {
+		t.Error("Unexpected data", result.Data(), "---", string(sseMock))
 	}
 	mutexTest.RUnlock()
 }

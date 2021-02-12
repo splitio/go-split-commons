@@ -9,6 +9,7 @@ type MockSynchronizer struct {
 	StopPeriodicFetchingCall       func()
 	StartPeriodicDataRecordingCall func()
 	StopPeriodicDataRecordingCall  func()
+	LocalKillCall                  func(string, string, int64)
 }
 
 // SyncAll mock
@@ -44,4 +45,9 @@ func (m MockSynchronizer) StartPeriodicDataRecording() {
 // StopPeriodicDataRecording mock
 func (m MockSynchronizer) StopPeriodicDataRecording() {
 	m.StopPeriodicDataRecordingCall()
+}
+
+// LocalKill mock
+func (m MockSynchronizer) LocalKill(name string, treatment string, cn int64) {
+	m.LocalKillCall(name, treatment, cn)
 }

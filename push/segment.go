@@ -6,22 +6,26 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-toolkit/v3/common"
 	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 // SegmentUpdateWorker struct
 type SegmentUpdateWorker struct {
 	activeGoroutines *sync.WaitGroup
-	segmentQueue     chan dtos.SegmentChangeNotification
-	handler          func(segmentName string, till *int64) error
+	segmentQueue     chan SegmentChangeUpdate
+	sync             synchronizerInterface
 	logger           logging.LoggerInterface
 	stop             chan struct{}
 	running          atomic.Value
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
-func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, handler func(segmentName string, till *int64) error, logger logging.LoggerInterface) (*SegmentUpdateWorker, error) {
+func NewSegmentUpdateWorker(
+	segmentQueue chan SegmentChangeUpdate,
+	synchronizer synchronizerInterface,
+	logger logging.LoggerInterface,
+) (*SegmentUpdateWorker, error) {
 	if cap(segmentQueue) < 5000 {
 		return nil, errors.New("")
 	}
@@ -30,7 +34,7 @@ func NewSegmentUpdateWorker(segmentQueue chan dtos.SegmentChangeNotification, ha
 
 	return &SegmentUpdateWorker{
 		segmentQueue: segmentQueue,
-		handler:      handler,
+		sync:         synchronizer,
 		logger:       logger,
 		stop:         make(chan struct{}, 1),
 		running:      running,
@@ -50,8 +54,8 @@ func (s *SegmentUpdateWorker) Start() {
 			select {
 			case segmentUpdate := <-s.segmentQueue:
 				s.logger.Debug("Received Segment update and proceding to perform fetch")
-				s.logger.Debug(fmt.Sprintf("SegmentName: %s\nChangeNumber: %d", segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber))
-				err := s.handler(segmentUpdate.SegmentName, &segmentUpdate.ChangeNumber)
+				s.logger.Debug(fmt.Sprintf("SegmentName: %s\nChangeNumber: %d", segmentUpdate.SegmentName(), segmentUpdate.ChangeNumber()))
+				err := s.sync.SynchronizeSegment(segmentUpdate.SegmentName(), common.Int64Ref(segmentUpdate.ChangeNumber()))
 				if err != nil {
 					s.logger.Error(err)
 				}

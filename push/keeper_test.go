@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"fmt"
 	"math/rand"
@@ -72,3 +73,4 @@ func TestKeeperMultipleOps(t *testing.T) {
 		}
 	}()
 }
+*/

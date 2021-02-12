@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -87,3 +88,4 @@ func (e *EventHandler) HandleIncomingMessage(event map[string]interface{}) {
 		e.logger.Error("Unexpected type of event received")
 	}
 }
+*/

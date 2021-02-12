@@ -1,6 +1,7 @@
 package split
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/splitio/go-split-commons/v2/dtos"
@@ -10,8 +11,8 @@ import (
 	"github.com/splitio/go-toolkit/v3/logging"
 )
 
-// SplitFetcherSimple struct for split sync
-type SplitFetcherSimple struct {
+// UpdaterImpl struct for split sync
+type UpdaterImpl struct {
 	splitStorage   storage.SplitStorage
 	splitFetcher   service.SplitFetcher
 	metricsWrapper *storage.MetricWrapper
@@ -24,8 +25,8 @@ func NewSplitFetcher(
 	splitFetcher service.SplitFetcher,
 	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
-) SplitFetcher {
-	return &SplitFetcherSimple{
+) Updater {
+	return &UpdaterImpl{
 		splitStorage:   splitStorage,
 		splitFetcher:   splitFetcher,
 		metricsWrapper: metricsWrapper,
@@ -33,7 +34,7 @@ func NewSplitFetcher(
 	}
 }
 
-func (s *SplitFetcherSimple) processUpdate(splits *dtos.SplitChangesDTO) {
+func (s *UpdaterImpl) processUpdate(splits *dtos.SplitChangesDTO) {
 	inactiveSplits := make([]dtos.SplitDTO, 0)
 	activeSplits := make([]dtos.SplitDTO, 0)
 	for _, split := range splits.Splits {
@@ -54,7 +55,7 @@ func (s *SplitFetcherSimple) processUpdate(splits *dtos.SplitChangesDTO) {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
+func (s *UpdaterImpl) SynchronizeSplits(till *int64) error {
 	// @TODO: add delays
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
@@ -69,7 +70,7 @@ func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 		splits, err := s.splitFetcher.Fetch(changeNumber)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, string(httpError.Code))
+				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, strconv.Itoa(httpError.Code))
 			}
 			return err
 		}
@@ -81,4 +82,9 @@ func (s *SplitFetcherSimple) SynchronizeSplits(till *int64) error {
 			return nil
 		}
 	}
+}
+
+// LocalKill marks a spit as killed in local storage
+func (s *UpdaterImpl) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
+	s.splitStorage.KillLocally(splitName, defaultTreatment, changeNumber)
 }

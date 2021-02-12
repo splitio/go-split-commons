@@ -4,27 +4,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v2/push/mocks"
 	"github.com/splitio/go-toolkit/v3/logging"
 )
 
 func TestSegmentUpdateWorker(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	segmentQUeue := make(chan dtos.SegmentChangeNotification, 5000)
+	segmentQUeue := make(chan SegmentChangeUpdate, 5000)
 
-	segmentHandler := func(segmentName string, till *int64) error {
-		if segmentName != "some" {
-			t.Error("Unexpected segment name")
-		}
-		if *till != 123456789 {
-			t.Error("Unexpected till")
-		}
-		return nil
+	mockSync := &mocks.LocalSyncMock{
+		SynchronizeSegmentCall: func(segmentName string, till *int64) error {
+			if segmentName != "some" {
+				t.Error("Unexpected segment name")
+			}
+			if *till != 123456789 {
+				t.Error("Unexpected till")
+			}
+			return nil
+		},
 	}
 
-	segmentWorker, _ := NewSegmentUpdateWorker(segmentQUeue, segmentHandler, logger)
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQUeue, mockSync, logger)
 	segmentWorker.Start()
-	segmentQUeue <- dtos.NewSegmentChangeNotification("some", 123456789, "some")
+	segmentQUeue <- SegmentChangeUpdate{
+		segmentName: "some",
+		BaseUpdate:  BaseUpdate{BaseMessage: BaseMessage{channel: "some"}, changeNumber: 123456789},
+	}
 
 	if !segmentWorker.IsRunning() {
 		t.Error("It should be running")

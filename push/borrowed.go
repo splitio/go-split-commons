@@ -1,7 +1,7 @@
-package synchronizer
+package push
 
-// Synchronizer interface for syncing data to and from splits servers
-type Synchronizer interface {
+// Borrowed synchronizer interface to break circular dependencies
+type synchronizerInterface interface {
 	SyncAll() error
 	SynchronizeSplits(till *int64) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)

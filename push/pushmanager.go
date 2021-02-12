@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"errors"
 	"fmt"
@@ -368,3 +369,4 @@ func (p *PushManager) StartWorkers() {
 		p.segmentWorker.Start()
 	}
 }
+*/

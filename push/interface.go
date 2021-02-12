@@ -1,5 +1,6 @@
 package push
 
+/*
 // Manager interface for Push Manager
 type Manager interface {
 	Start()
@@ -8,3 +9,4 @@ type Manager interface {
 	StopWorkers()
 	IsRunning() bool
 }
+*/

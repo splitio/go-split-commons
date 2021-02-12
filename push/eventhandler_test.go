@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"sync/atomic"
 	"testing"
@@ -140,3 +141,4 @@ func TestHandleIncomingMessage(t *testing.T) {
 		t.Error("It should send a message for pausing streaming")
 	}
 }
+*/

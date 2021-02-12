@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"fmt"
 	"github.com/splitio/go-toolkit/v3/common"
@@ -45,3 +46,4 @@ type Metrics struct {
 type Occupancy struct {
 	Data Metrics `json:"metrics"`
 }
+*/

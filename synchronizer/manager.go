@@ -2,12 +2,15 @@ package synchronizer
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/splitio/go-split-commons/v2/conf"
 	"github.com/splitio/go-split-commons/v2/push"
 	"github.com/splitio/go-split-commons/v2/service"
 	"github.com/splitio/go-split-commons/v2/storage"
+	"github.com/splitio/go-toolkit/v3/backoff"
 	"github.com/splitio/go-toolkit/v3/logging"
 )
 
@@ -29,15 +32,23 @@ const (
 	Polling
 )
 
-// Manager struct
-type Manager struct {
+// Manager interface
+type Manager interface {
+	Start()
+	Stop()
+	IsRunning() bool
+}
+
+// ManagerImpl struct
+type ManagerImpl struct {
 	synchronizer    Synchronizer
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
 	pushManager     push.Manager
 	managerStatus   chan int
-	streamingStatus chan int
+	streamingStatus chan int64
 	status          atomic.Value
+	backoff         backoff.Interface
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -48,14 +59,15 @@ func NewSynchronizerManager(
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
-) (*Manager, error) {
+) (*ManagerImpl, error) {
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
 
 	status := atomic.Value{}
 	status.Store(Idle)
-	manager := &Manager{
+	manager := &ManagerImpl{
+		backoff:       backoff.New(),
 		synchronizer:  synchronizer,
 		logger:        logger,
 		config:        config,
@@ -63,8 +75,8 @@ func NewSynchronizerManager(
 		status:        status,
 	}
 	if config.StreamingEnabled {
-		streamingStatus := make(chan int, 1000)
-		pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
+		streamingStatus := make(chan int64, 1000)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient)
 		if err != nil {
 			return nil, err
 		}
@@ -75,19 +87,19 @@ func NewSynchronizerManager(
 	return manager, nil
 }
 
-func (s *Manager) startPolling() {
+func (s *ManagerImpl) startPolling() {
 	s.status.Store(Polling)
 	s.pushManager.StopWorkers()
 	s.synchronizer.StartPeriodicFetching()
 }
 
 // IsRunning returns true if is in Streaming or Polling
-func (s *Manager) IsRunning() bool {
+func (s *ManagerImpl) IsRunning() bool {
 	return s.status.Load().(int) != Idle
 }
 
 // Start starts synchronization through Split
-func (s *Manager) Start() {
+func (s *ManagerImpl) Start() {
 	if s.IsRunning() {
 		s.logger.Info("Manager is already running, skipping start")
 		return
@@ -105,79 +117,59 @@ func (s *Manager) Start() {
 	s.logger.Debug("SyncAll Ready")
 	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
-	if s.config.StreamingEnabled {
-		s.logger.Info("Start Streaming")
-		go s.pushManager.Start()
-		// Listens Streaming Status
-		for {
-			status := <-s.streamingStatus
-			switch status {
-			// Backoff is running -> start polling until auth is ok
-			case push.BackoffAuth:
-				fallthrough
-			// Backoff is running -> start polling until sse is connected
-			case push.BackoffSSE:
-				if s.status.Load().(int) != Polling {
-					s.logger.Info("Start periodic polling due backoff")
-					s.startPolling()
-				}
-			// SSE Streaming and workers are ready
-			case push.Ready:
-				// If Ready comes eventually when Backoff is done and polling is running
-				if s.status.Load().(int) == Polling {
-					s.synchronizer.StopPeriodicFetching()
-				}
-				s.logger.Info("SSE Streaming is ready")
-				s.status.Store(Streaming)
-				go s.synchronizer.SyncAll()
-			case push.StreamingDisabled:
-				fallthrough
-			// NonRetriableError occurs and it will switch to polling
-			case push.NonRetriableError:
-				s.pushManager.Stop()
-				s.logger.Info("Start periodic polling in Streaming")
-				s.startPolling()
-				return
-			// Publisher sends that there is no Notification Managers available
-			case push.PushIsDown:
-				// If streaming is already running, proceeding to stop workers
-				// and keeping SSE running
-				if s.status.Load().(int) == Streaming {
-					s.logger.Info("Start periodic polling in Streaming")
-					s.startPolling()
-				}
-			// Publisher sends that there are at least one Notification Manager available
-			case push.PushIsUp:
-				// If streaming is not already running, proceeding to start workers
-				if s.status.Load().(int) != Streaming {
-					s.logger.Info("Stop periodic polling")
-					s.pushManager.StartWorkers()
-					s.synchronizer.StopPeriodicFetching()
-					s.status.Store(Streaming)
-					go s.synchronizer.SyncAll()
-				}
-			// Reconnect received due error in streaming -> reconnecting
-			case push.Reconnect:
-				fallthrough
-			// Token expired -> reconnecting
-			case push.TokenExpiration:
-				s.pushManager.Stop()
-				go s.pushManager.Start()
-			}
-		}
-	} else {
+	if !s.config.StreamingEnabled {
 		s.logger.Info("Start periodic polling")
 		s.synchronizer.StartPeriodicFetching()
 		s.status.Store(Polling)
+		return
+	}
+
+	// Start streaming
+	s.logger.Info("Starting Streaming")
+	s.pushManager.Start()
+	// Listens Streaming Status
+	for {
+		status := <-s.streamingStatus
+		fmt.Println("status a push manager", status)
+
+		switch status {
+		case push.StatusUp:
+			s.synchronizer.StopPeriodicFetching()
+			s.synchronizer.SyncAll()
+			s.pushManager.StartWorkers()
+			s.status.Store(Streaming)
+			s.backoff.Reset()
+			// TODO: Log
+		case push.StatusDown:
+			s.synchronizer.SyncAll()
+			s.startPolling()
+			// TODO: Log
+		case push.StatusRetryableError:
+			s.pushManager.Stop()
+			s.synchronizer.SyncAll()
+			s.startPolling()
+			time.Sleep(s.backoff.Next())
+			// TODO: Log
+			s.pushManager.Start()
+		case push.StatusNonRetryableError:
+			s.pushManager.StopWorkers()
+			s.pushManager.Stop()
+			s.synchronizer.SyncAll()
+			s.synchronizer.StartPeriodicFetching()
+			// TODO: log
+		}
 	}
 }
 
 // Stop stop synchronizaation through Split
-func (s *Manager) Stop() {
+func (s *ManagerImpl) Stop() {
 	s.logger.Info("STOPPING MANAGER TASKS")
-	if s.pushManager != nil && s.pushManager.IsRunning() {
-		s.pushManager.Stop()
-	}
+	// TODO
+	/*
+		if s.pushManager != nil && s.pushManager.IsRunning() {
+			s.pushManager.Stop()
+		}
+	*/
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
 	s.status.Store(Idle)

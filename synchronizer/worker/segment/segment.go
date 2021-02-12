@@ -2,6 +2,7 @@ package segment
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 	"github.com/splitio/go-toolkit/v3/logging"
 )
 
-// SegmentFetcherSimple struct for segment sync
-type SegmentFetcherSimple struct {
+// UpdaterImpl struct for segment sync
+type UpdaterImpl struct {
 	splitStorage   storage.SplitStorageConsumer
 	segmentStorage storage.SegmentStorage
 	segmentFetcher service.SegmentFetcher
@@ -29,8 +30,8 @@ func NewSegmentFetcher(
 	segmentFetcher service.SegmentFetcher,
 	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
-) SegmentFetcher {
-	return &SegmentFetcherSimple{
+) Updater {
+	return &UpdaterImpl{
 		splitStorage:   splitStorage,
 		segmentStorage: segmentStorage,
 		segmentFetcher: segmentFetcher,
@@ -39,7 +40,7 @@ func NewSegmentFetcher(
 	}
 }
 
-func (s *SegmentFetcherSimple) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
+func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 	name := segmentChanges.Name
 	oldSegment := s.segmentStorage.Keys(name)
 	if oldSegment == nil {
@@ -67,7 +68,7 @@ func (s *SegmentFetcherSimple) processUpdate(segmentChanges *dtos.SegmentChanges
 }
 
 // SynchronizeSegment syncs segment
-func (s *SegmentFetcherSimple) SynchronizeSegment(name string, till *int64) error {
+func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) error {
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
@@ -82,7 +83,7 @@ func (s *SegmentFetcherSimple) SynchronizeSegment(name string, till *int64) erro
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, string(httpError.Code))
+				s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, strconv.Itoa(httpError.Code))
 			}
 			return err
 		}
@@ -98,7 +99,7 @@ func (s *SegmentFetcherSimple) SynchronizeSegment(name string, till *int64) erro
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *SegmentFetcherSimple) SynchronizeSegments() error {
+func (s *UpdaterImpl) SynchronizeSegments() error {
 	// @TODO: add delays
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
@@ -134,6 +135,6 @@ func (s *SegmentFetcherSimple) SynchronizeSegments() error {
 }
 
 // SegmentNames returns all segments
-func (s *SegmentFetcherSimple) SegmentNames() []interface{} {
+func (s *UpdaterImpl) SegmentNames() []interface{} {
 	return s.splitStorage.SegmentNames().List()
 }

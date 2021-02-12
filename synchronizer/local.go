@@ -78,3 +78,7 @@ func (s *Local) SynchronizeSplits(till *int64) error {
 func (s *Local) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }
+
+// LocalKill does nothing
+func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
+}

@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"github.com/splitio/go-toolkit/v3/common"
 	"github.com/splitio/go-toolkit/v3/logging"
@@ -10,6 +11,7 @@ const (
 	errorType = "error"
 	occupancy = "[meta]occupancy"
 )
+
 
 // NotificationParser struct
 type NotificationParser struct {
@@ -62,3 +64,4 @@ func (n *NotificationParser) Parse(event map[string]interface{}) IncomingEvent {
 	incomingEvent.event = update
 	return incomingEvent
 }
+*/

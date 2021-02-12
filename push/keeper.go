@@ -1,5 +1,6 @@
 package push
 
+/*
 import (
 	"strings"
 	"sync"
@@ -96,3 +97,4 @@ func (k *Keeper) UpdateLastNotification(manager string, timestamp int64) {
 	k.last.manager = k.cleanManagerPrefix(manager)
 	k.last.timestamp = timestamp
 }
+*/

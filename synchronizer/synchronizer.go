@@ -25,8 +25,8 @@ type SplitTasks struct {
 
 // Workers struct for workers
 type Workers struct {
-	SplitFetcher             split.SplitFetcher
-	SegmentFetcher           segment.SegmentFetcher
+	SplitFetcher             split.Updater
+	SegmentFetcher           segment.Updater
 	TelemetryRecorder        metric.MetricRecorder
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
@@ -152,7 +152,14 @@ func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
 	return s.workers.SplitFetcher.SynchronizeSplits(till)
 }
 
+// LocalKill locally kills a split
+func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
+	s.workers.SplitFetcher.LocalKill(splitName, defaultTreatment, changeNumber)
+}
+
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 	return s.workers.SegmentFetcher.SynchronizeSegment(name, till)
 }
+
+var _ Synchronizer = &SynchronizerImpl{}

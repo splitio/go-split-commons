@@ -1,6 +1,7 @@
 package split
 
-// SplitFetcher interface
-type SplitFetcher interface {
+// Updater interface
+type Updater interface {
 	SynchronizeSplits(till *int64) error
+	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 }

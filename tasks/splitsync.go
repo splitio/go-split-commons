@@ -8,7 +8,7 @@ import (
 
 // NewFetchSplitsTask creates a new splits fetching and storing task
 func NewFetchSplitsTask(
-	fetcher split.SplitFetcher,
+	fetcher split.Updater,
 	period int,
 	logger logging.LoggerInterface,
 ) *asynctask.AsyncTask {

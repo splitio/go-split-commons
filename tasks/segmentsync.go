@@ -12,7 +12,7 @@ import (
 )
 
 func updateSegments(
-	fetcher segment.SegmentFetcher,
+	fetcher segment.Updater,
 	admin *workerpool.WorkerAdmin,
 	logger logging.LoggerInterface,
 ) error {
@@ -36,7 +36,7 @@ func updateSegments(
 
 // NewFetchSegmentsTask creates a new segment fetching and storing task
 func NewFetchSegmentsTask(
-	fetcher segment.SegmentFetcher,
+	fetcher segment.Updater,
 	period int,
 	workerCount int,
 	queueSize int,
