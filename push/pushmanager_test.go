@@ -19,8 +19,8 @@ import (
 	"github.com/splitio/go-split-commons/v2/service/api/sse"
 	authMocks "github.com/splitio/go-split-commons/v2/service/mocks"
 	"github.com/splitio/go-split-commons/v2/storage/mocks"
-	"github.com/splitio/go-toolkit/v3/datastructures/set"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func isValidChannels(t *testing.T, channelsString string) {

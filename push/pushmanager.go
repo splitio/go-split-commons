@@ -13,9 +13,9 @@ import (
 	"github.com/splitio/go-split-commons/v2/service"
 	"github.com/splitio/go-split-commons/v2/service/api/sse"
 	"github.com/splitio/go-split-commons/v2/storage"
-	"github.com/splitio/go-toolkit/v3/common"
-	"github.com/splitio/go-toolkit/v3/logging"
-	sseStatus "github.com/splitio/go-toolkit/v3/sse"
+	"github.com/splitio/go-toolkit/v4/common"
+	"github.com/splitio/go-toolkit/v4/logging"
+	sseStatus "github.com/splitio/go-toolkit/v4/sse"
 )
 
 const (

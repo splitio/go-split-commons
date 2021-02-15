@@ -1,11 +1,8 @@
 package push
 
-/*
-   TODO:
-   - connects, receives one event of each kind and handles them, token expires, reconnects and streaming becomes ready again.
-*/
-
 import (
+	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,7 +13,9 @@ import (
 	sseMocks "github.com/splitio/go-split-commons/v2/service/api/sse/mocks"
 	serviceMocks "github.com/splitio/go-split-commons/v2/service/mocks"
 
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/common"
+	"github.com/splitio/go-toolkit/v4/logging"
+	rawSseMocks "github.com/splitio/go-toolkit/v4/sse/mocks"
 )
 
 func TestAuth500(t *testing.T) {
@@ -383,6 +382,238 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	}
 }
 
+func TestEventForwarding(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				handler(&rawSseMocks.RawEventMock{IDCall: func() string { return "abc" }})
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		},
+		StopStreamingCall: func() {
+			waiter <- struct{}{}
+		},
+	}
+
+	handled := int32(0)
+	manager.parser = &pushMocks.NotificationParserMock{
+		ParseAndForwardCall: func(e sse.IncomingMessage) (*int64, error) {
+			if e.ID() != "abc" {
+				t.Error("wrong id. expected abc. got: ", e.ID())
+			}
+
+			atomic.AddInt32(&handled, 1)
+
+			return nil, nil
+		},
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	waiter <- struct{}{} // free the goroutine to send an event to the parser
+	time.Sleep(1 * time.Second)
+	if h := atomic.LoadInt32(&handled); h != 1 {
+		t.Error("handler should have been executed once. Was: ", h)
+	}
+
+	select {
+	case message = <-feedback:
+		t.Error("should have gotten no message after an expected disconnection. Got: ", message)
+	case <-time.After(2 * time.Second):
+	}
+}
+
+func TestEventForwardingReturnsError(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				handler(&rawSseMocks.RawEventMock{IDCall: func() string { return "abc" }})
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		},
+		StopStreamingCall: func() {
+			waiter <- struct{}{}
+		},
+	}
+
+	handled := int32(0)
+	manager.parser = &pushMocks.NotificationParserMock{
+		ParseAndForwardCall: func(e sse.IncomingMessage) (*int64, error) {
+			if e.ID() != "abc" {
+				t.Error("wrong id. expected abc. got: ", e.ID())
+			}
+
+			atomic.AddInt32(&handled, 1)
+
+			return nil, fmt.Errorf("something")
+		},
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	waiter <- struct{}{} // free the goroutine to send an event to the parser
+	time.Sleep(1 * time.Second)
+	if h := atomic.LoadInt32(&handled); h != 1 {
+		t.Error("handler should have been executed once. Was: ", h)
+	}
+
+	message = <-feedback
+	if message != StatusRetryableError {
+		t.Error("should have gotten no message after an expected disconnection. Got: ", message)
+	}
+}
+
+func TestEventForwardingReturnsNewStatus(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				handler(&rawSseMocks.RawEventMock{IDCall: func() string { return "abc" }})
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		},
+		StopStreamingCall: func() {
+			waiter <- struct{}{}
+		},
+	}
+
+	handled := int32(0)
+	manager.parser = &pushMocks.NotificationParserMock{
+		ParseAndForwardCall: func(e sse.IncomingMessage) (*int64, error) {
+			if e.ID() != "abc" {
+				t.Error("wrong id. expected abc. got: ", e.ID())
+			}
+
+			atomic.AddInt32(&handled, 1)
+
+			return common.Int64Ref(StatusNonRetryableError), nil
+		},
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	waiter <- struct{}{} // free the goroutine to send an event to the parser
+	time.Sleep(1 * time.Second)
+	if h := atomic.LoadInt32(&handled); h != 1 {
+		t.Error("handler should have been executed once. Was: ", h)
+	}
+
+	message = <-feedback
+	if message != StatusNonRetryableError {
+		t.Error("should have gotten no message after an expected disconnection. Got: ", message)
+	}
+}
+
 /*
 import (
 	"fmt"
@@ -395,7 +626,7 @@ import (
 	"github.com/splitio/go-split-commons/v2/dtos"
 	"github.com/splitio/go-split-commons/v2/push/mocks"
 	"github.com/splitio/go-split-commons/v2/service/api"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestPushManagerCustom(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v2/tasks"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // Local implements Local Synchronizer

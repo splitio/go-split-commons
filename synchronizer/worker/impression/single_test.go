@@ -16,7 +16,7 @@ import (
 	"github.com/splitio/go-split-commons/v2/storage"
 	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
 	"github.com/splitio/go-split-commons/v2/storage/mutexqueue"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestImpressionRecorderError(t *testing.T) {

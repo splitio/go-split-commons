@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-toolkit/v3/logging"
-	"github.com/splitio/go-toolkit/v3/sse"
+	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/v4/sse"
 )
 
 func TestStreamingError(t *testing.T) {
@@ -72,12 +72,6 @@ func TestStreamingOk(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 	mockedClient := NewStreamingClient(mocked, logger)
-
-	go func() {
-		for {
-			fmt.Println(<-streamingStatus)
-		}
-	}()
 
 	var result sse.RawEvent
 	mutexTest := sync.RWMutex{}

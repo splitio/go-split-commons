@@ -10,8 +10,8 @@ import (
 	"github.com/splitio/go-split-commons/v2/service"
 	"github.com/splitio/go-split-commons/v2/storage"
 	"github.com/splitio/go-split-commons/v2/util"
-	"github.com/splitio/go-toolkit/v3/datastructures/set"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // UpdaterImpl struct for segment sync

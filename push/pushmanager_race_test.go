@@ -16,8 +16,8 @@ import (
 	"github.com/splitio/go-split-commons/v2/service/api/sse"
 	authMocks "github.com/splitio/go-split-commons/v2/service/mocks"
 	"github.com/splitio/go-split-commons/v2/storage/mocks"
-	"github.com/splitio/go-toolkit/v3/logging"
-	sseStatus "github.com/splitio/go-toolkit/v3/sse"
+	"github.com/splitio/go-toolkit/v4/logging"
+	sseStatus "github.com/splitio/go-toolkit/v4/sse"
 )
 
 func TestPushError(t *testing.T) {

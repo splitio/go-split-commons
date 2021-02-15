@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-toolkit/v3/logging"
-	"github.com/splitio/go-toolkit/v3/sse"
-	gtSync "github.com/splitio/go-toolkit/v3/sync"
+	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/v4/sse"
+	gtSync "github.com/splitio/go-toolkit/v4/sync"
 )
 
 const (

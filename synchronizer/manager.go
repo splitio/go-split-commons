@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"errors"
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -10,8 +9,8 @@ import (
 	"github.com/splitio/go-split-commons/v2/push"
 	"github.com/splitio/go-split-commons/v2/service"
 	"github.com/splitio/go-split-commons/v2/storage"
-	"github.com/splitio/go-toolkit/v3/backoff"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/backoff"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 const (

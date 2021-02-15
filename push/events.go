@@ -8,7 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v2/service/api/sse"
 
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // SSE event type constants

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/splitio/go-toolkit/v3/common"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/common"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // SplitUpdateWorker struct

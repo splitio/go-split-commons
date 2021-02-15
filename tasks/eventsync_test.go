@@ -10,7 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v2/storage"
 	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestEventSyncTask(t *testing.T) {

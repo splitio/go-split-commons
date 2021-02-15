@@ -15,7 +15,7 @@ import (
 	recorderMock "github.com/splitio/go-split-commons/v2/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
 	"github.com/splitio/go-split-commons/v2/storage/mutexmap"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestMetricSynchronizerError(t *testing.T) {

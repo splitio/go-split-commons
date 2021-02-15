@@ -3,7 +3,7 @@ package push
 /*
 import (
 	"fmt"
-	"github.com/splitio/go-toolkit/v3/common"
+	"github.com/splitio/go-toolkit/v4/common"
 )
 
 // IncomingEvent struct to process every kind of notification that comes from streaming

@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v2/provisional"
 	"github.com/splitio/go-split-commons/v2/service/mocks"
 	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestImpressionCountSyncTask(t *testing.T) {

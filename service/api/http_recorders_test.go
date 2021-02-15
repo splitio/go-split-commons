@@ -11,7 +11,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v2/conf"
 	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestImpressionRecord(t *testing.T) {

@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
 )
 
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
