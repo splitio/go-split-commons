@@ -130,8 +130,6 @@ func (s *ManagerImpl) Start() {
 	// Listens Streaming Status
 	for {
 		status := <-s.streamingStatus
-		fmt.Println("status a push manager", status)
-
 		switch status {
 		case push.StatusUp:
 			s.logger.Info("streaming up and running")

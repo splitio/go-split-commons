@@ -3,7 +3,6 @@ package push
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"sync/atomic"
 
 	"github.com/splitio/go-toolkit/v3/common"
@@ -12,12 +11,12 @@ import (
 
 // SplitUpdateWorker struct
 type SplitUpdateWorker struct {
-	activeGoroutines *sync.WaitGroup
-	splitQueue       chan SplitChangeUpdate
-	sync             synchronizerInterface
-	logger           logging.LoggerInterface
-	stop             chan struct{}
-	running          atomic.Value
+	splitQueue chan SplitChangeUpdate
+	sync       synchronizerInterface
+	logger     logging.LoggerInterface
+	stop       chan struct{}
+	stopped    chan struct{}
+	status     int32
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -29,28 +28,27 @@ func NewSplitUpdateWorker(
 	if cap(splitQueue) < 5000 {
 		return nil, errors.New("")
 	}
-	running := atomic.Value{}
-	running.Store(false)
 
 	return &SplitUpdateWorker{
-		activeGoroutines: &sync.WaitGroup{},
-		splitQueue:       splitQueue,
-		sync:             synchronizer,
-		logger:           logger,
-		running:          running,
-		stop:             make(chan struct{}, 1),
+		splitQueue: splitQueue,
+		sync:       synchronizer,
+		logger:     logger,
+		stop:       make(chan struct{}, 1),
+		stopped:    make(chan struct{}, 1),
 	}, nil
 }
 
 // Start starts worker
 func (s *SplitUpdateWorker) Start() {
-	s.logger.Debug("Started SplitUpdateWorker")
-	if s.IsRunning() {
+	if !atomic.CompareAndSwapInt32(&s.status, workerStatusIdle, workerStatusRunning) {
 		s.logger.Info("Split worker is already running")
 		return
 	}
-	s.running.Store(true)
+
+	s.logger.Debug("Started SplitUpdateWorker")
 	go func() {
+		defer func() { s.stopped <- struct{}{} }()
+		defer atomic.StoreInt32(&s.status, workerStatusIdle)
 		for {
 			select {
 			case splitUpdate := <-s.splitQueue:
@@ -69,13 +67,15 @@ func (s *SplitUpdateWorker) Start() {
 
 // Stop stops worker
 func (s *SplitUpdateWorker) Stop() {
-	if s.IsRunning() {
-		s.stop <- struct{}{}
-		s.running.Store(false)
+	if !atomic.CompareAndSwapInt32(&s.status, workerStatusRunning, workerStatusShuttingDown) {
+		s.logger.Debug("Split worker not runnning. Ignoring.")
+		return
 	}
+	s.stop <- struct{}{}
+	<-s.stopped
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SplitUpdateWorker) IsRunning() bool {
-	return s.running.Load().(bool)
+	return atomic.LoadInt32(&s.status) == workerStatusRunning
 }

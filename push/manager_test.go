@@ -1,6 +1,389 @@
 package push
 
 /*
+   TODO:
+   - connects, receives one event of each kind and handles them, token expires, reconnects and streaming becomes ready again.
+*/
+
+import (
+	"testing"
+	"time"
+
+	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v2/dtos"
+	pushMocks "github.com/splitio/go-split-commons/v2/push/mocks"
+	"github.com/splitio/go-split-commons/v2/service/api/sse"
+	sseMocks "github.com/splitio/go-split-commons/v2/service/api/sse/mocks"
+	serviceMocks "github.com/splitio/go-split-commons/v2/service/mocks"
+
+	"github.com/splitio/go-toolkit/v3/logging"
+)
+
+func TestAuth500(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return nil, dtos.HTTPError{Code: 500}
+		},
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusRetryableError {
+		t.Error("push manager should have proapgated a retryable error. Got: ", message)
+	}
+
+	if manager.nextRefresh != nil {
+		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+}
+
+func TestAuth401(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return nil, dtos.HTTPError{Code: 401}
+		},
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusNonRetryableError {
+		t.Error("push manager should have proapgated a non-retryable error. Got: ", message)
+	}
+
+	if manager.nextRefresh != nil {
+		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+}
+
+func TestAuthPushDisabled(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return &dtos.Token{PushEnabled: false}, nil
+		},
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusNonRetryableError {
+		t.Error("push manager should have proapgated a non-retryable error. Got: ", message)
+	}
+
+	if manager.nextRefresh != nil {
+		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+}
+
+func TestStreamingConnectionFails(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			status <- sse.StatusConnectionFailed
+		},
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusRetryableError {
+		t.Error("push manager should have proapgated a retryable error. Got: ", message)
+	}
+
+	if manager.nextRefresh != nil {
+		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+}
+
+func TestStreamingUnexpectedDisconnection(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				time.Sleep(1 * time.Second)
+				status <- sse.StatusDisconnected
+			}()
+		},
+	}
+
+	manager.Start()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	message = <-feedback
+	if message != StatusRetryableError {
+		t.Error("push manager should have proapgated a retryable error status. Got: ", message)
+	}
+}
+
+func TestExpectedDisconnection(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				time.Sleep(1 * time.Second)
+				status <- sse.StatusDisconnected
+			}()
+		},
+	}
+
+	manager.Start()
+	manager.statusTracker.NotifySSEShutdownExpected()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	select {
+	case message = <-feedback:
+		t.Error("should have gotten no message after an expected disconnection. Got: ", message)
+	case <-time.After(2 * time.Second):
+	}
+}
+
+func TestMultipleCallsToStartAndStop(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		},
+		StopStreamingCall: func() {
+			waiter <- struct{}{} // free "sse" goroutine to make it end
+		},
+	}
+
+	if err := manager.Start(); err != nil {
+		t.Error("first call to Start() should not return an error. Got:", err)
+	}
+
+	if err := manager.Start(); err == nil {
+		t.Error("further calls to Start() should return an error.")
+	}
+	manager.statusTracker.NotifySSEShutdownExpected()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	if manager.nextRefresh == nil {
+		t.Error("a token refresh should have been scheduled after a successful connection.")
+	}
+
+	if err := manager.Stop(); err != nil {
+		t.Error("no error should be returned on the first call to .Stop()")
+	}
+	if err := manager.Stop(); err == nil {
+		t.Error("an error should be returned on further calls to .Stop()")
+	}
+}
+
+func TestUsageAndTokenRefresh(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+	}
+	logger := logging.NewLogger(nil)
+	synchronizer := &pushMocks.LocalSyncMock{}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0NDYyNX0.TP0_iztPvEJcBfZjdATHc5_Yy41AYqqCptOiHpsfN-4`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			if tok != token.Token {
+				t.Error("incorrect token received.")
+			}
+
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		}, StopStreamingCall: func() { waiter <- struct{}{} },
+	}
+
+	manager.Start()
+	manager.statusTracker.NotifySSEShutdownExpected()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have proapgated a push up status. Got: ", message)
+	}
+
+	manager.withRefreshTokenLock(func() {
+		if manager.nextRefresh == nil {
+			t.Error("a token refresh should have been scheduled after a successful connection.")
+		}
+	})
+
+	// Remove and replace the timer
+	message = <-feedback
+	if message != StatusUp {
+		t.Error("token should have refreshed and returned a new StatusUp message via the feedback loop. Got: ", message)
+	}
+}
+
+/*
 import (
 	"fmt"
 	"log"

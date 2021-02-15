@@ -3,7 +3,6 @@ package push
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"sync/atomic"
 
 	"github.com/splitio/go-toolkit/v3/common"
@@ -12,12 +11,12 @@ import (
 
 // SegmentUpdateWorker struct
 type SegmentUpdateWorker struct {
-	activeGoroutines *sync.WaitGroup
-	segmentQueue     chan SegmentChangeUpdate
-	sync             synchronizerInterface
-	logger           logging.LoggerInterface
-	stop             chan struct{}
-	running          atomic.Value
+	segmentQueue chan SegmentChangeUpdate
+	sync         synchronizerInterface
+	logger       logging.LoggerInterface
+	stop         chan struct{}
+	stopped      chan struct{}
+	status       int32
 }
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
@@ -37,19 +36,20 @@ func NewSegmentUpdateWorker(
 		sync:         synchronizer,
 		logger:       logger,
 		stop:         make(chan struct{}, 1),
-		running:      running,
+		stopped:      make(chan struct{}, 1),
 	}, nil
 }
 
 // Start starts worker
 func (s *SegmentUpdateWorker) Start() {
-	s.logger.Debug("Started SegmentUpdateWorker")
-	if s.IsRunning() {
-		s.logger.Debug("Segment worker is already running")
+	if !atomic.CompareAndSwapInt32(&s.status, workerStatusIdle, workerStatusRunning) {
+		s.logger.Info("Segment worker is already running")
 		return
 	}
-	s.running.Store(true)
+
 	go func() {
+		defer func() { s.stopped <- struct{}{} }()
+		defer atomic.StoreInt32(&s.status, workerStatusIdle)
 		for {
 			select {
 			case segmentUpdate := <-s.segmentQueue:
@@ -68,13 +68,15 @@ func (s *SegmentUpdateWorker) Start() {
 
 // Stop stops worker
 func (s *SegmentUpdateWorker) Stop() {
-	if s.IsRunning() {
-		s.stop <- struct{}{}
-		s.running.Store(false)
+	if !atomic.CompareAndSwapInt32(&s.status, workerStatusRunning, workerStatusShuttingDown) {
+		s.logger.Debug("Split worker not runnning. Ignoring.")
+		return
 	}
+	s.stop <- struct{}{}
+	<-s.stopped
 }
 
 // IsRunning indicates if worker is running or not
 func (s *SegmentUpdateWorker) IsRunning() bool {
-	return s.running.Load().(bool)
+	return atomic.LoadInt32(&s.status) == workerStatusRunning
 }

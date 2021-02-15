@@ -100,3 +100,46 @@ func TestStreamingOk(t *testing.T) {
 	}
 	mutexTest.RUnlock()
 }
+
+func TestStreamingClientDisconnect(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, err := w.(http.Flusher)
+		if !err {
+			t.Error("Unexpected error")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+
+		fmt.Fprint(w, "id: dsad23\n\n")
+		flusher.Flush()
+	}))
+	defer ts.Close()
+
+	mocked := &conf.AdvancedConfig{
+		StreamingServiceURL: ts.URL,
+	}
+	mockedClient := NewStreamingClient(mocked, logger)
+
+	streamingStatus := make(chan int, 1)
+	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {
+		if e.ID() != "dsad23" {
+			t.Error("invalid id")
+		}
+	})
+
+	time.Sleep(1000 * time.Millisecond)
+
+	status := <-streamingStatus
+	if status != StatusFirstEventOk {
+		t.Error("firts status should be event ok. Is: ", status)
+	}
+
+	status = <-streamingStatus
+	if status != StatusDisconnected {
+		t.Error("next status should be disconnected. Is: ", status)
+	}
+}
