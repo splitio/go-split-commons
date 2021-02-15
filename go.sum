@@ -46,6 +46,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/splitio/go-toolkit/v4 v4.0.0-20210215191619-05166b3dd4ed h1:HQs4kIz3dgh0a2mtc5l8h4i2BXIq0YWbmGMpR661Jcg=
 github.com/splitio/go-toolkit/v4 v4.0.0-20210215191619-05166b3dd4ed/go.mod h1:EdIHN0yzB1GTXDYQc0KdKvnjkO/jfUM2YqHVYfhD3Wo=
+github.com/splitio/go-toolkit/v4 v4.0.0-20210215232748-a03ee9756d10 h1:Oi5C8QJ+Z1R4HX/e6QMjvaIGWTubYvjsAj/zzyRgRCU=
+github.com/splitio/go-toolkit/v4 v4.0.0-20210215232748-a03ee9756d10/go.mod h1:EdIHN0yzB1GTXDYQc0KdKvnjkO/jfUM2YqHVYfhD3Wo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
