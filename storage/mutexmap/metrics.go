@@ -3,7 +3,7 @@ package mutexmap
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v3/dtos"
 )
 
 // MMMetricsStorage contains an in-memory implementation of Metrics storage

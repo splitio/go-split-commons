@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/redis"
 	"github.com/splitio/go-toolkit/v4/redis/helpers"

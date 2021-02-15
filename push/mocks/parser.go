@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v2/service/api/sse"
+	"github.com/splitio/go-split-commons/v3/service/api/sse"
 )
 
 type NotificationParserMock struct {

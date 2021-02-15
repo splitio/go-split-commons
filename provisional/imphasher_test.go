@@ -3,7 +3,7 @@ package provisional
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v3/dtos"
 )
 
 func TestHasher(t *testing.T) {

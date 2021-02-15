@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	pushMocks "github.com/splitio/go-split-commons/v2/push/mocks"
-	"github.com/splitio/go-split-commons/v2/service/api/sse"
-	sseMocks "github.com/splitio/go-split-commons/v2/service/api/sse/mocks"
-	serviceMocks "github.com/splitio/go-split-commons/v2/service/mocks"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	pushMocks "github.com/splitio/go-split-commons/v3/push/mocks"
+	"github.com/splitio/go-split-commons/v3/service/api/sse"
+	sseMocks "github.com/splitio/go-split-commons/v3/service/api/sse/mocks"
+	serviceMocks "github.com/splitio/go-split-commons/v3/service/mocks"
 
 	"github.com/splitio/go-toolkit/v4/common"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -622,10 +622,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/push/mocks"
-	"github.com/splitio/go-split-commons/v2/service/api"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/push/mocks"
+	"github.com/splitio/go-split-commons/v3/service/api"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 

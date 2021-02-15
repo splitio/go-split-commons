@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/v2/conf"
+	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/sse"
 	gtSync "github.com/splitio/go-toolkit/v4/sync"

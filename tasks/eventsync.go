@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/v4/asynctask"
 	"github.com/splitio/go-toolkit/v4/logging"
 )

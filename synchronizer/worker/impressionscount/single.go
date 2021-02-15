@@ -1,9 +1,9 @@
 package impressionscount
 
 import (
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/provisional"
-	"github.com/splitio/go-split-commons/v2/service"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/provisional"
+	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 

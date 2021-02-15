@@ -1,14 +1,14 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/metric"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v2/tasks"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/metric"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v3/tasks"
 	"github.com/splitio/go-toolkit/v4/asynctask"
 	"github.com/splitio/go-toolkit/v4/logging"
 )

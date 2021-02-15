@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/push/mocks"
+	"github.com/splitio/go-split-commons/v3/push/mocks"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 

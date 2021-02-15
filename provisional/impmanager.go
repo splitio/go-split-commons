@@ -3,9 +3,9 @@ package provisional
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/util"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/util"
 )
 
 const lastSeenCacheSize = 500000 // cache up to 500k impression hashes

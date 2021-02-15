@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v2/dtos"
+import "github.com/splitio/go-split-commons/v3/dtos"
 
 // MockSegmentFetcher mocked implementation of segment fetcher
 type MockSegmentFetcher struct {

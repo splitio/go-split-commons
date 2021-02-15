@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/redis"
 	"github.com/splitio/go-toolkit/v4/redis/mocks"

@@ -1,12 +1,12 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/service"
-	"github.com/splitio/go-split-commons/v2/storage"
-	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v2/tasks"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v3/tasks"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 

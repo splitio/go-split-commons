@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/service/api"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service/api"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
