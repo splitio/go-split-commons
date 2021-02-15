@@ -8,6 +8,7 @@ const (
 
 const (
 	pushManagerStatusIdle = iota
+	pushManagerStatusInitializing
 	pushManagerStatusRunning
 	pushManagerStatusShuttingDown
 )

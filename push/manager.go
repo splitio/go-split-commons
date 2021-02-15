@@ -98,7 +98,7 @@ func NewManager(
 
 // Start initiates the authentication flow and if successful initiates a connection
 func (m *ManagerImpl) Start() error {
-	if !atomic.CompareAndSwapInt32(&m.status, pushManagerStatusIdle, pushManagerStatusRunning) {
+	if !atomic.CompareAndSwapInt32(&m.status, pushManagerStatusIdle, pushManagerStatusInitializing) {
 		return ErrAlreadyRunning
 	}
 	m.triggerConnectionFlow()
@@ -179,7 +179,7 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 	}
 
 	m.sseClient.ConnectStreaming(token.Token, sseStatus, tokenList, m.eventHandler)
-
+	atomic.StoreInt32(&m.status, pushManagerStatusRunning)
 	go func() {
 		defer func() {
 			select {
