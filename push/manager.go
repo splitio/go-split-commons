@@ -199,6 +199,7 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 				}
 				m.withRefreshTokenLock(func() {
 					m.nextRefresh = time.AfterFunc(when, func() {
+						m.logger.Info("Refreshing SSE auth token.")
 						m.Stop()
 						m.triggerConnectionFlow()
 					})
