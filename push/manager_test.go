@@ -318,7 +318,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 	}
 
 	if err := manager.Stop(); err != nil {
-		t.Error("no error should be returned on the first call to .Stop()")
+		t.Error("no error should be returned on the first call to .Stop(). Got:", err)
 	}
 	if err := manager.Stop(); err == nil {
 		t.Error("an error should be returned on further calls to .Stop()")

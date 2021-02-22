@@ -2,21 +2,21 @@ package mocks
 
 // MockManager mocking struct for push
 type MockManager struct {
-	StartCall        func()
-	StopCall         func()
+	StartCall        func() error
+	StopCall         func() error
 	StartWorkersCall func()
 	StopWorkersCall  func()
 	IsRunningCall    func() bool
 }
 
 // Start mock
-func (m MockManager) Start() {
-	m.StartCall()
+func (m MockManager) Start() error {
+	return m.StartCall()
 }
 
 // Stop mock
-func (m MockManager) Stop() {
-	m.StopCall()
+func (m MockManager) Stop() error {
+	return m.StopCall()
 }
 
 // StartWorkers mock

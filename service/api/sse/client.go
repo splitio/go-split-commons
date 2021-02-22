@@ -3,12 +3,11 @@ package sse
 import (
 	"errors"
 	"strings"
-	"sync"
-	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/sse"
+	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
 	gtSync "github.com/splitio/go-toolkit/v4/sync"
 )
 
@@ -26,11 +25,9 @@ type StreamingClient interface {
 
 // StreamingClientImpl struct
 type StreamingClientImpl struct {
-	mutex     *sync.RWMutex
 	sseClient *sse.Client
-	running   *gtSync.AtomicBool
 	logger    logging.LoggerInterface
-	stopped   chan struct{}
+	lifecycle lifecycle.Manager
 }
 
 // Status constants
@@ -47,22 +44,19 @@ type IncomingMessage = sse.RawEvent
 // NewStreamingClient creates new SSE Client
 func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *StreamingClientImpl {
 	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, logger)
-	running := atomic.Value{}
-	running.Store(false)
 
-	return &StreamingClientImpl{
-		mutex:     &sync.RWMutex{},
+	client := &StreamingClientImpl{
 		sseClient: sseClient,
 		logger:    logger,
-		running:   gtSync.NewAtomicBool(false),
-		stopped:   make(chan struct{}, 1),
 	}
+	client.lifecycle.Setup()
+	return client
 }
 
 // ConnectStreaming connects to streaming
 func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus chan int, channelList []string, handleIncomingMessage func(IncomingMessage)) {
 
-	if !s.running.TestAndSet() {
+	if !s.lifecycle.BeginInitialization() {
 		s.logger.Info("Connection is already in process/running. Ignoring")
 		return
 	}
@@ -72,9 +66,9 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 	params["accessToken"] = token
 	params["v"] = version
 
+	s.lifecycle.InitializationComplete()
 	go func() {
-		defer func() { s.stopped <- struct{}{} }()
-		defer s.running.Unset()
+		defer s.lifecycle.ShutdownComplete()
 		firstEventReceived := gtSync.NewAtomicBool(false)
 		out := s.sseClient.Do(params, func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {
@@ -87,6 +81,9 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 			streamingStatus <- StatusDisconnected
 			return
 		}
+
+		// Something didn'g go as expected
+		s.lifecycle.AbnormalShutdown()
 
 		asConnectionFailedError := &sse.ErrConnectionFailed{}
 		if errors.As(out, &asConnectionFailedError) {
@@ -109,16 +106,16 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 
 // StopStreaming stops streaming
 func (s *StreamingClientImpl) StopStreaming() {
-	if !s.running.IsSet() {
+	if !s.lifecycle.BeginShutdown() {
 		s.logger.Info("SSE client wrapper not running. Ignoring")
 		return
 	}
 	s.sseClient.Shutdown(true)
-	<-s.stopped
+	s.lifecycle.AwaitShutdownComplete()
 	s.logger.Info("Stopped streaming")
 }
 
 // IsRunning returns true if the client is running
 func (s *StreamingClientImpl) IsRunning() bool {
-	return s.running.IsSet()
+	return s.lifecycle.IsRunning()
 }

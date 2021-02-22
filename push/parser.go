@@ -41,6 +41,7 @@ const (
 )
 
 const (
+	occupancuName   = "[meta]occupancy"
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
 )
 
@@ -109,7 +110,7 @@ func (p *NotificationParserImpl) parseMessage(data *genericData) (*int64, error)
 		return nil, fmt.Errorf("error parsing message nested json data: %w", err)
 	}
 
-	if data.Name == "[meta]occupancy" {
+	if data.Name == occupancuName {
 		return p.onOccupancyMesage(&OccupancyMessage{
 			BaseMessage: BaseMessage{
 				timestamp: data.Timestamp,

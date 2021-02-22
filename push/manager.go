@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
@@ -14,7 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/service/api/sse"
 	"github.com/splitio/go-toolkit/v4/common"
 	"github.com/splitio/go-toolkit/v4/logging"
-	gtSync "github.com/splitio/go-toolkit/v4/sync"
+	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
 )
 
 // Status update contants that will be propagated to the push manager's user
@@ -29,7 +28,7 @@ const (
 var ErrAlreadyRunning = errors.New("push manager already running")
 
 // ErrNotRunning is the error to be returned when .Stop() is called on a non-running instance
-var ErrNotRunning = errors.New("push manager is either shutting down or idle")
+var ErrNotRunning = errors.New("push manager not running")
 
 // Manager interface contains public methods for push manager
 type Manager interface {
@@ -47,12 +46,15 @@ type ManagerImpl struct {
 	processor         Processor
 	statusTracker     StatusTracker
 	feedback          FeedbackLoop
-	running           *gtSync.AtomicBool
 	nextRefresh       *time.Timer
 	refreshTokenMutex sync.Mutex
-	status            int32
-	shutdownWaiter    chan struct{}
-	logger            logging.LoggerInterface
+	/*
+		running           *gtSync.AtomicBool
+		status            int32
+		shutdownWaiter    chan struct{}
+	*/
+	lifecycle lifecycle.Manager
+	logger    logging.LoggerInterface
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -83,22 +85,22 @@ func NewManager(
 		onAblyError:       statusTracker.HandleAblyError,
 	}
 
-	return &ManagerImpl{
-		authAPI:        authAPI,
-		sseClient:      sse.NewStreamingClient(cfg, logger),
-		statusTracker:  statusTracker,
-		running:        gtSync.NewAtomicBool(false),
-		feedback:       feedbackLoop,
-		processor:      processor,
-		parser:         parser,
-		logger:         logger,
-		shutdownWaiter: make(chan struct{}, 1),
-	}, nil
+	manager := &ManagerImpl{
+		authAPI:       authAPI,
+		sseClient:     sse.NewStreamingClient(cfg, logger),
+		statusTracker: statusTracker,
+		feedback:      feedbackLoop,
+		processor:     processor,
+		parser:        parser,
+		logger:        logger,
+	}
+	manager.lifecycle.Setup()
+	return manager, nil
 }
 
 // Start initiates the authentication flow and if successful initiates a connection
 func (m *ManagerImpl) Start() error {
-	if !atomic.CompareAndSwapInt32(&m.status, pushManagerStatusIdle, pushManagerStatusInitializing) {
+	if !m.lifecycle.BeginInitialization() {
 		return ErrAlreadyRunning
 	}
 	m.triggerConnectionFlow()
@@ -107,8 +109,8 @@ func (m *ManagerImpl) Start() error {
 
 // Stop method stops the sse client and it's status monitoring goroutine
 func (m *ManagerImpl) Stop() error {
-	if !atomic.CompareAndSwapInt32(&m.status, pushManagerStatusRunning, pushManagerStatusShuttingDown) {
-		return ErrAlreadyRunning
+	if !m.lifecycle.BeginShutdown() {
+		return ErrNotRunning
 	}
 	m.statusTracker.NotifySSEShutdownExpected()
 	m.withRefreshTokenLock(func() {
@@ -118,7 +120,7 @@ func (m *ManagerImpl) Stop() error {
 	})
 	m.StopWorkers()
 	m.sseClient.StopStreaming()
-	<-m.shutdownWaiter
+	m.lifecycle.AwaitShutdownComplete()
 	return nil
 }
 
@@ -162,32 +164,27 @@ func (m *ManagerImpl) eventHandler(e sse.IncomingMessage) {
 func (m *ManagerImpl) triggerConnectionFlow() {
 	token, status := m.performAuthentication()
 	if status != nil {
-		atomic.StoreInt32(&m.status, pushManagerStatusIdle)
+		m.lifecycle.AbnormalShutdown()
+		defer m.lifecycle.ShutdownComplete()
 		m.feedback <- *status
+		return
+	}
+
+	tokenList, err := token.ChannelList()
+	if err != nil {
+		m.logger.Error("error parsing channel list: ", err)
+		m.lifecycle.AbnormalShutdown()
+		defer m.lifecycle.ShutdownComplete()
+		m.feedback <- StatusRetryableError
 		return
 	}
 
 	m.statusTracker.Reset()
 	sseStatus := make(chan int, 100)
-
-	tokenList, err := token.ChannelList()
-	if err != nil {
-		m.logger.Error("error parsing channel list: ", err)
-		atomic.StoreInt32(&m.status, pushManagerStatusIdle)
-		m.feedback <- StatusRetryableError
-		return
-	}
-
+	m.lifecycle.InitializationComplete()
 	m.sseClient.ConnectStreaming(token.Token, sseStatus, tokenList, m.eventHandler)
-	atomic.StoreInt32(&m.status, pushManagerStatusRunning)
 	go func() {
-		defer func() {
-			select {
-			case m.shutdownWaiter <- struct{}{}:
-			default:
-			}
-		}()
-		defer atomic.StoreInt32(&m.status, pushManagerStatusIdle)
+		defer m.lifecycle.ShutdownComplete()
 		for {
 			message := <-sseStatus
 			switch message {
@@ -206,17 +203,20 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 				})
 				m.feedback <- StatusUp
 			case sse.StatusConnectionFailed:
+				m.lifecycle.AbnormalShutdown()
 				m.logger.Error("SSE Connection failed")
 				m.feedback <- StatusRetryableError
 				return
 			case sse.StatusDisconnected:
 				m.logger.Debug("propagating sse disconnection event")
 				status := m.statusTracker.HandleDisconnection()
-				if status != nil {
+				if status != nil { // connection ended unexpectedly
+					m.lifecycle.AbnormalShutdown()
 					m.feedback <- *status
 				}
 				return
 			case sse.StatusUnderlyingClientInUse:
+				m.lifecycle.AbnormalShutdown()
 				m.logger.Error("unexpected error in streaming. Switching to polling")
 				m.feedback <- StatusNonRetryableError
 				return
