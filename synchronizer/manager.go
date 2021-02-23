@@ -112,9 +112,8 @@ func (s *ManagerImpl) Start() {
 	s.synchronizer.StartPeriodicDataRecording()
 
 	if !s.config.StreamingEnabled {
-		s.logger.Info("Start periodic polling")
-		s.synchronizer.StartPeriodicFetching()
-		atomic.StoreInt32(&s.operationMode, Polling)
+		s.logger.Info("SDK initialized in polling mode")
+		s.startPolling()
 		go func() { // create a goroutine that stops everything (the same way the streaming status watcher would)
 			<-s.lifecycle.ShutdownRequested()
 			s.stop()
@@ -123,7 +122,7 @@ func (s *ManagerImpl) Start() {
 	}
 
 	// Start streaming
-	s.logger.Info("Starting Streaming")
+	s.logger.Info("SDK Initialized in streaming mode")
 	s.pushManager.Start()
 	go s.pushStatusWatcher()
 }

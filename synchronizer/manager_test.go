@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"errors"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -307,7 +306,6 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 			atomic.AddInt32(&startCalls, 1)
 			if atomic.LoadInt32(&startCalls) == 1 {
 				go func() {
-					fmt.Println("start primera vez")
 					time.Sleep(1 * time.Second)
 					manager.streamingStatus <- push.StatusUp
 					time.Sleep(1 * time.Second)
@@ -317,7 +315,6 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 				}()
 			} else if atomic.LoadInt32(&startCalls) == 2 {
 				go func() {
-					fmt.Println("start segudna vez")
 					time.Sleep(1 * time.Second)
 					manager.streamingStatus <- push.StatusUp
 				}()
@@ -435,7 +432,6 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 			atomic.AddInt32(&startCalls, 1)
 			if atomic.LoadInt32(&startCalls) == 1 {
 				go func() {
-					fmt.Println("start primera vez")
 					time.Sleep(1 * time.Second)
 					manager.streamingStatus <- push.StatusUp
 					time.Sleep(1 * time.Second)

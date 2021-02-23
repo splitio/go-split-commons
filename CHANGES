@@ -1,3 +1,7 @@
+3.0.0 (TBD)
+ - Push subsystem revamp
+ - BREAKING CHANGE: Sync manager interface changed
+
 2.0.0 (Oct 6, 2020)
  - BREAKING CHANGE: Migrate to go modules (dep & bare-bones go-get no longer supported)
 

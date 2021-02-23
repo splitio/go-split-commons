@@ -65,17 +65,18 @@ func TestCounterSyncTask(t *testing.T) {
 			metricMockRecorder,
 			dtos.Metadata{},
 		),
-		3,
+		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	metricTask.Start()
+	time.Sleep(1 * time.Second)
 	if !metricTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
 
 	metricTask.Stop(false)
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Millisecond * 1500)
 	if atomic.LoadInt64(&popCounters) <= 0 {
 		t.Error("Request not received")
 	}

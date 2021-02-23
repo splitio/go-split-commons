@@ -80,7 +80,10 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 	var reader io.ReadCloser
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
-		reader, _ = gzip.NewReader(resp.Body)
+		reader, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing gzip resopnse body: %w", err)
+		}
 		defer reader.Close()
 	default:
 		reader = resp.Body

@@ -106,23 +106,24 @@ func TestSegmentSyncTask(t *testing.T) {
 			metricWrapperTest,
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
-		3,
+		1,
 		10,
 		100,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	segmentTask.Start()
+	time.Sleep(3 * time.Second)
 	if !segmentTask.IsRunning() {
 		t.Error("Segment fetching task should be running")
 	}
 
-	segmentTask.Stop(false)
-	time.Sleep(time.Second * 1)
-	if atomic.LoadInt64(&s1Requested) != 2 && atomic.LoadInt64(&s2Requested) != 2 {
-		t.Error("It should call fetch twice")
-	}
+	segmentTask.Stop(true)
 	if segmentTask.IsRunning() {
 		t.Error("Task should be stopped")
+	}
+
+	if atomic.LoadInt64(&s1Requested) < 2 || atomic.LoadInt64(&s2Requested) < 2 {
+		t.Error("It should call fetch twice")
 	}
 }

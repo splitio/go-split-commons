@@ -117,17 +117,18 @@ func TestImpressionSyncTask(t *testing.T) {
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 		),
-		3,
+		1,
 		logger,
 		50,
 	)
 
 	impressionTask.Start()
+	time.Sleep(1 * time.Second)
 	if !impressionTask.IsRunning() {
-		t.Error("Counter recorder task should be running")
+		t.Error("Impression recorder task should be running")
 	}
+
 	impressionTask.Stop(true)
-	time.Sleep(time.Millisecond * 300)
 	if impressionTask.IsRunning() {
 		t.Error("Task should be stopped")
 	}
@@ -231,22 +232,23 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 		),
-		10,
+		1,
 		logger,
 		50,
 		3,
 	)
 
 	impressionTask.Start()
+	time.Sleep(1500 * time.Millisecond)
 	if !impressionTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
 	impressionTask.Stop(true)
-	time.Sleep(time.Millisecond * 900)
 	if impressionTask.IsRunning() {
 		t.Error("Task should be stopped")
 	}
 
+	// This task is intended for redis and does not flush on shutdown so it should only execute 3 times.
 	if atomic.LoadInt64(&call) != 3 {
 		t.Error("It should call three times for sending impressions", call)
 	}
