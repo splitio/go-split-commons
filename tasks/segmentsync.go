@@ -53,7 +53,7 @@ func NewFetchSegmentsTask(
 			worker := NewSegmentWorker(
 				fmt.Sprintf("SegmentWorker_%d", i),
 				0,
-				fetcher.SynchronizeSegment,
+				func(n string, t *int64) error { return fetcher.SynchronizeSegment(n, t, false) },
 			)
 			admin.Load().(*workerpool.WorkerAdmin).AddWorker(worker)
 		}

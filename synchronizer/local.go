@@ -47,8 +47,9 @@ func NewLocal(
 }
 
 // SyncAll syncs splits and segments
-func (s *Local) SyncAll() error {
-	return s.workers.SplitFetcher.SynchronizeSplits(nil)
+func (s *Local) SyncAll(requestNoCache bool) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	return err
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -70,12 +71,13 @@ func (s *Local) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *Local) SynchronizeSplits(till *int64) error {
-	return s.workers.SplitFetcher.SynchronizeSplits(till)
+func (s *Local) SynchronizeSplits(till *int64, requestNoCache bool) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	return err
 }
 
 // SynchronizeSegment syncs segment
-func (s *Local) SynchronizeSegment(name string, till *int64) error {
+func (s *Local) SynchronizeSegment(name string, till *int64, _ bool) error {
 	return nil
 }
 

@@ -29,7 +29,10 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+				if !noCache {
+					t.Error("no cache should be true")
+				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -66,7 +69,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		logger,
 		nil,
 	)
-	err := syncForTest.SyncAll()
+	err := syncForTest.SyncAll(true)
 	if err == nil {
 		t.Error("It should return error")
 	}
@@ -83,7 +86,10 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+				if noCache {
+					t.Error("noCache should be false")
+				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -96,7 +102,10 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+				if noCache {
+					t.Error("noCache should be false")
+				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
 				if name != "segment1" && name != "segment2" {
 					t.Error("Wrong name")
@@ -162,7 +171,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		logger,
 		nil,
 	)
-	err := syncForTest.SyncAll()
+	err := syncForTest.SyncAll(false)
 	if err == nil {
 		t.Error("It should return error")
 	}
@@ -182,7 +191,10 @@ func TestSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+				if !noCache {
+					t.Error("noCache should be true")
+				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -195,7 +207,10 @@ func TestSyncAllOk(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+				if !noCache {
+					t.Error("noCache should be true")
+				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
 				if name != "segment1" && name != "segment2" {
 					t.Error("Wrong name")
@@ -279,7 +294,7 @@ func TestSyncAllOk(t *testing.T) {
 		logger,
 		nil,
 	)
-	err := syncForTest.SyncAll()
+	err := syncForTest.SyncAll(true)
 	if err != nil {
 		t.Error("It should not return error")
 	}
@@ -299,7 +314,10 @@ func TestPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := service.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+				if noCache {
+					t.Error("noCache should be false")
+				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -312,7 +330,10 @@ func TestPeriodicFetching(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+				if noCache {
+					t.Error("noCache should be false")
+				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
 				if name != "segment1" && name != "segment2" {
 					t.Error("Wrong name")

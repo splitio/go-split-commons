@@ -100,7 +100,7 @@ func (s *ManagerImpl) Start() {
 	for len(s.managerStatus) > 0 {
 		<-s.managerStatus
 	}
-	err := s.synchronizer.SyncAll()
+	err := s.synchronizer.SyncAll(false)
 	if err != nil {
 		defer s.lifecycle.ShutdownComplete()
 		s.managerStatus <- Error
@@ -159,23 +159,23 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.stopPolling()
 				s.logger.Info("streaming up and running")
 				s.enableStreaming()
-				s.synchronizer.SyncAll()
+				s.synchronizer.SyncAll(true)
 			case push.StatusDown:
 				s.logger.Info("streaming down, switchin to polling")
-				s.synchronizer.SyncAll()
+				s.synchronizer.SyncAll(false)
 				s.pauseStreaming()
 				s.startPolling()
 			case push.StatusRetryableError:
 				s.logger.Error("retryable error in streaming subsystem. Switching to polling and retrying with backoff")
 				s.pushManager.Stop()
-				s.synchronizer.SyncAll()
+				s.synchronizer.SyncAll(false)
 				s.startPolling()
 				time.Sleep(s.backoff.Next())
 				s.pushManager.Start()
 			case push.StatusNonRetryableError:
 				s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
 				s.pushManager.Stop()
-				s.synchronizer.SyncAll()
+				s.synchronizer.SyncAll(false)
 				s.startPolling()
 			}
 		}

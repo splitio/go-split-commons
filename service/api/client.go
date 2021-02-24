@@ -14,9 +14,15 @@ import (
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
+// Cache control header constants
+const (
+	CacheControlHeader  = "Cache-Control"
+	CacheControlNoCache = "no-cache"
+)
+
 // Client interface for HTTPClient
 type Client interface {
-	Get(service string) ([]byte, error)
+	Get(service string, headers map[string]string) ([]byte, error)
 	Post(service string, body []byte, headers map[string]string) error
 }
 
@@ -51,7 +57,7 @@ func NewHTTPClient(
 }
 
 // Get method is a get call to an url
-func (c *HTTPClient) Get(service string) ([]byte, error) {
+func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, error) {
 	serviceURL := c.url + service
 	c.logger.Debug("[GET] ", serviceURL)
 	req, _ := http.NewRequest("GET", serviceURL, nil)
@@ -60,14 +66,17 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
+	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
+	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
+
+	for headerName, headerValue := range headers {
+		req.Header.Add(headerName, headerValue)
+	}
 
 	c.logger.Debug(fmt.Sprintf("Headers: %v", req.Header))
 
 	req.Header.Add("Authorization", "Bearer "+authorization)
-
-	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
-	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
-	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

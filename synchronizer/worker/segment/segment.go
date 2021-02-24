@@ -68,7 +68,7 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 }
 
 // SynchronizeSegment syncs segment
-func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) error {
+func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) error {
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
@@ -80,7 +80,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) error {
 		}
 
 		before := time.Now()
-		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber)
+		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, strconv.Itoa(httpError.Code))
@@ -99,7 +99,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) error {
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *UpdaterImpl) SynchronizeSegments() error {
+func (s *UpdaterImpl) SynchronizeSegments(requestNoCache bool) error {
 	// @TODO: add delays
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
@@ -117,7 +117,7 @@ func (s *UpdaterImpl) SynchronizeSegments() error {
 			ready := false
 			var err error
 			for !ready {
-				err = s.SynchronizeSegment(segmentName, nil)
+				err = s.SynchronizeSegment(segmentName, nil, requestNoCache)
 				if err != nil {
 					failedSegments.Add(segmentName)
 				}
@@ -137,4 +137,10 @@ func (s *UpdaterImpl) SynchronizeSegments() error {
 // SegmentNames returns all segments
 func (s *UpdaterImpl) SegmentNames() []interface{} {
 	return s.splitStorage.SegmentNames().List()
+}
+
+// IsSegmentCached returns true if a segment exists
+func (s *UpdaterImpl) IsSegmentCached(segmentName string) bool {
+	cn, _ := s.segmentStorage.ChangeNumber(segmentName)
+	return cn != -1
 }

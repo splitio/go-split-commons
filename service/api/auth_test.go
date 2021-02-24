@@ -17,7 +17,7 @@ func TestAuthErr(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}
@@ -41,7 +41,7 @@ func TestAuthPushEnabledFalse(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}
@@ -72,7 +72,7 @@ func TestAuthPushEnabledTrue(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}

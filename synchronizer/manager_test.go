@@ -24,7 +24,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error {
+		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -91,7 +91,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	startPeriodicRecordingCount := int32(0)
 	stopPeriodicRecordingCount := int32(0)
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error {
+		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return errors.New("some error")
 		},
@@ -160,7 +160,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error {
+		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -272,7 +272,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error {
+		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -398,7 +398,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error {
+		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},

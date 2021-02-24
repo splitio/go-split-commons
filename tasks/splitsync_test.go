@@ -50,7 +50,10 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+			if noCache {
+				t.Error("noCache should be false.")
+			}
 			atomic.AddInt64(&call, 1)
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")

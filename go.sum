@@ -44,6 +44,7 @@ github.com/onsi/gomega v1.10.2 h1:aY/nuoWlKJud2J6U0E3NWsjlg+0GtwXxgEqthRdzlcs=
 github.com/onsi/gomega v1.10.2/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/splitio/go-toolkit v0.0.0-20200908212815-d49116c52af2 h1:ezybyzCqxEKcfhM10eLQ1zntG2jTEKBEn/kQqLFuODY=
 github.com/splitio/go-toolkit/v4 v4.0.0-20210217162418-eb7868c3a41e/go.mod h1:EdIHN0yzB1GTXDYQc0KdKvnjkO/jfUM2YqHVYfhD3Wo=
 github.com/splitio/go-toolkit/v4 v4.0.0-20210223205053-732f2de74813 h1:WnGMbhy5sR/HgeFJaaey+U2jdRIuulEjisTKJGJmq2k=
 github.com/splitio/go-toolkit/v4 v4.0.0-20210223205053-732f2de74813/go.mod h1:EdIHN0yzB1GTXDYQc0KdKvnjkO/jfUM2YqHVYfhD3Wo=
