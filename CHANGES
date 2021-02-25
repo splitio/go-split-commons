@@ -1,4 +1,4 @@
-3.0.0 (TBD)
+3.0.0 (Feb 25, 2021)
  - BREAKING CHANGE: Sync manager interface changed
  - Push subsystem revamp
  - Fetch new segments after a notification
