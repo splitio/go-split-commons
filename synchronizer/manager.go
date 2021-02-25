@@ -170,11 +170,12 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.pauseStreaming()
 				s.startPolling()
 			case push.StatusRetryableError:
-				s.logger.Error("retryable error in streaming subsystem. Switching to polling and retrying with backoff")
+				howLong := s.backoff.Next()
+				s.logger.Error("retryable error in streaming subsystem. Switching to polling and retrying in ", howLong, " seconds")
 				s.pushManager.Stop()
 				s.synchronizer.SyncAll(false)
 				s.startPolling()
-				time.Sleep(s.backoff.Next())
+				time.Sleep(howLong)
 				s.pushManager.Start()
 			case push.StatusNonRetryableError:
 				s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
