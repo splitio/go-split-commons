@@ -2,13 +2,14 @@ package event
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/service"
-	"github.com/splitio/go-split-commons/v2/storage"
-	"github.com/splitio/go-split-commons/v2/util"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // RecorderSingle struct for event sync
@@ -54,7 +55,7 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
-			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, string(httpError.Code))
+			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, strconv.Itoa(httpError.Code))
 		}
 		return err
 	}

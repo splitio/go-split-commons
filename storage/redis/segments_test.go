@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-toolkit/v3/datastructures/set"
-	"github.com/splitio/go-toolkit/v3/logging"
-	"github.com/splitio/go-toolkit/v3/redis"
-	"github.com/splitio/go-toolkit/v3/redis/mocks"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-toolkit/v4/redis/mocks"
 )
 
 func TestSegmentKeysErrort(t *testing.T) {

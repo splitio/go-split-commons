@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v2/dtos"
+import "github.com/splitio/go-split-commons/v3/dtos"
 
 // MockMetricStorage is a mocked implementation of Metric Storage
 type MockMetricStorage struct {

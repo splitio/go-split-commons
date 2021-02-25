@@ -3,9 +3,9 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // AuthAPIClient struct is responsible for authenticating client for push services
@@ -24,7 +24,7 @@ func NewAuthAPIClient(apikey string, cfg conf.AdvancedConfig, logger logging.Log
 
 // Authenticate performs authentication for push services
 func (a *AuthAPIClient) Authenticate() (*dtos.Token, error) {
-	raw, err := a.client.Get("/api/auth")
+	raw, err := a.client.Get("/api/auth", map[string]string{CacheControlHeader: CacheControlNoCache})
 	if err != nil {
 		a.logger.Error("Error while authenticating for streaming", err)
 		return nil, err

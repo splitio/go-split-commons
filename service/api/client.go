@@ -9,14 +9,20 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/conf"
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
+)
+
+// Cache control header constants
+const (
+	CacheControlHeader  = "Cache-Control"
+	CacheControlNoCache = "no-cache"
 )
 
 // Client interface for HTTPClient
 type Client interface {
-	Get(service string) ([]byte, error)
+	Get(service string, headers map[string]string) ([]byte, error)
 	Post(service string, body []byte, headers map[string]string) error
 }
 
@@ -51,7 +57,7 @@ func NewHTTPClient(
 }
 
 // Get method is a get call to an url
-func (c *HTTPClient) Get(service string) ([]byte, error) {
+func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, error) {
 	serviceURL := c.url + service
 	c.logger.Debug("[GET] ", serviceURL)
 	req, _ := http.NewRequest("GET", serviceURL, nil)
@@ -60,14 +66,17 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
+	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
+	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
+
+	for headerName, headerValue := range headers {
+		req.Header.Add(headerName, headerValue)
+	}
 
 	c.logger.Debug(fmt.Sprintf("Headers: %v", req.Header))
 
 	req.Header.Add("Authorization", "Bearer "+authorization)
-
-	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
-	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
-	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -80,7 +89,10 @@ func (c *HTTPClient) Get(service string) ([]byte, error) {
 	var reader io.ReadCloser
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
-		reader, _ = gzip.NewReader(resp.Body)
+		reader, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing gzip resopnse body: %w", err)
+		}
 		defer reader.Close()
 	default:
 		reader = resp.Body

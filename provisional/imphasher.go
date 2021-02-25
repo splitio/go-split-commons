@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/provisional/hashing"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/provisional/hashing"
 )
 
 const hashKeyTemplate = "%s:%s:%s:%s:%d"

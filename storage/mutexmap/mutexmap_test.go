@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
+	"github.com/splitio/go-split-commons/v3/dtos"
 )
 
 func TestSplitMutexMapConcurrency(t *testing.T) {

@@ -2,11 +2,10 @@ package tasks
 
 import (
 	"fmt"
-	"sync"
 
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/impression"
-	"github.com/splitio/go-toolkit/v3/asynctask"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
+	"github.com/splitio/go-toolkit/v4/asynctask"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // NewRecordImpressionsTask creates a new splits fetching and storing task
@@ -47,6 +46,5 @@ func NewRecordImpressionsTasks(
 	return MultipleTask{
 		logger: logger,
 		tasks:  tasks,
-		wg:     &sync.WaitGroup{},
 	}
 }

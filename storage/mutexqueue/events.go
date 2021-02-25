@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // MaxAccumulatedBytes is the maximum size to accumulate in events before flush (in bytes)

@@ -5,10 +5,10 @@ import (
 	"math"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-toolkit/v3/logging"
-	"github.com/splitio/go-toolkit/v3/queuecache"
-	"github.com/splitio/go-toolkit/v3/redis"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/v4/queuecache"
+	"github.com/splitio/go-toolkit/v4/redis"
 )
 
 // EventsStorage redis implementation of EventsStorage interface

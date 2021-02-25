@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	"github.com/splitio/go-split-commons/v2/provisional"
-	"github.com/splitio/go-split-commons/v2/service/mocks"
-	"github.com/splitio/go-split-commons/v2/util"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/provisional"
+	"github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestImpressionsCountRecorderError(t *testing.T) {

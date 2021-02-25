@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	recorderMock "github.com/splitio/go-split-commons/v2/service/mocks"
-	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/metric"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/metric"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestCounterSyncTask(t *testing.T) {
@@ -65,17 +65,18 @@ func TestCounterSyncTask(t *testing.T) {
 			metricMockRecorder,
 			dtos.Metadata{},
 		),
-		3,
+		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	metricTask.Start()
+	time.Sleep(1 * time.Second)
 	if !metricTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
 
 	metricTask.Stop(false)
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Millisecond * 1500)
 	if atomic.LoadInt64(&popCounters) <= 0 {
 		t.Error("Request not received")
 	}

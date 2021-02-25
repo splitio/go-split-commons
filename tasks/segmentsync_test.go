@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v2/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/v2/service/mocks"
-	"github.com/splitio/go-split-commons/v2/storage"
-	storageMock "github.com/splitio/go-split-commons/v2/storage/mocks"
-	"github.com/splitio/go-split-commons/v2/synchronizer/worker/segment"
-	"github.com/splitio/go-toolkit/v3/datastructures/set"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSegmentSyncTask(t *testing.T) {
@@ -64,7 +64,10 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+			if noCache {
+				t.Error("no cache shold be false")
+			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -106,23 +109,24 @@ func TestSegmentSyncTask(t *testing.T) {
 			metricWrapperTest,
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
-		3,
+		1,
 		10,
 		100,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	segmentTask.Start()
+	time.Sleep(3 * time.Second)
 	if !segmentTask.IsRunning() {
 		t.Error("Segment fetching task should be running")
 	}
 
-	segmentTask.Stop(false)
-	time.Sleep(time.Second * 1)
-	if atomic.LoadInt64(&s1Requested) != 2 && atomic.LoadInt64(&s2Requested) != 2 {
-		t.Error("It should call fetch twice")
-	}
+	segmentTask.Stop(true)
 	if segmentTask.IsRunning() {
 		t.Error("Task should be stopped")
+	}
+
+	if atomic.LoadInt64(&s1Requested) < 2 || atomic.LoadInt64(&s2Requested) < 2 {
+		t.Error("It should call fetch twice")
 	}
 }
