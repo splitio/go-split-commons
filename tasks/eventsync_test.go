@@ -79,7 +79,7 @@ func TestEventSyncTask(t *testing.T) {
 	)
 
 	eventTask.Start()
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	if !eventTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
@@ -89,7 +89,7 @@ func TestEventSyncTask(t *testing.T) {
 		t.Error("Task should be stopped")
 	}
 
-	if call != 2 {
+	if call < 2 {
 		t.Error("It should call twice for flushing events")
 	}
 }
@@ -161,7 +161,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	)
 
 	eventTask.Start()
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	if !eventTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
