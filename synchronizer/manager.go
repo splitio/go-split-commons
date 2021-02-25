@@ -108,6 +108,7 @@ func (s *ManagerImpl) Start() {
 	}
 
 	if !s.lifecycle.InitializationComplete() {
+		defer s.lifecycle.ShutdownComplete()
 		return
 	}
 	s.logger.Debug("SyncAll Ready")
