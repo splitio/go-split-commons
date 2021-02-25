@@ -66,9 +66,11 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 	params["accessToken"] = token
 	params["v"] = version
 
-	s.lifecycle.InitializationComplete()
 	go func() {
 		defer s.lifecycle.ShutdownComplete()
+		if !s.lifecycle.InitializationComplete() {
+			return
+		}
 		firstEventReceived := gtSync.NewAtomicBool(false)
 		out := s.sseClient.Do(params, func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {

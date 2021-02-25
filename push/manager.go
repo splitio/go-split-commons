@@ -181,10 +181,12 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 
 	m.statusTracker.Reset()
 	sseStatus := make(chan int, 100)
-	m.lifecycle.InitializationComplete()
 	m.sseClient.ConnectStreaming(token.Token, sseStatus, tokenList, m.eventHandler)
 	go func() {
 		defer m.lifecycle.ShutdownComplete()
+		if !m.lifecycle.InitializationComplete() {
+			return
+		}
 		for {
 			message := <-sseStatus
 			switch message {
@@ -198,7 +200,7 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.nextRefresh = time.AfterFunc(when, func() {
 						m.logger.Info("Refreshing SSE auth token.")
 						m.Stop()
-						m.triggerConnectionFlow()
+						m.Start()
 					})
 				})
 				m.feedback <- StatusUp

@@ -44,9 +44,11 @@ func (s *SplitUpdateWorker) Start() {
 	}
 
 	s.logger.Debug("Started SplitUpdateWorker")
-	s.lifecycle.InitializationComplete()
 	go func() {
 		defer s.lifecycle.ShutdownComplete()
+		if !s.lifecycle.InitializationComplete() {
+			return
+		}
 		for {
 			select {
 			case splitUpdate := <-s.splitQueue:

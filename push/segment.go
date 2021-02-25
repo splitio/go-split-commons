@@ -46,8 +46,10 @@ func (s *SegmentUpdateWorker) Start() {
 		return
 	}
 
-	s.lifecycle.InitializationComplete()
 	go func() {
+		if !s.lifecycle.InitializationComplete() {
+			return
+		}
 		defer s.lifecycle.ShutdownComplete()
 		for {
 			select {

@@ -34,10 +34,10 @@ func TestSegmentUpdateWorker(t *testing.T) {
 		BaseUpdate:  BaseUpdate{BaseMessage: BaseMessage{channel: "some"}, changeNumber: 123456789},
 	}
 
+	time.Sleep(1 * time.Second)
 	if !segmentWorker.IsRunning() {
 		t.Error("It should be running")
 	}
-	time.Sleep(1 * time.Second)
 	segmentWorker.Stop()
 
 	if segmentWorker.IsRunning() {

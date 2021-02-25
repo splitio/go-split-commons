@@ -332,6 +332,8 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
+
+	// This token has a low expiration time on purpose so that it triggers a refresh
 	token := &dtos.Token{
 		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0NDYyNX0.TP0_iztPvEJcBfZjdATHc5_Yy41AYqqCptOiHpsfN-4`,
 		PushEnabled: true,
@@ -375,7 +377,6 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 		}
 	})
 
-	// Remove and replace the timer
 	message = <-feedback
 	if message != StatusUp {
 		t.Error("token should have refreshed and returned a new StatusUp message via the feedback loop. Got: ", message)

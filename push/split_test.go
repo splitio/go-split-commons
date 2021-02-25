@@ -33,10 +33,10 @@ func TestSplitUpdateWorker(t *testing.T) {
 	splitWorker.Start()
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 123456789}}
 
+	time.Sleep(1 * time.Second)
 	if !splitWorker.IsRunning() {
 		t.Error("It should be running")
 	}
-	time.Sleep(1 * time.Second)
 	splitWorker.Stop()
 
 	if splitWorker.IsRunning() {

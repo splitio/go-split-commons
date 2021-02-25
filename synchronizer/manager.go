@@ -106,7 +106,10 @@ func (s *ManagerImpl) Start() {
 		s.managerStatus <- Error
 		return
 	}
-	s.lifecycle.InitializationComplete()
+
+	if !s.lifecycle.InitializationComplete() {
+		return
+	}
 	s.logger.Debug("SyncAll Ready")
 	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
