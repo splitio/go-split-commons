@@ -137,12 +137,15 @@ func (m *ManagerImpl) StopWorkers() {
 func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 	token, err := m.authAPI.Authenticate()
 	if err != nil {
-		errType, ok := err.(dtos.HTTPError)
-		if ok && errType.Code >= http.StatusInternalServerError {
-			m.logger.Error(fmt.Sprintf("Error authenticating: %s", err.Error()))
-			return nil, common.Int64Ref(StatusRetryableError)
+		if errType, ok := err.(dtos.HTTPError); ok {
+			if errType.Code >= http.StatusInternalServerError {
+				m.logger.Error(fmt.Sprintf("Error authenticating: %s", err.Error()))
+				return nil, common.Int64Ref(StatusRetryableError)
+			}
+			return nil, common.Int64Ref(StatusNonRetryableError) // 400, 401, etc
 		}
-		return nil, common.Int64Ref(StatusNonRetryableError) // 400, 401, etc
+		// Not an HTTP eerror, most likely a tcp/bad connection. Should retry
+		return nil, common.Int64Ref(StatusRetryableError)
 	}
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
