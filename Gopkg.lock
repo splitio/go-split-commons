@@ -18,7 +18,6 @@
   version = "v6.15.9"
 
 [[projects]]
-  branch = "integration_5.0.2"
   digest = "1:e10888eb8ade4d67306ed5c3a1937db27449dd7bd9745672e858a8b3d691b68e"
   name = "github.com/splitio/go-toolkit"
   packages = [
@@ -40,7 +39,8 @@
     "workerpool",
   ]
   pruneopts = "UT"
-  revision = "073859cfd2e4518179c8bce8ade2132cc02df3cc"
+  revision = "8a2ddfdeaf23944af5c3e8e8a23f820116c9bc8b"
+  version = "2.1.4"
 
 [[projects]]
   digest = "1:5054a1f394226de9e6ddc47b0ba77e35092a4112f4a1cd9cb94aba1f5bdc3ec6"

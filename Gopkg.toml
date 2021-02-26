@@ -26,8 +26,8 @@
 
 
 [[constraint]]
-  branch = "integration_5.0.2"
   name = "github.com/splitio/go-toolkit"
+  version = "=2.1.4"
 
 [[constraint]]
   name = "gopkg.in/yaml.v2"

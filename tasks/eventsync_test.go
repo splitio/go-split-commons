@@ -171,7 +171,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	if x := atomic.LoadInt64(&call); x != 3 {
+	if x := atomic.LoadInt64(&call); x < 3 {
 		t.Error("It should call twice for flushing events. Was:", x)
 	}
 }
