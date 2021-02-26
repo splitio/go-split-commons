@@ -16,12 +16,15 @@ import (
 func TestGet(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello, client")
+		if r.Header.Get("h1") != "v1" {
+			t.Error("wrong header")
+		}
 	}))
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/")
+	txt, errg := httpClient.Get("/", map[string]string{"h1": "v1"})
 	if errg != nil {
 		t.Error(errg)
 	}
@@ -43,7 +46,7 @@ func TestGetGZIP(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/")
+	txt, errg := httpClient.Get("/", nil)
 	if errg != nil {
 		t.Error(errg)
 	}

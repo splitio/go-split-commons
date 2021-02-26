@@ -25,8 +25,8 @@ type SplitTasks struct {
 
 // Workers struct for workers
 type Workers struct {
-	SplitFetcher             split.SplitFetcher
-	SegmentFetcher           segment.SegmentFetcher
+	SplitFetcher             split.Updater
+	SegmentFetcher           segment.Updater
 	TelemetryRecorder        metric.MetricRecorder
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
@@ -83,12 +83,12 @@ func (s *SynchronizerImpl) dataFlusher() {
 }
 
 // SyncAll syncs splits and segments
-func (s *SynchronizerImpl) SyncAll() error {
-	err := s.workers.SplitFetcher.SynchronizeSplits(nil)
+func (s *SynchronizerImpl) SyncAll(requestNoCache bool) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
 	if err != nil {
 		return err
 	}
-	return s.workers.SegmentFetcher.SynchronizeSegments()
+	return s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -148,11 +148,32 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
-	return s.workers.SplitFetcher.SynchronizeSplits(till)
+func (s *SynchronizerImpl) SynchronizeSplits(till *int64, requstNoCache bool) error {
+	referencedSegments, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
+	for _, segment := range s.filterCachedSegments(referencedSegments) {
+		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
+	}
+	return err
+}
+
+func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []string {
+	toRet := make([]string, 0, len(segmentsReferenced))
+	for _, name := range segmentsReferenced {
+		if !s.workers.SegmentFetcher.IsSegmentCached(name) {
+			toRet = append(toRet, name)
+		}
+	}
+	return toRet
+}
+
+// LocalKill locally kills a split
+func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
+	s.workers.SplitFetcher.LocalKill(splitName, defaultTreatment, changeNumber)
 }
 
 // SynchronizeSegment syncs segment
-func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
-	return s.workers.SegmentFetcher.SynchronizeSegment(name, till)
+func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64, requstNoCache bool) error {
+	return s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
 }
+
+var _ Synchronizer = &SynchronizerImpl{}

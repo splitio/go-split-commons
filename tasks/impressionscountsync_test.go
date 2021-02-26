@@ -27,16 +27,16 @@ func TestImpressionCountSyncTask(t *testing.T) {
 	), logger)
 
 	impressionsCountTask.Start()
+	time.Sleep(1 * time.Second)
 	if !impressionsCountTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
 	impressionsCountTask.Stop(true)
-	time.Sleep(time.Millisecond * 300)
 	if impressionsCountTask.IsRunning() {
 		t.Error("Task should be stopped")
 	}
 
-	if call != 2 {
+	if call != 1 {
 		t.Error("It should call twice for flushing impressions")
 	}
 }

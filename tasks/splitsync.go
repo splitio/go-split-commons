@@ -8,12 +8,13 @@ import (
 
 // NewFetchSplitsTask creates a new splits fetching and storing task
 func NewFetchSplitsTask(
-	fetcher split.SplitFetcher,
+	fetcher split.Updater,
 	period int,
 	logger logging.LoggerInterface,
 ) *asynctask.AsyncTask {
 	update := func(logger logging.LoggerInterface) error {
-		return fetcher.SynchronizeSplits(nil)
+		_, err := fetcher.SynchronizeSplits(nil, false)
+		return err
 	}
 
 	return asynctask.NewAsyncTask("UpdateSplits", update, period, nil, nil, logger)

@@ -3,12 +3,15 @@ package synchronizer
 import (
 	"errors"
 	"sync/atomic"
+	"time"
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/push"
 	"github.com/splitio/go-split-commons/service"
 	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-toolkit/backoff"
 	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/struct/traits/lifecycle"
 )
 
 const (
@@ -20,24 +23,30 @@ const (
 	Error
 )
 
+// Operation mode constants
 const (
-	// Idle flags
-	Idle = iota
-	// Streaming flags
-	Streaming
-	// Polling flags
+	Streaming = iota
 	Polling
 )
 
-// Manager struct
-type Manager struct {
+// Manager interface
+type Manager interface {
+	Start()
+	Stop()
+	IsRunning() bool
+}
+
+// ManagerImpl struct
+type ManagerImpl struct {
 	synchronizer    Synchronizer
 	logger          logging.LoggerInterface
 	config          conf.AdvancedConfig
 	pushManager     push.Manager
 	managerStatus   chan int
-	streamingStatus chan int
-	status          atomic.Value
+	streamingStatus chan int64
+	operationMode   int32
+	lifecycle       lifecycle.Manager
+	backoff         backoff.Interface
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -48,23 +57,22 @@ func NewSynchronizerManager(
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
-) (*Manager, error) {
+) (*ManagerImpl, error) {
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
 
-	status := atomic.Value{}
-	status.Store(Idle)
-	manager := &Manager{
+	manager := &ManagerImpl{
+		backoff:       backoff.New(),
 		synchronizer:  synchronizer,
 		logger:        logger,
 		config:        config,
 		managerStatus: managerStatus,
-		status:        status,
 	}
+	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
-		streamingStatus := make(chan int, 1000)
-		pushManager, err := push.NewPushManager(logger, synchronizer.SynchronizeSegment, synchronizer.SynchronizeSplits, splitStorage, &config, streamingStatus, authClient)
+		streamingStatus := make(chan int64, 1000)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient)
 		if err != nil {
 			return nil, err
 		}
@@ -75,110 +83,125 @@ func NewSynchronizerManager(
 	return manager, nil
 }
 
-func (s *Manager) startPolling() {
-	s.status.Store(Polling)
-	s.pushManager.StopWorkers()
-	s.synchronizer.StartPeriodicFetching()
-}
-
 // IsRunning returns true if is in Streaming or Polling
-func (s *Manager) IsRunning() bool {
-	return s.status.Load().(int) != Idle
+func (s *ManagerImpl) IsRunning() bool {
+	return s.lifecycle.IsRunning()
 }
 
 // Start starts synchronization through Split
-func (s *Manager) Start() {
-	if s.IsRunning() {
+func (s *ManagerImpl) Start() {
+	if !s.lifecycle.BeginInitialization() {
 		s.logger.Info("Manager is already running, skipping start")
 		return
 	}
-	select {
-	case <-s.managerStatus:
-		// Discarding previous status before starting
-	default:
+
+	// It's safe to drain the channel here, since it's guaranteed that the  manager status is "starting"
+	// push manager is still stopped
+	for len(s.managerStatus) > 0 {
+		<-s.managerStatus
 	}
-	err := s.synchronizer.SyncAll()
+	err := s.synchronizer.SyncAll(false)
 	if err != nil {
+		defer s.lifecycle.ShutdownComplete()
 		s.managerStatus <- Error
+		return
+	}
+
+	if !s.lifecycle.InitializationComplete() {
+		defer s.lifecycle.ShutdownComplete()
 		return
 	}
 	s.logger.Debug("SyncAll Ready")
 	s.managerStatus <- Ready
 	s.synchronizer.StartPeriodicDataRecording()
-	if s.config.StreamingEnabled {
-		s.logger.Info("Start Streaming")
-		go s.pushManager.Start()
-		// Listens Streaming Status
-		for {
-			status := <-s.streamingStatus
-			switch status {
-			// Backoff is running -> start polling until auth is ok
-			case push.BackoffAuth:
-				fallthrough
-			// Backoff is running -> start polling until sse is connected
-			case push.BackoffSSE:
-				if s.status.Load().(int) != Polling {
-					s.logger.Info("Start periodic polling due backoff")
-					s.startPolling()
-				}
-			// SSE Streaming and workers are ready
-			case push.Ready:
-				// If Ready comes eventually when Backoff is done and polling is running
-				if s.status.Load().(int) == Polling {
-					s.synchronizer.StopPeriodicFetching()
-				}
-				s.logger.Info("SSE Streaming is ready")
-				s.status.Store(Streaming)
-				go s.synchronizer.SyncAll()
-			case push.StreamingDisabled:
-				fallthrough
-			// NonRetriableError occurs and it will switch to polling
-			case push.NonRetriableError:
-				s.pushManager.Stop()
-				s.logger.Info("Start periodic polling in Streaming")
-				s.startPolling()
-				return
-			// Publisher sends that there is no Notification Managers available
-			case push.PushIsDown:
-				// If streaming is already running, proceeding to stop workers
-				// and keeping SSE running
-				if s.status.Load().(int) == Streaming {
-					s.logger.Info("Start periodic polling in Streaming")
-					s.startPolling()
-				}
-			// Publisher sends that there are at least one Notification Manager available
-			case push.PushIsUp:
-				// If streaming is not already running, proceeding to start workers
-				if s.status.Load().(int) != Streaming {
-					s.logger.Info("Stop periodic polling")
-					s.pushManager.StartWorkers()
-					s.synchronizer.StopPeriodicFetching()
-					s.status.Store(Streaming)
-					go s.synchronizer.SyncAll()
-				}
-			// Reconnect received due error in streaming -> reconnecting
-			case push.Reconnect:
-				fallthrough
-			// Token expired -> reconnecting
-			case push.TokenExpiration:
-				s.pushManager.Stop()
-				go s.pushManager.Start()
-			}
-		}
-	} else {
-		s.logger.Info("Start periodic polling")
-		s.synchronizer.StartPeriodicFetching()
-		s.status.Store(Polling)
+
+	if !s.config.StreamingEnabled {
+		s.logger.Info("SDK initialized in polling mode")
+		s.startPolling()
+		go func() { // create a goroutine that stops everything (the same way the streaming status watcher would)
+			<-s.lifecycle.ShutdownRequested()
+			s.stop()
+		}()
+		return
 	}
+
+	// Start streaming
+	s.logger.Info("SDK Initialized in streaming mode")
+	s.pushManager.Start()
+	go s.pushStatusWatcher()
 }
 
-// Stop stop synchronizaation through Split
-func (s *Manager) Stop() {
-	s.logger.Info("STOPPING MANAGER TASKS")
-	if s.pushManager != nil && s.pushManager.IsRunning() {
+func (s *ManagerImpl) stop() {
+	if s.pushManager != nil {
 		s.pushManager.Stop()
 	}
 	s.synchronizer.StopPeriodicFetching()
 	s.synchronizer.StopPeriodicDataRecording()
-	s.status.Store(Idle)
+	s.lifecycle.ShutdownComplete()
+}
+
+// Stop stop synchronizaation through Split
+func (s *ManagerImpl) Stop() {
+	if !s.lifecycle.BeginShutdown() {
+		s.logger.Info("sync manager not yet running, skipping shutdown.")
+		return
+	}
+
+	s.logger.Info("Stopping all synchronization tasks")
+	s.lifecycle.AwaitShutdownComplete()
+}
+
+func (s *ManagerImpl) pushStatusWatcher() {
+	defer s.stop()
+	for {
+		select {
+		case <-s.lifecycle.ShutdownRequested():
+			return
+		case status := <-s.streamingStatus:
+			switch status {
+			case push.StatusUp:
+				s.stopPolling()
+				s.logger.Info("streaming up and running")
+				s.enableStreaming()
+				s.synchronizer.SyncAll(true)
+			case push.StatusDown:
+				s.logger.Info("streaming down, switchin to polling")
+				s.synchronizer.SyncAll(false)
+				s.pauseStreaming()
+				s.startPolling()
+			case push.StatusRetryableError:
+				howLong := s.backoff.Next()
+				s.logger.Error("retryable error in streaming subsystem. Switching to polling and retrying in ", howLong, " seconds")
+				s.pushManager.Stop()
+				s.synchronizer.SyncAll(false)
+				s.startPolling()
+				time.Sleep(howLong)
+				s.pushManager.Start()
+			case push.StatusNonRetryableError:
+				s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
+				s.pushManager.Stop()
+				s.synchronizer.SyncAll(false)
+				s.startPolling()
+			}
+		}
+	}
+}
+
+func (s *ManagerImpl) startPolling() {
+	atomic.StoreInt32(&s.operationMode, Polling)
+	s.synchronizer.StartPeriodicFetching()
+}
+
+func (s *ManagerImpl) stopPolling() {
+	s.synchronizer.StopPeriodicFetching()
+}
+
+func (s *ManagerImpl) pauseStreaming() {
+	s.pushManager.StartWorkers()
+}
+
+func (s *ManagerImpl) enableStreaming() {
+	s.pushManager.StartWorkers()
+	atomic.StoreInt32(&s.operationMode, Streaming)
+	s.backoff.Reset()
 }

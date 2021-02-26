@@ -1,3 +1,13 @@
+3.0.0 (Feb 25, 2021) -- 2.0.1 for non-modules
+ - BREAKING CHANGE: Sync manager interface changed
+ - Push subsystem revamp
+ - Fetch new segments after a notification
+ - Send Cache control header on notification-triggered headers
+ - Do not panic if gzip body cannot be parsed
+
+2.0.0 (Oct 6, 2020)
+ - BREAKING CHANGE: Migrate to go modules (dep & bare-bones go-get no longer supported)
+
 1.3.0 (Oct 2, 2020)
  - Added impressions manager for deduping impressions.
  - Added impressions count task.

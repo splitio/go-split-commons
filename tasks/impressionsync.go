@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
 	"github.com/splitio/go-toolkit/asynctask"
@@ -47,6 +46,5 @@ func NewRecordImpressionsTasks(
 	return MultipleTask{
 		logger: logger,
 		tasks:  tasks,
-		wg:     &sync.WaitGroup{},
 	}
 }

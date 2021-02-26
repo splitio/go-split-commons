@@ -2,6 +2,7 @@ package event
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
@@ -54,7 +55,7 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
-			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, string(httpError.Code))
+			e.metricsWrapper.StoreCounters(storage.PostEventsCounter, strconv.Itoa(httpError.Code))
 		}
 		return err
 	}
