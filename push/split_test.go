@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/push/mocks"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/push/mocks"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestSplitUpdateWorker(t *testing.T) {

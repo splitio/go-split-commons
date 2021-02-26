@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/sse"
-	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
-	gtSync "github.com/splitio/go-toolkit/v4/sync"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/sse"
+	"github.com/splitio/go-toolkit/struct/traits/lifecycle"
+	gtSync "github.com/splitio/go-toolkit/sync"
 )
 
 const (

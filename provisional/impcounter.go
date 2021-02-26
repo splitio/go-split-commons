@@ -3,7 +3,7 @@ package provisional
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-split-commons/util"
 )
 
 // Key struct for mapping each key to an amount

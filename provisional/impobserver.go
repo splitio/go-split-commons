@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/provisional/int64cache"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-toolkit/provisional/int64cache"
 )
 
 // ImpressionObserver is used to check wether an impression has been previously seen

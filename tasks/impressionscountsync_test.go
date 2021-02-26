@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/provisional"
+	"github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestImpressionCountSyncTask(t *testing.T) {

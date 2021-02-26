@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service"
+	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-split-commons/util"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 const (

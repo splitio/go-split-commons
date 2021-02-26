@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/common"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 // StatusTracker keeps track of the status of the push subsystem and generates appropriate status change notifications.

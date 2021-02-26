@@ -9,13 +9,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service/api"
+	recorderMock "github.com/splitio/go-split-commons/service/mocks"
+	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/storage/mutexmap"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestMetricSynchronizerError(t *testing.T) {

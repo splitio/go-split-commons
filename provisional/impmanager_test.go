@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
 )
 
 func TestProcessImpressionAllDisabled(t *testing.T) {

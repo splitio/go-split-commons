@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/service/api/sse"
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service"
+	"github.com/splitio/go-split-commons/service/api/sse"
+	"github.com/splitio/go-toolkit/common"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/struct/traits/lifecycle"
 )
 
 // Status update contants that will be propagated to the push manager's user

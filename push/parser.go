@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v3/service/api/sse"
+	"github.com/splitio/go-split-commons/service/api/sse"
 
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 // SSE event type constants

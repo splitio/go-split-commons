@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/push"
-	pushMocks "github.com/splitio/go-split-commons/v3/push/mocks"
-	apiMocks "github.com/splitio/go-split-commons/v3/service/mocks"
-	storageMocks "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/mocks"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/push"
+	pushMocks "github.com/splitio/go-split-commons/push/mocks"
+	apiMocks "github.com/splitio/go-split-commons/service/mocks"
+	storageMocks "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/synchronizer/mocks"
 
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestStreamingDisabledInitOk(t *testing.T) {

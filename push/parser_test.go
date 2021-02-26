@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	sseMocks "github.com/splitio/go-toolkit/v4/sse/mocks"
+	"github.com/splitio/go-toolkit/common"
+	"github.com/splitio/go-toolkit/logging"
+	sseMocks "github.com/splitio/go-toolkit/sse/mocks"
 )
 
 func TestParseSplitUpdate(t *testing.T) {

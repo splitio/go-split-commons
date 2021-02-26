@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/push"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-toolkit/v4/backoff"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/push"
+	"github.com/splitio/go-split-commons/service"
+	"github.com/splitio/go-split-commons/storage"
+	"github.com/splitio/go-toolkit/backoff"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/struct/traits/lifecycle"
 )
 
 const (

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/sse"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/sse"
 )
 
 func TestStreamingError(t *testing.T) {

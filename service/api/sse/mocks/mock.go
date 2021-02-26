@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v3/service/api/sse"
+import "github.com/splitio/go-split-commons/service/api/sse"
 
 type StreamingClientMock struct {
 	ConnectStreamingCall func(token string, streamingStatus chan int, channelList []string, handleIncomingMessage func(sse.IncomingMessage))

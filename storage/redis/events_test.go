@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/redis"
+	"github.com/splitio/go-toolkit/redis/mocks"
 )
 
 func TestPushEventsError(t *testing.T) {

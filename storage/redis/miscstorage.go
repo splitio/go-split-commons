@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/redis"
 )
 
 // ErrorHashNotPresent constant

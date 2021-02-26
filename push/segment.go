@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
+	"github.com/splitio/go-toolkit/common"
+	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-toolkit/struct/traits/lifecycle"
 )
 
 // SegmentUpdateWorker struct

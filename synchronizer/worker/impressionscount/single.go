@@ -1,10 +1,10 @@
 package impressionscount
 
 import (
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/provisional"
+	"github.com/splitio/go-split-commons/service"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 // RecorderSingle struct for impressionsCount sync

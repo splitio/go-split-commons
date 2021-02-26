@@ -1,10 +1,10 @@
 package service
 
 import (
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 // SplitAPI struct for fetchers and recorders

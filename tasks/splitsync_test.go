@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
+	"github.com/splitio/go-split-commons/storage"
+	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/synchronizer/worker/split"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestSplitSyncTask(t *testing.T) {

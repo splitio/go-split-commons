@@ -1,7 +1,9 @@
 language: go
 
 go:
-  - 1.13.15
+  - 1.x
+
+install: true
 
 script:
-  - go test -v -cover $(go list ./... | grep -v /vendor/) -race
+  - bash test.sh

@@ -3,7 +3,7 @@ package push
 import (
 	"testing"
 
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestStatusTrackerAblyerror(t *testing.T) {

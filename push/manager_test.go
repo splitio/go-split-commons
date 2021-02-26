@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	pushMocks "github.com/splitio/go-split-commons/v3/push/mocks"
-	"github.com/splitio/go-split-commons/v3/service/api/sse"
-	sseMocks "github.com/splitio/go-split-commons/v3/service/api/sse/mocks"
-	serviceMocks "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	pushMocks "github.com/splitio/go-split-commons/push/mocks"
+	"github.com/splitio/go-split-commons/service/api/sse"
+	sseMocks "github.com/splitio/go-split-commons/service/api/sse/mocks"
+	serviceMocks "github.com/splitio/go-split-commons/service/mocks"
 
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	rawSseMocks "github.com/splitio/go-toolkit/v4/sse/mocks"
+	"github.com/splitio/go-toolkit/common"
+	"github.com/splitio/go-toolkit/logging"
+	rawSseMocks "github.com/splitio/go-toolkit/sse/mocks"
 )
 
 func TestAuth500(t *testing.T) {
@@ -623,11 +623,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/push/mocks"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/conf"
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/push/mocks"
+	"github.com/splitio/go-split-commons/service/api"
+	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestPushManagerCustom(t *testing.T) {
