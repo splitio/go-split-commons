@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service/api/mocks"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service/api/mocks"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestAuthErr(t *testing.T) {
@@ -17,7 +17,7 @@ func TestAuthErr(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}
@@ -41,7 +41,7 @@ func TestAuthPushEnabledFalse(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}
@@ -72,7 +72,7 @@ func TestAuthPushEnabledTrue(t *testing.T) {
 
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
-			GetCall: func(service string) ([]byte, error) {
+			GetCall: func(service string, headers map[string]string) ([]byte, error) {
 				if service != "/api/auth" {
 					t.Error("Wrong service passed")
 				}

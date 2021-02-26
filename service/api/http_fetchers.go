@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 type httpFetcherBase struct {
@@ -15,7 +15,7 @@ type httpFetcherBase struct {
 	logger logging.LoggerInterface
 }
 
-func (h *httpFetcherBase) fetchRaw(url string, since int64) ([]byte, error) {
+func (h *httpFetcherBase) fetchRaw(url string, since int64, requestNoCache bool) ([]byte, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString(url)
 
@@ -23,7 +23,12 @@ func (h *httpFetcherBase) fetchRaw(url string, since int64) ([]byte, error) {
 		bufferQuery.WriteString("?since=")
 		bufferQuery.WriteString(strconv.FormatInt(since, 10))
 	}
-	data, err := h.client.Get(bufferQuery.String())
+
+	var extraHeaders map[string]string
+	if requestNoCache {
+		extraHeaders = map[string]string{CacheControlHeader: CacheControlNoCache}
+	}
+	data, err := h.client.Get(bufferQuery.String(), extraHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +56,8 @@ func NewHTTPSplitFetcher(
 }
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
-func (f *HTTPSplitFetcher) Fetch(since int64) (*dtos.SplitChangesDTO, error) {
-	data, err := f.fetchRaw("/splitChanges", since)
+func (f *HTTPSplitFetcher) Fetch(since int64, requestNoCache bool) (*dtos.SplitChangesDTO, error) {
+	data, err := f.fetchRaw("/splitChanges", since, requestNoCache)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)
 		return nil, err
@@ -89,12 +94,12 @@ func NewHTTPSegmentFetcher(
 }
 
 // Fetch issues a GET request to the split backend and returns the contents of a particular segment
-func (f *HTTPSegmentFetcher) Fetch(segmentName string, since int64) (*dtos.SegmentChangesDTO, error) {
+func (f *HTTPSegmentFetcher) Fetch(segmentName string, since int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/segmentChanges/")
 	bufferQuery.WriteString(segmentName)
 
-	data, err := f.fetchRaw(bufferQuery.String(), since)
+	data, err := f.fetchRaw(bufferQuery.String(), since, requestNoCache)
 	if err != nil {
 		f.logger.Error(err.Error())
 		return nil, err

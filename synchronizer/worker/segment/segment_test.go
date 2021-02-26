@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/storage/mutexmap"
-	"github.com/splitio/go-toolkit/datastructures/set"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
@@ -29,7 +29,10 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {
+			if requestNoCache {
+				t.Error("should not have requested no cache")
+			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -57,7 +60,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := segmentSync.SynchronizeSegments()
+	err := segmentSync.SynchronizeSegments(false)
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -125,7 +128,10 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+			if !noCache {
+				t.Error("should have requested no cache")
+			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -175,7 +181,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := segmentSync.SynchronizeSegments()
+	err := segmentSync.SynchronizeSegments(true)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -217,7 +223,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -266,7 +272,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := segmentSync.SynchronizeSegments()
+	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -280,7 +286,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		t.Error("Should be called once")
 	}
 
-	err = segmentSync.SynchronizeSegment("segment1", nil)
+	err = segmentSync.SynchronizeSegment("segment1", nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -346,7 +352,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -396,7 +402,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := segmentSync.SynchronizeSegments()
+	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -448,7 +454,7 @@ func TestSegmentTill(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SegmentChangesDTO{
 				Name:    name,
@@ -474,11 +480,11 @@ func TestSegmentTill(t *testing.T) {
 
 	var till int64
 	till = int64(1)
-	err := segmentSync.SynchronizeSegment("segment1", &till)
+	err := segmentSync.SynchronizeSegment("segment1", &till, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	err = segmentSync.SynchronizeSegment("segment1", &till)
+	err = segmentSync.SynchronizeSegment("segment1", &till, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}

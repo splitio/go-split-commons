@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/datastructures/set"
 )
 
 func TestMMSegmentStorage(t *testing.T) {

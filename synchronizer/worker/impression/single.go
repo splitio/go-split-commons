@@ -2,14 +2,15 @@ package impression
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
-	"github.com/splitio/go-split-commons/conf"
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
-	"github.com/splitio/go-split-commons/util"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 const (
@@ -95,7 +96,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	err = i.impressionRecorder.Record(bulkImpressions, i.metadata, map[string]string{splitSDKImpressionsMode: i.mode})
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
-			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, string(httpError.Code))
+			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, strconv.Itoa(httpError.Code))
 		}
 		return err
 	}

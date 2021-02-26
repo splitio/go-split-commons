@@ -4,8 +4,8 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // NewMQImpressionsStorage returns an instance of MQEventsStorage

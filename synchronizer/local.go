@@ -1,13 +1,13 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-split-commons/service"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/tasks"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v3/tasks"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // Local implements Local Synchronizer
@@ -47,8 +47,9 @@ func NewLocal(
 }
 
 // SyncAll syncs splits and segments
-func (s *Local) SyncAll() error {
-	return s.workers.SplitFetcher.SynchronizeSplits(nil)
+func (s *Local) SyncAll(requestNoCache bool) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	return err
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -70,11 +71,16 @@ func (s *Local) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *Local) SynchronizeSplits(till *int64) error {
-	return s.workers.SplitFetcher.SynchronizeSplits(till)
+func (s *Local) SynchronizeSplits(till *int64, requestNoCache bool) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	return err
 }
 
 // SynchronizeSegment syncs segment
-func (s *Local) SynchronizeSegment(name string, till *int64) error {
+func (s *Local) SynchronizeSegment(name string, till *int64, _ bool) error {
 	return nil
+}
+
+// LocalKill does nothing
+func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
 }

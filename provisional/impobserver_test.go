@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/provisional/int64cache"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-toolkit/v4/provisional/int64cache"
 )
 
 func TestImpressionObserver(t *testing.T) {

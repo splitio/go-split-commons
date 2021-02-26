@@ -1,5 +1,6 @@
 package dtos
 
+/*
 const (
 	// SplitUpdate used when split is updated
 	SplitUpdate = "SPLIT_UPDATE"
@@ -147,3 +148,4 @@ func NewSplitKillNotification(channelName string, changeNumber int64, defaultTre
 		SplitName:        splitName,
 	}
 }
+*/

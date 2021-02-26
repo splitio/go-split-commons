@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker/split"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSplitSyncTask(t *testing.T) {
@@ -50,7 +50,10 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+			if noCache {
+				t.Error("noCache should be false.")
+			}
 			atomic.AddInt64(&call, 1)
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")
@@ -74,18 +77,18 @@ func TestSplitSyncTask(t *testing.T) {
 			metricTestWrapper,
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
-		3,
+		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
 	splitTask.Start()
+	time.Sleep(2 * time.Second)
 	if !splitTask.IsRunning() {
 		t.Error("Split fetching task should be running")
 	}
 
 	splitTask.Stop(false)
-	time.Sleep(time.Second * 1)
-	if atomic.LoadInt64(&call) <= 0 {
+	if atomic.LoadInt64(&call) < 1 {
 		t.Error("Request not received")
 	}
 

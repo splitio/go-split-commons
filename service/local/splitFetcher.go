@@ -8,8 +8,9 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/splitio/go-split-commons/dtos"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-toolkit/v4/logging"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -222,7 +223,7 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSplitFetcher) Fetch(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) Fetch(changeNumber int64, _ bool) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := ioutil.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
@@ -256,3 +257,5 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64) (*dtos.SplitChangesDTO, err
 		Till:   till,
 	}, nil
 }
+
+var _ service.SplitFetcher = &FileSplitFetcher{}

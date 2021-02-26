@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/dtos"
-	recorderMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/synchronizer/worker/event"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestEventSyncTask(t *testing.T) {
@@ -74,11 +74,12 @@ func TestEventSyncTask(t *testing.T) {
 			dtos.Metadata{},
 		),
 		50,
-		3,
+		1,
 		logger,
 	)
 
 	eventTask.Start()
+	time.Sleep(2 * time.Second)
 	if !eventTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
@@ -88,7 +89,7 @@ func TestEventSyncTask(t *testing.T) {
 		t.Error("Task should be stopped")
 	}
 
-	if call != 2 {
+	if call < 2 {
 		t.Error("It should call twice for flushing events")
 	}
 }
@@ -96,9 +97,9 @@ func TestEventSyncTask(t *testing.T) {
 func TestEventSyncTaskMultiple(t *testing.T) {
 	var call int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	mockedEvent1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey1", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
-	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
-	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
+	mockedEvent1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey1", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
+	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
+	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
 
 	eventMockStorage := storageMock.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
@@ -109,7 +110,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
 		EmptyCall: func() bool {
-			if call == 1 {
+			if atomic.LoadInt64(&call) == 1 {
 				return false
 			}
 			return true
@@ -154,22 +155,23 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			dtos.Metadata{},
 		),
 		50,
-		50,
+		1,
 		logger,
 		3,
 	)
 
 	eventTask.Start()
+	time.Sleep(2 * time.Second)
 	if !eventTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
 	eventTask.Stop(true)
-	time.Sleep(time.Second * 1)
 	if eventTask.IsRunning() {
 		t.Error("Task should be stopped")
 	}
 
-	if atomic.LoadInt64(&call) != 3 {
-		t.Error("It should call twice for flushing events")
+	time.Sleep(1 * time.Second)
+	if x := atomic.LoadInt64(&call); x != 3 {
+		t.Error("It should call twice for flushing events. Was:", x)
 	}
 }

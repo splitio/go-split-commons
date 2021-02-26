@@ -5,12 +5,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/splitio/go-split-commons/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/storage/mutexmap"
-	"github.com/splitio/go-toolkit/logging"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage"
+	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
+	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
@@ -21,7 +21,10 @@ func TestSplitSynchronizerError(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+			if !noCache {
+				t.Error("noCache should be true")
+			}
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
@@ -37,7 +40,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := splitSync.SynchronizeSplits(nil)
+	_, err := splitSync.SynchronizeSplits(nil, true)
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -78,7 +81,10 @@ func TestSplitSynchronizer(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+			if noCache {
+				t.Error("noCache should be false")
+			}
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
@@ -108,7 +114,7 @@ func TestSplitSynchronizer(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := splitSync.SynchronizeSplits(nil)
+	_, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -120,10 +126,15 @@ func TestSplitSyncProcess(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 	mockedSplit4 := dtos.SplitDTO{Name: "split1", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
-	mockedSplit5 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "two"}
+	mockedSplit5 := dtos.SplitDTO{
+		Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "two",
+		Conditions: []dtos.ConditionDTO{{MatcherGroup: dtos.MatcherGroupDTO{Matchers: []dtos.MatcherDTO{
+			{MatcherType: "IN_SEGMENT", UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{SegmentName: "someSegment"}},
+		}}}},
+	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
@@ -173,9 +184,13 @@ func TestSplitSyncProcess(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	err := splitSync.SynchronizeSplits(nil)
+	segments, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
+	}
+
+	if len(segments) != 0 {
+		t.Error("invalid referenced segment names. Got: ", segments)
 	}
 
 	if !splitStorage.TrafficTypeExists("one") {
@@ -186,9 +201,13 @@ func TestSplitSyncProcess(t *testing.T) {
 		t.Error("It should exists")
 	}
 
-	err = splitSync.SynchronizeSplits(nil)
+	segments, err = splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
+	}
+
+	if len(segments) != 1 || segments[0] != "someSegment" {
+		t.Error("invalid referenced segment names. Got: ", segments)
 	}
 
 	s1 := splitStorage.Split("split1")
@@ -227,7 +246,7 @@ func TestSplitTill(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
@@ -253,11 +272,11 @@ func TestSplitTill(t *testing.T) {
 
 	var till int64
 	till = int64(1)
-	err := splitSync.SynchronizeSplits(&till)
+	_, err := splitSync.SynchronizeSplits(&till, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	err = splitSync.SynchronizeSplits(&till)
+	_, err = splitSync.SynchronizeSplits(&till, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
