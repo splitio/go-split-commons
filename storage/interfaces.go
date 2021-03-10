@@ -66,6 +66,42 @@ type EventStorageConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
+// TelemetryStorageProducer interface should be implemented by structs that accept incoming telemetry
+type TelemetryStorageProducer interface {
+	RecordLatency(method int, bucket int)
+	RecordException(method int)
+	RecordImpressionsStats(dataType int, count int64)
+	RecordEventsStats(dataType int, count int64)
+	RecordSuccessfulSync(resource int, time int64)
+	RecordSyncError(resource int, status int)
+	RecordSyncLatency(resource int, bucket int)
+	RecordAuthRejections()
+	RecordTokenRefreshes()
+	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
+	AddTag(tag string)
+	RecordSessionLength(session int64)
+	RecordNonReadyUsage()
+	RecordBURTimeout()
+}
+
+// TelemetryStorageConsumer interface should be implemented by structs that offer popping telemetry
+type TelemetryStorageConsumer interface {
+	PopLatencies() dtos.MethodLatencies
+	PopExceptions() dtos.MethodExceptions
+	GetImpressionsStats(dataType int) int64
+	GetEventsStats(dataType int) int64
+	GetLastSynchronization() dtos.LastSynchronization
+	PopHTTPErrors() dtos.HTTPErrors
+	PopHTTPLatencies() dtos.HTTPLatencies
+	PopAuthRejections() int64
+	PopTokenRefreshes() int64
+	PopStreamingEvents() []dtos.StreamingEvent
+	PopTags() []string
+	GetSessionLength() int64
+	GetNonReadyUsages() int64
+	GetBURTimeouts() int64
+}
+
 // --- Wide Interfaces
 
 // SplitStorage wraps consumer & producer interfaces
@@ -90,4 +126,10 @@ type ImpressionStorage interface {
 type EventsStorage interface {
 	EventStorageConsumer
 	EventStorageProducer
+}
+
+// TelemetryStorage wraps consumer and producer interfaces
+type TelemetryStorage interface {
+	TelemetryStorageConsumer
+	TelemetryStorageProducer
 }

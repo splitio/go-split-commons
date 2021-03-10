@@ -13,8 +13,8 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/api"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexqueue"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mutexqueue"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
