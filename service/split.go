@@ -14,7 +14,6 @@ type SplitAPI struct {
 	SegmentFetcher     SegmentFetcher
 	ImpressionRecorder ImpressionsRecorder
 	EventRecorder      EventsRecorder
-	MetricRecorder     MetricsRecorder
 }
 
 // NewSplitAPI creates new splitAPI
@@ -30,6 +29,5 @@ func NewSplitAPI(
 		SegmentFetcher:     api.NewHTTPSegmentFetcher(apikey, conf, logger, metadata),
 		ImpressionRecorder: api.NewHTTPImpressionRecorder(apikey, conf, logger),
 		EventRecorder:      api.NewHTTPEventsRecorder(apikey, conf, logger),
-		MetricRecorder:     api.NewHTTPMetricsRecorder(apikey, conf, logger),
 	}
 }

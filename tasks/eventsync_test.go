@@ -7,7 +7,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -58,18 +57,6 @@ func TestEventSyncTask(t *testing.T) {
 		event.NewEventRecorderSingle(
 			eventMockStorage,
 			eventMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "events.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 		),
@@ -110,10 +97,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
 		EmptyCall: func() bool {
-			if atomic.LoadInt64(&call) == 1 {
-				return false
-			}
-			return true
+			return false
 		},
 	}
 
@@ -139,31 +123,19 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 		event.NewEventRecorderSingle(
 			eventMockStorage,
 			eventMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "events.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 		),
 		50,
-		1,
+		2,
 		logger,
 		3,
 	)
 
 	eventTask.Start()
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 	if !eventTask.IsRunning() {
-		t.Error("Counter recorder task should be running")
+		t.Error("Task recorder task should be running")
 	}
 	eventTask.Stop(true)
 	if eventTask.IsRunning() {
@@ -172,6 +144,6 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	if x := atomic.LoadInt64(&call); x != 3 {
-		t.Error("It should call twice for flushing events. Was:", x)
+		t.Error("It should call three times for flushing events. Was:", x)
 	}
 }

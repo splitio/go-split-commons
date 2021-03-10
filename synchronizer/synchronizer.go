@@ -5,7 +5,6 @@ import (
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/metric"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v3/tasks"
@@ -17,7 +16,6 @@ import (
 type SplitTasks struct {
 	SplitSyncTask            *asynctask.AsyncTask
 	SegmentSyncTask          *asynctask.AsyncTask
-	TelemetrySyncTask        *asynctask.AsyncTask
 	ImpressionSyncTask       tasks.Task
 	EventSyncTask            tasks.Task
 	ImpressionsCountSyncTask *asynctask.AsyncTask
@@ -27,7 +25,6 @@ type SplitTasks struct {
 type Workers struct {
 	SplitFetcher             split.Updater
 	SegmentFetcher           segment.Updater
-	TelemetryRecorder        metric.MetricRecorder
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
@@ -120,9 +117,6 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 	if s.splitTasks.ImpressionSyncTask != nil {
 		s.splitTasks.ImpressionSyncTask.Start()
 	}
-	if s.splitTasks.TelemetrySyncTask != nil {
-		s.splitTasks.TelemetrySyncTask.Start()
-	}
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Start()
 	}
@@ -135,9 +129,6 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	if s.splitTasks.ImpressionSyncTask != nil {
 		s.splitTasks.ImpressionSyncTask.Stop(true)
-	}
-	if s.splitTasks.TelemetrySyncTask != nil {
-		s.splitTasks.TelemetrySyncTask.Stop(false)
 	}
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Stop(true)

@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -56,6 +56,7 @@ func TestImpressionSyncTask(t *testing.T) {
 
 	impressionMockStorage := storageMock.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			fmt.Println("CALLED")
 			call++
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
@@ -101,29 +102,17 @@ func TestImpressionSyncTask(t *testing.T) {
 		impression.NewRecorderSingle(
 			impressionMockStorage,
 			impressionMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "testImpressions.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 		),
-		1,
+		2,
 		logger,
 		50,
 	)
 
 	impressionTask.Start()
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	if !impressionTask.IsRunning() {
 		t.Error("Impression recorder task should be running")
 	}
@@ -133,6 +122,7 @@ func TestImpressionSyncTask(t *testing.T) {
 		t.Error("Task should be stopped")
 	}
 
+	time.Sleep(1 * time.Second)
 	if call != 2 {
 		t.Error("It should call twice for flushing impressions")
 	}
@@ -216,30 +206,18 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 		impression.NewRecorderSingle(
 			impressionMockStorage,
 			impressionMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "testImpressions.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
 		),
-		1,
+		2,
 		logger,
 		50,
 		3,
 	)
 
 	impressionTask.Start()
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(3 * time.Second)
 	if !impressionTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
@@ -248,6 +226,7 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 		t.Error("Task should be stopped")
 	}
 
+	time.Sleep(1 * time.Second)
 	// This task is intended for redis and does not flush on shutdown so it should only execute 3 times.
 	if atomic.LoadInt64(&call) != 3 {
 		t.Error("It should call three times for sending impressions", call)

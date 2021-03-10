@@ -52,25 +52,6 @@ type ImpressionStorageConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
 }
 
-// MetricsStorageProducer interface should be impemented by structs that accept incoming metrics
-type MetricsStorageProducer interface {
-	PutGauge(key string, gauge float64)
-	IncLatency(metricName string, index int)
-	IncCounter(key string)
-}
-
-// MetricsStorageConsumer interface should be implemented by structs that offer popping metrics
-type MetricsStorageConsumer interface {
-	PeekCounters() map[string]int64
-	PeekLatencies() map[string][]int64
-	PopGauges() []dtos.GaugeDTO
-	PopLatencies() []dtos.LatenciesDTO
-	PopCounters() []dtos.CounterDTO
-	PopGaugesWithMetadata() (*dtos.GaugeDataBulk, error)
-	PopLatenciesWithMetadata() (*dtos.LatencyDataBulk, error)
-	PopCountersWithMetadata() (*dtos.CounterDataBulk, error)
-}
-
 // EventStorageProducer interface should be implemented by structs that accept incoming events
 type EventStorageProducer interface {
 	Push(event dtos.EventDTO, size int) error
@@ -103,12 +84,6 @@ type SegmentStorage interface {
 type ImpressionStorage interface {
 	ImpressionStorageConsumer
 	ImpressionStorageProducer
-}
-
-// MetricsStorage wraps consumer and producer interfaces
-type MetricsStorage interface {
-	MetricsStorageConsumer
-	MetricsStorageProducer
 }
 
 // EventsStorage wraps consumer and producer interfaces
