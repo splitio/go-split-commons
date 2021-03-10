@@ -7,7 +7,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
@@ -97,16 +96,11 @@ func TestSegmentSyncTask(t *testing.T) {
 		},
 	}
 
-	metricWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
 	segmentTask := NewFetchSegmentsTask(
 		segment.NewSegmentFetcher(
 			splitMockStorage,
 			segmentMockStorage,
 			segmentMockFetcher,
-			metricWrapperTest,
 			logging.NewLogger(&logging.LoggerOptions{}),
 		),
 		1,

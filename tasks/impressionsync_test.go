@@ -8,7 +8,6 @@ import (
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -101,18 +100,6 @@ func TestImpressionSyncTask(t *testing.T) {
 		impression.NewRecorderSingle(
 			impressionMockStorage,
 			impressionMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "testImpressions.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
@@ -216,18 +203,6 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 		impression.NewRecorderSingle(
 			impressionMockStorage,
 			impressionMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "testImpressions.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "testImpressions.time" && metricName != "backend::/api/testImpressions/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
 			logger,
 			dtos.Metadata{},
 			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},

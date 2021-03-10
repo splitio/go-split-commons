@@ -1,10 +1,8 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v3/tasks"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -25,17 +23,8 @@ func NewLocal(
 	splitStorage storage.SplitStorage,
 	logger logging.LoggerInterface,
 ) Synchronizer {
-	metricStorageMock := storageMock.MockMetricStorage{
-		IncCounterCall:   func(key string) {},
-		IncLatencyCall:   func(metricName string, index int) {},
-		PopCountersCall:  func() []dtos.CounterDTO { return make([]dtos.CounterDTO, 0, 0) },
-		PopGaugesCall:    func() []dtos.GaugeDTO { return make([]dtos.GaugeDTO, 0, 0) },
-		PopLatenciesCall: func() []dtos.LatenciesDTO { return make([]dtos.LatenciesDTO, 0, 0) },
-		PutGaugeCall:     func(key string, gauge float64) {},
-	}
-	metricsWrapper := storage.NewMetricWrapper(metricStorageMock, nil, logger)
 	workers := Workers{
-		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, metricsWrapper, logger),
+		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger),
 	}
 	return &Local{
 		splitTasks: SplitTasks{

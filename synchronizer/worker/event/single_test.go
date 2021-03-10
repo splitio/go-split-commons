@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"errors"
+
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/api"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/storage/mutexqueue"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -34,7 +34,6 @@ func TestSynhronizeEventError(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storage.NewMetricWrapper(storageMock.MockMetricStorage{}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -65,7 +64,6 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storage.NewMetricWrapper(storageMock.MockMetricStorage{}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -121,18 +119,6 @@ func TestSynhronizeEvent(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventMockStorage,
 		eventMockRecorder,
-		storage.NewMetricWrapper(storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "events.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		}, nil, nil),
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 	)
@@ -204,18 +190,6 @@ func TestSynhronizeEventSync(t *testing.T) {
 	eventSync := NewEventRecorderSingle(
 		eventStorage,
 		eventRecorder,
-		storage.NewMetricWrapper(storageMock.MockMetricStorage{
-			IncCounterCall: func(key string) {
-				if key != "events.status.200" && key != "backend::request.ok" {
-					t.Error("Unexpected counter key to increase")
-				}
-			},
-			IncLatencyCall: func(metricName string, index int) {
-				if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-					t.Error("Unexpected latency key to track")
-				}
-			},
-		}, nil, nil),
 		logger,
 		dtos.Metadata{},
 	)

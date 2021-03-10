@@ -2,8 +2,6 @@ package impression
 
 import (
 	"errors"
-	"strconv"
-	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
@@ -22,7 +20,6 @@ const (
 type RecorderSingle struct {
 	impressionStorage  storage.ImpressionStorageConsumer
 	impressionRecorder service.ImpressionsRecorder
-	metricsWrapper     *storage.MetricWrapper
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
 	mode               string
@@ -32,7 +29,6 @@ type RecorderSingle struct {
 func NewRecorderSingle(
 	impressionStorage storage.ImpressionStorageConsumer,
 	impressionRecorder service.ImpressionsRecorder,
-	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 	managerConfig conf.ManagerConfig,
@@ -44,7 +40,6 @@ func NewRecorderSingle(
 	return &RecorderSingle{
 		impressionStorage:  impressionStorage,
 		impressionRecorder: impressionRecorder,
-		metricsWrapper:     metricsWrapper,
 		logger:             logger,
 		metadata:           metadata,
 		mode:               mode,
@@ -92,17 +87,10 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 		})
 	}
 
-	before := time.Now()
 	err = i.impressionRecorder.Record(bulkImpressions, i.metadata, map[string]string{splitSDKImpressionsMode: i.mode})
 	if err != nil {
-		if httpError, ok := err.(*dtos.HTTPError); ok {
-			i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, strconv.Itoa(httpError.Code))
-		}
 		return err
 	}
-	bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-	i.metricsWrapper.StoreLatencies(storage.TestImpressionsLatency, bucket)
-	i.metricsWrapper.StoreCounters(storage.TestImpressionsCounter, "ok")
 	return nil
 }
 

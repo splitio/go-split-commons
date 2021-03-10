@@ -52,23 +52,40 @@ type ImpressionStorageConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
 }
 
-// MetricsStorageProducer interface should be impemented by structs that accept incoming metrics
-type MetricsStorageProducer interface {
-	PutGauge(key string, gauge float64)
-	IncLatency(metricName string, index int)
-	IncCounter(key string)
+// TelemetryStorageProducer interface should be impemented by structs that accept incoming telemetry
+type TelemetryStorageProducer interface {
+	RecordLatency(method int, bucket int)
+	RecordException(method int)
+	RecordImpressionsStats(dataType int, count int64)
+	RecordEventsStats(dataType int, count int64)
+	RecordSuccessfulSync(resource int, time int64)
+	RecordSyncError(resource int, status int)
+	RecordSyncLatency(resource int, bucket int)
+	RecordAuthRejections()
+	RecordTokenRefreshes()
+	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
+	AddTag(tag string)
+	RecordSessionLength(session int64)
+	RecordNonReadyUsage()
+	RecordBURTimeout()
 }
 
-// MetricsStorageConsumer interface should be implemented by structs that offer popping metrics
-type MetricsStorageConsumer interface {
-	PeekCounters() map[string]int64
-	PeekLatencies() map[string][]int64
-	PopGauges() []dtos.GaugeDTO
-	PopLatencies() []dtos.LatenciesDTO
-	PopCounters() []dtos.CounterDTO
-	PopGaugesWithMetadata() (*dtos.GaugeDataBulk, error)
-	PopLatenciesWithMetadata() (*dtos.LatencyDataBulk, error)
-	PopCountersWithMetadata() (*dtos.CounterDataBulk, error)
+// TelemetryStorageConsumer interface should be implemented by structs that offer popping telemetry
+type TelemetryStorageConsumer interface {
+	PopLatencies() dtos.MethodLatencies
+	PopExceptions() dtos.MethodExceptions
+	GetImpressionsStats(dataType int) int64
+	GetEventsStats(dataType int) int64
+	GetLastSynchronization() dtos.LastSynchronization
+	PopHTTPErrors() dtos.HTTPErrors
+	PopHTTPLatencies() dtos.HTTPLatencies
+	PopAuthRejections() int64
+	PopTokenRefreshes() int64
+	PopStreamingEvents() []dtos.StreamingEvent
+	PopTags() []string
+	GetSessionLength() int64
+	GetNonReadyUsages() int64
+	GetBURTimeouts() int64
 }
 
 // EventStorageProducer interface should be implemented by structs that accept incoming events
@@ -105,10 +122,10 @@ type ImpressionStorage interface {
 	ImpressionStorageProducer
 }
 
-// MetricsStorage wraps consumer and producer interfaces
-type MetricsStorage interface {
-	MetricsStorageConsumer
-	MetricsStorageProducer
+// TelemetryStorage wraps consumer and producer interfaces
+type TelemetryStorage interface {
+	TelemetryStorageConsumer
+	TelemetryStorageProducer
 }
 
 // EventsStorage wraps consumer and producer interfaces

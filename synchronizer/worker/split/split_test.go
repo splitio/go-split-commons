@@ -7,7 +7,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -32,11 +31,9 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	metricTestWrapper := storage.NewMetricWrapper(&mutexmap.MMMetricsStorage{}, nil, nil)
 	splitSync := NewSplitFetcher(
 		splitMockStorage,
 		splitMockFetcher,
-		metricTestWrapper,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -95,22 +92,9 @@ func TestSplitSynchronizer(t *testing.T) {
 			}, nil
 		},
 	}
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
 	splitSync := NewSplitFetcher(
 		splitMockStorage,
 		splitMockFetcher,
-		metricTestWrapper,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -165,22 +149,9 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
 	splitSync := NewSplitFetcher(
 		splitStorage,
 		splitMockFetcher,
-		metricTestWrapper,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
@@ -259,14 +230,9 @@ func TestSplitTill(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
 	splitSync := NewSplitFetcher(
 		splitStorage,
 		splitMockFetcher,
-		metricTestWrapper,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
