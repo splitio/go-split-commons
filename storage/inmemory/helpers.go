@@ -15,7 +15,7 @@ type AtomicInt64Slice []int64
 // NewAtomicInt64Slice create slice
 func NewAtomicInt64Slice(size int64) (AtomicInt64Slice, error) {
 	if size <= 0 {
-		return nil, fmt.Errorf("invlid array size: %d", size)
+		return nil, fmt.Errorf("invalid array size: %d", size)
 	}
 	return make([]int64, size), nil
 }
