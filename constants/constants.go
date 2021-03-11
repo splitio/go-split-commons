@@ -1,4 +1,4 @@
-package storage
+package constants
 
 const (
 	// Treatment getTreatment
