@@ -3,6 +3,7 @@ package telemetry
 import (
 	"time"
 
+	"github.com/splitio/go-split-commons/v3/constants"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
 	"github.com/splitio/go-split-commons/v3/util"
@@ -153,21 +154,21 @@ func (t *FacadeImpl) PopTokenRefreshes() int64 {
 // RecordStreamingEvent records streaming event
 func (t *FacadeImpl) RecordStreamingEvent(eventType int, data int64) {
 	switch eventType {
-	case constants.EventTypeOccupancySec:
-		fallthrough
 	case constants.EventTypeSSEConnectionEstablished:
 		fallthrough
+	case constants.EventTypeOccupancyPri:
+		fallthrough
+	case constants.EventTypeOccupancySec:
+		fallthrough
 	case constants.EventTypeStreamingStatus:
+		fallthrough
+	case constants.EventTypeConnectionError:
 		fallthrough
 	case constants.EventTypeTokenRefresh:
 		fallthrough
 	case constants.EventTypeAblyError:
 		fallthrough
-	case constants.EventTypeConnectionError:
-		fallthrough
 	case constants.EventTypeSyncMode:
-		fallthrough
-	case constants.EventTypeOccupancyPri:
 		t.storage.RecordStreamingEvent(dtos.StreamingEvent{
 			Type:      eventType,
 			Data:      data,

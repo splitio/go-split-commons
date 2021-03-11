@@ -63,3 +63,19 @@ const (
 	EventTypeAblyError
 	EventTypeSyncMode
 )
+
+const (
+	StreamingDisabled = iota
+	StreamingEnabled
+	StreamingPaused
+)
+
+const (
+	Requested = iota
+	NonRequested
+)
+
+const (
+	Streaming = iota
+	Polling
+)
