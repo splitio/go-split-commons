@@ -7,8 +7,8 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexmap"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
