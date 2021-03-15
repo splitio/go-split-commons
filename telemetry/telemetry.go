@@ -154,21 +154,10 @@ func (t *FacadeImpl) PopTokenRefreshes() int64 {
 // RecordStreamingEvent records streaming event
 func (t *FacadeImpl) RecordStreamingEvent(eventType int, data int64) {
 	switch eventType {
-	case constants.EventTypeSSEConnectionEstablished:
-		fallthrough
-	case constants.EventTypeOccupancyPri:
-		fallthrough
-	case constants.EventTypeOccupancySec:
-		fallthrough
-	case constants.EventTypeStreamingStatus:
-		fallthrough
-	case constants.EventTypeConnectionError:
-		fallthrough
-	case constants.EventTypeTokenRefresh:
-		fallthrough
-	case constants.EventTypeAblyError:
-		fallthrough
-	case constants.EventTypeSyncMode:
+	case constants.EventTypeSSEConnectionEstablished, constants.EventTypeOccupancyPri,
+		constants.EventTypeOccupancySec, constants.EventTypeStreamingStatus,
+		constants.EventTypeConnectionError, constants.EventTypeTokenRefresh,
+		constants.EventTypeAblyError, constants.EventTypeSyncMode:
 		t.storage.RecordStreamingEvent(dtos.StreamingEvent{
 			Type:      eventType,
 			Data:      data,

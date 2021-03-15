@@ -632,7 +632,8 @@ func TestTelemetryService(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	segmentStorage.Update("some", set.NewSet("doc", "redo"), set.NewSet(), 123456789)
 
-	telemetryService := NewTelemetry(inmemory.NewIMTelemetryStorage(), splitStorage, segmentStorage)
+	st, _ := inmemory.NewIMTelemetryStorage()
+	telemetryService := NewTelemetry(st, splitStorage, segmentStorage)
 
 	telemetryService.RecordException(constants.Treatment)
 	telemetryService.RecordException(constants.Treatments)
