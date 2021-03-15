@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -72,6 +73,7 @@ type records struct {
 type IMTelemetryStorage struct {
 	counters             counters
 	httpErrors           dtos.HTTPErrors
+	mutexHTTPErrors      sync.RWMutex
 	latencies            latencies
 	records              records
 	streamingEvents      []dtos.StreamingEvent // Max Length 20
@@ -81,51 +83,51 @@ type IMTelemetryStorage struct {
 }
 
 // NewIMTelemetryStorage builds in memory telemetry storage
-func NewIMTelemetryStorage() storage.TelemetryStorage {
+func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
 	treatmentLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	treatmentWithConfigLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	treatmentsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	treatmentWithConfigsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	track, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 
 	splits, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	segments, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	impressions, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	events, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	telemetry, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 	token, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
 	}
 
 	return &IMTelemetryStorage{
@@ -138,6 +140,7 @@ func NewIMTelemetryStorage() storage.TelemetryStorage {
 			Token:       make(map[int]int64),
 			Telemetry:   make(map[int]int64),
 		},
+		mutexHTTPErrors: sync.RWMutex{},
 		latencies: latencies{
 			treatment:            treatmentLatencies,
 			treatmentWithConfig:  treatmentWithConfigLatencies,
@@ -157,7 +160,7 @@ func NewIMTelemetryStorage() storage.TelemetryStorage {
 		mutexStreamingEvents: sync.RWMutex{},
 		tags:                 make([]string, 0, constants.MaxTags),
 		mutexTags:            sync.RWMutex{},
-	}
+	}, nil
 }
 
 // TELEMETRY STORAGE PRODUCER
@@ -244,6 +247,8 @@ func (i *IMTelemetryStorage) createOrUpdate(status int, item map[int]int64) {
 
 // RecordSyncError records http error
 func (i *IMTelemetryStorage) RecordSyncError(resource int, status int) {
+	i.mutexHTTPErrors.Lock()
+	defer i.mutexHTTPErrors.Unlock()
 	switch resource {
 	case constants.SplitSync:
 		i.createOrUpdate(status, i.httpErrors.Splits)
@@ -383,6 +388,8 @@ func (i *IMTelemetryStorage) GetLastSynchronization() dtos.LastSynchronization {
 
 // PopHTTPErrors gets http errors
 func (i *IMTelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
+	i.mutexHTTPErrors.Lock()
+	defer i.mutexHTTPErrors.Unlock()
 	toReturn := i.httpErrors
 	i.httpErrors.Splits = make(map[int]int64)
 	i.httpErrors.Segments = make(map[int]int64)

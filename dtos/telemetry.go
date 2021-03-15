@@ -22,21 +22,21 @@ type HTTPErrors struct {
 
 // HTTPLatencies struct
 type HTTPLatencies struct {
-	Splits      []int64 `json:"sp"`
-	Segments    []int64 `json:"se"`
-	Impressions []int64 `json:"im"`
-	Events      []int64 `json:"ev"`
-	Token       []int64 `json:"to"`
-	Telemetry   []int64 `json:"te"`
+	Splits      []int64 `json:"sp,omitempty"`
+	Segments    []int64 `json:"se,omitempty"`
+	Impressions []int64 `json:"im,omitempty"`
+	Events      []int64 `json:"ev,omitempty"`
+	Token       []int64 `json:"to,omitempty"`
+	Telemetry   []int64 `json:"te,omitempty"`
 }
 
 // MethodLatencies struct
 type MethodLatencies struct {
-	Treatment            []int64 `json:"t"`
-	Treatments           []int64 `json:"ts"`
-	TreatmentWithConfig  []int64 `json:"tc"`
-	TreatmentWithConfigs []int64 `json:"tcs"`
-	Track                []int64 `json:"tr"`
+	Treatment            []int64 `json:"t,omitempty"`
+	Treatments           []int64 `json:"ts,omitempty"`
+	TreatmentWithConfig  []int64 `json:"tc,omitempty"`
+	TreatmentWithConfigs []int64 `json:"tcs,omitempty"`
+	Track                []int64 `json:"tr,omitempty"`
 }
 
 // MethodExceptions struct

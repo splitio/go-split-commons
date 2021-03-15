@@ -10,7 +10,7 @@ import (
 )
 
 func TestTelemetryStorage(t *testing.T) {
-	telemetryStorage := NewIMTelemetryStorage()
+	telemetryStorage, _ := NewIMTelemetryStorage()
 
 	telemetryStorage.RecordException(constants.Treatment)
 	telemetryStorage.RecordException(constants.Treatments)
