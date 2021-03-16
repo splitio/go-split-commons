@@ -51,8 +51,8 @@ type EvaluationTelemetryConsumer interface { // Client
 
 // EvaluationTelemetryProducer writer
 type EvaluationTelemetryProducer interface { // Client
-	RecordLatency(method int, latency int64)
-	RecordException(method int)
+	RecordLatency(method string, latency int64)
+	RecordException(method string)
 }
 
 // ImpressionTelemetry includes the subset of telemetry operations triggered from the impressions manager

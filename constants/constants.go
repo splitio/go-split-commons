@@ -2,15 +2,15 @@ package constants
 
 const (
 	// Treatment getTreatment
-	Treatment = iota
+	Treatment = "treatment"
 	// Treatments getTreatments
-	Treatments
+	Treatments = "treatments"
 	// TreatmentWithConfig getTreatmentWithConfig
-	TreatmentWithConfig
+	TreatmentWithConfig = "treatmentWithConfig"
 	// TreatmentsWithConfig getTreatmentsWithConfig
-	TreatmentsWithConfig
+	TreatmentsWithConfig = "treatmentsWithConfig"
 	// Track track
-	Track
+	Track = "track"
 )
 
 const (
@@ -78,4 +78,9 @@ const (
 const (
 	Streaming = iota
 	Polling
+)
+
+const (
+	Standalone = iota
+	Consumer
 )

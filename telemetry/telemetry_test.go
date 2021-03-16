@@ -19,7 +19,7 @@ func TestEvaluationTelemetry(t *testing.T) {
 	latencyCalled := 0
 	popLatencyCalled := 0
 	mockedTelemetryStorage := mocks.MockTelemetryStorage{
-		RecordExceptionCall: func(method int) {
+		RecordExceptionCall: func(method string) {
 			switch exceptionCalled {
 			case 0:
 				if method != constants.Treatment {
@@ -48,7 +48,7 @@ func TestEvaluationTelemetry(t *testing.T) {
 			popExceptionCalled++
 			return dtos.MethodExceptions{}
 		},
-		RecordLatencyCall: func(method, bucket int) {
+		RecordLatencyCall: func(method string, bucket int) {
 			switch latencyCalled {
 			case 0:
 				if method != constants.Treatment || bucket != 0 {

@@ -4,8 +4,9 @@ import "github.com/splitio/go-split-commons/v3/dtos"
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
 type MockTelemetryStorage struct {
-	RecordLatencyCall          func(method int, bucket int)
-	RecordExceptionCall        func(method int)
+	RecordInitDataCall         func(initData dtos.Init) error
+	RecordLatencyCall          func(method string, bucket int)
+	RecordExceptionCall        func(method string)
 	RecordImpressionsStatsCall func(dataType int, count int64)
 	RecordEventsStatsCall      func(dataType int, count int64)
 	RecordSuccessfulSyncCall   func(resource int, time int64)
@@ -34,13 +35,18 @@ type MockTelemetryStorage struct {
 	GetBURTimeoutsCall         func() int64
 }
 
+// RecordInitData mock
+func (m MockTelemetryStorage) RecordInitData(initData dtos.Init) error {
+	return m.RecordInitDataCall(initData)
+}
+
 // RecordLatency mock
-func (m MockTelemetryStorage) RecordLatency(method int, bucket int) {
+func (m MockTelemetryStorage) RecordLatency(method string, bucket int) {
 	m.RecordLatencyCall(method, bucket)
 }
 
 // RecordException mock
-func (m MockTelemetryStorage) RecordException(method int) { m.RecordExceptionCall(method) }
+func (m MockTelemetryStorage) RecordException(method string) { m.RecordExceptionCall(method) }
 
 // RecordImpressionsStats mock
 func (m MockTelemetryStorage) RecordImpressionsStats(dataType int, count int64) {

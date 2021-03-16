@@ -28,12 +28,12 @@ func NewTelemetry(telemetryStorage storage.TelemetryStorage, splitStorage storag
 // EVALUATION
 
 // RecordException records exceptions
-func (t *FacadeImpl) RecordException(method int) {
+func (t *FacadeImpl) RecordException(method string) {
 	t.storage.RecordException(method)
 }
 
 // RecordLatency records latencies for method
-func (t *FacadeImpl) RecordLatency(method int, latency int64) {
+func (t *FacadeImpl) RecordLatency(method string, latency int64) {
 	t.storage.RecordLatency(method, util.Bucket(latency))
 }
 
