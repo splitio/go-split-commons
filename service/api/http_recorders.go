@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -74,11 +75,7 @@ func (i *HTTPImpressionRecorder) RecordImpressionsCount(pf dtos.ImpressionsCount
 }
 
 // NewHTTPImpressionRecorder instantiates an HTTPImpressionRecorder
-func NewHTTPImpressionRecorder(
-	apikey string,
-	cfg conf.AdvancedConfig,
-	logger logging.LoggerInterface,
-) *HTTPImpressionRecorder {
+func NewHTTPImpressionRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.ImpressionsRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
@@ -111,11 +108,7 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 }
 
 // NewHTTPEventsRecorder instantiates an HTTPEventsRecorder
-func NewHTTPEventsRecorder(
-	apikey string,
-	cfg conf.AdvancedConfig,
-	logger logging.LoggerInterface,
-) *HTTPEventsRecorder {
+func NewHTTPEventsRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.EventsRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
@@ -123,4 +116,37 @@ func NewHTTPEventsRecorder(
 			logger: logger,
 		},
 	}
+}
+
+// HTTPTelemetryRecorder is a struct responsible for submitting telemetry to the backend
+type HTTPTelemetryRecorder struct {
+	httpRecorderBase
+}
+
+// NewHTTPTelemetryRecorder instantiates an HTTPTelemetryRecorder
+func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.TelemetryRecorder {
+	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
+	return &HTTPTelemetryRecorder{
+		httpRecorderBase: httpRecorderBase{
+			client: client,
+			logger: logger,
+		},
+	}
+}
+
+// RecordStats method submits stats
+func (m *HTTPTelemetryRecorder) RecordStats(stats dtos.Stats, metadata dtos.Metadata) error {
+	data, err := json.Marshal(stats)
+	if err != nil {
+		m.logger.Error("Error marshaling JSON", err.Error())
+		return err
+	}
+
+	err = m.RecordRaw("/metrics/stats", data, metadata, nil)
+	if err != nil {
+		m.logger.Error("Error posting stats", err.Error())
+		return err
+	}
+
+	return nil
 }

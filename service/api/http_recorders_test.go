@@ -171,3 +171,63 @@ func TestPostImpressions(t *testing.T) {
 		t.Error(err2)
 	}
 }
+
+func TestPostTelemetryStats(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		sdkVersion := r.Header.Get("SplitSDKVersion")
+		sdkMachine := r.Header.Get("SplitSDKMachineIP")
+
+		if sdkVersion != fmt.Sprint("go-some") {
+			t.Error("SDK Version HEADER not match")
+		}
+
+		if sdkMachine != "127.0.0.1" {
+			t.Error("SDK Machine HEADER not match")
+		}
+
+		sdkMachineName := r.Header.Get("SplitSDKMachineName")
+		if sdkMachineName != "ip-127-0-0-1" {
+			t.Error("SDK Machine Name HEADER not match", sdkMachineName)
+		}
+
+		rBody, _ := ioutil.ReadAll(r.Body)
+		var statsInPost dtos.Stats
+		err := json.Unmarshal(rBody, &statsInPost)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if statsInPost.TokenRefreshes != 10 {
+			t.Error("Unexpected value")
+		}
+		if statsInPost.LastSynchronizations.Splits != 123456789 {
+			t.Error("Unexpected value")
+		}
+
+		fmt.Fprintln(w, "ok")
+	}))
+	defer ts.Close()
+
+	telemetryRecorder := NewHTTPTelemetryRecorder(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts.URL,
+			SdkURL:    ts.URL,
+		},
+		logger,
+	)
+
+	err := telemetryRecorder.RecordStats(dtos.Stats{
+		LastSynchronizations: &dtos.LastSynchronization{
+			Splits: 123456789,
+		},
+		TokenRefreshes: 10,
+	}, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
+	if err != nil {
+		t.Error(err)
+	}
+}

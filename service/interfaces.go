@@ -25,6 +25,11 @@ type ImpressionsRecorder interface {
 	RecordImpressionsCount(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error
 }
 
+// TelemetryRecorder interface to be implemented by Telemetry loggers
+type TelemetryRecorder interface {
+	RecordStats(stats dtos.Stats, metadata dtos.Metadata) error
+}
+
 // EventsRecorder interface to post events
 type EventsRecorder interface {
 	Record(events []dtos.EventDTO, metadata dtos.Metadata) error

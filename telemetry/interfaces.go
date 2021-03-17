@@ -1,6 +1,8 @@
 package telemetry
 
-import "github.com/splitio/go-split-commons/v3/dtos"
+import (
+	"github.com/splitio/go-split-commons/v3/dtos"
+)
 
 // Facade wraps consumer and producer interfaces
 type Facade interface {
