@@ -70,6 +70,7 @@ type AdvancedConfig struct {
 	SegmentWorkers         int
 	SdkURL                 string
 	EventsURL              string
+	TelemetryServiceURL    string
 	EventsBulkSize         int64
 	EventsQueueSize        int
 	ImpressionsQueueSize   int
