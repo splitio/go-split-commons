@@ -68,8 +68,9 @@ type EventStorageConsumer interface {
 
 // TelemetryStorageProducer interface should be implemented by structs that accept incoming telemetry
 type TelemetryStorageProducer interface {
-	RecordLatency(method int, bucket int)
-	RecordException(method int)
+	RecordInitData(initData dtos.Init) error
+	RecordLatency(method string, bucket int)
+	RecordException(method string)
 	RecordImpressionsStats(dataType int, count int64)
 	RecordEventsStats(dataType int, count int64)
 	RecordSuccessfulSync(resource int, time int64)

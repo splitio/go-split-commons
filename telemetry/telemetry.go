@@ -3,7 +3,6 @@ package telemetry
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/constants"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
 	"github.com/splitio/go-split-commons/v3/util"
@@ -28,12 +27,12 @@ func NewTelemetry(telemetryStorage storage.TelemetryStorage, splitStorage storag
 // EVALUATION
 
 // RecordException records exceptions
-func (t *FacadeImpl) RecordException(method int) {
+func (t *FacadeImpl) RecordException(method string) {
 	t.storage.RecordException(method)
 }
 
 // RecordLatency records latencies for method
-func (t *FacadeImpl) RecordLatency(method int, latency int64) {
+func (t *FacadeImpl) RecordLatency(method string, latency int64) {
 	t.storage.RecordLatency(method, util.Bucket(latency))
 }
 
@@ -154,10 +153,10 @@ func (t *FacadeImpl) PopTokenRefreshes() int64 {
 // RecordStreamingEvent records streaming event
 func (t *FacadeImpl) RecordStreamingEvent(eventType int, data int64) {
 	switch eventType {
-	case constants.EventTypeSSEConnectionEstablished, constants.EventTypeOccupancyPri,
-		constants.EventTypeOccupancySec, constants.EventTypeStreamingStatus,
-		constants.EventTypeConnectionError, constants.EventTypeTokenRefresh,
-		constants.EventTypeAblyError, constants.EventTypeSyncMode:
+	case EventTypeSSEConnectionEstablished, EventTypeOccupancyPri,
+		EventTypeOccupancySec, EventTypeStreamingStatus,
+		EventTypeConnectionError, EventTypeTokenRefresh,
+		EventTypeAblyError, EventTypeSyncMode:
 		t.storage.RecordStreamingEvent(dtos.StreamingEvent{
 			Type:      eventType,
 			Data:      data,

@@ -54,3 +54,48 @@ type StreamingEvent struct {
 	Data      int64 `json:"d,omitempty"`
 	Timestamp int64 `json:"t,omitempty"`
 }
+
+// TelemetryQueueObject struct mapping telemetry
+type TelemetryQueueObject struct {
+	Metadata Metadata `json:"m"`
+	Init     Init     `json:"t"`
+}
+
+// Rates struct
+type Rates struct {
+	Splits      int64 `json:"sp,omitempty"`
+	Segments    int64 `json:"se,omitempty"`
+	Impressions int64 `json:"im,omitempty"`
+	Events      int64 `json:"ev,omitempty"`
+	Telemetry   int64 `json:"te,omitempty"`
+}
+
+// URLOverrides struct
+type URLOverrides struct {
+	Sdk       bool `json:"s,omitempty"`
+	Events    bool `json:"e,omitempty"`
+	Auth      bool `json:"a,omitempty"`
+	Stream    bool `json:"st,omitempty"`
+	Telemetry bool `json:"t,omitempty"`
+}
+
+// Init struct
+type Init struct {
+	OperationMode              int           `json:"oM,omitempty"`
+	StreamingEnabled           bool          `json:"sE,omitempty"`
+	Storage                    string        `json:"st,omitempty"`
+	Rates                      *Rates        `json:"rR,omitempty"`
+	URLOverrides               *URLOverrides `json:"uO,omitempty"`
+	ImpressionsQueueSize       int64         `json:"iQ,omitempty"`
+	EventsQueueSize            int64         `json:"eQ,omitempty"`
+	ImpressionsMode            int           `json:"iM,omitempty"`
+	ImpressionsListenerEnabled bool          `json:"iL,omitempty"`
+	HTTPProxyDetected          bool          `json:"hP,omitempty"`
+	ActiveFactories            int64         `json:"aF,omitempty"`
+	RedundantFactories         int64         `json:"rF,omitempty"`
+	TimeUntilReady             int64         `json:"tR,omitempty"`
+	BurTimeouts                int64         `json:"bT,omitempty"`
+	NonReadyUsages             int64         `json:"nR,omitempty"`
+	Integrations               []string      `json:"i,omitempty"`
+	Tags                       []string      `json:"t,omitempty"`
+}

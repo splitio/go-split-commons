@@ -5,9 +5,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/splitio/go-split-commons/v3/constants"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
+	constants "github.com/splitio/go-split-commons/v3/telemetry"
 )
 
 type latencies struct {
@@ -165,8 +165,13 @@ func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
+// RecordInitData stores init data
+func (i *IMTelemetryStorage) RecordInitData(initData dtos.Init) error {
+	panic("Not implemented for in memory")
+}
+
 // RecordLatency stores latency for method
-func (i *IMTelemetryStorage) RecordLatency(method int, bucket int) {
+func (i *IMTelemetryStorage) RecordLatency(method string, bucket int) {
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)
@@ -182,7 +187,7 @@ func (i *IMTelemetryStorage) RecordLatency(method int, bucket int) {
 }
 
 // RecordException stores exceptions for method
-func (i *IMTelemetryStorage) RecordException(method int) {
+func (i *IMTelemetryStorage) RecordException(method string) {
 	switch method {
 	case constants.Treatment:
 		atomic.AddInt64(&i.counters.treatment, 1)
