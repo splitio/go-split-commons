@@ -27,6 +27,7 @@ type ImpressionsRecorder interface {
 
 // TelemetryRecorder interface to be implemented by Telemetry loggers
 type TelemetryRecorder interface {
+	RecordInit(init dtos.Init, metadata dtos.Metadata) error
 	RecordStats(stats dtos.Stats, metadata dtos.Metadata) error
 }
 

@@ -87,4 +87,6 @@ type ManagerConfig struct {
 	OperationMode   string
 	ImpressionsMode string
 	ListenerEnabled bool
+	AdvancedConfig  AdvancedConfig
+	TaskPeriods     TaskPeriods
 }
