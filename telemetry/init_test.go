@@ -106,6 +106,9 @@ func TestRecorderInMemory(t *testing.T) {
 			if len(init.Tags) != 0 {
 				t.Error("It should be zero")
 			}
+			if init.TimeUntilReady != 123456789 {
+				t.Error("It should be 123456789")
+			}
 			return nil
 		},
 	}
@@ -114,7 +117,7 @@ func TestRecorderInMemory(t *testing.T) {
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1
-	sender.Record(conf.InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 0, factories, []string{})
+	sender.Record(conf.InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, factories, []string{})
 	if called != 1 {
 		t.Error("It should be called once")
 	}
