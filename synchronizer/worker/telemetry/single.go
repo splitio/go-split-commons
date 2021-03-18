@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"github.com/splitio/go-split-commons/v3/constants"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/telemetry"
@@ -40,11 +39,11 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 	return dtos.Stats{
 		MethodLatencies:      &methodLatencies,
 		MethodExceptions:     &methodExceptions,
-		ImpressionsDropped:   e.telemetryConsumer.GetImpressionsStats(constants.ImpressionsDropped),
-		ImpressionsDeduped:   e.telemetryConsumer.GetImpressionsStats(constants.ImpressionsDeduped),
-		ImpressionsQueued:    e.telemetryConsumer.GetImpressionsStats(constants.ImpressionsQueued),
-		EventsQueued:         e.telemetryConsumer.GetEventsStats(constants.EventsQueued),
-		EventsDropped:        e.telemetryConsumer.GetEventsStats(constants.EventsDropped),
+		ImpressionsDropped:   e.telemetryConsumer.GetImpressionsStats(telemetry.ImpressionsDropped),
+		ImpressionsDeduped:   e.telemetryConsumer.GetImpressionsStats(telemetry.ImpressionsDeduped),
+		ImpressionsQueued:    e.telemetryConsumer.GetImpressionsStats(telemetry.ImpressionsQueued),
+		EventsQueued:         e.telemetryConsumer.GetEventsStats(telemetry.EventsQueued),
+		EventsDropped:        e.telemetryConsumer.GetEventsStats(telemetry.EventsDropped),
 		LastSynchronizations: &lastSynchronization,
 		HTTPErrors:           &httpErrors,
 		HTTPLatencies:        &httpLatencies,
