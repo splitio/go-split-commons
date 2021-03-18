@@ -12,28 +12,13 @@ import (
 )
 
 func getURLOverrides(cfg conf.AdvancedConfig) dtos.URLOverrides {
-	sdk := false
-	events := false
-	auth := false
-	streaming := false
 	defaults := conf.GetDefaultAdvancedConfig()
-	if cfg.SdkURL != defaults.SdkURL {
-		sdk = true
-	}
-	if cfg.EventsURL != defaults.EventsURL {
-		events = true
-	}
-	if cfg.AuthServiceURL != defaults.AuthServiceURL {
-		auth = true
-	}
-	if cfg.StreamingServiceURL != defaults.StreamingServiceURL {
-		streaming = true
-	}
 	return dtos.URLOverrides{
-		Sdk:    sdk,
-		Events: events,
-		Auth:   auth,
-		Stream: streaming,
+		Sdk:       cfg.SdkURL != defaults.SdkURL,
+		Events:    cfg.EventsURL != defaults.EventsURL,
+		Auth:      cfg.AuthServiceURL != defaults.AuthServiceURL,
+		Stream:    cfg.StreamingServiceURL != defaults.StreamingServiceURL,
+		Telemetry: cfg.TelemetryServiceURL != defaults.TelemetryServiceURL,
 	}
 }
 
@@ -96,7 +81,7 @@ func (r *RecorderInMemory) Record(cfg conf.InitConfig, timedUntilReady int64, fa
 
 	err := r.recorder.RecordInit(dtos.Init{
 		OperationMode:      Standalone,
-		Storage:            redis,
+		Storage:            memory,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
 		Tags:               tags,
