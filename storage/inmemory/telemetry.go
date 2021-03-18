@@ -165,11 +165,6 @@ func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
-// RecordInitData stores init data
-func (i *IMTelemetryStorage) RecordInitData(initData dtos.Init) error {
-	panic("Not implemented for in memory")
-}
-
 // RecordLatency stores latency for method
 func (i *IMTelemetryStorage) RecordLatency(method string, bucket int) {
 	switch method {

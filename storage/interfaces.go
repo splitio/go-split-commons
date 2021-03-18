@@ -66,20 +66,75 @@ type EventStorageConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
-// TelemetryStorageProducer interface should be implemented by structs that accept incoming telemetry
+// TelemetryRedisProducer interface should be implemented by struct that accepts incoming telemetry in redis
+type TelemetryRedisProducer interface {
+	TelemetryConfigProducer
+	TelemetryEvaluationProducer
+}
+
+// TelemetryStorageProducer interface should be implemented by structs that accept incoming telemetry for memory
 type TelemetryStorageProducer interface {
+	TelemetryEvaluationProducer
+	TelemetryImpressionProducer
+	TelemetryEventProducer
+	TelemetrySynchronizationProducer
+	TelemetryHTTPProducer
+	TelemetryPushProducer
+	TelemetryStreamingProducer
+	TelemetryMiscProducer
+	TelemetrySDKInfoProducer
+}
+
+// TelemetryConfigProducer interface for init data
+type TelemetryConfigProducer interface {
 	RecordInitData(initData dtos.Init) error
+}
+
+// TelemetryEvaluationProducer for evaluation
+type TelemetryEvaluationProducer interface {
 	RecordLatency(method string, bucket int)
 	RecordException(method string)
+}
+
+// TelemetryImpressionProducer for impressions
+type TelemetryImpressionProducer interface {
 	RecordImpressionsStats(dataType int, count int64)
+}
+
+// TelemetryEventProducer for events
+type TelemetryEventProducer interface {
 	RecordEventsStats(dataType int, count int64)
+}
+
+// TelemetrySynchronizationProducer for sync
+type TelemetrySynchronizationProducer interface {
 	RecordSuccessfulSync(resource int, time int64)
+}
+
+// TelemetryHTTPProducer for http
+type TelemetryHTTPProducer interface {
 	RecordSyncError(resource int, status int)
 	RecordSyncLatency(resource int, bucket int)
+}
+
+// TelemetryPushProducer for push
+type TelemetryPushProducer interface {
 	RecordAuthRejections()
 	RecordTokenRefreshes()
+}
+
+// TelemetryStreamingProducer for streaming
+type TelemetryStreamingProducer interface {
 	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
+}
+
+// TelemetryMiscProducer for misc
+type TelemetryMiscProducer interface {
 	AddTag(tag string)
+}
+
+// TelemetrySDKInfoProducer for sdk
+type TelemetrySDKInfoProducer interface {
 	RecordSessionLength(session int64)
 	RecordNonReadyUsage()
 	RecordBURTimeout()

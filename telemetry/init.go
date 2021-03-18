@@ -31,11 +31,11 @@ func getRedudantActiveFactories(factoryInstances map[string]int64) int64 {
 }
 
 type RecorderRedis struct {
-	storage storage.TelemetryStorage
+	storage storage.TelemetryRedisProducer
 	logger  logging.LoggerInterface
 }
 
-func NewSenderRedis(storage storage.TelemetryStorage, logger logging.LoggerInterface) InitSynchronizer {
+func NewSenderRedis(storage storage.TelemetryRedisProducer, logger logging.LoggerInterface) InitSynchronizer {
 	return &RecorderRedis{
 		storage: storage,
 		logger:  logger,
