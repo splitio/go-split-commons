@@ -57,7 +57,7 @@ func NewSenderRedis(storage storage.TelemetryStorage, logger logging.LoggerInter
 	}
 }
 
-func (r *RecorderRedis) Record(cfg conf.ManagerConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+func (r *RecorderRedis) Record(cfg conf.InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
 	err := r.storage.RecordInitData(dtos.Init{
 		OperationMode:      Consumer,
 		Storage:            redis,
@@ -86,11 +86,11 @@ func NewSenderInMemory(facade FacadeConsumer, recorder service.TelemetryRecorder
 	}
 }
 
-func (r *RecorderInMemory) Record(cfg conf.ManagerConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+func (r *RecorderInMemory) Record(cfg conf.InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
 	urlOverrides := getURLOverrides(cfg.AdvancedConfig)
 
 	impressionsMode := impressionsModeOptimized
-	if cfg.ImpressionsMode == conf.ImpressionsModeDebug {
+	if cfg.ManagerConfig.ImpressionsMode == conf.ImpressionsModeDebug {
 		impressionsMode = impressionsModeDebug
 	}
 
@@ -112,7 +112,7 @@ func (r *RecorderInMemory) Record(cfg conf.ManagerConfig, timedUntilReady int64,
 		ImpressionsQueueSize:       int64(cfg.AdvancedConfig.ImpressionsQueueSize),
 		EventsQueueSize:            int64(cfg.AdvancedConfig.EventsQueueSize),
 		ImpressionsMode:            impressionsMode,
-		ImpressionsListenerEnabled: cfg.ListenerEnabled,
+		ImpressionsListenerEnabled: cfg.ManagerConfig.ListenerEnabled,
 		HTTPProxyDetected:          len(strings.TrimSpace(os.Getenv("HTTP_PROXY"))) > 0,
 		TimeUntilReady:             timedUntilReady,
 		BurTimeouts:                r.facade.GetBURTimeouts(),

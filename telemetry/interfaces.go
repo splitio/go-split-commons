@@ -6,7 +6,7 @@ import (
 )
 
 type InitSynchronizer interface {
-	Record(cfg conf.ManagerConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string)
+	Record(cfg conf.InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string)
 }
 
 // Facade wraps consumer and producer interfaces
