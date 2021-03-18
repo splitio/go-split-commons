@@ -11,19 +11,6 @@ import (
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
-const (
-	operationModeStandalone = iota
-	operationModeConsumer
-)
-
-const (
-	impressionsModeOptimized = iota
-	impressionsModeDebug
-
-	redis  = "redis"
-	memory = "memory"
-)
-
 func getURLOverrides(cfg conf.AdvancedConfig) dtos.URLOverrides {
 	sdk := false
 	events := false
@@ -72,7 +59,7 @@ func NewSenderRedis(storage storage.TelemetryStorage, logger logging.LoggerInter
 
 func (r *RecorderRedis) Record(cfg conf.ManagerConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
 	err := r.storage.RecordInitData(dtos.Init{
-		OperationMode:      operationModeConsumer,
+		OperationMode:      Consumer,
 		Storage:            redis,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
@@ -108,7 +95,7 @@ func (r *RecorderInMemory) Record(cfg conf.ManagerConfig, timedUntilReady int64,
 	}
 
 	err := r.recorder.RecordInit(dtos.Init{
-		OperationMode:      operationModeConsumer,
+		OperationMode:      Standalone,
 		Storage:            redis,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),

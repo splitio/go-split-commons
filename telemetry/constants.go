@@ -84,3 +84,11 @@ const (
 	Standalone = iota
 	Consumer
 )
+
+const (
+	impressionsModeOptimized = iota
+	impressionsModeDebug
+
+	redis  = "redis"
+	memory = "memory"
+)
