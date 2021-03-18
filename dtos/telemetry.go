@@ -79,7 +79,7 @@ type URLOverrides struct {
 	Telemetry bool `json:"t,omitempty"`
 }
 
-// Init struct
+// Init data for initial configs metrics
 type Init struct {
 	OperationMode              int           `json:"oM,omitempty"`
 	StreamingEnabled           bool          `json:"sE,omitempty"`
@@ -98,4 +98,26 @@ type Init struct {
 	NonReadyUsages             int64         `json:"nR,omitempty"`
 	Integrations               []string      `json:"i,omitempty"`
 	Tags                       []string      `json:"t,omitempty"`
+}
+
+// Stats data sent by sdks pereiodically
+type Stats struct {
+	LastSynchronizations *LastSynchronization `json:"lS,omitempty"`
+	MethodLatencies      *MethodLatencies     `json:"mL,omitempty"`
+	MethodExceptions     *MethodExceptions    `json:"mE,omitempty"`
+	HTTPErrors           *HTTPErrors          `json:"hE,omitempty"`
+	HTTPLatencies        *HTTPLatencies       `json:"hL,omitempty"`
+	TokenRefreshes       int64                `json:"tR,omitempty"`
+	AuthRejections       int64                `json:"aR,omitempty"`
+	ImpressionsQueued    int64                `json:"iQ,omitempty"`
+	ImpressionsDeduped   int64                `json:"iDe,omitempty"`
+	ImpressionsDropped   int64                `json:"iDr,omitempty"`
+	SplitCount           int64                `json:"spC,omitempty"`
+	SegmentCount         int64                `json:"seC,omitempty"`
+	SegmentKeyCount      int64                `json:"skC,omitempty"`
+	SessionLengthMs      int64                `json:"sL,omitempty"`
+	EventsQueued         int64                `json:"eQ,omitempty"`
+	EventsDropped        int64                `json:"eD,omitempty"`
+	StreamingEvents      []StreamingEvent     `json:"sE,omitempty"`
+	Tags                 []string             `json:"t,omitempty"`
 }

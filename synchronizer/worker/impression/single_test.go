@@ -147,8 +147,8 @@ func TestImpressionRecorder(t *testing.T) {
 func TestImpressionRecorderSync(t *testing.T) {
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/impressions" && r.Method != "POST" {
-			t.Error("Invalid request. Should be POST to /impressions")
+		if r.URL.Path != "/testImpressions/bulk" || r.Method != "POST" {
+			t.Error("Invalid request. Should be POST to /testImpressions/bulk")
 		}
 		atomic.AddInt64(&requestReceived, 1)
 
@@ -250,8 +250,8 @@ func TestImpressionRecorderSync(t *testing.T) {
 func TestImpressionLastSeen(t *testing.T) {
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/impressions" && r.Method != "POST" {
-			t.Error("Invalid request. Should be POST to /impressions")
+		if r.URL.Path != "/testImpressions/bulk" || r.Method != "POST" {
+			t.Error("Invalid request. Should be POST to /testImpressions/bulk")
 		}
 		atomic.AddInt64(&requestReceived, 1)
 

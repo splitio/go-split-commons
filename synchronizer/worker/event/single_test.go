@@ -132,8 +132,8 @@ func TestSynhronizeEvent(t *testing.T) {
 func TestSynhronizeEventSync(t *testing.T) {
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/events" && r.Method != "POST" {
-			t.Error("Invalid request. Should be POST to /events")
+		if r.URL.Path != "/events/bulk" || r.Method != "POST" {
+			t.Error("Invalid request. Should be POST to /events/bulk")
 		}
 		atomic.AddInt64(&requestReceived, 1)
 

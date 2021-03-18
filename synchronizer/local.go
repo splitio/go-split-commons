@@ -1,7 +1,7 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v3/service"
+	"github.com/splitio/go-split-commons/v3/service/api"
 	"github.com/splitio/go-split-commons/v3/storage"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v3/tasks"
@@ -19,7 +19,7 @@ type Local struct {
 // NewLocal creates new Local
 func NewLocal(
 	period int,
-	splitAPI *service.SplitAPI,
+	splitAPI *api.SplitAPI,
 	splitStorage storage.SplitStorage,
 	logger logging.LoggerInterface,
 ) Synchronizer {
