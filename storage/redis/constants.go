@@ -7,11 +7,11 @@ const (
 	redisSegmentTill      = "SPLITIO.segment.{segment}.till"                           // last segment fetch
 	redisEvents           = "SPLITIO.events"                                           // events LIST key
 	redisImpressionsQueue = "SPLITIO.impressions"                                      // impressions LIST key
-	redisImpressionsTTL   = 60                                                         // impressions default TTL
+	redisImpressionsTTL   = 3600                                                       // impressions default TTL
 	redisTrafficType      = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
 	redisHash             = "SPLITIO.hash"                                             // hash key
 	redisInit             = "SPLITIO.telemetry.init"                                   // init Key
-	redisInitTTL          = 60                                                         // init TTL
+	redisInitTTL          = 3600                                                       // init TTL
 	redisLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
 	redisExceptionField   = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
 	redisException        = "SPLITIO.telemetry.exceptions"                             // exception Key

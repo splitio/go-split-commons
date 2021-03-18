@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/constants"
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/redis"
 	"github.com/splitio/go-toolkit/v4/redis/mocks"
@@ -42,7 +42,7 @@ func TestRecordLatency(t *testing.T) {
 		dtos.Metadata{SDKVersion: "go-test-1", MachineIP: "1.1.1.1", MachineName: "test"},
 	)
 
-	telemetryStorage.RecordLatency(constants.Treatment, 1)
+	telemetryStorage.RecordLatency(telemetry.Treatment, 1)
 	if call != 1 {
 		t.Error("It should call redis storage")
 	}
@@ -78,7 +78,7 @@ func TestRecordException(t *testing.T) {
 		dtos.Metadata{SDKVersion: "go-test-1", MachineIP: "1.1.1.1", MachineName: "test"},
 	)
 
-	telemetryStorage.RecordException(constants.Treatment)
+	telemetryStorage.RecordException(telemetry.Treatment)
 	if call != 1 {
 		t.Error("It should call redis storage")
 	}
@@ -105,7 +105,7 @@ func TestRecordInitDataError(t *testing.T) {
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
 	err := telemetryStorage.RecordInitData(dtos.Init{
-		OperationMode:      constants.Consumer,
+		OperationMode:      telemetry.Consumer,
 		Storage:            "REDIS",
 		ActiveFactories:    1,
 		RedundantFactories: 0,
@@ -148,7 +148,7 @@ func TestRecordInitData(t *testing.T) {
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
 	err := telemetryStorage.RecordInitData(dtos.Init{
-		OperationMode:      constants.Consumer,
+		OperationMode:      telemetry.Consumer,
 		Storage:            "REDIS",
 		ActiveFactories:    1,
 		RedundantFactories: 0,

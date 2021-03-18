@@ -1,4 +1,4 @@
-package constants
+package telemetry
 
 const (
 	// Treatment getTreatment

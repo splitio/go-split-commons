@@ -31,13 +31,9 @@ type TelemetryStorage struct {
 
 // NewTelemetryStorage creates a new RedisTelemetryStorage and returns a reference to it
 func NewTelemetryStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, metadata dtos.Metadata) storage.TelemetryStorage {
-	exceptionTemplate := strings.Replace(redisExceptionField, sdkVersion, metadata.SDKVersion, 1)
-	exceptionTemplate = strings.Replace(exceptionTemplate, machineName, metadata.MachineName, 1)
-	exceptionTemplate = strings.Replace(exceptionTemplate, machineIP, metadata.MachineIP, 1)
-
-	latencyTemplate := strings.Replace(redisLatencyField, sdkVersion, metadata.SDKVersion, 1)
-	latencyTemplate = strings.Replace(latencyTemplate, machineName, metadata.MachineName, 1)
-	latencyTemplate = strings.Replace(latencyTemplate, machineIP, metadata.MachineIP, 1)
+	replacer := strings.NewReplacer(sdkVersion, metadata.SDKVersion, machineName, metadata.MachineName, machineIP, metadata.MachineIP)
+	exceptionTemplate := replacer.Replace(redisExceptionField)
+	latencyTemplate := replacer.Replace(redisLatencyField)
 
 	return &TelemetryStorage{
 		client:            redisClient,
@@ -69,7 +65,7 @@ func (t *TelemetryStorage) RecordInitData(initData dtos.Init) error {
 	// Checks if expiration needs to be set
 	if inserted == 1 {
 		t.logger.Debug("Proceeding to set expiration for: ", redisInit)
-		result := t.client.Expire(redisInit, time.Duration(redisInitTTL)*time.Minute)
+		result := t.client.Expire(redisInit, time.Duration(redisInitTTL)*time.Second)
 		if result == false {
 			t.logger.Error("Something were wrong setting expiration", errPush)
 		}
