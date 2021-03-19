@@ -84,12 +84,10 @@ func TestRecorderInMemory(t *testing.T) {
 	called := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
-	facade := NewTelemetry(
-		mocks.MockTelemetryStorage{
-			GetBURTimeoutsCall:    func() int64 { return 3 },
-			GetNonReadyUsagesCall: func() int64 { return 5 },
-		},
-		mocks.MockSplitStorage{}, mocks.MockSegmentStorage{})
+	mockTelemetryStorage := mocks.MockTelemetryStorage{
+		GetBURTimeoutsCall:    func() int64 { return 3 },
+		GetNonReadyUsagesCall: func() int64 { return 5 },
+	}
 
 	mockRecorder := httpMocks.MockTelemetryRecorder{
 		RecordInitCall: func(init dtos.Init, metadata dtos.Metadata) error {
@@ -113,7 +111,7 @@ func TestRecorderInMemory(t *testing.T) {
 		},
 	}
 
-	sender := NewSenderInMemory(facade, mockRecorder, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"})
+	sender := NewSenderInMemory(mockTelemetryStorage, mockRecorder, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"})
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1

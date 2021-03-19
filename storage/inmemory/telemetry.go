@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
 	constants "github.com/splitio/go-split-commons/v3/telemetry"
+	"github.com/splitio/go-split-commons/v3/util"
 )
 
 type latencies struct {
@@ -166,7 +167,8 @@ func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
 // TELEMETRY STORAGE PRODUCER
 
 // RecordLatency stores latency for method
-func (i *IMTelemetryStorage) RecordLatency(method string, bucket int) {
+func (i *IMTelemetryStorage) RecordLatency(method string, latency int64) {
+	bucket := util.Bucket(latency)
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)
@@ -266,7 +268,8 @@ func (i *IMTelemetryStorage) RecordSyncError(resource int, status int) {
 }
 
 // RecordSyncLatency records http error
-func (i *IMTelemetryStorage) RecordSyncLatency(resource int, bucket int) {
+func (i *IMTelemetryStorage) RecordSyncLatency(resource int, latency int64) {
+	bucket := util.Bucket(latency)
 	switch resource {
 	case constants.SplitSync:
 		i.latencies.splits.Incr(bucket)

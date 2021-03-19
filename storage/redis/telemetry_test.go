@@ -42,7 +42,7 @@ func TestRecordLatency(t *testing.T) {
 		dtos.Metadata{SDKVersion: "go-test-1", MachineIP: "1.1.1.1", MachineName: "test"},
 	)
 
-	telemetryStorage.RecordLatency(telemetry.Treatment, 1)
+	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Nanosecond).Nanoseconds())
 	if call != 1 {
 		t.Error("It should call redis storage")
 	}

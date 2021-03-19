@@ -92,7 +92,7 @@ type TelemetryConfigProducer interface {
 
 // TelemetryEvaluationProducer for evaluation
 type TelemetryEvaluationProducer interface {
-	RecordLatency(method string, bucket int)
+	RecordLatency(method string, latency int64)
 	RecordException(method string)
 }
 
@@ -114,7 +114,7 @@ type TelemetrySynchronizationProducer interface {
 // TelemetryHTTPProducer for http
 type TelemetryHTTPProducer interface {
 	RecordSyncError(resource int, status int)
-	RecordSyncLatency(resource int, bucket int)
+	RecordSyncLatency(resource int, latency int64)
 }
 
 // TelemetryPushProducer for push

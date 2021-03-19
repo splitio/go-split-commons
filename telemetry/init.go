@@ -56,18 +56,18 @@ func (r *RecorderRedis) Record(cfg conf.InitConfig, timedUntilReady int64, facto
 }
 
 type RecorderInMemory struct {
-	facade   FacadeConsumer
-	recorder service.TelemetryRecorder
-	metadata dtos.Metadata
-	logger   logging.LoggerInterface
+	telemetryStorage storage.TelemetryStorageConsumer
+	recorder         service.TelemetryRecorder
+	metadata         dtos.Metadata
+	logger           logging.LoggerInterface
 }
 
-func NewSenderInMemory(facade FacadeConsumer, recorder service.TelemetryRecorder, logger logging.LoggerInterface, metadata dtos.Metadata) InitSynchronizer {
+func NewSenderInMemory(telemetryStorage storage.TelemetryStorageConsumer, recorder service.TelemetryRecorder, logger logging.LoggerInterface, metadata dtos.Metadata) InitSynchronizer {
 	return &RecorderInMemory{
-		facade:   facade,
-		recorder: recorder,
-		metadata: metadata,
-		logger:   logger,
+		telemetryStorage: telemetryStorage,
+		recorder:         recorder,
+		metadata:         metadata,
+		logger:           logger,
 	}
 }
 
@@ -100,8 +100,8 @@ func (r *RecorderInMemory) Record(cfg conf.InitConfig, timedUntilReady int64, fa
 		ImpressionsListenerEnabled: cfg.ManagerConfig.ListenerEnabled,
 		HTTPProxyDetected:          len(strings.TrimSpace(os.Getenv("HTTP_PROXY"))) > 0,
 		TimeUntilReady:             timedUntilReady,
-		BurTimeouts:                r.facade.GetBURTimeouts(),
-		NonReadyUsages:             r.facade.GetNonReadyUsages(),
+		BurTimeouts:                r.telemetryStorage.GetBURTimeouts(),
+		NonReadyUsages:             r.telemetryStorage.GetNonReadyUsages(),
 	}, r.metadata)
 	if err != nil {
 		r.logger.Error("Could not log init data", err.Error())
