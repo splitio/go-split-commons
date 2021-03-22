@@ -88,10 +88,3 @@ type ManagerConfig struct {
 	ImpressionsMode string
 	ListenerEnabled bool
 }
-
-// InitConfig involves entire config for init
-type InitConfig struct {
-	AdvancedConfig AdvancedConfig
-	TaskPeriods    TaskPeriods
-	ManagerConfig  ManagerConfig
-}

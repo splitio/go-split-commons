@@ -1,5 +1,7 @@
 package telemetry
 
+import "github.com/splitio/go-split-commons/v3/conf"
+
 const (
 	// Treatment getTreatment
 	Treatment = "treatment"
@@ -86,9 +88,18 @@ const (
 )
 
 const (
-	impressionsModeOptimized = iota
-	impressionsModeDebug
-
-	redis  = "redis"
-	memory = "memory"
+	ImpressionsModeOptimized = iota
+	ImpressionsModeDebug
 )
+
+const (
+	Redis  = "redis"
+	Memory = "memory"
+)
+
+// InitConfig involves entire config for init
+type InitConfig struct {
+	AdvancedConfig conf.AdvancedConfig
+	TaskPeriods    conf.TaskPeriods
+	ManagerConfig  conf.ManagerConfig
+}

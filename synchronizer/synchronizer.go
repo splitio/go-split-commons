@@ -7,8 +7,8 @@ import (
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/telemetry"
 	"github.com/splitio/go-split-commons/v3/tasks"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/asynctask"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
@@ -27,7 +27,7 @@ type SplitTasks struct {
 type Workers struct {
 	SplitFetcher             split.Updater
 	SegmentFetcher           segment.Updater
-	TelemetryRecorder        telemetry.TelemetryRecorder
+	TelemetryRecorder        telemetry.TelemetrySynchronizer
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder

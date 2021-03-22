@@ -1,10 +1,13 @@
 package telemetry
 
 import (
+	"os"
+	"strings"
+
+	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -18,15 +21,15 @@ type RecorderSingle struct {
 	metadata          dtos.Metadata
 }
 
-// NewEventRecorderSingle creates new event synchronizer for posting events
-func NewTelemetryRecorder(
+// NewTelemetrySynchronizer creates new event synchronizer for posting events
+func NewTelemetrySynchronizer(
 	telemetryStorage storage.TelemetryStorageConsumer,
 	telemetryRecorder service.TelemetryRecorder,
 	splitStorage storage.SplitStorageConsumer,
 	segmentStorage storage.SegmentStorageConsumer,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
-) TelemetryRecorder {
+) TelemetrySynchronizer {
 	return &RecorderSingle{
 		telemetryStorage:  telemetryStorage,
 		telemetryRecorder: telemetryRecorder,
@@ -55,11 +58,11 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 	return dtos.Stats{
 		MethodLatencies:      &methodLatencies,
 		MethodExceptions:     &methodExceptions,
-		ImpressionsDropped:   e.telemetryStorage.GetImpressionsStats(telemetry.ImpressionsDropped),
-		ImpressionsDeduped:   e.telemetryStorage.GetImpressionsStats(telemetry.ImpressionsDeduped),
-		ImpressionsQueued:    e.telemetryStorage.GetImpressionsStats(telemetry.ImpressionsQueued),
-		EventsQueued:         e.telemetryStorage.GetEventsStats(telemetry.EventsQueued),
-		EventsDropped:        e.telemetryStorage.GetEventsStats(telemetry.EventsDropped),
+		ImpressionsDropped:   e.telemetryStorage.GetImpressionsStats(ImpressionsDropped),
+		ImpressionsDeduped:   e.telemetryStorage.GetImpressionsStats(ImpressionsDeduped),
+		ImpressionsQueued:    e.telemetryStorage.GetImpressionsStats(ImpressionsQueued),
+		EventsQueued:         e.telemetryStorage.GetEventsStats(EventsQueued),
+		EventsDropped:        e.telemetryStorage.GetEventsStats(EventsDropped),
 		LastSynchronizations: &lastSynchronization,
 		HTTPErrors:           &httpErrors,
 		HTTPLatencies:        &httpLatencies,
@@ -74,8 +77,46 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 	}
 }
 
-// SynchronizeTelemetry syncs telemetry
-func (e *RecorderSingle) SynchronizeTelemetry() error {
+// SynchronizeStats syncs telemetry stats
+func (e *RecorderSingle) SynchronizeStats() error {
 	stats := e.buildStats()
 	return e.telemetryRecorder.RecordStats(stats, e.metadata)
+}
+
+// SynchronizeInit syncs telemetry init
+func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+	urlOverrides := getURLOverrides(cfg.AdvancedConfig)
+
+	impressionsMode := ImpressionsModeOptimized
+	if cfg.ManagerConfig.ImpressionsMode == conf.ImpressionsModeDebug {
+		impressionsMode = ImpressionsModeDebug
+	}
+
+	err := e.telemetryRecorder.RecordInit(dtos.Init{
+		OperationMode:      Standalone,
+		Storage:            Memory,
+		ActiveFactories:    int64(len(factoryInstances)),
+		RedundantFactories: getRedudantActiveFactories(factoryInstances),
+		Tags:               tags,
+		StreamingEnabled:   cfg.AdvancedConfig.StreamingEnabled,
+		Rates: &dtos.Rates{
+			Splits:      int64(cfg.TaskPeriods.SplitSync),
+			Segments:    int64(cfg.TaskPeriods.SegmentSync),
+			Impressions: int64(cfg.TaskPeriods.ImpressionSync),
+			Events:      int64(cfg.TaskPeriods.EventsSync),
+			Telemetry:   int64(cfg.TaskPeriods.CounterSync), // It should be TelemetrySync after refactor in go
+		},
+		URLOverrides:               &urlOverrides,
+		ImpressionsQueueSize:       int64(cfg.AdvancedConfig.ImpressionsQueueSize),
+		EventsQueueSize:            int64(cfg.AdvancedConfig.EventsQueueSize),
+		ImpressionsMode:            impressionsMode,
+		ImpressionsListenerEnabled: cfg.ManagerConfig.ListenerEnabled,
+		HTTPProxyDetected:          len(strings.TrimSpace(os.Getenv("HTTP_PROXY"))) > 0,
+		TimeUntilReady:             timedUntilReady,
+		BurTimeouts:                e.telemetryStorage.GetBURTimeouts(),
+		NonReadyUsages:             e.telemetryStorage.GetNonReadyUsages(),
+	}, e.metadata)
+	if err != nil {
+		e.logger.Error("Could not log init data", err.Error())
+	}
 }

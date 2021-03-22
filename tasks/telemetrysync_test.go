@@ -7,7 +7,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/mocks"
 	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/telemetry"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
@@ -43,7 +43,7 @@ func TestTelemetrySyncTask(t *testing.T) {
 	}
 
 	telemetryTask := NewRecordTelemetryTask(
-		telemetry.NewTelemetryRecorder(
+		telemetry.NewTelemetrySynchronizer(
 			mockedTelemetryStorage,
 			mockedTelemetryHTTP,
 			mockedSplitStorage,

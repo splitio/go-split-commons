@@ -44,9 +44,9 @@ func TestTelemetryRecorder(t *testing.T) {
 		},
 	}
 
-	telemetrySync := NewTelemetryRecorder(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
-	err := telemetrySync.SynchronizeTelemetry()
+	err := telemetrySync.SynchronizeStats()
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -110,11 +110,52 @@ func TestTelemetryRecorderSync(t *testing.T) {
 		PopTagsCall:                func() []string { return []string{} },
 	}
 
-	telemetryRecorder := NewTelemetryRecorder(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
-	telemetryRecorder.SynchronizeTelemetry()
+	telemetryRecorder.SynchronizeStats()
 
 	if requestReceived != 1 {
+		t.Error("It should be called once")
+	}
+}
+
+func TestInit(t *testing.T) {
+	called := 0
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	mockTelemetryStorage := st.MockTelemetryStorage{
+		GetBURTimeoutsCall:    func() int64 { return 3 },
+		GetNonReadyUsagesCall: func() int64 { return 5 },
+	}
+
+	mockRecorder := mocks.MockTelemetryRecorder{
+		RecordInitCall: func(init dtos.Init, metadata dtos.Metadata) error {
+			called++
+			if init.ActiveFactories != 2 {
+				t.Error("It should be 2")
+			}
+			if init.OperationMode != Standalone {
+				t.Error("It should be Standalone")
+			}
+			if init.Storage != Memory {
+				t.Error("It should be memory")
+			}
+			if len(init.Tags) != 0 {
+				t.Error("It should be zero")
+			}
+			if init.TimeUntilReady != 123456789 {
+				t.Error("It should be 123456789")
+			}
+			return nil
+		},
+	}
+
+	sync := NewTelemetrySynchronizer(mockTelemetryStorage, mockRecorder, st.MockSplitStorage{}, st.MockSegmentStorage{}, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"})
+	factories := make(map[string]int64)
+	factories["one"] = 1
+	factories["two"] = 1
+	sync.SynchronizeInit(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, factories, []string{})
+	if called != 1 {
 		t.Error("It should be called once")
 	}
 }
