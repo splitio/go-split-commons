@@ -134,6 +134,23 @@ func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger log
 	}
 }
 
+// RecordInit method submits init
+func (m *HTTPTelemetryRecorder) RecordInit(init dtos.Init, metadata dtos.Metadata) error {
+	data, err := json.Marshal(init)
+	if err != nil {
+		m.logger.Error("Error marshaling JSON", err.Error())
+		return err
+	}
+
+	err = m.RecordRaw("/metrics/init", data, metadata, nil)
+	if err != nil {
+		m.logger.Error("Error posting init", err.Error())
+		return err
+	}
+
+	return nil
+}
+
 // RecordStats method submits stats
 func (m *HTTPTelemetryRecorder) RecordStats(stats dtos.Stats, metadata dtos.Metadata) error {
 	data, err := json.Marshal(stats)
