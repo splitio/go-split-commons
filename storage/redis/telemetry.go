@@ -93,3 +93,13 @@ func (t *TelemetryStorage) RecordException(method string) {
 		t.logger.Error("Error recording in redis.", err.Error())
 	}
 }
+
+// RecordNonReadyUsage records non ready usage
+func (t *TelemetryStorage) RecordNonReadyUsage() {
+	panic("Not implemented for Redis Storage.")
+}
+
+// RecordBURTimeout records bur timeodout
+func (t *TelemetryStorage) RecordBURTimeout() {
+	panic("Not implemented for Redis Storage.")
+}

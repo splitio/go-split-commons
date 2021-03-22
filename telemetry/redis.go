@@ -7,11 +7,11 @@ import (
 )
 
 type SynchronizerRedis struct {
-	storage storage.TelemetryRedisProducer
+	storage storage.TelemetryStorageProducer
 	logger  logging.LoggerInterface
 }
 
-func NewSynchronizerRedis(storage storage.TelemetryRedisProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
+func NewSynchronizerRedis(storage storage.TelemetryStorageProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
 	return &SynchronizerRedis{
 		storage: storage,
 		logger:  logger,
