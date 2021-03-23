@@ -215,8 +215,7 @@ func TestPostTelemetryStats(t *testing.T) {
 	telemetryRecorder := NewHTTPTelemetryRecorder(
 		"",
 		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
+			TelemetryServiceURL: ts.URL,
 		},
 		logger,
 	)
