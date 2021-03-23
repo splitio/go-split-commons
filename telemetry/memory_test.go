@@ -86,8 +86,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 	httpTelemetryRecorder := api.NewHTTPTelemetryRecorder(
 		"",
 		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
+			TelemetryServiceURL: ts.URL,
 		},
 		logger,
 	)
