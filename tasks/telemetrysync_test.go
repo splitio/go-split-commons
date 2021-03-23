@@ -19,7 +19,9 @@ func TestTelemetrySyncTask(t *testing.T) {
 		SplitNamesCall:   func() []string { return []string{} },
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
 	}
-	mockedSegmentStorage := st.MockSegmentStorage{}
+	mockedSegmentStorage := st.MockSegmentStorage{
+		SegmentKeysCountCall: func() int64 { return 10 },
+	}
 	mockedTelemetryStorage := st.MockTelemetryStorage{
 		PopLatenciesCall:           func() dtos.MethodLatencies { return dtos.MethodLatencies{} },
 		PopExceptionsCall:          func() dtos.MethodExceptions { return dtos.MethodExceptions{} },

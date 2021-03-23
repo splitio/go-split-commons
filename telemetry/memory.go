@@ -40,15 +40,6 @@ func NewTelemetrySynchronizer(
 	}
 }
 
-func (e *RecorderSingle) getSegmentKeysCount() int64 {
-	toReturn := 0
-	segmentNames := e.splitStorage.SegmentNames().List()
-	for _, segmentName := range segmentNames {
-		toReturn += e.segmentStorage.Keys(segmentName.(string)).Size()
-	}
-	return int64(toReturn)
-}
-
 func (e *RecorderSingle) buildStats() dtos.Stats {
 	methodLatencies := e.telemetryStorage.PopLatencies()
 	methodExceptions := e.telemetryStorage.PopExceptions()
@@ -68,7 +59,7 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 		HTTPLatencies:        &httpLatencies,
 		SplitCount:           int64(len(e.splitStorage.SplitNames())),
 		SegmentCount:         int64(e.splitStorage.SegmentNames().Size()),
-		SegmentKeyCount:      e.getSegmentKeysCount(),
+		SegmentKeyCount:      e.segmentStorage.SegmentKeysCount(),
 		TokenRefreshes:       e.telemetryStorage.PopTokenRefreshes(),
 		AuthRejections:       e.telemetryStorage.PopAuthRejections(),
 		StreamingEvents:      e.telemetryStorage.PopStreamingEvents(),

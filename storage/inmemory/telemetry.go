@@ -164,7 +164,8 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 // TELEMETRY STORAGE PRODUCER
 
 func (i *TelemetryStorage) RecordInitData(initData dtos.Init) error {
-	panic("Not implemented for InMemory Storage.")
+	// No-Op. Init Data will be sent directly to Split Servers. No need to store.
+	return nil
 }
 
 // RecordLatency stores latency for method

@@ -36,6 +36,7 @@ type SegmentStorageConsumer interface {
 	CountRemovedKeys(segmentName string) int64
 	Keys(segmentName string) *set.ThreadUnsafeSet
 	SegmentContainsKey(segmentName string, key string) (bool, error)
+	SegmentKeysCount() int64
 }
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions

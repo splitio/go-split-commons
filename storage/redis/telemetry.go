@@ -67,7 +67,7 @@ func (t *TelemetryStorage) RecordInitData(initData dtos.Init) error {
 	if inserted == 1 {
 		t.logger.Debug("Proceeding to set expiration for: ", redisInit)
 		result := t.client.Expire(redisInit, time.Duration(redisInitTTL)*time.Second)
-		if result == false {
+		if !result {
 			t.logger.Error("Something were wrong setting expiration", errPush)
 		}
 	}
@@ -96,10 +96,10 @@ func (t *TelemetryStorage) RecordException(method string) {
 
 // RecordNonReadyUsage records non ready usage
 func (t *TelemetryStorage) RecordNonReadyUsage() {
-	panic("Not implemented for Redis Storage.")
+	// No-Op. Redis is implicitly ready and does not need to wait for anything. Tracking not required.
 }
 
 // RecordBURTimeout records bur timeodout
 func (t *TelemetryStorage) RecordBURTimeout() {
-	panic("Not implemented for Redis Storage.")
+	// No-Op. Redis is implicitly ready and does not need to block for anything. Tracking not required.
 }

@@ -10,10 +10,9 @@ import (
 
 // Local implements Local Synchronizer
 type Local struct {
-	splitTasks          SplitTasks
-	workers             Workers
-	logger              logging.LoggerInterface
-	inMememoryFullQueue chan string
+	splitTasks SplitTasks
+	workers    Workers
+	logger     logging.LoggerInterface
 }
 
 // NewLocal creates new Local

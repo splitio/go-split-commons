@@ -7,11 +7,11 @@ import (
 )
 
 type SynchronizerRedis struct {
-	storage storage.TelemetryStorageProducer
+	storage storage.TelemetryInitProducer
 	logger  logging.LoggerInterface
 }
 
-func NewSynchronizerRedis(storage storage.TelemetryStorageProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
+func NewSynchronizerRedis(storage storage.TelemetryInitProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
 	return &SynchronizerRedis{
 		storage: storage,
 		logger:  logger,
@@ -19,7 +19,8 @@ func NewSynchronizerRedis(storage storage.TelemetryStorageProducer, logger loggi
 }
 
 func (r *SynchronizerRedis) SynchronizeStats() error {
-	panic("Not implemented")
+	// No-Op. Not required for redis. This will be implemented by Synchronizer.
+	return nil
 }
 
 func (r *SynchronizerRedis) SynchronizeInit(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {

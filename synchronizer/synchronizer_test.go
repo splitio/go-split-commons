@@ -432,10 +432,7 @@ func TestPeriodicRecording(t *testing.T) {
 			}}, nil
 		},
 		EmptyCall: func() bool {
-			if impressionsCalled < 3 {
-				return false
-			}
-			return true
+			return impressionsCalled >= 3
 		},
 	}
 	eventMockStorage := storageMock.MockEventStorage{
@@ -453,10 +450,7 @@ func TestPeriodicRecording(t *testing.T) {
 			}}, nil
 		},
 		EmptyCall: func() bool {
-			if eventsCalled < 4 {
-				return false
-			}
-			return true
+			return eventsCalled >= 4
 		},
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
@@ -477,7 +471,9 @@ func TestPeriodicRecording(t *testing.T) {
 		SplitNamesCall:   func() []string { return []string{} },
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
 	}
-	segmentMockStorage := storageMock.MockSegmentStorage{}
+	segmentMockStorage := storageMock.MockSegmentStorage{
+		SegmentKeysCountCall: func() int64 { return 30 },
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
