@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/api"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
 	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexqueue"
 	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -175,7 +176,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 			return
 		}
 
-		result := make(map[string]dtos.ImpressionsDTO, 0)
+		result := make(map[string]dtos.ImpressionsDTO)
 		for _, impression := range impressions {
 			result[impression.TestName] = impression
 		}
@@ -229,7 +230,8 @@ func TestImpressionRecorderSync(t *testing.T) {
 		Treatment:    "someTreatment3",
 	}
 
-	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger, runtimeTelemetry)
 	impressionStorage.LogImpressions([]dtos.Impression{impression1, impression2, impression3})
 
 	impressionSync := NewRecorderSingle(
@@ -278,7 +280,7 @@ func TestImpressionLastSeen(t *testing.T) {
 			return
 		}
 
-		result := make(map[string]dtos.ImpressionsDTO, 0)
+		result := make(map[string]dtos.ImpressionsDTO)
 		for _, impression := range impressions {
 			result[impression.TestName] = impression
 		}
@@ -321,7 +323,8 @@ func TestImpressionLastSeen(t *testing.T) {
 		Treatment:    "someTreatment1",
 	}
 
-	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger, runtimeTelemetry)
 	impressionStorage.LogImpressions([]dtos.Impression{impression1})
 
 	impressionSync := NewRecorderSingle(

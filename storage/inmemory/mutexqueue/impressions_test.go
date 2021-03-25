@@ -5,11 +5,14 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestMSImpressionsStorage(t *testing.T) {
 	logger := logging.NewLogger(nil)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 
 	i0 := dtos.Impression{FeatureName: "feature0", BucketingKey: "123", ChangeNumber: 123, KeyName: "k0", Time: 123, Treatment: "i0"}
 	i1 := dtos.Impression{FeatureName: "feature1", BucketingKey: "123", ChangeNumber: 123, KeyName: "k1", Time: 123, Treatment: "i1"}
@@ -24,7 +27,7 @@ func TestMSImpressionsStorage(t *testing.T) {
 
 	isFull := make(chan string, 1)
 	queueSize := 20
-	queue := NewMQImpressionsStorage(queueSize, isFull, logger)
+	queue := NewMQImpressionsStorage(queueSize, isFull, logger, runtimeTelemetry)
 
 	if !queue.Empty() {
 		t.Error("Queue empty error")
@@ -55,15 +58,19 @@ func TestMSImpressionsStorage(t *testing.T) {
 		}
 	}
 
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsQueued) != 10 {
+		t.Error("It should record 10 impressions queued")
+	}
 }
 
 func TestMSImpressionsStorageMaxSize(t *testing.T) {
 	logger := logging.NewLogger(nil)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	impression := dtos.Impression{FeatureName: "feature0", BucketingKey: "123", ChangeNumber: 123, KeyName: "k0", Time: 123, Treatment: "i0"}
 
 	isFull := make(chan string, 1)
 	maxSize := 10
-	queue := NewMQImpressionsStorage(maxSize, isFull, logger)
+	queue := NewMQImpressionsStorage(maxSize, isFull, logger, runtimeTelemetry)
 
 	select {
 	case <-isFull:
@@ -87,5 +94,12 @@ func TestMSImpressionsStorageMaxSize(t *testing.T) {
 	case <-isFull:
 	default:
 		t.Error("Signal sent when it shouldn't have!")
+	}
+
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsQueued) != 10 {
+		t.Error("It should record 10 impressions queued")
+	}
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDropped) != 1 {
+		t.Error("It should record that 1 impressions was dropped")
 	}
 }
