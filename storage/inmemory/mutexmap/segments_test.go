@@ -42,6 +42,11 @@ func TestMMSegmentStorage(t *testing.T) {
 		}
 	}
 
+	totalKeys := segmentStorage.SegmentKeysCount()
+	if totalKeys != 9 {
+		t.Error("Wrong keys")
+	}
+
 	segment := segmentStorage.Keys("nonexistent_segment")
 	if segment != nil {
 		t.Error("Nil expected but segment returned")

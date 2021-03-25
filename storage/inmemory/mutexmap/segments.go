@@ -86,3 +86,14 @@ func (m *MMSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRem
 
 // CountRemovedKeys method
 func (m *MMSegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }
+
+// SegmentKeysCount
+func (m *MMSegmentStorage) SegmentKeysCount() int64 {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	var toReturn int64 = 0
+	for _, keys := range m.data {
+		toReturn = toReturn + int64(keys.Size())
+	}
+	return toReturn
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
 	constants "github.com/splitio/go-split-commons/v3/telemetry"
+	"github.com/splitio/go-split-commons/v3/util"
 )
 
 type latencies struct {
@@ -64,13 +65,10 @@ type records struct {
 
 	// SDK
 	session int64
-
-	// Factory
-	timeUntilReady int64
 }
 
-// IMTelemetryStorage In Memoty Telemetry Storage struct
-type IMTelemetryStorage struct {
+// TelemetryStorage In Memory Telemetry Storage struct
+type TelemetryStorage struct {
 	counters             counters
 	httpErrors           dtos.HTTPErrors
 	mutexHTTPErrors      sync.RWMutex
@@ -82,55 +80,55 @@ type IMTelemetryStorage struct {
 	mutexTags            sync.RWMutex
 }
 
-// NewIMTelemetryStorage builds in memory telemetry storage
-func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
+// NewTelemetryStorage builds in memory telemetry storage
+func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 	treatmentLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	treatmentWithConfigLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	treatmentsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	treatmentWithConfigsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	track, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 
 	splits, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	segments, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	impressions, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	events, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	telemetry, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 	token, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create InMemory Storage, %w", err)
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
 
-	return &IMTelemetryStorage{
+	return &TelemetryStorage{
 		counters: counters{},
 		httpErrors: dtos.HTTPErrors{
 			Splits:      make(map[int]int64),
@@ -165,13 +163,14 @@ func NewIMTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
-// RecordInitData stores init data
-func (i *IMTelemetryStorage) RecordInitData(initData dtos.Init) error {
-	panic("Not implemented for in memory")
+func (i *TelemetryStorage) RecordInitData(initData dtos.Init) error {
+	// No-Op. Init Data will be sent directly to Split Servers. No need to store.
+	return nil
 }
 
 // RecordLatency stores latency for method
-func (i *IMTelemetryStorage) RecordLatency(method string, bucket int) {
+func (i *TelemetryStorage) RecordLatency(method string, latency int64) {
+	bucket := util.Bucket(latency)
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)
@@ -187,7 +186,7 @@ func (i *IMTelemetryStorage) RecordLatency(method string, bucket int) {
 }
 
 // RecordException stores exceptions for method
-func (i *IMTelemetryStorage) RecordException(method string) {
+func (i *TelemetryStorage) RecordException(method string) {
 	switch method {
 	case constants.Treatment:
 		atomic.AddInt64(&i.counters.treatment, 1)
@@ -203,7 +202,7 @@ func (i *IMTelemetryStorage) RecordException(method string) {
 }
 
 // RecordImpressionsStats records impressions by type
-func (i *IMTelemetryStorage) RecordImpressionsStats(dataType int, count int64) {
+func (i *TelemetryStorage) RecordImpressionsStats(dataType int, count int64) {
 	switch dataType {
 	case constants.ImpressionsDropped:
 		atomic.AddInt64(&i.records.impressionsDropped, count)
@@ -215,7 +214,7 @@ func (i *IMTelemetryStorage) RecordImpressionsStats(dataType int, count int64) {
 }
 
 // RecordEventsStats recirds events by type
-func (i *IMTelemetryStorage) RecordEventsStats(dataType int, count int64) {
+func (i *TelemetryStorage) RecordEventsStats(dataType int, count int64) {
 	switch dataType {
 	case constants.EventsDropped:
 		atomic.AddInt64(&i.records.eventsDropped, count)
@@ -225,7 +224,7 @@ func (i *IMTelemetryStorage) RecordEventsStats(dataType int, count int64) {
 }
 
 // RecordSuccessfulSync records sync for resource
-func (i *IMTelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64) {
+func (i *TelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64) {
 	switch resource {
 	case constants.SplitSync:
 		atomic.StoreInt64(&i.records.splits, timestamp)
@@ -242,7 +241,7 @@ func (i *IMTelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64)
 	}
 }
 
-func (i *IMTelemetryStorage) createOrUpdate(status int, item map[int]int64) {
+func (i *TelemetryStorage) createOrUpdate(status int, item map[int]int64) {
 	if item == nil {
 		item[status] = 1
 		return
@@ -251,7 +250,7 @@ func (i *IMTelemetryStorage) createOrUpdate(status int, item map[int]int64) {
 }
 
 // RecordSyncError records http error
-func (i *IMTelemetryStorage) RecordSyncError(resource int, status int) {
+func (i *TelemetryStorage) RecordSyncError(resource int, status int) {
 	i.mutexHTTPErrors.Lock()
 	defer i.mutexHTTPErrors.Unlock()
 	switch resource {
@@ -271,7 +270,8 @@ func (i *IMTelemetryStorage) RecordSyncError(resource int, status int) {
 }
 
 // RecordSyncLatency records http error
-func (i *IMTelemetryStorage) RecordSyncLatency(resource int, bucket int) {
+func (i *TelemetryStorage) RecordSyncLatency(resource int, latency int64) {
+	bucket := util.Bucket(latency)
 	switch resource {
 	case constants.SplitSync:
 		i.latencies.splits.Incr(bucket)
@@ -289,17 +289,17 @@ func (i *IMTelemetryStorage) RecordSyncLatency(resource int, bucket int) {
 }
 
 // RecordAuthRejections records auth rejections
-func (i *IMTelemetryStorage) RecordAuthRejections() {
+func (i *TelemetryStorage) RecordAuthRejections() {
 	atomic.AddInt64(&i.counters.authRejections, 1)
 }
 
 // RecordTokenRefreshes records token
-func (i *IMTelemetryStorage) RecordTokenRefreshes() {
+func (i *TelemetryStorage) RecordTokenRefreshes() {
 	atomic.AddInt64(&i.counters.tokenRefreshes, 1)
 }
 
 // RecordStreamingEvent appends new streaming event
-func (i *IMTelemetryStorage) RecordStreamingEvent(event dtos.StreamingEvent) {
+func (i *TelemetryStorage) RecordStreamingEvent(event dtos.StreamingEvent) {
 	i.mutexStreamingEvents.Lock()
 	defer i.mutexStreamingEvents.Unlock()
 	if len(i.streamingEvents) < constants.MaxStreamingEvents {
@@ -308,7 +308,7 @@ func (i *IMTelemetryStorage) RecordStreamingEvent(event dtos.StreamingEvent) {
 }
 
 // AddTag adds particular tag
-func (i *IMTelemetryStorage) AddTag(tag string) {
+func (i *TelemetryStorage) AddTag(tag string) {
 	i.mutexTags.Lock()
 	defer i.mutexTags.Unlock()
 	if len(i.tags) < constants.MaxTags {
@@ -317,24 +317,24 @@ func (i *IMTelemetryStorage) AddTag(tag string) {
 }
 
 // RecordSessionLength records session length
-func (i *IMTelemetryStorage) RecordSessionLength(session int64) {
+func (i *TelemetryStorage) RecordSessionLength(session int64) {
 	atomic.StoreInt64(&i.records.session, session)
 }
 
 // RecordNonReadyUsage records non ready usage
-func (i *IMTelemetryStorage) RecordNonReadyUsage() {
+func (i *TelemetryStorage) RecordNonReadyUsage() {
 	atomic.AddInt64(&i.counters.nonReadyUsages, 1)
 }
 
 // RecordBURTimeout records bur timeodout
-func (i *IMTelemetryStorage) RecordBURTimeout() {
+func (i *TelemetryStorage) RecordBURTimeout() {
 	atomic.AddInt64(&i.counters.burTimeouts, 1)
 }
 
 // TELEMETRY STORAGE CONSUMER
 
 // PopLatencies gets and clears method latencies
-func (i *IMTelemetryStorage) PopLatencies() dtos.MethodLatencies {
+func (i *TelemetryStorage) PopLatencies() dtos.MethodLatencies {
 	return dtos.MethodLatencies{
 		Treatment:            i.latencies.treatment.FetchAndClearAll(),
 		Treatments:           i.latencies.treatments.FetchAndClearAll(),
@@ -345,7 +345,7 @@ func (i *IMTelemetryStorage) PopLatencies() dtos.MethodLatencies {
 }
 
 // PopExceptions gets and clears method exceptions
-func (i *IMTelemetryStorage) PopExceptions() dtos.MethodExceptions {
+func (i *TelemetryStorage) PopExceptions() dtos.MethodExceptions {
 	return dtos.MethodExceptions{
 		Treatment:            atomic.SwapInt64(&i.counters.treatment, 0),
 		Treatments:           atomic.SwapInt64(&i.counters.treatments, 0),
@@ -356,7 +356,7 @@ func (i *IMTelemetryStorage) PopExceptions() dtos.MethodExceptions {
 }
 
 // GetImpressionsStats gets impressions by type
-func (i *IMTelemetryStorage) GetImpressionsStats(dataType int) int64 {
+func (i *TelemetryStorage) GetImpressionsStats(dataType int) int64 {
 	switch dataType {
 	case constants.ImpressionsDropped:
 		return atomic.LoadInt64(&i.records.impressionsDropped)
@@ -369,7 +369,7 @@ func (i *IMTelemetryStorage) GetImpressionsStats(dataType int) int64 {
 }
 
 // GetEventsStats gets events by type
-func (i *IMTelemetryStorage) GetEventsStats(dataType int) int64 {
+func (i *TelemetryStorage) GetEventsStats(dataType int) int64 {
 	switch dataType {
 	case constants.EventsDropped:
 		return atomic.LoadInt64(&i.records.eventsDropped)
@@ -380,7 +380,7 @@ func (i *IMTelemetryStorage) GetEventsStats(dataType int) int64 {
 }
 
 // GetLastSynchronization gets last synchronization stats for fetchers and recorders
-func (i *IMTelemetryStorage) GetLastSynchronization() dtos.LastSynchronization {
+func (i *TelemetryStorage) GetLastSynchronization() dtos.LastSynchronization {
 	return dtos.LastSynchronization{
 		Splits:      atomic.LoadInt64(&i.records.splits),
 		Segments:    atomic.LoadInt64(&i.records.segments),
@@ -392,7 +392,7 @@ func (i *IMTelemetryStorage) GetLastSynchronization() dtos.LastSynchronization {
 }
 
 // PopHTTPErrors gets http errors
-func (i *IMTelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
+func (i *TelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
 	i.mutexHTTPErrors.Lock()
 	defer i.mutexHTTPErrors.Unlock()
 	toReturn := i.httpErrors
@@ -406,7 +406,7 @@ func (i *IMTelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
 }
 
 // PopHTTPLatencies gets http latencies
-func (i *IMTelemetryStorage) PopHTTPLatencies() dtos.HTTPLatencies {
+func (i *TelemetryStorage) PopHTTPLatencies() dtos.HTTPLatencies {
 	return dtos.HTTPLatencies{
 		Splits:      i.latencies.splits.FetchAndClearAll(),
 		Segments:    i.latencies.segments.FetchAndClearAll(),
@@ -418,17 +418,17 @@ func (i *IMTelemetryStorage) PopHTTPLatencies() dtos.HTTPLatencies {
 }
 
 // PopAuthRejections gets total amount of auth rejections
-func (i *IMTelemetryStorage) PopAuthRejections() int64 {
+func (i *TelemetryStorage) PopAuthRejections() int64 {
 	return atomic.SwapInt64(&i.counters.authRejections, 0)
 }
 
 // PopTokenRefreshes gets total amount of token refreshes
-func (i *IMTelemetryStorage) PopTokenRefreshes() int64 {
+func (i *TelemetryStorage) PopTokenRefreshes() int64 {
 	return atomic.SwapInt64(&i.counters.tokenRefreshes, 0)
 }
 
 // PopStreamingEvents gets streamingEvents data
-func (i *IMTelemetryStorage) PopStreamingEvents() []dtos.StreamingEvent {
+func (i *TelemetryStorage) PopStreamingEvents() []dtos.StreamingEvent {
 	i.mutexStreamingEvents.Lock()
 	defer i.mutexStreamingEvents.Unlock()
 	toReturn := i.streamingEvents
@@ -437,7 +437,7 @@ func (i *IMTelemetryStorage) PopStreamingEvents() []dtos.StreamingEvent {
 }
 
 // PopTags gets total amount of tags
-func (i *IMTelemetryStorage) PopTags() []string {
+func (i *TelemetryStorage) PopTags() []string {
 	i.mutexTags.Lock()
 	defer i.mutexTags.Unlock()
 	toReturn := i.tags
@@ -446,16 +446,16 @@ func (i *IMTelemetryStorage) PopTags() []string {
 }
 
 // GetSessionLength gets session duration
-func (i *IMTelemetryStorage) GetSessionLength() int64 {
+func (i *TelemetryStorage) GetSessionLength() int64 {
 	return atomic.LoadInt64(&i.records.session)
 }
 
 // GetNonReadyUsages gets non usages on ready
-func (i *IMTelemetryStorage) GetNonReadyUsages() int64 {
+func (i *TelemetryStorage) GetNonReadyUsages() int64 {
 	return atomic.LoadInt64(&i.counters.nonReadyUsages)
 }
 
 // GetBURTimeouts gets timedouts data
-func (i *IMTelemetryStorage) GetBURTimeouts() int64 {
+func (i *TelemetryStorage) GetBURTimeouts() int64 {
 	return atomic.LoadInt64(&i.counters.burTimeouts)
 }

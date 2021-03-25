@@ -125,7 +125,7 @@ type HTTPTelemetryRecorder struct {
 
 // NewHTTPTelemetryRecorder instantiates an HTTPTelemetryRecorder
 func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.TelemetryRecorder {
-	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
+	client := NewHTTPClient(apikey, cfg, cfg.TelemetryServiceURL, logger, dtos.Metadata{})
 	return &HTTPTelemetryRecorder{
 		httpRecorderBase: httpRecorderBase{
 			client: client,

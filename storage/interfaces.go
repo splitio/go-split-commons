@@ -36,6 +36,7 @@ type SegmentStorageConsumer interface {
 	CountRemovedKeys(segmentName string) int64
 	Keys(segmentName string) *set.ThreadUnsafeSet
 	SegmentContainsKey(segmentName string, key string) (bool, error)
+	SegmentKeysCount() int64
 }
 
 // ImpressionStorageProducer interface should be impemented by structs that accept incoming impressions
@@ -66,29 +67,67 @@ type EventStorageConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
-// TelemetryStorageProducer interface should be implemented by structs that accept incoming telemetry
+// TelemetryStorageProducer interface should be implemented by struct that accepts incoming telemetry
 type TelemetryStorageProducer interface {
+	TelemetryInitProducer
+	TelemetryEvaluationProducer
+	TelemetryRuntimeProducer
+}
+
+// TelemetryRedisProducer interface redis
+type TelemetryRedisProducer interface {
+	TelemetryInitProducer
+	TelemetryEvaluationProducer
+}
+
+// TelemetryInitProducer interface for init data
+type TelemetryInitProducer interface {
 	RecordInitData(initData dtos.Init) error
-	RecordLatency(method string, bucket int)
-	RecordException(method string)
-	RecordImpressionsStats(dataType int, count int64)
-	RecordEventsStats(dataType int, count int64)
-	RecordSuccessfulSync(resource int, time int64)
-	RecordSyncError(resource int, status int)
-	RecordSyncLatency(resource int, bucket int)
-	RecordAuthRejections()
-	RecordTokenRefreshes()
-	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
-	AddTag(tag string)
-	RecordSessionLength(session int64)
 	RecordNonReadyUsage()
 	RecordBURTimeout()
 }
 
+// TelemetryEvaluationProducer for evaluation
+type TelemetryEvaluationProducer interface {
+	RecordLatency(method string, latency int64)
+	RecordException(method string)
+}
+
+// TelemetryRuntimeProducer for runtime stats
+type TelemetryRuntimeProducer interface {
+	AddTag(tag string)
+	RecordImpressionsStats(dataType int, count int64)
+	RecordEventsStats(dataType int, count int64)
+	RecordSuccessfulSync(resource int, time int64)
+	RecordSyncError(resource int, status int)
+	RecordSyncLatency(resource int, latency int64)
+	RecordAuthRejections()
+	RecordTokenRefreshes()
+	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
+	RecordSessionLength(session int64)
+}
+
 // TelemetryStorageConsumer interface should be implemented by structs that offer popping telemetry
 type TelemetryStorageConsumer interface {
+	TelemetryInitConsumer
+	TelemetryEvaluationConsumer
+	TelemetryRuntimeConsumer
+}
+
+// TelemetryInitConsumer interface for init data
+type TelemetryInitConsumer interface {
+	GetNonReadyUsages() int64
+	GetBURTimeouts() int64
+}
+
+// TelemetryEvaluationConsumer for evaluation
+type TelemetryEvaluationConsumer interface {
 	PopLatencies() dtos.MethodLatencies
 	PopExceptions() dtos.MethodExceptions
+}
+
+// TelemetryRuntimeConsumer for runtime stats
+type TelemetryRuntimeConsumer interface {
 	GetImpressionsStats(dataType int) int64
 	GetEventsStats(dataType int) int64
 	GetLastSynchronization() dtos.LastSynchronization
@@ -99,8 +138,6 @@ type TelemetryStorageConsumer interface {
 	PopStreamingEvents() []dtos.StreamingEvent
 	PopTags() []string
 	GetSessionLength() int64
-	GetNonReadyUsages() int64
-	GetBURTimeouts() int64
 }
 
 // --- Wide Interfaces

@@ -6,21 +6,20 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-split-commons/v3/util"
 )
 
 func TestTelemetryStorage(t *testing.T) {
-	telemetryStorage, _ := NewIMTelemetryStorage()
+	telemetryStorage, _ := NewTelemetryStorage()
 
 	telemetryStorage.RecordException(telemetry.Treatment)
 	telemetryStorage.RecordException(telemetry.Treatments)
 	telemetryStorage.RecordException(telemetry.Treatment)
-	telemetryStorage.RecordLatency(telemetry.Treatment, util.Bucket((1500 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordLatency(telemetry.Treatment, util.Bucket((2000 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordLatency(telemetry.Treatments, util.Bucket((3000 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordLatency(telemetry.Treatments, util.Bucket((500 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, util.Bucket((800 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, util.Bucket((1000 * time.Nanosecond).Nanoseconds()))
+	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.Treatment, (2000 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.Treatments, (3000 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.Treatments, (500 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, (800 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Nanosecond).Nanoseconds())
 
 	exceptions := telemetryStorage.PopExceptions()
 	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentWithConfigs != 0 || exceptions.Track != 0 {
@@ -105,11 +104,11 @@ func TestTelemetryStorage(t *testing.T) {
 	telemetryStorage.RecordSyncError(telemetry.EventSync, 400)
 	telemetryStorage.RecordSyncError(telemetry.TelemetrySync, 401)
 	telemetryStorage.RecordSyncError(telemetry.TokenSync, 400)
-	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, util.Bucket((1500 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, util.Bucket((3000 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, util.Bucket((4000 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordSyncLatency(telemetry.SegmentSync, util.Bucket((1500 * time.Nanosecond).Nanoseconds()))
-	telemetryStorage.RecordSyncLatency(telemetry.SegmentSync, util.Bucket((1500 * time.Nanosecond).Nanoseconds()))
+	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, (1500 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, (3000 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordSyncLatency(telemetry.SplitSync, (4000 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordSyncLatency(telemetry.SegmentSync, (1500 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordSyncLatency(telemetry.SegmentSync, (1500 * time.Nanosecond).Nanoseconds())
 
 	httpErrors := telemetryStorage.PopHTTPErrors()
 	if httpErrors.Splits[500] != 5 || httpErrors.Segments[401] != 3 || httpErrors.Segments[404] != 1 || httpErrors.Impressions[402] != 4 || httpErrors.Events[400] != 1 || httpErrors.Telemetry[401] != 1 || httpErrors.Token[400] != 1 {

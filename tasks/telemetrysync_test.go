@@ -7,8 +7,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/mocks"
 	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/telemetry"
-	tm "github.com/splitio/go-split-commons/v3/telemetry"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
@@ -20,7 +19,9 @@ func TestTelemetrySyncTask(t *testing.T) {
 		SplitNamesCall:   func() []string { return []string{} },
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
 	}
-	mockedSegmentStorage := st.MockSegmentStorage{}
+	mockedSegmentStorage := st.MockSegmentStorage{
+		SegmentKeysCountCall: func() int64 { return 10 },
+	}
 	mockedTelemetryStorage := st.MockTelemetryStorage{
 		PopLatenciesCall:           func() dtos.MethodLatencies { return dtos.MethodLatencies{} },
 		PopExceptionsCall:          func() dtos.MethodExceptions { return dtos.MethodExceptions{} },
@@ -36,8 +37,6 @@ func TestTelemetrySyncTask(t *testing.T) {
 		PopTagsCall:                func() []string { return []string{} },
 	}
 
-	facade := tm.NewTelemetry(mockedTelemetryStorage, mockedSplitStorage, mockedSegmentStorage)
-
 	mockedTelemetryHTTP := mocks.MockTelemetryRecorder{
 		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error {
 			call++
@@ -46,9 +45,11 @@ func TestTelemetrySyncTask(t *testing.T) {
 	}
 
 	telemetryTask := NewRecordTelemetryTask(
-		telemetry.NewTelemetryRecorder(
-			facade,
+		telemetry.NewTelemetrySynchronizer(
+			mockedTelemetryStorage,
 			mockedTelemetryHTTP,
+			mockedSplitStorage,
+			mockedSegmentStorage,
 			logging.NewLogger(&logging.LoggerOptions{}),
 			dtos.Metadata{},
 		),
