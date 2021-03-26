@@ -3,6 +3,7 @@ package synchronizer
 import (
 	"github.com/splitio/go-split-commons/v3/service/api"
 	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v3/tasks"
 	"github.com/splitio/go-toolkit/v4/logging"
@@ -16,14 +17,12 @@ type Local struct {
 }
 
 // NewLocal creates new Local
-func NewLocal(
-	period int,
-	splitAPI *api.SplitAPI,
-	splitStorage storage.SplitStorage,
-	logger logging.LoggerInterface,
-) Synchronizer {
+func NewLocal(period int, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, logger logging.LoggerInterface) Synchronizer {
+	runtimeTelemetry := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, time int64) {},
+	}
 	workers := Workers{
-		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger),
+		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry),
 	}
 	return &Local{
 		splitTasks: SplitTasks{

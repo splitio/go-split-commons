@@ -4,19 +4,21 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
 	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexmap"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
-	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
@@ -31,11 +33,18 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitFetcher(
-		splitMockStorage,
-		splitMockFetcher,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	_, err := splitSync.SynchronizeSplits(nil, true)
 	if err == nil {
@@ -44,11 +53,12 @@ func TestSplitSynchronizerError(t *testing.T) {
 }
 
 func TestSplitSynchronizer(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 
-	splitMockStorage := storageMock.MockSplitStorage{
+	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
 			return -1, nil
 		},
@@ -92,11 +102,19 @@ func TestSplitSynchronizer(t *testing.T) {
 			}, nil
 		},
 	}
-	splitSync := NewSplitFetcher(
-		splitMockStorage,
-		splitMockFetcher,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	_, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
@@ -148,12 +166,9 @@ func TestSplitSyncProcess(t *testing.T) {
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(
-		splitStorage,
-		splitMockFetcher,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
 
 	segments, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
@@ -229,15 +244,11 @@ func TestSplitTill(t *testing.T) {
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(
-		splitStorage,
-		splitMockFetcher,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
 
-	var till int64
-	till = int64(1)
+	var till int64 = 1
 	_, err := splitSync.SynchronizeSplits(&till, false)
 	if err != nil {
 		t.Error("It should not return err")
