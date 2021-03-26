@@ -7,8 +7,9 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -19,7 +20,7 @@ func TestEventSyncTask(t *testing.T) {
 	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			call++
 			if n != 50 {
@@ -27,12 +28,7 @@ func TestEventSyncTask(t *testing.T) {
 			}
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return call != 1 },
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
@@ -53,13 +49,16 @@ func TestEventSyncTask(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+	}
+
 	eventTask := NewRecordEventsTask(
-		event.NewEventRecorderSingle(
-			eventMockStorage,
-			eventMockRecorder,
-			logger,
-			dtos.Metadata{},
-		),
+		event.NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		50,
 		1,
 		logger,
@@ -88,7 +87,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
 	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
 
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			atomic.AddInt64(&call, 1)
 			if n != 50 {
@@ -119,13 +118,16 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+	}
+
 	eventTask := NewRecordEventsTasks(
-		event.NewEventRecorderSingle(
-			eventMockStorage,
-			eventMockRecorder,
-			logger,
-			dtos.Metadata{},
-		),
+		event.NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		50,
 		2,
 		logger,
