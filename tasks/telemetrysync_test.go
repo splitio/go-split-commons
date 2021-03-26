@@ -35,6 +35,11 @@ func TestTelemetrySyncTask(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+		},
 	}
 
 	mockedTelemetryHTTP := mocks.MockTelemetryRecorder{
@@ -52,6 +57,7 @@ func TestTelemetrySyncTask(t *testing.T) {
 			mockedSegmentStorage,
 			logging.NewLogger(&logging.LoggerOptions{}),
 			dtos.Metadata{},
+			mockedTelemetryStorage,
 		),
 		2,
 		logging.NewLogger(&logging.LoggerOptions{}),

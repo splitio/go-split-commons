@@ -3,6 +3,7 @@ package telemetry
 import (
 	"os"
 	"strings"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
@@ -19,6 +20,7 @@ type RecorderSingle struct {
 	segmentStorage    storage.SegmentStorageConsumer
 	logger            logging.LoggerInterface
 	metadata          dtos.Metadata
+	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
 // NewTelemetrySynchronizer creates new event synchronizer for posting events
@@ -29,6 +31,7 @@ func NewTelemetrySynchronizer(
 	segmentStorage storage.SegmentStorageConsumer,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) TelemetrySynchronizer {
 	return &RecorderSingle{
 		telemetryStorage:  telemetryStorage,
@@ -37,6 +40,7 @@ func NewTelemetrySynchronizer(
 		segmentStorage:    segmentStorage,
 		logger:            logger,
 		metadata:          metadata,
+		runtimeTelemetry:  runtimeTelemetry,
 	}
 }
 
@@ -71,7 +75,12 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 // SynchronizeStats syncs telemetry stats
 func (e *RecorderSingle) SynchronizeStats() error {
 	stats := e.buildStats()
-	return e.telemetryRecorder.RecordStats(stats, e.metadata)
+	err := e.telemetryRecorder.RecordStats(stats, e.metadata)
+	if err != nil {
+		return err
+	}
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	return nil
 }
 
 // SynchronizeInit syncs telemetry init
@@ -109,5 +118,7 @@ func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, 
 	}, e.metadata)
 	if err != nil {
 		e.logger.Error("Could not log init data", err.Error())
+		return
 	}
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 }

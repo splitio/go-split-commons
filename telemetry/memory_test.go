@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
@@ -18,6 +19,7 @@ import (
 )
 
 func TestTelemetryRecorder(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	mockedSplitStorage := st.MockSplitStorage{
 		SplitNamesCall:   func() []string { return []string{} },
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
@@ -38,15 +40,21 @@ func TestTelemetryRecorder(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-	}
-
-	telemetryRecorderMock := mocks.MockTelemetryRecorder{
-		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error {
-			return nil
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
 		},
 	}
 
-	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetryRecorderMock := mocks.MockTelemetryRecorder{
+		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error { return nil },
+	}
+
+	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
 
 	err := telemetrySync.SynchronizeStats()
 	if err != nil {
@@ -55,6 +63,7 @@ func TestTelemetryRecorder(t *testing.T) {
 }
 
 func TestTelemetryRecorderSync(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/metrics/stats" || r.Method != "POST" {
@@ -111,9 +120,17 @@ func TestTelemetryRecorderSync(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
 	}
 
-	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
 
 	telemetryRecorder.SynchronizeStats()
 
@@ -123,12 +140,21 @@ func TestTelemetryRecorderSync(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	called := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	mockTelemetryStorage := st.MockTelemetryStorage{
 		GetBURTimeoutsCall:    func() int64 { return 3 },
 		GetNonReadyUsagesCall: func() int64 { return 5 },
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
 	}
 
 	mockRecorder := mocks.MockTelemetryRecorder{
@@ -153,7 +179,7 @@ func TestInit(t *testing.T) {
 		},
 	}
 
-	sync := NewTelemetrySynchronizer(mockTelemetryStorage, mockRecorder, st.MockSplitStorage{}, st.MockSegmentStorage{}, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"})
+	sync := NewTelemetrySynchronizer(mockTelemetryStorage, mockRecorder, st.MockSplitStorage{}, st.MockSegmentStorage{}, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"}, mockTelemetryStorage)
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1
