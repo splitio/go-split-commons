@@ -2,11 +2,13 @@ package impression
 
 import (
 	"errors"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-split-commons/v3/util"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
@@ -23,6 +25,7 @@ type RecorderSingle struct {
 	logger             logging.LoggerInterface
 	metadata           dtos.Metadata
 	mode               string
+	runtimeTelemetry   storage.TelemetryRuntimeProducer
 }
 
 // NewRecorderSingle creates new impression synchronizer for posting impressions
@@ -32,6 +35,7 @@ func NewRecorderSingle(
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 	managerConfig conf.ManagerConfig,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) ImpressionRecorder {
 	mode := conf.ImpressionsModeOptimized
 	if !util.ShouldBeOptimized(managerConfig) {
@@ -43,6 +47,7 @@ func NewRecorderSingle(
 		logger:             logger,
 		metadata:           metadata,
 		mode:               mode,
+		runtimeTelemetry:   runtimeTelemetry,
 	}
 }
 
@@ -91,6 +96,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 	if err != nil {
 		return err
 	}
+	i.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }
 
