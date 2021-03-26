@@ -11,6 +11,8 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/service/api/sse"
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/common"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
@@ -53,8 +55,9 @@ type ManagerImpl struct {
 		status            int32
 		shutdownWaiter    chan struct{}
 	*/
-	lifecycle lifecycle.Manager
-	logger    logging.LoggerInterface
+	lifecycle        lifecycle.Manager
+	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -67,6 +70,7 @@ func NewManager(
 	cfg *conf.AdvancedConfig,
 	feedbackLoop chan<- int64,
 	authAPI service.AuthClient,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -86,13 +90,14 @@ func NewManager(
 	}
 
 	manager := &ManagerImpl{
-		authAPI:       authAPI,
-		sseClient:     sse.NewStreamingClient(cfg, logger),
-		statusTracker: statusTracker,
-		feedback:      feedbackLoop,
-		processor:     processor,
-		parser:        parser,
-		logger:        logger,
+		authAPI:          authAPI,
+		sseClient:        sse.NewStreamingClient(cfg, logger),
+		statusTracker:    statusTracker,
+		feedback:         feedbackLoop,
+		processor:        processor,
+		parser:           parser,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 	manager.lifecycle.Setup()
 	return manager, nil
@@ -150,6 +155,7 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
 	}
+	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return token, nil
 }
 
