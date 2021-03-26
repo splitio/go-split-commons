@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -13,13 +15,14 @@ import (
 const MaxAccumulatedBytes = 5 * 1024 * 1024
 
 // NewMQEventsStorage returns an instance of MQEventsStorage
-func NewMQEventsStorage(queueSize int, isFull chan string, logger logging.LoggerInterface) *MQEventsStorage {
+func NewMQEventsStorage(queueSize int, isFull chan string, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) *MQEventsStorage {
 	return &MQEventsStorage{
-		queue:      list.New(),
-		size:       queueSize,
-		mutexQueue: &sync.Mutex{},
-		fullChan:   isFull,
-		logger:     logger,
+		queue:            list.New(),
+		size:             queueSize,
+		mutexQueue:       &sync.Mutex{},
+		fullChan:         isFull,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 }
 
@@ -36,6 +39,7 @@ type MQEventsStorage struct {
 	mutexQueue       *sync.Mutex
 	fullChan         chan string //only write channel
 	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 func (s *MQEventsStorage) sendSignalIsFull() {
@@ -55,12 +59,14 @@ func (s *MQEventsStorage) Push(event dtos.EventDTO, size int) error {
 	defer s.mutexQueue.Unlock()
 
 	if s.queue.Len()+1 > s.size {
+		s.runtimeTelemetry.RecordEventsStats(telemetry.EventsDropped, 1)
 		s.sendSignalIsFull()
 		return ErrorMaxSizeReached
 	}
 
 	// Add element
 	s.queue.PushBack(eventWrapper{event: event, size: size})
+	s.runtimeTelemetry.RecordEventsStats(telemetry.EventsQueued, 1)
 	s.accumulatedBytes += size
 	if s.queue.Len() == s.size || s.accumulatedBytes >= MaxAccumulatedBytes {
 		s.sendSignalIsFull()
