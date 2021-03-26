@@ -69,20 +69,20 @@ type EventStorageConsumer interface {
 
 // TelemetryStorageProducer interface should be implemented by struct that accepts incoming telemetry
 type TelemetryStorageProducer interface {
-	TelemetryInitProducer
+	TelemetryConfigProducer
 	TelemetryEvaluationProducer
 	TelemetryRuntimeProducer
 }
 
 // TelemetryRedisProducer interface redis
 type TelemetryRedisProducer interface {
-	TelemetryInitProducer
+	TelemetryConfigProducer
 	TelemetryEvaluationProducer
 }
 
-// TelemetryInitProducer interface for init data
-type TelemetryInitProducer interface {
-	RecordInitData(initData dtos.Init) error
+// TelemetryConfigProducer interface for config data
+type TelemetryConfigProducer interface {
+	RecordConfigData(configData dtos.Config) error
 	RecordNonReadyUsage()
 	RecordBURTimeout()
 }
@@ -109,13 +109,13 @@ type TelemetryRuntimeProducer interface {
 
 // TelemetryStorageConsumer interface should be implemented by structs that offer popping telemetry
 type TelemetryStorageConsumer interface {
-	TelemetryInitConsumer
+	TelemetryConfigConsumer
 	TelemetryEvaluationConsumer
 	TelemetryRuntimeConsumer
 }
 
-// TelemetryInitConsumer interface for init data
-type TelemetryInitConsumer interface {
+// TelemetryConfigConsumer interface for config data
+type TelemetryConfigConsumer interface {
 	GetNonReadyUsages() int64
 	GetBURTimeouts() int64
 }

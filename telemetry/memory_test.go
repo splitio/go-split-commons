@@ -66,7 +66,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/metrics/stats" || r.Method != "POST" {
+		if r.URL.Path != "/metrics/usage" || r.Method != "POST" {
 			t.Error("Invalid request. Should be POST to /metrics")
 		}
 		atomic.AddInt64(&requestReceived, 1)
@@ -139,7 +139,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 	}
 }
 
-func TestInit(t *testing.T) {
+func TestConfig(t *testing.T) {
 	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	called := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -158,21 +158,21 @@ func TestInit(t *testing.T) {
 	}
 
 	mockRecorder := mocks.MockTelemetryRecorder{
-		RecordInitCall: func(init dtos.Init, metadata dtos.Metadata) error {
+		RecordConfigCall: func(configData dtos.Config, metadata dtos.Metadata) error {
 			called++
-			if init.ActiveFactories != 2 {
+			if configData.ActiveFactories != 2 {
 				t.Error("It should be 2")
 			}
-			if init.OperationMode != Standalone {
+			if configData.OperationMode != Standalone {
 				t.Error("It should be Standalone")
 			}
-			if init.Storage != Memory {
+			if configData.Storage != Memory {
 				t.Error("It should be memory")
 			}
-			if len(init.Tags) != 0 {
+			if len(configData.Tags) != 0 {
 				t.Error("It should be zero")
 			}
-			if init.TimeUntilReady != 123456789 {
+			if configData.TimeUntilReady != 123456789 {
 				t.Error("It should be 123456789")
 			}
 			return nil
@@ -183,7 +183,7 @@ func TestInit(t *testing.T) {
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1
-	sync.SynchronizeInit(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, factories, []string{})
+	sync.SynchronizeConfig(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, factories, []string{})
 	if called != 1 {
 		t.Error("It should be called once")
 	}

@@ -10,8 +10,8 @@ const (
 	redisImpressionsTTL   = 3600                                                       // impressions default TTL
 	redisTrafficType      = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
 	redisHash             = "SPLITIO.hash"                                             // hash key
-	redisInit             = "SPLITIO.telemetry.init"                                   // init Key
-	redisInitTTL          = 3600                                                       // init TTL
+	redisConfig           = "SPLITIO.telemetry.config"                                 // config Key
+	redisConfigTTL        = 3600                                                       // config TTL
 	redisLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
 	redisExceptionField   = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
 	redisException        = "SPLITIO.telemetry.exceptions"                             // exception Key

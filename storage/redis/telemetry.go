@@ -47,26 +47,26 @@ func NewTelemetryStorage(redisClient *redis.PrefixedRedisClient, logger logging.
 
 // TELEMETRY STORAGE PRODUCER
 
-// RecordInitData push inits into queue
-func (t *TelemetryStorage) RecordInitData(initData dtos.Init) error {
+// RecordConfigData push config into queue
+func (t *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 	jsonData, err := json.Marshal(dtos.TelemetryQueueObject{
 		Metadata: t.metadata,
-		Init:     initData,
+		Config:   configData,
 	})
 	if err != nil {
 		t.logger.Error("Error encoding impression in json", err.Error())
 	}
 
-	inserted, errPush := t.client.RPush(redisInit, jsonData)
+	inserted, errPush := t.client.RPush(redisConfig, jsonData)
 	if errPush != nil {
-		t.logger.Error("Something were wrong pushing init data to redis", errPush)
+		t.logger.Error("Something were wrong pushing config data to redis", errPush)
 		return errPush
 	}
 
 	// Checks if expiration needs to be set
 	if inserted == 1 {
-		t.logger.Debug("Proceeding to set expiration for: ", redisInit)
-		result := t.client.Expire(redisInit, time.Duration(redisInitTTL)*time.Second)
+		t.logger.Debug("Proceeding to set expiration for: ", redisConfig)
+		result := t.client.Expire(redisConfig, time.Duration(redisConfigTTL)*time.Second)
 		if !result {
 			t.logger.Error("Something were wrong setting expiration", errPush)
 		}

@@ -61,7 +61,7 @@ type StreamingEvent struct {
 // TelemetryQueueObject struct mapping telemetry
 type TelemetryQueueObject struct {
 	Metadata Metadata `json:"m"`
-	Init     Init     `json:"t"`
+	Config   Config   `json:"t"`
 }
 
 // Rates struct
@@ -82,8 +82,8 @@ type URLOverrides struct {
 	Telemetry bool `json:"t,omitempty"`
 }
 
-// Init data for initial configs metrics
-type Init struct {
+// Config data for initial configs metrics
+type Config struct {
 	OperationMode              int           `json:"oM,omitempty"`
 	StreamingEnabled           bool          `json:"sE,omitempty"`
 	Storage                    string        `json:"st,omitempty"`

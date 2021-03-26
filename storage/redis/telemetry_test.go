@@ -84,8 +84,8 @@ func TestRecordException(t *testing.T) {
 	}
 }
 
-func TestRecordInitDataError(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.telemetry.init"
+func TestRecordConfigDataError(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.telemetry.config"
 	mockedRedisClient := mocks.MockClient{
 		RPushCall: func(key string, values ...interface{}) redis.Result {
 			if key != expectedKey {
@@ -104,7 +104,7 @@ func TestRecordInitDataError(t *testing.T) {
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
-	err := telemetryStorage.RecordInitData(dtos.Init{
+	err := telemetryStorage.RecordConfigData(dtos.Config{
 		OperationMode:      telemetry.Consumer,
 		Storage:            "REDIS",
 		ActiveFactories:    1,
@@ -115,8 +115,8 @@ func TestRecordInitDataError(t *testing.T) {
 	}
 }
 
-func TestRecordInitData(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.telemetry.init"
+func TestRecordConfigData(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.telemetry.config"
 
 	mockedRedisClient := mocks.MockClient{
 		RPushCall: func(key string, values ...interface{}) redis.Result {
@@ -124,7 +124,7 @@ func TestRecordInitData(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			if len(values) != 1 {
-				t.Error("It should sent one init data", len(values))
+				t.Error("It should sent one config data", len(values))
 			}
 			return &mocks.MockResultOutput{
 				ResultCall: func() (int64, error) { return 1, nil },
@@ -147,7 +147,7 @@ func TestRecordInitData(t *testing.T) {
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
-	err := telemetryStorage.RecordInitData(dtos.Init{
+	err := telemetryStorage.RecordConfigData(dtos.Config{
 		OperationMode:      telemetry.Consumer,
 		Storage:            "REDIS",
 		ActiveFactories:    1,

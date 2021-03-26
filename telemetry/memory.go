@@ -83,8 +83,8 @@ func (e *RecorderSingle) SynchronizeStats() error {
 	return nil
 }
 
-// SynchronizeInit syncs telemetry init
-func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+// SynchronizeConfig syncs telemetry config
+func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
 	urlOverrides := getURLOverrides(cfg.AdvancedConfig)
 
 	impressionsMode := ImpressionsModeOptimized
@@ -92,7 +92,7 @@ func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, 
 		impressionsMode = ImpressionsModeDebug
 	}
 
-	err := e.telemetryRecorder.RecordInit(dtos.Init{
+	err := e.telemetryRecorder.RecordConfig(dtos.Config{
 		OperationMode:      Standalone,
 		Storage:            Memory,
 		ActiveFactories:    int64(len(factoryInstances)),
@@ -117,7 +117,7 @@ func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, 
 		NonReadyUsages:             e.telemetryStorage.GetNonReadyUsages(),
 	}, e.metadata)
 	if err != nil {
-		e.logger.Error("Could not log init data", err.Error())
+		e.logger.Error("Could not log config data", err.Error())
 		return
 	}
 	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))

@@ -171,8 +171,8 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
-func (i *TelemetryStorage) RecordInitData(initData dtos.Init) error {
-	// No-Op. Init Data will be sent directly to Split Servers. No need to store.
+func (i *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
+	// No-Op. Config Data will be sent directly to Split Servers. No need to store.
 	return nil
 }
 
