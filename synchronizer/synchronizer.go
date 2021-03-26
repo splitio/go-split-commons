@@ -62,7 +62,7 @@ func NewSynchronizer(
 }
 
 func (s *SynchronizerImpl) dataFlusher() {
-	for true {
+	for {
 		msg := <-s.inMememoryFullQueue
 		switch msg {
 		case "EVENTS_FULL":
@@ -71,7 +71,6 @@ func (s *SynchronizerImpl) dataFlusher() {
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
-			break
 		case "IMPRESSIONS_FULL":
 			s.logger.Debug("FLUSHING storage queue")
 			err := s.workers.ImpressionRecorder.SynchronizeImpressions(s.impressionBulkSize)

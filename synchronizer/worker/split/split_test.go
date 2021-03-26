@@ -16,7 +16,6 @@ import (
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
@@ -33,16 +32,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.SplitSync {
-				t.Error("Resource should be splits")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 

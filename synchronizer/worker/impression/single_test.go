@@ -22,7 +22,6 @@ import (
 )
 
 func TestImpressionRecorderError(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	impressionMockStorage := mocks.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			if n != 50 {
@@ -32,16 +31,7 @@ func TestImpressionRecorderError(t *testing.T) {
 		},
 	}
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.ImpressionSync {
-				t.Error("Resource should be impressions")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
 	err := impressionSync.SynchronizeImpressions(50)
@@ -51,7 +41,6 @@ func TestImpressionRecorderError(t *testing.T) {
 }
 
 func TestImpressionRecorderWithoutImpressions(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	impressionMockStorage := mocks.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			if n != 50 {
@@ -62,16 +51,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.ImpressionSync {
-				t.Error("Resource should be impressions")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
 

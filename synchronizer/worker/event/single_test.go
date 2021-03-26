@@ -22,7 +22,6 @@ import (
 )
 
 func TestSynhronizeEventError(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			if n != 50 {
@@ -33,16 +32,7 @@ func TestSynhronizeEventError(t *testing.T) {
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{}
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.EventSync {
-				t.Error("Resource should be events")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
 
@@ -53,7 +43,6 @@ func TestSynhronizeEventError(t *testing.T) {
 }
 
 func TestSynhronizeEventWithNoEvents(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			if n != 50 {
@@ -70,16 +59,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 		},
 	}
 
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.EventSync {
-				t.Error("Resource should be events")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
 

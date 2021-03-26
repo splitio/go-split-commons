@@ -17,7 +17,6 @@ import (
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	splitMockStorage := mocks.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
@@ -26,16 +25,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 	}
 
-	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
-			if resource != telemetry.SegmentSync {
-				t.Error("Resource should be segments")
-			}
-			if tm < before {
-				t.Error("It should be higher than before")
-			}
-		},
-	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {

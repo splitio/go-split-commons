@@ -20,12 +20,13 @@ type latencies struct {
 	track                AtomicInt64Slice
 
 	// HTTPLatencies
-	splits      AtomicInt64Slice
-	segments    AtomicInt64Slice
-	impressions AtomicInt64Slice
-	events      AtomicInt64Slice
-	telemetry   AtomicInt64Slice
-	token       AtomicInt64Slice
+	splits           AtomicInt64Slice
+	segments         AtomicInt64Slice
+	impressions      AtomicInt64Slice
+	impressionsCount AtomicInt64Slice
+	events           AtomicInt64Slice
+	telemetry        AtomicInt64Slice
+	token            AtomicInt64Slice
 }
 
 type counters struct {
@@ -56,12 +57,13 @@ type records struct {
 	eventsDropped int64
 
 	// LastSynchronization
-	splits      int64
-	segments    int64
-	impressions int64
-	events      int64
-	token       int64
-	telemetry   int64
+	splits           int64
+	segments         int64
+	impressions      int64
+	impressionsCount int64
+	events           int64
+	token            int64
+	telemetry        int64
 
 	// SDK
 	session int64
@@ -115,6 +117,10 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
+	impressionsCount, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	if err != nil {
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
+	}
 	events, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
@@ -131,12 +137,13 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 	return &TelemetryStorage{
 		counters: counters{},
 		httpErrors: dtos.HTTPErrors{
-			Splits:      make(map[int]int64),
-			Segments:    make(map[int]int64),
-			Impressions: make(map[int]int64),
-			Events:      make(map[int]int64),
-			Token:       make(map[int]int64),
-			Telemetry:   make(map[int]int64),
+			Splits:           make(map[int]int64),
+			Segments:         make(map[int]int64),
+			Impressions:      make(map[int]int64),
+			ImpressionsCount: make(map[int]int64),
+			Events:           make(map[int]int64),
+			Token:            make(map[int]int64),
+			Telemetry:        make(map[int]int64),
 		},
 		mutexHTTPErrors: sync.RWMutex{},
 		latencies: latencies{
@@ -146,12 +153,13 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 			treatmentWithConfigs: treatmentWithConfigsLatencies,
 			track:                track,
 
-			splits:      splits,
-			segments:    segments,
-			impressions: impressions,
-			events:      events,
-			token:       token,
-			telemetry:   telemetry,
+			splits:           splits,
+			segments:         segments,
+			impressions:      impressions,
+			impressionsCount: impressionsCount,
+			events:           events,
+			token:            token,
+			telemetry:        telemetry,
 		},
 		records:              records{},
 		streamingEvents:      make([]dtos.StreamingEvent, 0, constants.MaxStreamingEvents),
@@ -232,6 +240,8 @@ func (i *TelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64) {
 		atomic.StoreInt64(&i.records.segments, timestamp)
 	case constants.ImpressionSync:
 		atomic.StoreInt64(&i.records.impressions, timestamp)
+	case constants.ImpressionCountSync:
+		atomic.StoreInt64(&i.records.impressionsCount, timestamp)
 	case constants.EventSync:
 		atomic.StoreInt64(&i.records.events, timestamp)
 	case constants.TelemetrySync:
@@ -260,6 +270,8 @@ func (i *TelemetryStorage) RecordSyncError(resource int, status int) {
 		i.createOrUpdate(status, i.httpErrors.Segments)
 	case constants.ImpressionSync:
 		i.createOrUpdate(status, i.httpErrors.Impressions)
+	case constants.ImpressionCountSync:
+		i.createOrUpdate(status, i.httpErrors.ImpressionsCount)
 	case constants.EventSync:
 		i.createOrUpdate(status, i.httpErrors.Events)
 	case constants.TelemetrySync:
@@ -279,6 +291,8 @@ func (i *TelemetryStorage) RecordSyncLatency(resource int, latency int64) {
 		i.latencies.segments.Incr(bucket)
 	case constants.ImpressionSync:
 		i.latencies.impressions.Incr(bucket)
+	case constants.ImpressionCountSync:
+		i.latencies.impressionsCount.Incr(bucket)
 	case constants.EventSync:
 		i.latencies.events.Incr(bucket)
 	case constants.TelemetrySync:
@@ -382,12 +396,13 @@ func (i *TelemetryStorage) GetEventsStats(dataType int) int64 {
 // GetLastSynchronization gets last synchronization stats for fetchers and recorders
 func (i *TelemetryStorage) GetLastSynchronization() dtos.LastSynchronization {
 	return dtos.LastSynchronization{
-		Splits:      atomic.LoadInt64(&i.records.splits),
-		Segments:    atomic.LoadInt64(&i.records.segments),
-		Impressions: atomic.LoadInt64(&i.records.impressions),
-		Events:      atomic.LoadInt64(&i.records.events),
-		Telemetry:   atomic.LoadInt64(&i.records.telemetry),
-		Token:       atomic.LoadInt64(&i.records.token),
+		Splits:           atomic.LoadInt64(&i.records.splits),
+		Segments:         atomic.LoadInt64(&i.records.segments),
+		Impressions:      atomic.LoadInt64(&i.records.impressions),
+		ImpressionsCount: atomic.LoadInt64(&i.records.impressionsCount),
+		Events:           atomic.LoadInt64(&i.records.events),
+		Telemetry:        atomic.LoadInt64(&i.records.telemetry),
+		Token:            atomic.LoadInt64(&i.records.token),
 	}
 }
 
@@ -399,6 +414,7 @@ func (i *TelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
 	i.httpErrors.Splits = make(map[int]int64)
 	i.httpErrors.Segments = make(map[int]int64)
 	i.httpErrors.Impressions = make(map[int]int64)
+	i.httpErrors.ImpressionsCount = make(map[int]int64)
 	i.httpErrors.Events = make(map[int]int64)
 	i.httpErrors.Telemetry = make(map[int]int64)
 	i.httpErrors.Token = make(map[int]int64)
@@ -408,12 +424,13 @@ func (i *TelemetryStorage) PopHTTPErrors() dtos.HTTPErrors {
 // PopHTTPLatencies gets http latencies
 func (i *TelemetryStorage) PopHTTPLatencies() dtos.HTTPLatencies {
 	return dtos.HTTPLatencies{
-		Splits:      i.latencies.splits.FetchAndClearAll(),
-		Segments:    i.latencies.segments.FetchAndClearAll(),
-		Impressions: i.latencies.impressions.FetchAndClearAll(),
-		Events:      i.latencies.events.FetchAndClearAll(),
-		Telemetry:   i.latencies.telemetry.FetchAndClearAll(),
-		Token:       i.latencies.token.FetchAndClearAll(),
+		Splits:           i.latencies.splits.FetchAndClearAll(),
+		Segments:         i.latencies.segments.FetchAndClearAll(),
+		Impressions:      i.latencies.impressions.FetchAndClearAll(),
+		ImpressionsCount: i.latencies.impressionsCount.FetchAndClearAll(),
+		Events:           i.latencies.events.FetchAndClearAll(),
+		Telemetry:        i.latencies.telemetry.FetchAndClearAll(),
+		Token:            i.latencies.token.FetchAndClearAll(),
 	}
 }
 

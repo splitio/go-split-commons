@@ -2,32 +2,35 @@ package dtos
 
 // LastSynchronization struct
 type LastSynchronization struct {
-	Splits      int64 `json:"sp,omitempty"`
-	Segments    int64 `json:"se,omitempty"`
-	Impressions int64 `json:"im,omitempty"`
-	Events      int64 `json:"ev,omitempty"`
-	Token       int64 `json:"to,omitempty"`
-	Telemetry   int64 `json:"te,omitempty"`
+	Splits           int64 `json:"sp,omitempty"`
+	Segments         int64 `json:"se,omitempty"`
+	Impressions      int64 `json:"im,omitempty"`
+	ImpressionsCount int64 `json:"ic,omitempty"`
+	Events           int64 `json:"ev,omitempty"`
+	Token            int64 `json:"to,omitempty"`
+	Telemetry        int64 `json:"te,omitempty"`
 }
 
 // HTTPErrors struct
 type HTTPErrors struct {
-	Splits      map[int]int64 `json:"sp,omitempty"`
-	Segments    map[int]int64 `json:"se,omitempty"`
-	Impressions map[int]int64 `json:"im,omitempty"`
-	Events      map[int]int64 `json:"ev,omitempty"`
-	Token       map[int]int64 `json:"to,omitempty"`
-	Telemetry   map[int]int64 `json:"te,omitempty"`
+	Splits           map[int]int64 `json:"sp,omitempty"`
+	Segments         map[int]int64 `json:"se,omitempty"`
+	Impressions      map[int]int64 `json:"im,omitempty"`
+	ImpressionsCount map[int]int64 `json:"ic,omitempty"`
+	Events           map[int]int64 `json:"ev,omitempty"`
+	Token            map[int]int64 `json:"to,omitempty"`
+	Telemetry        map[int]int64 `json:"te,omitempty"`
 }
 
 // HTTPLatencies struct
 type HTTPLatencies struct {
-	Splits      []int64 `json:"sp,omitempty"`
-	Segments    []int64 `json:"se,omitempty"`
-	Impressions []int64 `json:"im,omitempty"`
-	Events      []int64 `json:"ev,omitempty"`
-	Token       []int64 `json:"to,omitempty"`
-	Telemetry   []int64 `json:"te,omitempty"`
+	Splits           []int64 `json:"sp,omitempty"`
+	Segments         []int64 `json:"se,omitempty"`
+	Impressions      []int64 `json:"im,omitempty"`
+	ImpressionsCount []int64 `json:"ic,omitempty"`
+	Events           []int64 `json:"ev,omitempty"`
+	Token            []int64 `json:"to,omitempty"`
+	Telemetry        []int64 `json:"te,omitempty"`
 }
 
 // MethodLatencies struct
