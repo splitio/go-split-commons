@@ -39,20 +39,18 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		},
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
-	telemetryStorage := storageMock.MockTelemetryStorage{
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, time int64) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, logger),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryStorage, nil, nil, nil, nil, dtos.Metadata{}),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
@@ -61,13 +59,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(
-		advanced,
-		splitTasks,
-		workers,
-		logger,
-		nil,
-	)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	err := syncForTest.SyncAll(true)
 	if err == nil {
 		t.Error("It should return error")
@@ -114,9 +106,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		},
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
@@ -125,26 +115,21 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 				t.Error("Wrong length of passed splits")
 			}
 		},
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 	}
-	telemetryStorage := storageMock.MockTelemetryStorage{
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, time int64) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryStorage, nil, nil, nil, nil, dtos.Metadata{}),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
@@ -153,13 +138,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(
-		advanced,
-		splitTasks,
-		workers,
-		logger,
-		nil,
-	)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	err := syncForTest.SyncAll(false)
 	if err == nil {
 		t.Error("It should return error")
@@ -215,9 +194,7 @@ func TestSyncAllOk(t *testing.T) {
 		},
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
@@ -226,15 +203,10 @@ func TestSyncAllOk(t *testing.T) {
 				t.Error("Wrong length of passed splits")
 			}
 		},
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
@@ -248,16 +220,16 @@ func TestSyncAllOk(t *testing.T) {
 			return nil
 		},
 	}
-	telemetryStorage := storageMock.MockTelemetryStorage{
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, time int64) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryStorage, nil, nil, nil, nil, dtos.Metadata{}),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
@@ -266,13 +238,7 @@ func TestSyncAllOk(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(
-		advanced,
-		splitTasks,
-		workers,
-		logger,
-		nil,
-	)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	err := syncForTest.SyncAll(true)
 	if err != nil {
 		t.Error("It should not return error")
@@ -328,9 +294,7 @@ func TestPeriodicFetching(t *testing.T) {
 		},
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
@@ -339,15 +303,10 @@ func TestPeriodicFetching(t *testing.T) {
 				t.Error("Wrong length of passed splits")
 			}
 		},
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			return -1, nil
-		},
+		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
@@ -361,16 +320,16 @@ func TestPeriodicFetching(t *testing.T) {
 			return nil
 		},
 	}
-	telemetryStorage := storageMock.MockTelemetryStorage{
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, time int64) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryStorage, nil, nil, nil, nil, dtos.Metadata{}),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}),
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 1, logger),
@@ -379,13 +338,7 @@ func TestPeriodicFetching(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(
-		advanced,
-		splitTasks,
-		workers,
-		logger,
-		nil,
-	)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 2200)
 	if atomic.LoadInt64(&splitFetchCalled) < 2 {
@@ -443,9 +396,7 @@ func TestPeriodicRecording(t *testing.T) {
 				Treatment:    "someTreatment",
 			}}, nil
 		},
-		EmptyCall: func() bool {
-			return impressionsCalled >= 3
-		},
+		EmptyCall: func() bool { return impressionsCalled >= 3 },
 	}
 	eventMockStorage := storageMock.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
@@ -461,9 +412,7 @@ func TestPeriodicRecording(t *testing.T) {
 				Value:           nil,
 			}}, nil
 		},
-		EmptyCall: func() bool {
-			return eventsCalled >= 4
-		},
+		EmptyCall: func() bool { return eventsCalled >= 4 },
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		PopLatenciesCall:           func() dtos.MethodLatencies { return dtos.MethodLatencies{} },
@@ -490,7 +439,7 @@ func TestPeriodicRecording(t *testing.T) {
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
 		EventRecorder:      event.NewEventRecorderSingle(eventMockStorage, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, splitAPI.TelemetryRecorder, splitMockStorage, segmentMockStorage, logger, dtos.Metadata{}),
@@ -503,13 +452,7 @@ func TestPeriodicRecording(t *testing.T) {
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 1, logger),
 	}
 	workers.TelemetryRecorder.SynchronizeStats()
-	syncForTest := NewSynchronizer(
-		advanced,
-		splitTasks,
-		workers,
-		logger,
-		nil,
-	)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	syncForTest.StartPeriodicDataRecording()
 	time.Sleep(time.Second * 2)
 	if atomic.LoadInt64(&impressionsCalled) < 1 {

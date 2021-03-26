@@ -3,20 +3,23 @@ package segment
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // UpdaterImpl struct for segment sync
 type UpdaterImpl struct {
-	splitStorage   storage.SplitStorageConsumer
-	segmentStorage storage.SegmentStorage
-	segmentFetcher service.SegmentFetcher
-	logger         logging.LoggerInterface
+	splitStorage     storage.SplitStorageConsumer
+	segmentStorage   storage.SegmentStorage
+	segmentFetcher   service.SegmentFetcher
+	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -25,12 +28,14 @@ func NewSegmentFetcher(
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,
 	logger logging.LoggerInterface,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) Updater {
 	return &UpdaterImpl{
-		splitStorage:   splitStorage,
-		segmentStorage: segmentStorage,
-		segmentFetcher: segmentFetcher,
-		logger:         logger,
+		splitStorage:     splitStorage,
+		segmentStorage:   segmentStorage,
+		segmentFetcher:   segmentFetcher,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 }
 
@@ -80,6 +85,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 
 		s.processUpdate(segmentChanges)
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
+			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 			return nil
 		}
 	}

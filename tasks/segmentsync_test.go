@@ -7,8 +7,9 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/datastructures/set"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
@@ -19,24 +20,18 @@ func TestSegmentSyncTask(t *testing.T) {
 	var s1Requested int64
 	var s2Requested int64
 
-	splitMockStorage := storageMock.MockSplitStorage{
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+	splitMockStorage := mocks.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 
-	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			return -1, nil
-		},
+	segmentMockStorage := mocks.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 		KeysCall: func(segmentName string) *set.ThreadUnsafeSet {
 			if segmentName != "segment1" && segmentName != "segment2" {
 				t.Error("Wrong name")
 			}
 			switch segmentName {
-			case "segment1":
-			case "segment2":
+			case "segment1", "segment2":
 				return nil
 			default:
 				t.Error("Wrong case")
@@ -62,6 +57,14 @@ func TestSegmentSyncTask(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SegmentSync {
+				t.Error("Resource should be segments")
+			}
+		},
+	}
+
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			if noCache {
@@ -73,22 +76,10 @@ func TestSegmentSyncTask(t *testing.T) {
 			switch name {
 			case "segment1":
 				atomic.AddInt64(&s1Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS1,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 123, Till: 123}, nil
 			case "segment2":
 				atomic.AddInt64(&s2Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS2,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS2, Removed: []string{}, Since: 123, Till: 123}, nil
 			default:
 				t.Error("Wrong case")
 			}
@@ -97,12 +88,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentTask := NewFetchSegmentsTask(
-		segment.NewSegmentFetcher(
-			splitMockStorage,
-			segmentMockStorage,
-			segmentMockFetcher,
-			logging.NewLogger(&logging.LoggerOptions{}),
-		),
+		segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage),
 		1,
 		10,
 		100,
