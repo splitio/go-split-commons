@@ -63,6 +63,7 @@ func TestAuth500(t *testing.T) {
 }
 
 func TestAuth401(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -85,6 +86,7 @@ func TestAuth401(t *testing.T) {
 				t.Error("Status should be 401")
 			}
 		},
+		RecordAuthRejectionsCall: func() { called++ },
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage)
@@ -101,6 +103,10 @@ func TestAuth401(t *testing.T) {
 
 	if manager.nextRefresh != nil {
 		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+
+	if called != 1 {
+		t.Error("It should record an auth rejection")
 	}
 }
 
@@ -172,6 +178,7 @@ func TestStreamingConnectionFails(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -226,6 +233,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 	feedback := make(chan int64, 100)
 
@@ -290,6 +298,7 @@ func TestExpectedDisconnection(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 	feedback := make(chan int64, 100)
 
@@ -357,6 +366,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -409,6 +419,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 }
 
 func TestUsageAndTokenRefresh(t *testing.T) {
+	var tokenRefreshes int64
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -436,6 +447,7 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() { atomic.AddInt64(&tokenRefreshes, 1) },
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -476,6 +488,10 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	if message != StatusUp {
 		t.Error("token should have refreshed and returned a new StatusUp message via the feedback loop. Got: ", message)
 	}
+
+	if atomic.LoadInt64(&tokenRefreshes) != 2 {
+		t.Error("It should call tokenRefresh")
+	}
 }
 
 func TestEventForwarding(t *testing.T) {
@@ -504,6 +520,7 @@ func TestEventForwarding(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -594,6 +611,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -683,6 +701,7 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordTokenRefreshesCall: func() {},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)

@@ -149,15 +149,19 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 				m.logger.Error(fmt.Sprintf("Error authenticating: %s", err.Error()))
 				return nil, common.Int64Ref(StatusRetryableError)
 			}
+			if errType.Code == http.StatusUnauthorized {
+				m.runtimeTelemetry.RecordAuthRejections() // Only 401
+			}
 			return nil, common.Int64Ref(StatusNonRetryableError) // 400, 401, etc
 		}
-		// Not an HTTP eerror, most likely a tcp/bad connection. Should retry
+		// Not an HTTP error, most likely a tcp/bad connection. Should retry
 		return nil, common.Int64Ref(StatusRetryableError)
 	}
 	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before).Nanoseconds())
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
 	}
+	m.runtimeTelemetry.RecordTokenRefreshes()
 	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return token, nil
 }
