@@ -92,6 +92,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 		})
 	}
 
+	before := time.Now()
 	err = i.impressionRecorder.Record(bulkImpressions, i.metadata, map[string]string{splitSDKImpressionsMode: i.mode})
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -99,6 +100,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 		}
 		return err
 	}
+	i.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionSync, time.Since(before).Nanoseconds())
 	i.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }

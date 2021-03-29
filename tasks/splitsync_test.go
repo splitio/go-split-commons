@@ -70,6 +70,11 @@ func TestSplitSyncTask(t *testing.T) {
 				t.Error("Resource should be splits")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
 	}
 
 	splitTask := NewFetchSplitsTask(

@@ -122,6 +122,11 @@ func TestSegmentSynchronizer(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SegmentSync {
+				t.Error("Resource should be segments")
+			}
+		},
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{

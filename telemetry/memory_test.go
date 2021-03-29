@@ -106,6 +106,11 @@ func TestTelemetryRecorder(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+		},
 	}
 
 	telemetryRecorderMock := mocks.MockTelemetryRecorder{
@@ -186,6 +191,11 @@ func TestTelemetryRecorderSync(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+		},
 	}
 
 	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
@@ -211,6 +221,11 @@ func TestConfig(t *testing.T) {
 			}
 			if tm < before {
 				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != TelemetrySync {
+				t.Error("Resource should be telemetry")
 			}
 		},
 	}

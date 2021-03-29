@@ -78,6 +78,11 @@ func TestImpressionSyncTask(t *testing.T) {
 				t.Error("Resource should be impressions")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
 	}
 
 	impressionTask := NewRecordImpressionsTask(
@@ -160,6 +165,11 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
 			if resource != telemetry.ImpressionSync {
 				t.Error("Resource should be impressions")
 			}

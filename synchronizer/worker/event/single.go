@@ -50,6 +50,7 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 		return nil
 	}
 
+	before := time.Now()
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -57,6 +58,7 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 		}
 		return err
 	}
+	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before).Nanoseconds())
 	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }

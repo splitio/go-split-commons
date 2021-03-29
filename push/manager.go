@@ -140,6 +140,7 @@ func (m *ManagerImpl) StopWorkers() {
 }
 
 func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
+	before := time.Now()
 	token, err := m.authAPI.Authenticate()
 	if err != nil {
 		if errType, ok := err.(dtos.HTTPError); ok {
@@ -153,6 +154,7 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 		// Not an HTTP eerror, most likely a tcp/bad connection. Should retry
 		return nil, common.Int64Ref(StatusRetryableError)
 	}
+	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before).Nanoseconds())
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
 	}

@@ -118,7 +118,14 @@ func TestAuthPushDisabled(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, mocks.MockTelemetryStorage{})
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+	}
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -158,6 +165,11 @@ func TestStreamingConnectionFails(t *testing.T) {
 			}
 			if tm < before {
 				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
 			}
 		},
 	}
@@ -205,6 +217,11 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 	}
 	telemetryStorageMock := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -268,6 +285,11 @@ func TestExpectedDisconnection(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
 	}
 	feedback := make(chan int64, 100)
 
@@ -326,6 +348,11 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -404,6 +431,11 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -463,6 +495,11 @@ func TestEventForwarding(t *testing.T) {
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -552,6 +589,11 @@ func TestEventForwardingReturnsError(t *testing.T) {
 				t.Error("Resource should be token")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -632,6 +674,11 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}

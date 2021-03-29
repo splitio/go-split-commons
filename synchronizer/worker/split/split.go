@@ -71,6 +71,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 			return segments, nil
 		}
 
+		before := time.Now()
 		splits, err := s.splitFetcher.Fetch(changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -78,6 +79,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 			}
 			return segments, err
 		}
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before).Nanoseconds())
 		s.processUpdate(splits)
 		segments = append(segments, extractSegments(splits)...)
 		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {

@@ -78,6 +78,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 			return nil
 		}
 
+		before := time.Now()
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -85,7 +86,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 			}
 			return err
 		}
-
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before).Nanoseconds())
 		s.processUpdate(segmentChanges)
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))

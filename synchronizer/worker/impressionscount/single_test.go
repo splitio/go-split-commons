@@ -86,6 +86,11 @@ func TestImpressionsCountRecorder(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("Resource should be impresisonsCount")
+			}
+		},
 	}
 
 	impCounter := provisional.NewImpressionsCounter()

@@ -111,6 +111,11 @@ func TestSplitSynchronizer(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
 	}
 
 	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)

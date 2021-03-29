@@ -127,6 +127,11 @@ func TestSynhronizeEvent(t *testing.T) {
 				t.Error("It should be higher than before")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{

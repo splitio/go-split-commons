@@ -40,6 +40,11 @@ func TestTelemetrySyncTask(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TelemetrySync {
+				t.Error("Resource should be telemetry")
+			}
+		},
 	}
 
 	mockedTelemetryHTTP := mocks.MockTelemetryRecorder{

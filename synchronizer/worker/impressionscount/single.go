@@ -54,6 +54,8 @@ func (m *RecorderSingle) SynchronizeImpressionsCount() error {
 	pf := dtos.ImpressionsCountDTO{
 		PerFeature: impressionsInTimeFrame,
 	}
+
+	before := time.Now()
 	err := m.impressionRecorder.RecordImpressionsCount(pf, m.metadata)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -61,6 +63,7 @@ func (m *RecorderSingle) SynchronizeImpressionsCount() error {
 		}
 		return err
 	}
+	m.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionCountSync, time.Since(before).Nanoseconds())
 	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionCountSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }

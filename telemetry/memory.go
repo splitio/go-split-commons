@@ -75,6 +75,8 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 // SynchronizeStats syncs telemetry stats
 func (e *RecorderSingle) SynchronizeStats() error {
 	stats := e.buildStats()
+
+	before := time.Now()
 	err := e.telemetryRecorder.RecordStats(stats, e.metadata)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
@@ -82,6 +84,7 @@ func (e *RecorderSingle) SynchronizeStats() error {
 		}
 		return err
 	}
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
 	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }
@@ -95,6 +98,7 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 		impressionsMode = ImpressionsModeDebug
 	}
 
+	before := time.Now()
 	err := e.telemetryRecorder.RecordConfig(dtos.Config{
 		OperationMode:      Standalone,
 		Storage:            Memory,
@@ -126,5 +130,6 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 		}
 		return
 	}
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
 	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 }

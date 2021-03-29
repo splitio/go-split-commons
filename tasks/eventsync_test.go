@@ -55,6 +55,11 @@ func TestEventSyncTask(t *testing.T) {
 				t.Error("Resource should be events")
 			}
 		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
 	}
 
 	eventTask := NewRecordEventsTask(
@@ -120,6 +125,11 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
