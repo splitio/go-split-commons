@@ -73,6 +73,9 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 
 		splits, err := s.splitFetcher.Fetch(changeNumber, requestNoCache)
 		if err != nil {
+			if httpError, ok := err.(*dtos.HTTPError); ok {
+				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
+			}
 			return segments, err
 		}
 		s.processUpdate(splits)

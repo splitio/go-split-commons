@@ -8,7 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/redis"
 )
@@ -76,7 +76,7 @@ func (t *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 
 // RecordLatency stores latency for method
 func (t *TelemetryStorage) RecordLatency(method string, latency int64) {
-	bucket := util.Bucket(latency)
+	bucket := telemetry.Bucket(latency)
 	field := strings.Replace(t.latencyTemplate, name, method, 1)
 	field = strings.Replace(field, bucketName, fmt.Sprintf("%d", bucket), 1)
 	_, err := t.client.HIncrBy(redisLatency, field, 1)

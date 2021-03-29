@@ -77,6 +77,9 @@ func (e *RecorderSingle) SynchronizeStats() error {
 	stats := e.buildStats()
 	err := e.telemetryRecorder.RecordStats(stats, e.metadata)
 	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.runtimeTelemetry.RecordSyncError(TelemetrySync, httpError.Code)
+		}
 		return err
 	}
 	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
@@ -118,6 +121,9 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 	}, e.metadata)
 	if err != nil {
 		e.logger.Error("Could not log config data", err.Error())
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.runtimeTelemetry.RecordSyncError(TelemetrySync, httpError.Code)
+		}
 		return
 	}
 	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))

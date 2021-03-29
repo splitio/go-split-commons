@@ -1,7 +1,6 @@
 package impressionscount
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -17,10 +16,19 @@ import (
 func TestImpressionsCountRecorderError(t *testing.T) {
 	impressionMockRecorder := mocks.MockImpressionRecorder{
 		RecordImpressionsCountCall: func(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error {
-			return errors.New("some")
+			return &dtos.HTTPError{Code: 500, Message: "some"}
 		},
 	}
-	telemetryMockStorage := st.MockTelemetryStorage{}
+	telemetryMockStorage := st.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("It should be impressions")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
 
 	impressionsCountSync := NewRecorderSingle(provisional.NewImpressionsCounter(), impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 

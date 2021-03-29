@@ -34,7 +34,18 @@ func TestAuth500(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, mocks.MockTelemetryStorage{})
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.TokenSync {
+				t.Error("It should be token")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -65,7 +76,18 @@ func TestAuth401(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, mocks.MockTelemetryStorage{})
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.TokenSync {
+				t.Error("It should be token")
+			}
+			if status != 401 {
+				t.Error("Status should be 401")
+			}
+		},
+	}
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return

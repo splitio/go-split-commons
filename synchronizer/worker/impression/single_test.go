@@ -61,6 +61,45 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 	}
 }
 
+func TestSynhronizeEventErrorRecorder(t *testing.T) {
+	impression := dtos.Impression{
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
+	}
+
+	impressionMockStorage := mocks.MockImpressionStorage{
+		PopNCall: func(n int64) ([]dtos.Impression, error) {
+			if n != 50 {
+				t.Error("Wrong input parameter passed")
+			}
+			return []dtos.Impression{impression}, nil
+		},
+	}
+
+	impressionMockRecorder := recorderMock.MockImpressionRecorder{
+		RecordCall: func(impressions []dtos.ImpressionsDTO, metadata dtos.Metadata, extraHeaders map[string]string) error {
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("It should be impressions")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
+	err := impressionSync.SynchronizeImpressions(50)
+	if err == nil {
+		t.Error("It should return err")
+	}
+}
+
 func TestImpressionRecorder(t *testing.T) {
 	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	impression1 := dtos.Impression{

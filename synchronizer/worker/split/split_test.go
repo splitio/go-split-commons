@@ -28,11 +28,20 @@ func TestSplitSynchronizerError(t *testing.T) {
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
-			return nil, errors.New("Some")
+			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
 		},
 	}
 
-	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.SplitSync {
+				t.Error("It should be splits")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
 
 	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 

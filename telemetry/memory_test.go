@@ -18,6 +18,64 @@ import (
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
+func TestTelemetryRecorderError(t *testing.T) {
+	called := 0
+	mockedSplitStorage := st.MockSplitStorage{
+		SplitNamesCall:   func() []string { return []string{} },
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
+	}
+	mockedSegmentStorage := st.MockSegmentStorage{
+		SegmentKeysCountCall: func() int64 { return 10 },
+	}
+	mockedTelemetryStorage := st.MockTelemetryStorage{
+		PopLatenciesCall:           func() dtos.MethodLatencies { return dtos.MethodLatencies{} },
+		PopExceptionsCall:          func() dtos.MethodExceptions { return dtos.MethodExceptions{} },
+		GetLastSynchronizationCall: func() dtos.LastSynchronization { return dtos.LastSynchronization{} },
+		PopHTTPErrorsCall:          func() dtos.HTTPErrors { return dtos.HTTPErrors{} },
+		PopHTTPLatenciesCall:       func() dtos.HTTPLatencies { return dtos.HTTPLatencies{} },
+		GetImpressionsStatsCall:    func(dataType int) int64 { return 0 },
+		GetEventsStatsCall:         func(dataType int) int64 { return 0 },
+		PopTokenRefreshesCall:      func() int64 { return 0 },
+		PopAuthRejectionsCall:      func() int64 { return 0 },
+		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
+		GetSessionLengthCall:       func() int64 { return 0 },
+		PopTagsCall:                func() []string { return []string{} },
+		GetBURTimeoutsCall:         func() int64 { return 0 },
+		GetNonReadyUsagesCall:      func() int64 { return 0 },
+		RecordSuccessfulSyncCall:   func(resource int, tm int64) {},
+		RecordSyncErrorCall: func(resource, status int) {
+			called++
+			if resource != TelemetrySync {
+				t.Error("It should be splits")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	telemetryRecorderMock := mocks.MockTelemetryRecorder{
+		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error {
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+		RecordConfigCall: func(config dtos.Config, metadata dtos.Metadata) error {
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+	}
+
+	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
+
+	err := telemetrySync.SynchronizeStats()
+	if err == nil {
+		t.Error("It should return err")
+	}
+
+	telemetrySync.SynchronizeConfig(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, make(map[string]int64), []string{})
+	if called != 2 {
+		t.Error("It should be called twice")
+	}
+}
+
 func TestTelemetryRecorder(t *testing.T) {
 	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	mockedSplitStorage := st.MockSplitStorage{

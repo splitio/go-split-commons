@@ -1,7 +1,6 @@
 package segment
 
 import (
-	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -25,7 +24,16 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 	}
 
-	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.SegmentSync {
+				t.Error("It should be segments")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {
@@ -35,7 +43,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
-			return nil, errors.New("Some")
+			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
 		},
 	}
 

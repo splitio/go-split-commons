@@ -42,6 +42,41 @@ func TestSynhronizeEventError(t *testing.T) {
 	}
 }
 
+func TestSynhronizeEventErrorRecorder(t *testing.T) {
+	event1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
+	eventMockStorage := mocks.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			if n != 50 {
+				t.Error("Wrong input parameter passed")
+			}
+			return []dtos.EventDTO{event1}, nil
+		},
+	}
+
+	eventMockRecorder := recorderMock.MockEventRecorder{
+		RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.EventSync {
+				t.Error("It should be events")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
+	err := eventSync.SynchronizeEvents(50)
+	if err == nil {
+		t.Error("It should return err")
+	}
+}
+
 func TestSynhronizeEventWithNoEvents(t *testing.T) {
 	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
