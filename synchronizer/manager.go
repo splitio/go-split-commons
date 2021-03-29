@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v3/push"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/backoff"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
@@ -185,6 +186,10 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.pushManager.Stop()
 				s.synchronizer.SyncAll(false)
 				s.startPolling()
+				// Tracking STREAMING_DISABLED
+				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingDisabled); streamingEvent != nil {
+					s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+				}
 			}
 		}
 	}
@@ -193,6 +198,10 @@ func (s *ManagerImpl) pushStatusWatcher() {
 func (s *ManagerImpl) startPolling() {
 	atomic.StoreInt32(&s.operationMode, Polling)
 	s.synchronizer.StartPeriodicFetching()
+	// Tracking POLLING
+	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling); streamingEvent != nil {
+		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+	}
 }
 
 func (s *ManagerImpl) stopPolling() {
@@ -201,10 +210,22 @@ func (s *ManagerImpl) stopPolling() {
 
 func (s *ManagerImpl) pauseStreaming() {
 	s.pushManager.StartWorkers()
+	// Tracking STREAMING_PAUSED
+	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingPaused); streamingEvent != nil {
+		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+	}
 }
 
 func (s *ManagerImpl) enableStreaming() {
 	s.pushManager.StartWorkers()
 	atomic.StoreInt32(&s.operationMode, Streaming)
 	s.backoff.Reset()
+	// Tracking STREAMING
+	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Streaming); streamingEvent != nil {
+		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+	}
+	// Tracking STREAMING_ENABLED
+	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingEnabled); streamingEvent != nil {
+		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+	}
 }

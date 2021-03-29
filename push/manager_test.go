@@ -209,6 +209,7 @@ func TestStreamingConnectionFails(t *testing.T) {
 }
 
 func TestStreamingUnexpectedDisconnection(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -234,6 +235,19 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 	feedback := make(chan int64, 100)
 
@@ -274,6 +288,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 }
 
 func TestExpectedDisconnection(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -299,6 +314,19 @@ func TestExpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 	feedback := make(chan int64, 100)
 
@@ -341,6 +369,7 @@ func TestExpectedDisconnection(t *testing.T) {
 }
 
 func TestMultipleCallsToStartAndStop(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -367,6 +396,19 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh || streamingEvent.Data != 3000000 {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -419,6 +461,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 }
 
 func TestUsageAndTokenRefresh(t *testing.T) {
+	called := 0
 	var tokenRefreshes int64
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
@@ -448,6 +491,19 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() { atomic.AddInt64(&tokenRefreshes, 1) },
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -495,6 +551,7 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 }
 
 func TestEventForwarding(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -521,6 +578,19 @@ func TestEventForwarding(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -586,6 +656,7 @@ func TestEventForwarding(t *testing.T) {
 }
 
 func TestEventForwardingReturnsError(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -612,6 +683,19 @@ func TestEventForwardingReturnsError(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)
@@ -676,6 +760,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 }
 
 func TestEventForwardingReturnsNewStatus(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -702,6 +787,19 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
 	}
 
 	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock)

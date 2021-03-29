@@ -78,7 +78,7 @@ func NewManager(
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}
 
-	statusTracker := NewStatusTracker(logger)
+	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
 	parser := &NotificationParserImpl{
 		logger:            logger,
 		onSplitUpdate:     processor.ProcessSplitChangeUpdate,
@@ -212,6 +212,10 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
+				// Tracking TOKEN_REFRESHES
+				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()); streamingEvent != nil {
+					m.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+				}
 				m.withRefreshTokenLock(func() {
 					m.nextRefresh = time.AfterFunc(when, func() {
 						m.logger.Info("Refreshing SSE auth token.")
@@ -219,6 +223,10 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 						m.Start()
 					})
 				})
+				// Tracking CONNECTION_ESTABLISHED
+				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSSEConnectionEstablished, 0); streamingEvent != nil {
+					m.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+				}
 				m.feedback <- StatusUp
 			case sse.StatusConnectionFailed:
 				m.lifecycle.AbnormalShutdown()

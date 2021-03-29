@@ -4,8 +4,15 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/common"
 	"github.com/splitio/go-toolkit/v4/logging"
+)
+
+const (
+	pri = "control_pri"
+	sec = "control_sec"
 )
 
 // StatusTracker keeps track of the status of the push subsystem and generates appropriate status change notifications.
@@ -28,6 +35,7 @@ type StatusTrackerImpl struct {
 	lastControlMessage     string
 	lastStatusPropagated   int64
 	shutdownExpected       bool
+	runtimeTelemetry       storage.TelemetryRuntimeProducer
 }
 
 // NotifySSEShutdownExpected should be called when we are forcefully closing the SSE client
@@ -41,7 +49,7 @@ func (p *StatusTrackerImpl) NotifySSEShutdownExpected() {
 func (p *StatusTrackerImpl) Reset() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	p.occupancy = map[string]int64{"control_pri": 2, "control_sec": 2}
+	p.occupancy = map[string]int64{pri: 2, sec: 2}
 	p.lastControlMessage = ControlTypeStreamingEnabled
 	p.lastStatusPropagated = StatusUp
 	p.shutdownExpected = false
@@ -63,6 +71,17 @@ func (p *StatusTrackerImpl) HandleOccupancy(message *OccupancyMessage) (newStatu
 
 	p.lastOccupancyTimestamp = message.Timestamp()
 	p.occupancy[channel] = message.Publishers()
+	// Tracking OccupancyEvent
+	switch channel {
+	case pri:
+		if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeOccupancyPri, message.Publishers()); streamingEvent != nil {
+			p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+		}
+	case sec:
+		if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeOccupancySec, message.Publishers()); streamingEvent != nil {
+			p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+		}
+	}
 	return p.updateStatus()
 }
 
@@ -76,6 +95,11 @@ func (p *StatusTrackerImpl) HandleAblyError(errorEvent *AblyError) (newStatus *i
 
 	// Regardless of whether the error is retryable or not, we're going to close the connection
 	p.shutdownExpected = true
+
+	// Tracking ABLY_ERROR
+	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeAblyError, int64(errorEvent.Code())); streamingEvent != nil {
+		p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
+	}
 
 	if errorEvent.IsRetryable() {
 		p.logger.Info("Received retryable error message. Restarting SSE connection with backoff")
@@ -115,8 +139,8 @@ func (p *StatusTrackerImpl) HandleDisconnection() *int64 {
 }
 
 // NewStatusTracker returns a new StatusTracker
-func NewStatusTracker(logger logging.LoggerInterface) *StatusTrackerImpl {
-	tracker := &StatusTrackerImpl{logger: logger}
+func NewStatusTracker(logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) *StatusTrackerImpl {
+	tracker := &StatusTrackerImpl{logger: logger, runtimeTelemetry: runtimeTelemetry}
 	tracker.Reset()
 	return tracker
 }
