@@ -50,14 +50,9 @@ type ManagerImpl struct {
 	feedback          FeedbackLoop
 	nextRefresh       *time.Timer
 	refreshTokenMutex sync.Mutex
-	/*
-		running           *gtSync.AtomicBool
-		status            int32
-		shutdownWaiter    chan struct{}
-	*/
-	lifecycle        lifecycle.Manager
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
+	lifecycle         lifecycle.Manager
+	logger            logging.LoggerInterface
+	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -78,7 +73,7 @@ func NewManager(
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}
 
-	statusTracker := NewStatusTracker(logger)
+	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
 	parser := &NotificationParserImpl{
 		logger:            logger,
 		onSplitUpdate:     processor.ProcessSplitChangeUpdate,
@@ -212,6 +207,8 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
+				// Tracking TOKEN_REFRESHES
+				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {
 					m.nextRefresh = time.AfterFunc(when, func() {
 						m.logger.Info("Refreshing SSE auth token.")
@@ -219,6 +216,8 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 						m.Start()
 					})
 				})
+				// Tracking CONNECTION_ESTABLISHED
+				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSSEConnectionEstablished, 0))
 				m.feedback <- StatusUp
 			case sse.StatusConnectionFailed:
 				m.lifecycle.AbnormalShutdown()

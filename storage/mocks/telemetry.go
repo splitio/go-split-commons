@@ -14,7 +14,7 @@ type MockTelemetryStorage struct {
 	RecordSyncLatencyCall      func(resource int, latency int64)
 	RecordAuthRejectionsCall   func()
 	RecordTokenRefreshesCall   func()
-	RecordStreamingEventCall   func(streamingEvent dtos.StreamingEvent)
+	RecordStreamingEventCall   func(streamingEvent *dtos.StreamingEvent)
 	AddTagCall                 func(tag string)
 	RecordSessionLengthCall    func(session int64)
 	RecordNonReadyUsageCall    func()
@@ -84,7 +84,7 @@ func (m MockTelemetryStorage) RecordTokenRefreshes() {
 }
 
 // RecordStreamingEvent mock
-func (m MockTelemetryStorage) RecordStreamingEvent(streamingEvent dtos.StreamingEvent) {
+func (m MockTelemetryStorage) RecordStreamingEvent(streamingEvent *dtos.StreamingEvent) {
 	m.RecordStreamingEventCall(streamingEvent)
 }
 
