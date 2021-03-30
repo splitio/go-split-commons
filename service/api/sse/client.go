@@ -31,6 +31,7 @@ type StreamingClientImpl struct {
 	logger    logging.LoggerInterface
 	lifecycle lifecycle.Manager
 	metadata  dtos.Metadata
+	clientKey *string
 }
 
 // Status constants
@@ -45,13 +46,14 @@ const (
 type IncomingMessage = sse.RawEvent
 
 // NewStreamingClient creates new SSE Client
-func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) *StreamingClientImpl {
+func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata, clientKey *string) *StreamingClientImpl {
 	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, logger)
 
 	client := &StreamingClientImpl{
 		sseClient: sseClient,
 		logger:    logger,
 		metadata:  metadata,
+		clientKey: clientKey,
 	}
 	client.lifecycle.Setup()
 	return client
@@ -76,7 +78,7 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 			return
 		}
 		firstEventReceived := gtSync.NewAtomicBool(false)
-		out := s.sseClient.Do(params, api.ParseHeaderMetadata(s.metadata, nil), func(m IncomingMessage) {
+		out := s.sseClient.Do(params, api.ParseHeaderMetadata(s.metadata, nil, s.clientKey), func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {
 				streamingStatus <- StatusFirstEventOk
 			}

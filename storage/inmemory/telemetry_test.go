@@ -153,12 +153,12 @@ func TestTelemetryStorage(t *testing.T) {
 		t.Error("Wrong result")
 	}
 
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
-	telemetryStorage.RecordStreamingEvent(dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
+	telemetryStorage.RecordStreamingEvent(&dtos.StreamingEvent{Type: 1, Data: 1, Timestamp: 123456789})
 
 	if len(telemetryStorage.PopStreamingEvents()) != 6 {
 		t.Error("Wrong result")

@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseHeaderMetadata(t *testing.T) {
-	headers := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: na, MachineName: unknown}, map[string]string{"some": "some"})
+	headers := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: na, MachineName: unknown}, map[string]string{"some": "some"}, nil)
 	if headers[splitSDKVersion] != "go-some" {
 		t.Error("Wrong SDK Version")
 	}
@@ -20,8 +20,12 @@ func TestParseHeaderMetadata(t *testing.T) {
 	if headers["some"] != "some" {
 		t.Error("Wrong extra header")
 	}
+	if _, ok := headers[splitSDKClientKey]; ok {
+		t.Error("Should not parse clientKey")
+	}
 
-	headers2 := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, map[string]string{"some": "some"})
+	myKey := "test"
+	headers2 := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, map[string]string{"some": "some"}, &myKey)
 	if headers2[splitSDKVersion] != "go-some" {
 		t.Error("Wrong SDK Version")
 	}

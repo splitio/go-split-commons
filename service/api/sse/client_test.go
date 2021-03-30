@@ -28,7 +28,7 @@ func TestStreamingError(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 
-	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{})
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{}, nil)
 
 	streamingStatus := make(chan int, 1)
 	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(sse.RawEvent) {
@@ -64,6 +64,9 @@ func TestStreamingOk(t *testing.T) {
 		if r.Header.Get("Splitsdkmachineip") != "1.1.1.1" {
 			t.Error("It should send machineIP")
 		}
+		if r.Header.Get("splitSDKClientKey") != "test" {
+			t.Error("It should send clientKey")
+		}
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -81,7 +84,8 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"})
+	myKey := "test"
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, &myKey)
 
 	var result sse.RawEvent
 	mutexTest := sync.RWMutex{}
@@ -118,6 +122,9 @@ func TestStreamingClientDisconnect(t *testing.T) {
 		if r.Header.Get("Splitsdkmachineip") != "1.1.1.1" {
 			t.Error("It should send machineIP")
 		}
+		if r.Header.Get("splitSDKClientKey") != "" {
+			t.Error("It should not send clientKey")
+		}
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -135,7 +142,7 @@ func TestStreamingClientDisconnect(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"})
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, nil)
 
 	streamingStatus := make(chan int, 1)
 	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {

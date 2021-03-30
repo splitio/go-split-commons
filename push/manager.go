@@ -50,15 +50,9 @@ type ManagerImpl struct {
 	feedback          FeedbackLoop
 	nextRefresh       *time.Timer
 	refreshTokenMutex sync.Mutex
-	/*
-		running           *gtSync.AtomicBool
-		status            int32
-		shutdownWaiter    chan struct{}
-	*/
-	lifecycle        lifecycle.Manager
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
-	metadata         dtos.Metadata
+	lifecycle         lifecycle.Manager
+	logger            logging.LoggerInterface
+	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -73,6 +67,7 @@ func NewManager(
 	authAPI service.AuthClient,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
+	clientKey *string,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -93,7 +88,7 @@ func NewManager(
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,
-		sseClient:        sse.NewStreamingClient(cfg, logger, metadata),
+		sseClient:        sse.NewStreamingClient(cfg, logger, metadata, clientKey),
 		statusTracker:    statusTracker,
 		feedback:         feedbackLoop,
 		processor:        processor,
@@ -215,9 +210,7 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					when = 50 * time.Minute
 				}
 				// Tracking TOKEN_REFRESHES
-				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()); streamingEvent != nil {
-					m.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-				}
+				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {
 					m.nextRefresh = time.AfterFunc(when, func() {
 						m.logger.Info("Refreshing SSE auth token.")
@@ -226,9 +219,7 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					})
 				})
 				// Tracking CONNECTION_ESTABLISHED
-				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSSEConnectionEstablished, 0); streamingEvent != nil {
-					m.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-				}
+				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSSEConnectionEstablished, 0))
 				m.feedback <- StatusUp
 			case sse.StatusConnectionFailed:
 				m.lifecycle.AbnormalShutdown()

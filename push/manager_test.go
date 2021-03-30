@@ -45,7 +45,7 @@ func TestAuth500(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -89,7 +89,7 @@ func TestAuth401(t *testing.T) {
 		RecordAuthRejectionsCall: func() { called++ },
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -131,7 +131,7 @@ func TestAuthPushDisabled(t *testing.T) {
 			}
 		},
 	}
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -181,7 +181,7 @@ func TestStreamingConnectionFails(t *testing.T) {
 		RecordTokenRefreshesCall: func() {},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -235,7 +235,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -251,7 +251,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -314,7 +314,7 @@ func TestExpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -330,7 +330,7 @@ func TestExpectedDisconnection(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -396,7 +396,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh || streamingEvent.Data != 3000000 {
@@ -411,7 +411,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -491,7 +491,7 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() { atomic.AddInt64(&tokenRefreshes, 1) },
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -506,7 +506,7 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -578,7 +578,7 @@ func TestEventForwarding(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -593,7 +593,7 @@ func TestEventForwarding(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -683,7 +683,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -698,7 +698,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -787,7 +787,7 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -802,7 +802,7 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 		},
 	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{})
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return

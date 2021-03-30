@@ -6,12 +6,13 @@ const (
 	splitSDKVersion     = "SplitSDKVersion"
 	splitSDKMachineName = "SplitSDKMachineName"
 	splitSDKMachineIP   = "SplitSDKMachineIP"
+	splitSDKClientKey   = "SplitSDKClientKey"
 
 	unknown = "unknown"
 	na      = "NA"
 )
 
-func ParseHeaderMetadata(metadata dtos.Metadata, extraHeaders map[string]string) map[string]string {
+func ParseHeaderMetadata(metadata dtos.Metadata, extraHeaders map[string]string, clientKey *string) map[string]string {
 	headers := make(map[string]string)
 	headers[splitSDKVersion] = metadata.SDKVersion
 	if metadata.MachineName != na && metadata.MachineName != unknown {
@@ -22,6 +23,9 @@ func ParseHeaderMetadata(metadata dtos.Metadata, extraHeaders map[string]string)
 	}
 	for header, value := range extraHeaders {
 		headers[header] = value
+	}
+	if clientKey != nil {
+		headers[splitSDKClientKey] = *clientKey
 	}
 	return headers
 }
