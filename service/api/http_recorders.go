@@ -16,7 +16,7 @@ type httpRecorderBase struct {
 
 // RecordRaw records raw data
 func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata, extraHeaders map[string]string) error {
-	return h.client.Post(url, data, ParseHeaderMetadata(metadata, extraHeaders, nil))
+	return h.client.Post(url, data, AddMetadataToHeaders(metadata, extraHeaders, nil))
 }
 
 // HTTPImpressionRecorder is a struct responsible for submitting impression bulks to the backend

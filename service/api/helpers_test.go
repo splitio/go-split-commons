@@ -6,8 +6,8 @@ import (
 	"github.com/splitio/go-split-commons/v3/dtos"
 )
 
-func TestParseHeaderMetadata(t *testing.T) {
-	headers := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: na, MachineName: unknown}, map[string]string{"some": "some"}, nil)
+func TestAddMetadataToHeaders(t *testing.T) {
+	headers := AddMetadataToHeaders(dtos.Metadata{SDKVersion: "go-some", MachineIP: na, MachineName: unknown}, map[string]string{"some": "some"}, nil)
 	if headers[splitSDKVersion] != "go-some" {
 		t.Error("Wrong SDK Version")
 	}
@@ -25,7 +25,7 @@ func TestParseHeaderMetadata(t *testing.T) {
 	}
 
 	myKey := "test"
-	headers2 := ParseHeaderMetadata(dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, map[string]string{"some": "some"}, &myKey)
+	headers2 := AddMetadataToHeaders(dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, map[string]string{"some": "some"}, &myKey)
 	if headers2[splitSDKVersion] != "go-some" {
 		t.Error("Wrong SDK Version")
 	}
