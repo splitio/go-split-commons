@@ -39,7 +39,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	cfg.StreamingEnabled = false
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Polling {
 				t.Error("It should record Streaming")
 			}
@@ -184,7 +184,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
@@ -312,7 +312,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
@@ -458,7 +458,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
@@ -591,7 +591,7 @@ func TestStreamingPaused(t *testing.T) {
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {

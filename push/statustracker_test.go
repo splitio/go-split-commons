@@ -12,7 +12,7 @@ import (
 func TestStatusTrackerAblyerror(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	mockedTelemetryStorage := mocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			if streamingEvent.Type != telemetry.EventTypeAblyError || streamingEvent.Data < 40000 || streamingEvent.Data > 50000 {
 				t.Error("Should track ably error")
 			}
@@ -57,7 +57,7 @@ func TestStatusTrackerOccupancyMessages(t *testing.T) {
 	occupancy := 0
 	logger := logging.NewLogger(nil)
 	mockedTelemetryStorage := mocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch occupancy {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeOccupancyPri || streamingEvent.Data != 0 {
@@ -129,7 +129,7 @@ func TestHandlersWhenDisconnectionNotified(t *testing.T) {
 func TestStatusTrackerCombinations(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	mockedTelemetryStorage := mocks.MockTelemetryStorage{
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
 	}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 

@@ -187,9 +187,7 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.synchronizer.SyncAll(false)
 				s.startPolling()
 				// Tracking STREAMING_DISABLED
-				if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingDisabled); streamingEvent != nil {
-					s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-				}
+				s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingDisabled))
 			}
 		}
 	}
@@ -199,9 +197,7 @@ func (s *ManagerImpl) startPolling() {
 	atomic.StoreInt32(&s.operationMode, Polling)
 	s.synchronizer.StartPeriodicFetching()
 	// Tracking POLLING
-	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling); streamingEvent != nil {
-		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-	}
+	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling))
 }
 
 func (s *ManagerImpl) stopPolling() {
@@ -211,9 +207,7 @@ func (s *ManagerImpl) stopPolling() {
 func (s *ManagerImpl) pauseStreaming() {
 	s.pushManager.StartWorkers()
 	// Tracking STREAMING_PAUSED
-	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingPaused); streamingEvent != nil {
-		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-	}
+	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingPaused))
 }
 
 func (s *ManagerImpl) enableStreaming() {
@@ -221,11 +215,7 @@ func (s *ManagerImpl) enableStreaming() {
 	atomic.StoreInt32(&s.operationMode, Streaming)
 	s.backoff.Reset()
 	// Tracking STREAMING
-	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Streaming); streamingEvent != nil {
-		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-	}
+	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Streaming))
 	// Tracking STREAMING_ENABLED
-	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingEnabled); streamingEvent != nil {
-		s.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-	}
+	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingEnabled))
 }

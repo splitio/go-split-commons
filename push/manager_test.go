@@ -235,7 +235,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -314,7 +314,7 @@ func TestExpectedDisconnection(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -396,7 +396,7 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh || streamingEvent.Data != 3000000 {
@@ -491,7 +491,7 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() { atomic.AddInt64(&tokenRefreshes, 1) },
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -578,7 +578,7 @@ func TestEventForwarding(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -683,7 +683,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
@@ -787,7 +787,7 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
-		RecordStreamingEventCall: func(streamingEvent dtos.StreamingEvent) {
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
 			switch called {
 			case 0:
 				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {

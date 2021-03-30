@@ -74,13 +74,9 @@ func (p *StatusTrackerImpl) HandleOccupancy(message *OccupancyMessage) (newStatu
 	// Tracking OccupancyEvent
 	switch channel {
 	case pri:
-		if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeOccupancyPri, message.Publishers()); streamingEvent != nil {
-			p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-		}
+		p.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeOccupancyPri, message.Publishers()))
 	case sec:
-		if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeOccupancySec, message.Publishers()); streamingEvent != nil {
-			p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-		}
+		p.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeOccupancySec, message.Publishers()))
 	}
 	return p.updateStatus()
 }
@@ -97,9 +93,7 @@ func (p *StatusTrackerImpl) HandleAblyError(errorEvent *AblyError) (newStatus *i
 	p.shutdownExpected = true
 
 	// Tracking ABLY_ERROR
-	if streamingEvent := telemetry.GetStreamingEvent(telemetry.EventTypeAblyError, int64(errorEvent.Code())); streamingEvent != nil {
-		p.runtimeTelemetry.RecordStreamingEvent(*streamingEvent)
-	}
+	p.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeAblyError, int64(errorEvent.Code())))
 
 	if errorEvent.IsRetryable() {
 		p.logger.Info("Received retryable error message. Restarting SSE connection with backoff")
