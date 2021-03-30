@@ -67,7 +67,7 @@ func TestPostImpressions(t *testing.T) {
 		sdkVersion := r.Header.Get("SplitSDKVersion")
 		sdkMachine := r.Header.Get("SplitSDKMachineIP")
 
-		if sdkVersion != fmt.Sprint("go-some") {
+		if sdkVersion != "go-some" {
 			t.Error("SDK Version HEADER not match")
 			t.Error(sdkVersion)
 		}
@@ -180,7 +180,7 @@ func TestPostTelemetryStats(t *testing.T) {
 		sdkVersion := r.Header.Get("SplitSDKVersion")
 		sdkMachine := r.Header.Get("SplitSDKMachineIP")
 
-		if sdkVersion != fmt.Sprint("go-some") {
+		if sdkVersion != "go-some" {
 			t.Error("SDK Version HEADER not match")
 		}
 

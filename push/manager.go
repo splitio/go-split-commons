@@ -66,6 +66,8 @@ func NewManager(
 	feedbackLoop chan<- int64,
 	authAPI service.AuthClient,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	metadata dtos.Metadata,
+	clientKey *string,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -86,7 +88,7 @@ func NewManager(
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,
-		sseClient:        sse.NewStreamingClient(cfg, logger),
+		sseClient:        sse.NewStreamingClient(cfg, logger, metadata, clientKey),
 		statusTracker:    statusTracker,
 		feedback:         feedbackLoop,
 		processor:        processor,

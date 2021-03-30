@@ -17,6 +17,39 @@ import (
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
+func TestSynchronizerErr(t *testing.T) {
+	syncMock := &mocks.MockSynchronizer{
+		SyncAllCall:                    func(bool) error { return nil },
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
+	}
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = true
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	authClient := &apiMocks.MockAuthClient{}
+	status := make(chan int, 1)
+	_, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	myKey := "12345"
+	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey)
+	if err == nil || err.Error() != "invalid ClientKey" {
+		t.Error("It should return err")
+	}
+
+	myKey = "1234"
+	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+}
+
 func TestStreamingDisabledInitOk(t *testing.T) {
 	syncAllCount := int32(0)
 	startPeriodicFetchingCount := int32(0)
@@ -47,7 +80,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	}
 	authClient := &apiMocks.MockAuthClient{}
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -116,7 +149,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	authClient := &apiMocks.MockAuthClient{}
 	status := make(chan int, 1)
 
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -201,7 +234,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -333,7 +366,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -483,7 +516,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -616,7 +649,7 @@ func TestStreamingPaused(t *testing.T) {
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
