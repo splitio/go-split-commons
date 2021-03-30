@@ -3,6 +3,7 @@ package telemetry
 import (
 	"os"
 	"strings"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
@@ -19,6 +20,7 @@ type RecorderSingle struct {
 	segmentStorage    storage.SegmentStorageConsumer
 	logger            logging.LoggerInterface
 	metadata          dtos.Metadata
+	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
 // NewTelemetrySynchronizer creates new event synchronizer for posting events
@@ -29,6 +31,7 @@ func NewTelemetrySynchronizer(
 	segmentStorage storage.SegmentStorageConsumer,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) TelemetrySynchronizer {
 	return &RecorderSingle{
 		telemetryStorage:  telemetryStorage,
@@ -37,6 +40,7 @@ func NewTelemetrySynchronizer(
 		segmentStorage:    segmentStorage,
 		logger:            logger,
 		metadata:          metadata,
+		runtimeTelemetry:  runtimeTelemetry,
 	}
 }
 
@@ -71,11 +75,22 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 // SynchronizeStats syncs telemetry stats
 func (e *RecorderSingle) SynchronizeStats() error {
 	stats := e.buildStats()
-	return e.telemetryRecorder.RecordStats(stats, e.metadata)
+
+	before := time.Now()
+	err := e.telemetryRecorder.RecordStats(stats, e.metadata)
+	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.runtimeTelemetry.RecordSyncError(TelemetrySync, httpError.Code)
+		}
+		return err
+	}
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	return nil
 }
 
-// SynchronizeInit syncs telemetry init
-func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+// SynchronizeConfig syncs telemetry config
+func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
 	urlOverrides := getURLOverrides(cfg.AdvancedConfig)
 
 	impressionsMode := ImpressionsModeOptimized
@@ -83,7 +98,8 @@ func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, 
 		impressionsMode = ImpressionsModeDebug
 	}
 
-	err := e.telemetryRecorder.RecordInit(dtos.Init{
+	before := time.Now()
+	err := e.telemetryRecorder.RecordConfig(dtos.Config{
 		OperationMode:      Standalone,
 		Storage:            Memory,
 		ActiveFactories:    int64(len(factoryInstances)),
@@ -108,6 +124,12 @@ func (e *RecorderSingle) SynchronizeInit(cfg InitConfig, timedUntilReady int64, 
 		NonReadyUsages:             e.telemetryStorage.GetNonReadyUsages(),
 	}, e.metadata)
 	if err != nil {
-		e.logger.Error("Could not log init data", err.Error())
+		e.logger.Error("Could not log config data", err.Error())
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.runtimeTelemetry.RecordSyncError(TelemetrySync, httpError.Code)
+		}
+		return
 	}
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 }

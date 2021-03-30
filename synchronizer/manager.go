@@ -38,15 +38,16 @@ type Manager interface {
 
 // ManagerImpl struct
 type ManagerImpl struct {
-	synchronizer    Synchronizer
-	logger          logging.LoggerInterface
-	config          conf.AdvancedConfig
-	pushManager     push.Manager
-	managerStatus   chan int
-	streamingStatus chan int64
-	operationMode   int32
-	lifecycle       lifecycle.Manager
-	backoff         backoff.Interface
+	synchronizer     Synchronizer
+	logger           logging.LoggerInterface
+	config           conf.AdvancedConfig
+	pushManager      push.Manager
+	managerStatus    chan int
+	streamingStatus  chan int64
+	operationMode    int32
+	lifecycle        lifecycle.Manager
+	backoff          backoff.Interface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -57,22 +58,24 @@ func NewSynchronizerManager(
 	authClient service.AuthClient,
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) (*ManagerImpl, error) {
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
 	}
 
 	manager := &ManagerImpl{
-		backoff:       backoff.New(),
-		synchronizer:  synchronizer,
-		logger:        logger,
-		config:        config,
-		managerStatus: managerStatus,
+		backoff:          backoff.New(),
+		synchronizer:     synchronizer,
+		logger:           logger,
+		config:           config,
+		managerStatus:    managerStatus,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
 		streamingStatus := make(chan int64, 1000)
-		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry)
 		if err != nil {
 			return nil, err
 		}

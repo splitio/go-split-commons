@@ -2,25 +2,27 @@ package event
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
-
-	"errors"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service/api"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
 	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexqueue"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSynhronizeEventError(t *testing.T) {
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
@@ -30,13 +32,9 @@ func TestSynhronizeEventError(t *testing.T) {
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
-	eventSync := NewEventRecorderSingle(
-		eventMockStorage,
-		eventMockRecorder,
-		logging.NewLogger(&logging.LoggerOptions{}),
-		dtos.Metadata{},
-	)
+	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
 
 	err := eventSync.SynchronizeEvents(50)
 	if err == nil {
@@ -44,8 +42,43 @@ func TestSynhronizeEventError(t *testing.T) {
 	}
 }
 
+func TestSynhronizeEventErrorRecorder(t *testing.T) {
+	event1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
+	eventMockStorage := mocks.MockEventStorage{
+		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
+			if n != 50 {
+				t.Error("Wrong input parameter passed")
+			}
+			return []dtos.EventDTO{event1}, nil
+		},
+	}
+
+	eventMockRecorder := recorderMock.MockEventRecorder{
+		RecordCall: func(events []dtos.EventDTO, metadata dtos.Metadata) error {
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.EventSync {
+				t.Error("It should be events")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
+	err := eventSync.SynchronizeEvents(50)
+	if err == nil {
+		t.Error("It should return err")
+	}
+}
+
 func TestSynhronizeEventWithNoEvents(t *testing.T) {
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
@@ -61,12 +94,9 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 		},
 	}
 
-	eventSync := NewEventRecorderSingle(
-		eventMockStorage,
-		eventMockRecorder,
-		logging.NewLogger(&logging.LoggerOptions{}),
-		dtos.Metadata{},
-	)
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+
+	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
 
 	err := eventSync.SynchronizeEvents(50)
 	if err != nil {
@@ -75,29 +105,32 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 }
 
 func TestSynhronizeEvent(t *testing.T) {
-	event1 := dtos.EventDTO{
-		EventTypeID:     "someId",
-		Key:             "someKey",
-		Properties:      make(map[string]interface{}),
-		Timestamp:       123456789,
-		TrafficTypeName: "someTraffic",
-		Value:           nil,
-	}
-	event2 := dtos.EventDTO{
-		EventTypeID:     "someId2",
-		Key:             "someKey2",
-		Properties:      make(map[string]interface{}),
-		Timestamp:       123456789,
-		TrafficTypeName: "someTraffic",
-		Value:           nil,
-	}
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	event1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
+	event2 := dtos.EventDTO{EventTypeID: "someId2", Key: "someKey2", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
 			}
 			return []dtos.EventDTO{event1, event2}, nil
+		},
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
 		},
 	}
 
@@ -116,12 +149,7 @@ func TestSynhronizeEvent(t *testing.T) {
 		},
 	}
 
-	eventSync := NewEventRecorderSingle(
-		eventMockStorage,
-		eventMockRecorder,
-		logging.NewLogger(&logging.LoggerOptions{}),
-		dtos.Metadata{},
-	)
+	eventSync := NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, telemetryMockStorage)
 
 	err := eventSync.SynchronizeEvents(50)
 	if err != nil {
@@ -169,33 +197,21 @@ func TestSynhronizeEventSync(t *testing.T) {
 	defer ts.Close()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	eventRecorder := api.NewHTTPEventsRecorder(
-		"",
-		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
-		},
-		logger,
-	)
+	eventRecorder := api.NewHTTPEventsRecorder("", conf.AdvancedConfig{EventsURL: ts.URL}, logger)
 
 	mockedEvent1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey1", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
-	eventStorage := mutexqueue.NewMQEventsStorage(100, nil, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	eventStorage := mutexqueue.NewMQEventsStorage(100, nil, logger, runtimeTelemetry)
 	eventStorage.Push(mockedEvent1, 100)
 	eventStorage.Push(mockedEvent2, 100)
 	eventStorage.Push(mockedEvent3, 100)
 
-	eventSync := NewEventRecorderSingle(
-		eventStorage,
-		eventRecorder,
-		logger,
-		dtos.Metadata{},
-	)
+	eventSync := NewEventRecorderSingle(eventStorage, eventRecorder, logger, dtos.Metadata{}, runtimeTelemetry)
 
 	eventSync.SynchronizeEvents(5)
-
 	if requestReceived != 1 {
 		t.Error("It should call once")
 	}

@@ -13,18 +13,18 @@ func TestRecorderRedis(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	redisMock := mocks.MockTelemetryStorage{
-		RecordInitDataCall: func(initData dtos.Init) error {
+		RecordConfigDataCall: func(configData dtos.Config) error {
 			called++
-			if initData.ActiveFactories != 1 {
+			if configData.ActiveFactories != 1 {
 				t.Error("It should be 1")
 			}
-			if initData.OperationMode != Consumer {
+			if configData.OperationMode != Consumer {
 				t.Error("It should be Consumer")
 			}
-			if initData.Storage != Redis {
+			if configData.Storage != Redis {
 				t.Error("It should be redis")
 			}
-			if len(initData.Tags) != 1 || initData.Tags[0] != "sentinel" {
+			if len(configData.Tags) != 1 || configData.Tags[0] != "sentinel" {
 				t.Error("It should send tags")
 			}
 			return nil
@@ -34,7 +34,7 @@ func TestRecorderRedis(t *testing.T) {
 	sender := NewSynchronizerRedis(redisMock, logger)
 	factories := make(map[string]int64)
 	factories["one"] = 1
-	sender.SynchronizeInit(InitConfig{}, 0, factories, []string{"sentinel"})
+	sender.SynchronizeConfig(InitConfig{}, 0, factories, []string{"sentinel"})
 	if called != 1 {
 		t.Error("It should be called once")
 	}

@@ -22,6 +22,8 @@ const (
 	SegmentSync
 	// ImpressionSync impressions
 	ImpressionSync
+	// ImpressionCountSync impressionsCount
+	ImpressionCountSync
 	// EventSync events
 	EventSync
 	// TelemetrySync telemetry

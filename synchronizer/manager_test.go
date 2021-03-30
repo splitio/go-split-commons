@@ -12,7 +12,6 @@ import (
 	apiMocks "github.com/splitio/go-split-commons/v3/service/mocks"
 	storageMocks "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/mocks"
-
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -37,9 +36,10 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = false
 	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -104,10 +104,11 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = false
 	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
 	status := make(chan int, 1)
 
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -173,10 +174,11 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -285,10 +287,11 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -411,10 +414,11 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}

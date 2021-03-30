@@ -7,11 +7,11 @@ import (
 )
 
 type SynchronizerRedis struct {
-	storage storage.TelemetryInitProducer
+	storage storage.TelemetryConfigProducer
 	logger  logging.LoggerInterface
 }
 
-func NewSynchronizerRedis(storage storage.TelemetryInitProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
+func NewSynchronizerRedis(storage storage.TelemetryConfigProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
 	return &SynchronizerRedis{
 		storage: storage,
 		logger:  logger,
@@ -23,8 +23,8 @@ func (r *SynchronizerRedis) SynchronizeStats() error {
 	return nil
 }
 
-func (r *SynchronizerRedis) SynchronizeInit(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
-	err := r.storage.RecordInitData(dtos.Init{
+func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+	err := r.storage.RecordConfigData(dtos.Config{
 		OperationMode:      Consumer,
 		Storage:            Redis,
 		ActiveFactories:    int64(len(factoryInstances)),
@@ -32,6 +32,6 @@ func (r *SynchronizerRedis) SynchronizeInit(cfg InitConfig, timedUntilReady int6
 		Tags:               tags,
 	})
 	if err != nil {
-		r.logger.Error("Could not log init data", err.Error())
+		r.logger.Error("Could not log config data", err.Error())
 	}
 }

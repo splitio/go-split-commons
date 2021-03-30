@@ -5,27 +5,31 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // NewMQImpressionsStorage returns an instance of MQEventsStorage
-func NewMQImpressionsStorage(queueSize int, isFull chan<- string, logger logging.LoggerInterface) *MQImpressionsStorage {
+func NewMQImpressionsStorage(queueSize int, isFull chan<- string, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) *MQImpressionsStorage {
 	return &MQImpressionsStorage{
-		queue:      list.New(),
-		size:       queueSize,
-		mutexQueue: &sync.Mutex{},
-		fullChan:   isFull,
-		logger:     logger,
+		queue:            list.New(),
+		size:             queueSize,
+		mutexQueue:       &sync.Mutex{},
+		fullChan:         isFull,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 }
 
 // MQImpressionsStorage in memory events storage
 type MQImpressionsStorage struct {
-	queue      *list.List
-	size       int
-	mutexQueue *sync.Mutex
-	fullChan   chan<- string //only write channel
-	logger     logging.LoggerInterface
+	queue            *list.List
+	size             int
+	mutexQueue       *sync.Mutex
+	fullChan         chan<- string //only write channel
+	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 func (s *MQImpressionsStorage) sendSignalIsFull() {
@@ -59,13 +63,18 @@ func (s *MQImpressionsStorage) LogImpressions(impressions []dtos.Impression) err
 	s.mutexQueue.Lock()
 	defer s.mutexQueue.Unlock()
 
+	impressionsToAdd := len(impressions)
+
 	for _, impression := range impressions {
 		if s.queue.Len()+1 > s.size {
 			s.sendSignalIsFull()
+			s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDropped, int64(impressionsToAdd))
 			return ErrorMaxSizeReached
 		}
 		// Add element
 		s.queue.PushBack(impression)
+		s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsQueued, 1)
+		impressionsToAdd--
 
 		if s.queue.Len() == s.size {
 			s.sendSignalIsFull()

@@ -2,19 +2,22 @@ package event
 
 import (
 	"errors"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 // RecorderSingle struct for event sync
 type RecorderSingle struct {
-	eventStorage  storage.EventStorageConsumer
-	eventRecorder service.EventsRecorder
-	logger        logging.LoggerInterface
-	metadata      dtos.Metadata
+	eventStorage     storage.EventStorageConsumer
+	eventRecorder    service.EventsRecorder
+	logger           logging.LoggerInterface
+	metadata         dtos.Metadata
+	runtimeTelemetry storage.TelemetryRuntimeProducer
 }
 
 // NewEventRecorderSingle creates new event synchronizer for posting events
@@ -23,12 +26,14 @@ func NewEventRecorderSingle(
 	eventRecorder service.EventsRecorder,
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
 ) EventRecorder {
 	return &RecorderSingle{
-		eventStorage:  eventStorage,
-		eventRecorder: eventRecorder,
-		logger:        logger,
-		metadata:      metadata,
+		eventStorage:     eventStorage,
+		eventRecorder:    eventRecorder,
+		logger:           logger,
+		metadata:         metadata,
+		runtimeTelemetry: runtimeTelemetry,
 	}
 }
 
@@ -45,10 +50,16 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 		return nil
 	}
 
+	before := time.Now()
 	err = e.eventRecorder.Record(queuedEvents, e.metadata)
 	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			e.runtimeTelemetry.RecordSyncError(telemetry.EventSync, httpError.Code)
+		}
 		return err
 	}
+	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before).Nanoseconds())
+	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
 	return nil
 }
 

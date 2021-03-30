@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -9,8 +8,9 @@ import (
 	"github.com/splitio/go-split-commons/v3/conf"
 	"github.com/splitio/go-split-commons/v3/dtos"
 	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -18,57 +18,31 @@ func TestImpressionSyncTask(t *testing.T) {
 	call := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature1",
-		KeyName:      "someKey1",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature2",
-		KeyName:      "someKey2",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature3",
-		KeyName:      "someKey3",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment3",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature3",
+		KeyName: "someKey3", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 	impression4 := dtos.Impression{
-		BucketingKey: "someBucketingKey3",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature2",
-		KeyName:      "someKey22",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment3",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		KeyName: "someKey22", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 
-	impressionMockStorage := storageMock.MockImpressionStorage{
+	impressionMockStorage := mocks.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
-			fmt.Println("CALLED")
 			call++
 			if n != 50 {
 				t.Error("Wrong input parameter passed")
 			}
 			return []dtos.Impression{impression1, impression2, impression3, impression4}, nil
 		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return call != 1 },
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
@@ -98,14 +72,21 @@ func TestImpressionSyncTask(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
+	}
+
 	impressionTask := NewRecordImpressionsTask(
-		impression.NewRecorderSingle(
-			impressionMockStorage,
-			impressionMockRecorder,
-			logger,
-			dtos.Metadata{},
-			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
-		),
+		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		2,
 		logger,
 		50,
@@ -132,34 +113,19 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 	var call int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature1",
-		KeyName:      "someKey1",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature2",
-		KeyName:      "someKey2",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature3",
-		KeyName:      "someKey3",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment3",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature3",
+		KeyName: "someKey3", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 
-	impressionMockStorage := storageMock.MockImpressionStorage{
+	impressionMockStorage := mocks.MockImpressionStorage{
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			atomic.AddInt64(&call, 1)
 			if n != 50 {
@@ -167,12 +133,7 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 			}
 			return []dtos.Impression{impression1, impression2, impression3}, nil
 		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return call != 1 },
 	}
 
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{
@@ -202,14 +163,21 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.ImpressionSync {
+				t.Error("Resource should be impressions")
+			}
+		},
+	}
+
 	impressionTask := NewRecordImpressionsTasks(
-		impression.NewRecorderSingle(
-			impressionMockStorage,
-			impressionMockRecorder,
-			logger,
-			dtos.Metadata{},
-			conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug},
-		),
+		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		2,
 		logger,
 		50,

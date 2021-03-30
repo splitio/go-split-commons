@@ -134,17 +134,17 @@ func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger log
 	}
 }
 
-// RecordInit method submits init
-func (m *HTTPTelemetryRecorder) RecordInit(init dtos.Init, metadata dtos.Metadata) error {
-	data, err := json.Marshal(init)
+// RecordConfig method submits config
+func (m *HTTPTelemetryRecorder) RecordConfig(config dtos.Config, metadata dtos.Metadata) error {
+	data, err := json.Marshal(config)
 	if err != nil {
 		m.logger.Error("Error marshaling JSON", err.Error())
 		return err
 	}
 
-	err = m.RecordRaw("/metrics/init", data, metadata, nil)
+	err = m.RecordRaw("/metrics/config", data, metadata, nil)
 	if err != nil {
-		m.logger.Error("Error posting init", err.Error())
+		m.logger.Error("Error posting config", err.Error())
 		return err
 	}
 
@@ -159,9 +159,9 @@ func (m *HTTPTelemetryRecorder) RecordStats(stats dtos.Stats, metadata dtos.Meta
 		return err
 	}
 
-	err = m.RecordRaw("/metrics/stats", data, metadata, nil)
+	err = m.RecordRaw("/metrics/usage", data, metadata, nil)
 	if err != nil {
-		m.logger.Error("Error posting stats", err.Error())
+		m.logger.Error("Error posting usage", err.Error())
 		return err
 	}
 

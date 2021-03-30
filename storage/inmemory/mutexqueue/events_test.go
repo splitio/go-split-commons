@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -24,7 +26,8 @@ func TestMSEventsStorage(t *testing.T) {
 
 	isFull := make(chan string, 1)
 	queueSize := 20
-	queue := NewMQEventsStorage(queueSize, isFull, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	queue := NewMQEventsStorage(queueSize, isFull, logger, runtimeTelemetry)
 
 	if queue.Count() != 0 {
 		t.Error("Queue count error")
@@ -75,6 +78,9 @@ func TestMSEventsStorage(t *testing.T) {
 		}
 	}
 
+	if runtimeTelemetry.GetEventsStats(telemetry.EventsQueued) != 10 {
+		t.Error("It should queue 10 events")
+	}
 }
 
 func TestMSEventsStorageMaxSize(t *testing.T) {
@@ -84,7 +90,8 @@ func TestMSEventsStorageMaxSize(t *testing.T) {
 
 	isFull := make(chan string, 1)
 	maxSize := 10
-	queue := NewMQEventsStorage(maxSize, isFull, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	queue := NewMQEventsStorage(maxSize, isFull, logger, runtimeTelemetry)
 
 	select {
 	case <-isFull:
@@ -109,6 +116,13 @@ func TestMSEventsStorageMaxSize(t *testing.T) {
 	default:
 		t.Error("Signal sent when it shouldn't have!")
 	}
+
+	if runtimeTelemetry.GetEventsStats(telemetry.EventsQueued) != 10 {
+		t.Error("It should queue 10 events")
+	}
+	if runtimeTelemetry.GetEventsStats(telemetry.EventsDropped) != 1 {
+		t.Error("It should drop one evennt")
+	}
 }
 
 func TestMSEventsStorageMaxSizeInBytes(t *testing.T) {
@@ -123,7 +137,8 @@ func TestMSEventsStorageMaxSizeInBytes(t *testing.T) {
 	}
 	isFull := make(chan string, 1)
 	maxSize := 9999999 // Huge number so that it explodes only because of size in bytes
-	queue := NewMQEventsStorage(maxSize, isFull, logger)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	queue := NewMQEventsStorage(maxSize, isFull, logger, runtimeTelemetry)
 
 	select {
 	case <-isFull:
