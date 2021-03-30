@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v3/service/api"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/sse"
 	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
@@ -28,6 +30,7 @@ type StreamingClientImpl struct {
 	sseClient *sse.Client
 	logger    logging.LoggerInterface
 	lifecycle lifecycle.Manager
+	metadata  dtos.Metadata
 }
 
 // Status constants
@@ -42,12 +45,13 @@ const (
 type IncomingMessage = sse.RawEvent
 
 // NewStreamingClient creates new SSE Client
-func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *StreamingClientImpl {
+func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) *StreamingClientImpl {
 	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, logger)
 
 	client := &StreamingClientImpl{
 		sseClient: sseClient,
 		logger:    logger,
+		metadata:  metadata,
 	}
 	client.lifecycle.Setup()
 	return client
@@ -72,7 +76,7 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 			return
 		}
 		firstEventReceived := gtSync.NewAtomicBool(false)
-		out := s.sseClient.Do(params, func(m IncomingMessage) {
+		out := s.sseClient.Do(params, api.ParseHeaderMetadata(s.metadata, nil), func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {
 				streamingStatus <- StatusFirstEventOk
 			}

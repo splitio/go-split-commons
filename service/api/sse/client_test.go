@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-toolkit/v4/logging"
 	"github.com/splitio/go-toolkit/v4/sse"
 )
@@ -27,7 +28,7 @@ func TestStreamingError(t *testing.T) {
 		StreamingServiceURL: ts.URL,
 	}
 
-	mockedClient := NewStreamingClient(mocked, logger)
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{})
 
 	streamingStatus := make(chan int, 1)
 	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(sse.RawEvent) {
@@ -54,6 +55,15 @@ func TestStreamingOk(t *testing.T) {
 	streamingStatus := make(chan int, 10)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("splitsdkversion") != "go-some" {
+			t.Error("It should send sdkVersion")
+		}
+		if r.Header.Get("Splitsdkmachinename") != "name" {
+			t.Error("It should send machineName")
+		}
+		if r.Header.Get("Splitsdkmachineip") != "1.1.1.1" {
+			t.Error("It should send machineIP")
+		}
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -71,7 +81,7 @@ func TestStreamingOk(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, logger)
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"})
 
 	var result sse.RawEvent
 	mutexTest := sync.RWMutex{}
@@ -99,6 +109,15 @@ func TestStreamingClientDisconnect(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("splitsdkversion") != "go-some" {
+			t.Error("It should send sdkVersion")
+		}
+		if r.Header.Get("Splitsdkmachinename") != "name" {
+			t.Error("It should send machineName")
+		}
+		if r.Header.Get("Splitsdkmachineip") != "1.1.1.1" {
+			t.Error("It should send machineIP")
+		}
 		flusher, err := w.(http.Flusher)
 		if !err {
 			t.Error("Unexpected error")
@@ -116,7 +135,7 @@ func TestStreamingClientDisconnect(t *testing.T) {
 	mocked := &conf.AdvancedConfig{
 		StreamingServiceURL: ts.URL,
 	}
-	mockedClient := NewStreamingClient(mocked, logger)
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"})
 
 	streamingStatus := make(chan int, 1)
 	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {

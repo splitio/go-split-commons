@@ -30,7 +30,6 @@ type Client interface {
 type HTTPClient struct {
 	url        string
 	httpClient *http.Client
-	headers    map[string]string
 	logger     logging.LoggerInterface
 	apikey     string
 	metadata   dtos.Metadata
@@ -44,8 +43,7 @@ func NewHTTPClient(
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 ) Client {
-	var timeout int
-	timeout = cfg.HTTPTimeout
+	timeout := cfg.HTTPTimeout
 	client := &http.Client{Timeout: time.Duration(timeout) * time.Second}
 	return &HTTPClient{
 		url:        endpoint,

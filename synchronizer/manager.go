@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/push"
 	"github.com/splitio/go-split-commons/v3/service"
 	"github.com/splitio/go-split-commons/v3/storage"
@@ -60,6 +61,7 @@ func NewSynchronizerManager(
 	splitStorage storage.SplitStorage,
 	managerStatus chan int,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	metadata dtos.Metadata,
 ) (*ManagerImpl, error) {
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
@@ -76,7 +78,7 @@ func NewSynchronizerManager(
 	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
 		streamingStatus := make(chan int64, 1000)
-		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata)
 		if err != nil {
 			return nil, err
 		}

@@ -58,6 +58,7 @@ type ManagerImpl struct {
 	lifecycle        lifecycle.Manager
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
+	metadata         dtos.Metadata
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -71,6 +72,7 @@ func NewManager(
 	feedbackLoop chan<- int64,
 	authAPI service.AuthClient,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	metadata dtos.Metadata,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -91,7 +93,7 @@ func NewManager(
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,
-		sseClient:        sse.NewStreamingClient(cfg, logger),
+		sseClient:        sse.NewStreamingClient(cfg, logger, metadata),
 		statusTracker:    statusTracker,
 		feedback:         feedbackLoop,
 		processor:        processor,

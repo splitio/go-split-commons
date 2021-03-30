@@ -16,20 +16,7 @@ type httpRecorderBase struct {
 
 // RecordRaw records raw data
 func (h *httpRecorderBase) RecordRaw(url string, data []byte, metadata dtos.Metadata, extraHeaders map[string]string) error {
-	headers := make(map[string]string)
-	headers["SplitSDKVersion"] = metadata.SDKVersion
-	if metadata.MachineName != "NA" && metadata.MachineName != "unknown" {
-		headers["SplitSDKMachineName"] = metadata.MachineName
-	}
-	if metadata.MachineIP != "NA" && metadata.MachineIP != "unknown" {
-		headers["SplitSDKMachineIP"] = metadata.MachineIP
-	}
-	if extraHeaders != nil {
-		for header, value := range extraHeaders {
-			headers[header] = value
-		}
-	}
-	return h.client.Post(url, data, headers)
+	return h.client.Post(url, data, ParseHeaderMetadata(metadata, extraHeaders))
 }
 
 // HTTPImpressionRecorder is a struct responsible for submitting impression bulks to the backend
