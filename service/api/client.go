@@ -64,11 +64,9 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("SplitSDKVersion", c.metadata.SDKVersion)
-	req.Header.Add("SplitSDKMachineName", c.metadata.MachineName)
-	req.Header.Add("SplitSDKMachineIP", c.metadata.MachineIP)
+	parsedHeaders := ParseHeaderMetadata(c.metadata, headers)
 
-	for headerName, headerValue := range headers {
+	for headerName, headerValue := range parsedHeaders {
 		req.Header.Add(headerName, headerValue)
 	}
 
