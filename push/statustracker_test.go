@@ -92,8 +92,23 @@ func TestStatusTrackerOccupancyMessages(t *testing.T) {
 }
 
 func TestHandleDisconnection(t *testing.T) {
+	called := 0
 	logger := logging.NewLogger(nil)
-	mockedTelemetryStorage := mocks.MockTelemetryStorage{}
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeConnectionError || streamingEvent.Data != telemetry.NonRequested {
+					t.Error("It should be non requested")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeConnectionError || streamingEvent.Data != telemetry.Requested {
+					t.Error("It should be non requested")
+				}
+			}
+			called++
+		},
+	}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if *tracker.HandleDisconnection() != StatusRetryableError {

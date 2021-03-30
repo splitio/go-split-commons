@@ -127,8 +127,10 @@ func (p *StatusTrackerImpl) HandleDisconnection() *int64 {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	if !p.shutdownExpected {
+		p.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeConnectionError, telemetry.NonRequested))
 		return p.propagateStatus(StatusRetryableError)
 	}
+	p.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeConnectionError, telemetry.Requested))
 	return nil
 }
 
