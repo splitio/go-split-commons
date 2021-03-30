@@ -50,14 +50,9 @@ type ManagerImpl struct {
 	feedback          FeedbackLoop
 	nextRefresh       *time.Timer
 	refreshTokenMutex sync.Mutex
-	/*
-		running           *gtSync.AtomicBool
-		status            int32
-		shutdownWaiter    chan struct{}
-	*/
-	lifecycle        lifecycle.Manager
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
+	lifecycle         lifecycle.Manager
+	logger            logging.LoggerInterface
+	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
