@@ -12,7 +12,8 @@ const (
 	na      = "NA"
 )
 
-func ParseHeaderMetadata(metadata dtos.Metadata, extraHeaders map[string]string, clientKey *string) map[string]string {
+// AddMetadataToHeaders adds metadata in headers
+func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string, clientKey *string) map[string]string {
 	headers := make(map[string]string)
 	headers[splitSDKVersion] = metadata.SDKVersion
 	if metadata.MachineName != na && metadata.MachineName != unknown {

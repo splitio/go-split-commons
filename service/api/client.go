@@ -64,7 +64,7 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Content-Type", "application/json")
-	parsedHeaders := ParseHeaderMetadata(c.metadata, headers, nil)
+	parsedHeaders := AddMetadataToHeaders(c.metadata, headers, nil)
 
 	for headerName, headerValue := range parsedHeaders {
 		req.Header.Add(headerName, headerValue)

@@ -78,7 +78,7 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 			return
 		}
 		firstEventReceived := gtSync.NewAtomicBool(false)
-		out := s.sseClient.Do(params, api.ParseHeaderMetadata(s.metadata, nil, s.clientKey), func(m IncomingMessage) {
+		out := s.sseClient.Do(params, api.AddMetadataToHeaders(s.metadata, nil, s.clientKey), func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {
 				streamingStatus <- StatusFirstEventOk
 			}
