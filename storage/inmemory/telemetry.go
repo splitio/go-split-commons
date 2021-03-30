@@ -313,11 +313,14 @@ func (i *TelemetryStorage) RecordTokenRefreshes() {
 }
 
 // RecordStreamingEvent appends new streaming event
-func (i *TelemetryStorage) RecordStreamingEvent(event dtos.StreamingEvent) {
+func (i *TelemetryStorage) RecordStreamingEvent(event *dtos.StreamingEvent) {
+	if event == nil {
+		return
+	}
 	i.mutexStreamingEvents.Lock()
 	defer i.mutexStreamingEvents.Unlock()
 	if len(i.streamingEvents) < constants.MaxStreamingEvents {
-		i.streamingEvents = append(i.streamingEvents, event)
+		i.streamingEvents = append(i.streamingEvents, *event)
 	}
 }
 

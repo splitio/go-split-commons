@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/push"
 	pushMocks "github.com/splitio/go-split-commons/v3/push/mocks"
 	apiMocks "github.com/splitio/go-split-commons/v3/service/mocks"
 	storageMocks "github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/mocks"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -36,7 +38,13 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = false
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Polling {
+				t.Error("It should record Streaming")
+			}
+		},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
@@ -154,6 +162,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 }
 
 func TestStreamingEnabledInitOk(t *testing.T) {
+	called := 0
 	syncAllCount := int32(0)
 	startPeriodicFetchingCount := int32(0)
 	stopPeriodicFetchingCount := int32(0)
@@ -174,7 +183,21 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
+					t.Error("It should receive polling")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingEnabled {
+					t.Error("It should receive enabled")
+				}
+			}
+			called++
+		},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
@@ -267,6 +290,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 }
 
 func TestStreamingEnabledRetryableError(t *testing.T) {
+	called := 0
 	syncAllCount := int32(0)
 	startPeriodicFetchingCount := int32(0)
 	stopPeriodicFetchingCount := int32(0)
@@ -287,7 +311,25 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
+					t.Error("It should receive polling")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingEnabled {
+					t.Error("It should receive enabled")
+				}
+			case 2:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Polling {
+					t.Error("It should receive polling")
+				}
+			}
+			called++
+		},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
@@ -399,6 +441,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	stopPeriodicFetchingCount := int32(0)
 	startPeriodicRecordingCount := int32(0)
 	stopPeriodicRecordingCount := int32(0)
+	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
 		SyncAllCall: func(bool) error {
@@ -414,7 +457,29 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
+					t.Error("It should receive streaming")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingEnabled {
+					t.Error("It should receive enabled")
+				}
+			case 2:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Polling {
+					t.Error("It should receive polling")
+				}
+			case 3:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingDisabled {
+					t.Error("It should receive disabled")
+				}
+			}
+			called++
+		},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 
 	status := make(chan int, 1)
@@ -508,5 +573,88 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 
 	if atomic.LoadInt32(&startWorkersCalls) != 1 {
 		t.Error("start workers shold have been called 2 times")
+	}
+}
+
+func TestStreamingPaused(t *testing.T) {
+	called := 0
+
+	syncMock := &mocks.MockSynchronizer{
+		SyncAllCall:                    func(bool) error { return nil },
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
+	}
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = true
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Streaming {
+					t.Error("It should receive streaming")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingEnabled {
+					t.Error("It should receive enabled")
+				}
+			case 2:
+				if streamingEvent.Type != telemetry.EventTypeStreamingStatus || streamingEvent.Data != telemetry.StreamingPaused {
+					t.Error("It should receive paused")
+				}
+			case 3:
+				if streamingEvent.Type != telemetry.EventTypeSyncMode || streamingEvent.Data != telemetry.Polling {
+					t.Error("It should receive polling")
+				}
+			}
+			called++
+		},
+	}
+	authClient := &apiMocks.MockAuthClient{}
+
+	status := make(chan int, 1)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage)
+	if err != nil {
+		t.Error("unexpected error: ", err)
+	}
+
+	if manager.pushManager == nil {
+		t.Error("push manager should NOT be nil")
+	}
+
+	// Replace push manager with a mock
+	manager.pushManager = &pushMocks.MockManager{
+		StartCall: func() error {
+			go func() {
+				time.Sleep(1 * time.Second)
+				manager.streamingStatus <- push.StatusUp
+				time.Sleep(1 * time.Second)
+				manager.streamingStatus <- push.StatusDown
+			}()
+			return nil
+		},
+		StopCall:         func() error { return nil },
+		StartWorkersCall: func() {},
+	}
+
+	manager.Start()
+	if !manager.IsRunning() {
+		t.Error("manager should be running")
+	}
+
+	message := <-status
+	if message != Ready {
+		t.Error("first message should be SDK ready")
+	}
+
+	time.Sleep(3 * time.Second) // wait 3 until retryable error happens, and then sse is restarted
+
+	manager.Stop()
+
+	if manager.IsRunning() {
+		t.Error("manager should not be running")
 	}
 }

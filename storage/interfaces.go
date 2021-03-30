@@ -103,7 +103,7 @@ type TelemetryRuntimeProducer interface {
 	RecordSyncLatency(resource int, latency int64)
 	RecordAuthRejections()
 	RecordTokenRefreshes()
-	RecordStreamingEvent(streamingEvent dtos.StreamingEvent)
+	RecordStreamingEvent(streamingEvent *dtos.StreamingEvent)
 	RecordSessionLength(session int64)
 }
 
