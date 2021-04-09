@@ -7,7 +7,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
 	constants "github.com/splitio/go-split-commons/v3/telemetry"
 )
 
@@ -16,7 +15,7 @@ type latencies struct {
 	treatment            AtomicInt64Slice
 	treatments           AtomicInt64Slice
 	treatmentWithConfig  AtomicInt64Slice
-	treatmentWithConfigs AtomicInt64Slice
+	treatmentsWithConfig AtomicInt64Slice
 	track                AtomicInt64Slice
 
 	// HTTPLatencies
@@ -34,7 +33,7 @@ type counters struct {
 	treatment            int64
 	treatments           int64
 	treatmentWithConfig  int64
-	treatmentWithConfigs int64
+	treatmentsWithConfig int64
 	track                int64
 
 	// Push Counters
@@ -96,7 +95,7 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
-	treatmentWithConfigsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	treatmentsWithConfigLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
@@ -150,7 +149,7 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 			treatment:            treatmentLatencies,
 			treatmentWithConfig:  treatmentWithConfigLatencies,
 			treatments:           treatmentsLatencies,
-			treatmentWithConfigs: treatmentWithConfigsLatencies,
+			treatmentsWithConfig: treatmentsWithConfigLatencies,
 			track:                track,
 
 			splits:           splits,
@@ -178,7 +177,7 @@ func (i *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 
 // RecordLatency stores latency for method
 func (i *TelemetryStorage) RecordLatency(method string, latency int64) {
-	bucket := telemetry.Bucket(latency)
+	bucket := constants.Bucket(latency)
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)
@@ -187,7 +186,7 @@ func (i *TelemetryStorage) RecordLatency(method string, latency int64) {
 	case constants.TreatmentWithConfig:
 		i.latencies.treatmentWithConfig.Incr(bucket)
 	case constants.TreatmentsWithConfig:
-		i.latencies.treatmentWithConfigs.Incr(bucket)
+		i.latencies.treatmentsWithConfig.Incr(bucket)
 	case constants.Track:
 		i.latencies.track.Incr(bucket)
 	}
@@ -203,7 +202,7 @@ func (i *TelemetryStorage) RecordException(method string) {
 	case constants.TreatmentWithConfig:
 		atomic.AddInt64(&i.counters.treatmentWithConfig, 1)
 	case constants.TreatmentsWithConfig:
-		atomic.AddInt64(&i.counters.treatmentWithConfigs, 1)
+		atomic.AddInt64(&i.counters.treatmentsWithConfig, 1)
 	case constants.Track:
 		atomic.AddInt64(&i.counters.track, 1)
 	}
@@ -283,7 +282,7 @@ func (i *TelemetryStorage) RecordSyncError(resource int, status int) {
 
 // RecordSyncLatency records http error
 func (i *TelemetryStorage) RecordSyncLatency(resource int, latency int64) {
-	bucket := telemetry.Bucket(latency)
+	bucket := constants.Bucket(latency)
 	switch resource {
 	case constants.SplitSync:
 		i.latencies.splits.Incr(bucket)
@@ -356,7 +355,7 @@ func (i *TelemetryStorage) PopLatencies() dtos.MethodLatencies {
 		Treatment:            i.latencies.treatment.FetchAndClearAll(),
 		Treatments:           i.latencies.treatments.FetchAndClearAll(),
 		TreatmentWithConfig:  i.latencies.treatmentWithConfig.FetchAndClearAll(),
-		TreatmentWithConfigs: i.latencies.treatmentWithConfigs.FetchAndClearAll(),
+		TreatmentsWithConfig: i.latencies.treatmentsWithConfig.FetchAndClearAll(),
 		Track:                i.latencies.track.FetchAndClearAll(),
 	}
 }
@@ -367,7 +366,7 @@ func (i *TelemetryStorage) PopExceptions() dtos.MethodExceptions {
 		Treatment:            atomic.SwapInt64(&i.counters.treatment, 0),
 		Treatments:           atomic.SwapInt64(&i.counters.treatments, 0),
 		TreatmentWithConfig:  atomic.SwapInt64(&i.counters.treatmentWithConfig, 0),
-		TreatmentWithConfigs: atomic.SwapInt64(&i.counters.treatmentWithConfigs, 0),
+		TreatmentsWithConfig: atomic.SwapInt64(&i.counters.treatmentsWithConfig, 0),
 		Track:                atomic.SwapInt64(&i.counters.track, 0),
 	}
 }

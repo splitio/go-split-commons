@@ -38,7 +38,7 @@ type MethodLatencies struct {
 	Treatment            []int64 `json:"t,omitempty"`
 	Treatments           []int64 `json:"ts,omitempty"`
 	TreatmentWithConfig  []int64 `json:"tc,omitempty"`
-	TreatmentWithConfigs []int64 `json:"tcs,omitempty"`
+	TreatmentsWithConfig []int64 `json:"tcs,omitempty"`
 	Track                []int64 `json:"tr,omitempty"`
 }
 
@@ -47,7 +47,7 @@ type MethodExceptions struct {
 	Treatment            int64 `json:"t,omitempty"`
 	Treatments           int64 `json:"ts,omitempty"`
 	TreatmentWithConfig  int64 `json:"tc,omitempty"`
-	TreatmentWithConfigs int64 `json:"tcs,omitempty"`
+	TreatmentsWithConfig int64 `json:"tcs,omitempty"`
 	Track                int64 `json:"tr,omitempty"`
 }
 

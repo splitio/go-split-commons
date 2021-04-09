@@ -22,11 +22,11 @@ func TestTelemetryStorage(t *testing.T) {
 	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Nanosecond).Nanoseconds())
 
 	exceptions := telemetryStorage.PopExceptions()
-	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentWithConfigs != 0 || exceptions.Track != 0 {
+	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentsWithConfig != 0 || exceptions.Track != 0 {
 		t.Error("Wrong result")
 	}
 	exceptions = telemetryStorage.PopExceptions()
-	if exceptions.Treatment != 0 || exceptions.Treatments != 0 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentWithConfigs != 0 || exceptions.Track != 0 {
+	if exceptions.Treatment != 0 || exceptions.Treatments != 0 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentsWithConfig != 0 || exceptions.Track != 0 {
 		t.Error("Wrong result")
 	}
 	latencies := telemetryStorage.PopLatencies()
@@ -39,7 +39,7 @@ func TestTelemetryStorage(t *testing.T) {
 	if latencies.TreatmentWithConfig[0] != 1 {
 		t.Error("Wrong result")
 	}
-	if latencies.TreatmentWithConfigs[0] != 1 {
+	if latencies.TreatmentsWithConfig[0] != 1 {
 		t.Error("Wrong result")
 	}
 	latencies = telemetryStorage.PopLatencies()
