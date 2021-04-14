@@ -18,7 +18,7 @@
   version = "v6.15.9"
 
 [[projects]]
-  digest = "1:e10888eb8ade4d67306ed5c3a1937db27449dd7bd9745672e858a8b3d691b68e"
+  digest = "1:2b96c6fcfe237ab573ef0faffe492d15c370c2b7da0d92f6d354b036cdb17d27"
   name = "github.com/splitio/go-toolkit"
   packages = [
     "asynctask",
@@ -39,8 +39,8 @@
     "workerpool",
   ]
   pruneopts = "UT"
-  revision = "8a2ddfdeaf23944af5c3e8e8a23f820116c9bc8b"
-  version = "2.1.4"
+  revision = "9ea150472f09e671e57b1aef00b25568d3478b62"
+  version = "2.3.0"
 
 [[projects]]
   digest = "1:5054a1f394226de9e6ddc47b0ba77e35092a4112f4a1cd9cb94aba1f5bdc3ec6"

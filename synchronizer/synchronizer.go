@@ -5,10 +5,10 @@ import (
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/synchronizer/worker/metric"
 	"github.com/splitio/go-split-commons/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/tasks"
+	"github.com/splitio/go-split-commons/telemetry"
 	"github.com/splitio/go-toolkit/asynctask"
 	"github.com/splitio/go-toolkit/logging"
 )
@@ -27,7 +27,7 @@ type SplitTasks struct {
 type Workers struct {
 	SplitFetcher             split.Updater
 	SegmentFetcher           segment.Updater
-	TelemetryRecorder        metric.MetricRecorder
+	TelemetryRecorder        telemetry.TelemetrySynchronizer
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
@@ -62,7 +62,7 @@ func NewSynchronizer(
 }
 
 func (s *SynchronizerImpl) dataFlusher() {
-	for true {
+	for {
 		msg := <-s.inMememoryFullQueue
 		switch msg {
 		case "EVENTS_FULL":
@@ -71,7 +71,6 @@ func (s *SynchronizerImpl) dataFlusher() {
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
-			break
 		case "IMPRESSIONS_FULL":
 			s.logger.Debug("FLUSHING storage queue")
 			err := s.workers.ImpressionRecorder.SynchronizeImpressions(s.impressionBulkSize)
@@ -137,7 +136,7 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 		s.splitTasks.ImpressionSyncTask.Stop(true)
 	}
 	if s.splitTasks.TelemetrySyncTask != nil {
-		s.splitTasks.TelemetrySyncTask.Stop(false)
+		s.splitTasks.TelemetrySyncTask.Stop(true)
 	}
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Stop(true)

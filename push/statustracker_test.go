@@ -3,12 +3,22 @@ package push
 import (
 	"testing"
 
+	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/telemetry"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestStatusTrackerAblyerror(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			if streamingEvent.Type != telemetry.EventTypeAblyError || streamingEvent.Data < 40000 || streamingEvent.Data > 50000 {
+				t.Error("Should track ably error")
+			}
+		},
+	}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if *tracker.HandleAblyError(&AblyError{code: 40141}) != StatusRetryableError {
 		t.Error("should be a retryable error")
@@ -27,7 +37,8 @@ func TestStatusTrackerAblyerror(t *testing.T) {
 
 func TestStatusTrackerControlMessages(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if *tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingPaused}) != StatusDown {
 		t.Error("should be a push down")
@@ -43,8 +54,28 @@ func TestStatusTrackerControlMessages(t *testing.T) {
 }
 
 func TestStatusTrackerOccupancyMessages(t *testing.T) {
+	occupancy := 0
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch occupancy {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeOccupancyPri || streamingEvent.Data != 0 {
+					t.Error("Should be PRI and 0")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeOccupancySec || streamingEvent.Data != 0 {
+					t.Error("Should be SEC and 0")
+				}
+			case 2:
+				if streamingEvent.Type != telemetry.EventTypeOccupancyPri || streamingEvent.Data != 1 {
+					t.Error("Should be PRI and 1")
+				}
+			}
+			occupancy++
+		},
+	}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 0}) != nil {
 		t.Error("should have returned no message")
@@ -61,8 +92,24 @@ func TestStatusTrackerOccupancyMessages(t *testing.T) {
 }
 
 func TestHandleDisconnection(t *testing.T) {
+	called := 0
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeConnectionError || streamingEvent.Data != telemetry.NonRequested {
+					t.Error("It should be non requested")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeConnectionError || streamingEvent.Data != telemetry.Requested {
+					t.Error("It should be non requested")
+				}
+			}
+			called++
+		},
+	}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if *tracker.HandleDisconnection() != StatusRetryableError {
 		t.Error("should have returned retryable error")
@@ -77,7 +124,8 @@ func TestHandleDisconnection(t *testing.T) {
 
 func TestHandlersWhenDisconnectionNotified(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 	tracker.NotifySSEShutdownExpected()
 
 	if tracker.HandleAblyError(&AblyError{}) != nil {
@@ -95,7 +143,10 @@ func TestHandlersWhenDisconnectionNotified(t *testing.T) {
 
 func TestStatusTrackerCombinations(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	tracker := NewStatusTracker(logger)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
 	if tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 0}) != nil {
 		t.Error("should have returned no message")
