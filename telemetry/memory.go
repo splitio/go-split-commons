@@ -111,7 +111,7 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 			Segments:    int64(cfg.TaskPeriods.SegmentSync),
 			Impressions: int64(cfg.TaskPeriods.ImpressionSync),
 			Events:      int64(cfg.TaskPeriods.EventsSync),
-			Telemetry:   int64(cfg.TaskPeriods.CounterSync), // It should be TelemetrySync after refactor in go
+			Telemetry:   int64(cfg.TaskPeriods.TelemetrySync),
 		},
 		URLOverrides:               &urlOverrides,
 		ImpressionsQueueSize:       int64(cfg.AdvancedConfig.ImpressionsQueueSize),

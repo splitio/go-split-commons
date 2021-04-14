@@ -54,10 +54,11 @@ type TaskPeriods struct {
 	SplitSync      int
 	SegmentSync    int
 	ImpressionSync int
-	GaugeSync      int
-	CounterSync    int
-	LatencySync    int
+	GaugeSync      int // deprecated
+	CounterSync    int // deprecated
+	LatencySync    int // deprecated
 	EventsSync     int
+	TelemetrySync  int
 }
 
 // AdvancedConfig exposes more configurable parameters that can be used to further tailor the sdk to the user's needs
