@@ -1,4 +1,4 @@
-package util
+package telemetry
 
 var latencyBuckets = [23]float64{
 	1.00,

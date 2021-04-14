@@ -7,9 +7,9 @@ import (
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
 	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
@@ -20,10 +20,8 @@ func TestSplitSyncTask(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 
-	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
@@ -66,17 +64,21 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
+	}
+
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitFetcher(
-			splitMockStorage,
-			splitMockFetcher,
-			metricTestWrapper,
-			logging.NewLogger(&logging.LoggerOptions{}),
-		),
+		split.NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)

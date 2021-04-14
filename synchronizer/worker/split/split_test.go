@@ -4,20 +4,20 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v3/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mutexmap"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory"
+	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v3/storage/mocks"
+	"github.com/splitio/go-split-commons/v3/telemetry"
 	"github.com/splitio/go-toolkit/v4/logging"
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
-	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
@@ -28,17 +28,22 @@ func TestSplitSynchronizerError(t *testing.T) {
 			if changeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
-			return nil, errors.New("Some")
+			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
 		},
 	}
 
-	metricTestWrapper := storage.NewMetricWrapper(&mutexmap.MMMetricsStorage{}, nil, nil)
-	splitSync := NewSplitFetcher(
-		splitMockStorage,
-		splitMockFetcher,
-		metricTestWrapper,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.SplitSync {
+				t.Error("It should be splits")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	_, err := splitSync.SynchronizeSplits(nil, true)
 	if err == nil {
@@ -47,11 +52,12 @@ func TestSplitSynchronizerError(t *testing.T) {
 }
 
 func TestSplitSynchronizer(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 
-	splitMockStorage := storageMock.MockSplitStorage{
+	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
 			return -1, nil
 		},
@@ -95,24 +101,24 @@ func TestSplitSynchronizer(t *testing.T) {
 			}, nil
 		},
 	}
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
 			}
 		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-				t.Error("Unexpected latency key to track")
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
 			}
 		},
-	}, nil, nil)
-	splitSync := NewSplitFetcher(
-		splitMockStorage,
-		splitMockFetcher,
-		metricTestWrapper,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	_, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
@@ -164,25 +170,9 @@ func TestSplitSyncProcess(t *testing.T) {
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
-	splitSync := NewSplitFetcher(
-		splitStorage,
-		splitMockFetcher,
-		metricTestWrapper,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
 
 	segments, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
@@ -258,20 +248,11 @@ func TestSplitTill(t *testing.T) {
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
-	splitSync := NewSplitFetcher(
-		splitStorage,
-		splitMockFetcher,
-		metricTestWrapper,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
 
-	var till int64
-	till = int64(1)
+	var till int64 = 1
 	_, err := splitSync.SynchronizeSplits(&till, false)
 	if err != nil {
 		t.Error("It should not return err")
