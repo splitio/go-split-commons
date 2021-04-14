@@ -12,7 +12,8 @@ import (
 	"github.com/splitio/go-split-commons/service/api/sse"
 	sseMocks "github.com/splitio/go-split-commons/service/api/sse/mocks"
 	serviceMocks "github.com/splitio/go-split-commons/service/mocks"
-
+	"github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/telemetry"
 	"github.com/splitio/go-toolkit/common"
 	"github.com/splitio/go-toolkit/logging"
 	rawSseMocks "github.com/splitio/go-toolkit/sse/mocks"
@@ -32,7 +33,18 @@ func TestAuth500(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.TokenSync {
+				t.Error("It should be token")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
+		},
+	}
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -50,6 +62,7 @@ func TestAuth500(t *testing.T) {
 }
 
 func TestAuth401(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -63,7 +76,19 @@ func TestAuth401(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.TokenSync {
+				t.Error("It should be token")
+			}
+			if status != 401 {
+				t.Error("Status should be 401")
+			}
+		},
+		RecordAuthRejectionsCall: func() { called++ },
+	}
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -77,6 +102,10 @@ func TestAuth401(t *testing.T) {
 
 	if manager.nextRefresh != nil {
 		t.Error("no next refresh should have been set if startup wasn't successful")
+	}
+
+	if called != 1 {
+		t.Error("It should record an auth rejection")
 	}
 }
 
@@ -94,7 +123,14 @@ func TestAuthPushDisabled(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+	}
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -112,6 +148,7 @@ func TestAuthPushDisabled(t *testing.T) {
 }
 
 func TestStreamingConnectionFails(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -126,8 +163,24 @@ func TestStreamingConnectionFails(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -155,6 +208,7 @@ func TestStreamingConnectionFails(t *testing.T) {
 }
 
 func TestStreamingUnexpectedDisconnection(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -168,9 +222,35 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 	authMock := &serviceMocks.MockAuthClient{
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -207,6 +287,7 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 }
 
 func TestExpectedDisconnection(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -220,9 +301,35 @@ func TestExpectedDisconnection(t *testing.T) {
 	authMock := &serviceMocks.MockAuthClient{
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -261,6 +368,7 @@ func TestExpectedDisconnection(t *testing.T) {
 }
 
 func TestMultipleCallsToStartAndStop(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -275,8 +383,34 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh || streamingEvent.Data != 3000000 {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -326,6 +460,8 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 }
 
 func TestUsageAndTokenRefresh(t *testing.T) {
+	called := 0
+	var tokenRefreshes int64
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -342,8 +478,34 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() { atomic.AddInt64(&tokenRefreshes, 1) },
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -381,9 +543,14 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	if message != StatusUp {
 		t.Error("token should have refreshed and returned a new StatusUp message via the feedback loop. Got: ", message)
 	}
+
+	if atomic.LoadInt64(&tokenRefreshes) != 2 {
+		t.Error("It should call tokenRefresh")
+	}
 }
 
 func TestEventForwarding(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -398,8 +565,34 @@ func TestEventForwarding(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -462,6 +655,7 @@ func TestEventForwarding(t *testing.T) {
 }
 
 func TestEventForwardingReturnsError(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -476,8 +670,34 @@ func TestEventForwardingReturnsError(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -539,6 +759,7 @@ func TestEventForwardingReturnsError(t *testing.T) {
 }
 
 func TestEventForwardingReturnsNewStatus(t *testing.T) {
+	called := 0
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -553,8 +774,34 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.TokenSync {
+				t.Error("Resource should be token")
+			}
+		},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {
+			switch called {
+			case 0:
+				if streamingEvent.Type != telemetry.EventTypeTokenRefresh {
+					t.Error("Should record next token refresh")
+				}
+			case 1:
+				if streamingEvent.Type != telemetry.EventTypeSSEConnectionEstablished {
+					t.Error("It should record connection established")
+				}
+			}
+			called++
+		},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return

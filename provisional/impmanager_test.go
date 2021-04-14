@@ -6,6 +6,8 @@ import (
 
 	"github.com/splitio/go-split-commons/conf"
 	"github.com/splitio/go-split-commons/dtos"
+	"github.com/splitio/go-split-commons/storage/inmemory"
+	"github.com/splitio/go-split-commons/telemetry"
 )
 
 func TestProcessImpressionAllDisabled(t *testing.T) {
@@ -138,11 +140,12 @@ func TestProcessImpressionOptimizedEnabled(t *testing.T) {
 }
 
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
 		ImpressionsMode: conf.ImpressionsModeDebug,
 		ListenerEnabled: false,
-	}, NewImpressionsCounter())
+	}, NewImpressionsCounter(), runtimeTelemetry)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -173,14 +176,19 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 	if len(impressionsForListener) != 0 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
+
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
+		t.Error("It should be 0")
+	}
 }
 
 func TestImpManagerInMemoryDebug(t *testing.T) {
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
 		ImpressionsMode: conf.ImpressionsModeDebug,
 		ListenerEnabled: true,
-	}, NewImpressionsCounter())
+	}, NewImpressionsCounter(), runtimeTelemetry)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -211,14 +219,19 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 	if impressionsForListener[0].Pt != now {
 		t.Error("It should have pt associated")
 	}
+
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
+		t.Error("It should be 0")
+	}
 }
 
 func TestImpManagerInMemoryOptimized(t *testing.T) {
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   conf.Standalone,
 		ImpressionsMode: conf.ImpressionsModeOptimized,
 		ListenerEnabled: true,
-	}, NewImpressionsCounter())
+	}, NewImpressionsCounter(), runtimeTelemetry)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -252,14 +265,19 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 	if impressionsForListener[0].Pt != now {
 		t.Error("It should have pt associated")
 	}
+
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 1 {
+		t.Error("It should be 1")
+	}
 }
 
 func TestImpManagerRedis(t *testing.T) {
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	impManager, err := NewImpressionManager(conf.ManagerConfig{
 		OperationMode:   "redis-consumer",
 		ImpressionsMode: conf.ImpressionsModeDebug,
 		ListenerEnabled: true,
-	}, NewImpressionsCounter())
+	}, NewImpressionsCounter(), runtimeTelemetry)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -292,5 +310,9 @@ func TestImpManagerRedis(t *testing.T) {
 	}
 	if impressionsForListener[0].Pt != 0 {
 		t.Error("It should not have pt")
+	}
+
+	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
+		t.Error("It should be 0")
 	}
 }

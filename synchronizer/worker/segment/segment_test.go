@@ -1,30 +1,37 @@
 package segment
 
 import (
-	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/dtos"
 	fetcherMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
-	"github.com/splitio/go-split-commons/storage/mutexmap"
+	"github.com/splitio/go-split-commons/storage/inmemory"
+	"github.com/splitio/go-split-commons/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/telemetry"
 	"github.com/splitio/go-toolkit/datastructures/set"
 	"github.com/splitio/go-toolkit/logging"
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
-	splitMockStorage := storageMock.MockSplitStorage{
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+	splitMockStorage := mocks.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 
-	segmentMockStorage := storageMock.MockSegmentStorage{
-		ChangeNumberCall: func(segmentName string) (int64, error) {
-			return -1, nil
+	segmentMockStorage := mocks.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.SegmentSync {
+				t.Error("It should be segments")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
 		},
 	}
 
@@ -36,29 +43,11 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
-			return nil, errors.New("Some")
+			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
 		},
 	}
 
-	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "splitChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "splitChangeFetcher.time" && metricName != "backend::/api/splitChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
-	segmentSync := NewSegmentFetcher(
-		splitMockStorage,
-		segmentMockStorage,
-		segmentMockFetcher,
-		metricsWrapperTest,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err == nil {
@@ -67,19 +56,17 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 }
 
 func TestSegmentSynchronizer(t *testing.T) {
+	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
 	addedS1 := []string{"item1", "item2", "item3", "item4"}
 	addedS2 := []string{"item5", "item6", "item7", "item8"}
 	var s1Requested int64
 	var s2Requested int64
 
-	splitMockStorage := storageMock.MockSplitStorage{
-		SegmentNamesCall: func() *set.ThreadUnsafeSet {
-			segmentNames := set.NewSet("segment1", "segment2")
-			return segmentNames
-		},
+	splitMockStorage := mocks.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
 
-	segmentMockStorage := storageMock.MockSegmentStorage{
+	segmentMockStorage := mocks.MockSegmentStorage{
 		ChangeNumberCall: func(segmentName string) (int64, error) {
 			switch segmentName {
 			case "segment1":
@@ -100,8 +87,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 				t.Error("Wrong name")
 			}
 			switch segmentName {
-			case "segment1":
-			case "segment2":
+			case "segment1", "segment2":
 				return nil
 			default:
 				t.Error("Wrong case")
@@ -127,6 +113,22 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.SegmentSync {
+				t.Error("Resource should be segments")
+			}
+			if tm < before {
+				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm int64) {
+			if resource != telemetry.SegmentSync {
+				t.Error("Resource should be segments")
+			}
+		},
+	}
+
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			if !noCache {
@@ -138,22 +140,10 @@ func TestSegmentSynchronizer(t *testing.T) {
 			switch name {
 			case "segment1":
 				atomic.AddInt64(&s1Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS1,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 123, Till: 123}, nil
 			case "segment2":
 				atomic.AddInt64(&s2Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS2,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS2, Removed: []string{}, Since: 123, Till: 123}, nil
 			default:
 				t.Error("Wrong case")
 			}
@@ -161,25 +151,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
-	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
-	segmentSync := NewSegmentFetcher(
-		splitMockStorage,
-		segmentMockStorage,
-		segmentMockFetcher,
-		metricsWrapperTest,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	err := segmentSync.SynchronizeSegments(true)
 	if err != nil {
@@ -230,21 +202,9 @@ func TestSegmentSyncUpdate(t *testing.T) {
 			atomic.AddInt64(&s1Requested, 1)
 			switch s1Requested {
 			case 1:
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   []string{"item1", "item2", "item3", "item4"},
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: []string{"item1", "item2", "item3", "item4"}, Removed: []string{}, Since: 123, Till: 123}, nil
 			case 2:
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   []string{"item5"},
-					Removed: []string{"item3"},
-					Since:   124,
-					Till:    124,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: []string{"item5"}, Removed: []string{"item3"}, Since: 124, Till: 124}, nil
 			default:
 				t.Error("Wrong case")
 			}
@@ -252,25 +212,8 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		},
 	}
 
-	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
-	segmentSync := NewSegmentFetcher(
-		splitStorage,
-		segmentStorage,
-		segmentMockFetcher,
-		metricsWrapperTest,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
@@ -359,22 +302,10 @@ func TestSegmentSyncProcess(t *testing.T) {
 			switch name {
 			case "segment1":
 				atomic.AddInt64(&s1Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS1,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 123, Till: 123}, nil
 			case "segment2":
 				atomic.AddInt64(&s2Requested, 1)
-				return &dtos.SegmentChangesDTO{
-					Name:    name,
-					Added:   addedS2,
-					Removed: []string{},
-					Since:   123,
-					Till:    123,
-				}, nil
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS2, Removed: []string{}, Since: 123, Till: 123}, nil
 			default:
 				t.Error("Wrong case")
 			}
@@ -382,25 +313,8 @@ func TestSegmentSyncProcess(t *testing.T) {
 		},
 	}
 
-	metricsWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {
-			if key != "segmentChangeFetcher.status.200" && key != "backend::request.ok" {
-				t.Error("Unexpected counter key to increase")
-			}
-		},
-		IncLatencyCall: func(metricName string, index int) {
-			if metricName != "segmentChangeFetcher.time" && metricName != "backend::/api/segmentChanges" {
-				t.Error("Unexpected latency key to track")
-			}
-		},
-	}, nil, nil)
-	segmentSync := NewSegmentFetcher(
-		splitStorage,
-		segmentStorage,
-		segmentMockFetcher,
-		metricsWrapperTest,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
@@ -456,30 +370,14 @@ func TestSegmentTill(t *testing.T) {
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
-			return &dtos.SegmentChangesDTO{
-				Name:    name,
-				Added:   addedS1,
-				Removed: []string{},
-				Since:   2,
-				Till:    2,
-			}, nil
+			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 		},
 	}
 
-	metricWrapperTest := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
-	segmentSync := NewSegmentFetcher(
-		splitStorage,
-		segmentStorage,
-		segmentMockFetcher,
-		metricWrapperTest,
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
 
-	var till int64
-	till = int64(1)
+	var till int64 = 1
 	err := segmentSync.SynchronizeSegment("segment1", &till, false)
 	if err != nil {
 		t.Error("It should not return err")

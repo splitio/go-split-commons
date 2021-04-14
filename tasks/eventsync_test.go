@@ -7,9 +7,9 @@ import (
 
 	"github.com/splitio/go-split-commons/dtos"
 	recorderMock "github.com/splitio/go-split-commons/service/mocks"
-	"github.com/splitio/go-split-commons/storage"
-	storageMock "github.com/splitio/go-split-commons/storage/mocks"
+	"github.com/splitio/go-split-commons/storage/mocks"
 	"github.com/splitio/go-split-commons/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/telemetry"
 	"github.com/splitio/go-toolkit/logging"
 )
 
@@ -20,7 +20,7 @@ func TestEventSyncTask(t *testing.T) {
 	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Properties: nil, Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			call++
 			if n != 50 {
@@ -28,12 +28,7 @@ func TestEventSyncTask(t *testing.T) {
 			}
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return call != 1 },
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
@@ -54,25 +49,21 @@ func TestEventSyncTask(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+	}
+
 	eventTask := NewRecordEventsTask(
-		event.NewEventRecorderSingle(
-			eventMockStorage,
-			eventMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "events.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
-			logger,
-			dtos.Metadata{},
-		),
+		event.NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		50,
 		1,
 		logger,
@@ -101,7 +92,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	mockedEvent2 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey2", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
 	mockedEvent3 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey3", Timestamp: 123456789, TrafficTypeName: "someTraffic"}
 
-	eventMockStorage := storageMock.MockEventStorage{
+	eventMockStorage := mocks.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
 			atomic.AddInt64(&call, 1)
 			if n != 50 {
@@ -110,10 +101,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
 		EmptyCall: func() bool {
-			if atomic.LoadInt64(&call) == 1 {
-				return false
-			}
-			return true
+			return false
 		},
 	}
 
@@ -135,35 +123,31 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 		},
 	}
 
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, latency int64) {
+			if resource != telemetry.EventSync {
+				t.Error("Resource should be events")
+			}
+		},
+	}
+
 	eventTask := NewRecordEventsTasks(
-		event.NewEventRecorderSingle(
-			eventMockStorage,
-			eventMockRecorder,
-			storage.NewMetricWrapper(storageMock.MockMetricStorage{
-				IncCounterCall: func(key string) {
-					if key != "events.status.200" && key != "backend::request.ok" {
-						t.Error("Unexpected counter key to increase")
-					}
-				},
-				IncLatencyCall: func(metricName string, index int) {
-					if metricName != "events.time" && metricName != "backend::/api/events/bulk" {
-						t.Error("Unexpected latency key to track")
-					}
-				},
-			}, nil, nil),
-			logger,
-			dtos.Metadata{},
-		),
+		event.NewEventRecorderSingle(eventMockStorage, eventMockRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		50,
-		1,
+		2,
 		logger,
 		3,
 	)
 
 	eventTask.Start()
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 	if !eventTask.IsRunning() {
-		t.Error("Counter recorder task should be running")
+		t.Error("Task recorder task should be running")
 	}
 	eventTask.Stop(true)
 	if eventTask.IsRunning() {
@@ -171,7 +155,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	}
 
 	time.Sleep(1 * time.Second)
-	if x := atomic.LoadInt64(&call); x < 3 {
-		t.Error("It should call twice for flushing events. Was:", x)
+	if x := atomic.LoadInt64(&call); x != 3 {
+		t.Error("It should call three times for flushing events. Was:", x)
 	}
 }

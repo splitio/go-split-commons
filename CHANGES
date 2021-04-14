@@ -1,3 +1,6 @@
+3.1.0 (April 14, 2021) -- 2.1.0 for non-modules
+- Updated telemetry storage, metrics and updater. Added synchronizers for init and stats.
+
 3.0.0 (Feb 25, 2021) -- 2.0.1 for non-modules
  - BREAKING CHANGE: Sync manager interface changed
  - Push subsystem revamp
