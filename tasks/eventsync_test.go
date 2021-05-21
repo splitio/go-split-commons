@@ -28,12 +28,7 @@ func TestEventSyncTask(t *testing.T) {
 			}
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
-		EmptyCall: func() bool {
-			if call == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return call != 1 },
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
@@ -109,12 +104,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			}
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
-		EmptyCall: func() bool {
-			if atomic.LoadInt64(&call) == 1 {
-				return false
-			}
-			return true
-		},
+		EmptyCall: func() bool { return false },
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
@@ -155,13 +145,13 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			dtos.Metadata{},
 		),
 		50,
-		1,
+		2,
 		logger,
 		3,
 	)
 
 	eventTask.Start()
-	time.Sleep(2 * time.Second)
+	time.Sleep(2500 * time.Millisecond)
 	if !eventTask.IsRunning() {
 		t.Error("Counter recorder task should be running")
 	}
@@ -172,6 +162,6 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	if x := atomic.LoadInt64(&call); x != 3 {
-		t.Error("It should call twice for flushing events. Was:", x)
+		t.Error("It should call three times for flushing events. Was:", x)
 	}
 }
