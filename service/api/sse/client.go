@@ -43,7 +43,7 @@ type IncomingMessage = sse.RawEvent
 
 // NewStreamingClient creates new SSE Client
 func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface) *StreamingClientImpl {
-	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, logger)
+	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, cfg.HTTPTimeout, logger)
 
 	client := &StreamingClientImpl{
 		sseClient: sseClient,
