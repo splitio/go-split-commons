@@ -1,4 +1,4 @@
-3.0.1 (May 24, 2021)
+3.0.1 (Jun 28, 2021)
  - Fixed SSE to use HTTPTimeout config.
 
 3.0.0 (Feb 25, 2021)
