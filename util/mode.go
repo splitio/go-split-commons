@@ -3,7 +3,7 @@ package util
 import (
 	"strings"
 
-	"github.com/splitio/go-split-commons/v3/conf"
+	"github.com/splitio/go-split-commons/v4/conf"
 )
 
 // ShouldAddPreviousTime returns if previous time should be set up or not depending on operationMode

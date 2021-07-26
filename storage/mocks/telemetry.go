@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v3/dtos"
+import "github.com/splitio/go-split-commons/v4/dtos"
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
 type MockTelemetryStorage struct {

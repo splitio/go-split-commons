@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
 )
 
 // SegmentStorage is a redis implementation of a storage for segments

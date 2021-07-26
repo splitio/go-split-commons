@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 const (

@@ -3,9 +3,9 @@ package telemetry
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestRecorderRedis(t *testing.T) {

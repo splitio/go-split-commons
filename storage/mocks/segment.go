@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-toolkit/v4/datastructures/set"
+import "github.com/splitio/go-toolkit/v5/datastructures/set"
 
 // MockSegmentStorage is a mocked implementation of Segment Storage
 type MockSegmentStorage struct {
