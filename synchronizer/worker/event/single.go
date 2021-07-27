@@ -58,8 +58,8 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 		}
 		return err
 	}
-	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC())
 	return nil
 }
 

@@ -58,7 +58,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.SegmentSync {
 				t.Error("Resource should be segments")
 			}

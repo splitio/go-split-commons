@@ -1,6 +1,10 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v4/dtos"
+import (
+	"time"
+
+	"github.com/splitio/go-split-commons/v4/dtos"
+)
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
 type MockTelemetryStorage struct {
@@ -9,9 +13,9 @@ type MockTelemetryStorage struct {
 	RecordExceptionCall        func(method string)
 	RecordImpressionsStatsCall func(dataType int, count int64)
 	RecordEventsStatsCall      func(dataType int, count int64)
-	RecordSuccessfulSyncCall   func(resource int, time int64)
+	RecordSuccessfulSyncCall   func(resource int, when time.Time)
 	RecordSyncErrorCall        func(resource int, status int)
-	RecordSyncLatencyCall      func(resource int, latency int64)
+	RecordSyncLatencyCall      func(resource int, latency time.Duration)
 	RecordAuthRejectionsCall   func()
 	RecordTokenRefreshesCall   func()
 	RecordStreamingEventCall   func(streamingEvent *dtos.StreamingEvent)
@@ -35,7 +39,7 @@ type MockTelemetryStorage struct {
 	GetBURTimeoutsCall         func() int64
 }
 
-// RecordConfig mock
+// RecordConfigData mock
 func (m MockTelemetryStorage) RecordConfigData(configData dtos.Config) error {
 	return m.RecordConfigDataCall(configData)
 }
@@ -59,7 +63,7 @@ func (m MockTelemetryStorage) RecordEventsStats(dataType int, count int64) {
 }
 
 // RecordSuccessfulSync mock
-func (m MockTelemetryStorage) RecordSuccessfulSync(resource int, time int64) {
+func (m MockTelemetryStorage) RecordSuccessfulSync(resource int, time time.Time) {
 	m.RecordSuccessfulSyncCall(resource, time)
 }
 
@@ -69,7 +73,7 @@ func (m MockTelemetryStorage) RecordSyncError(resource int, status int) {
 }
 
 // RecordSyncLatency mock
-func (m MockTelemetryStorage) RecordSyncLatency(resource int, latency int64) {
+func (m MockTelemetryStorage) RecordSyncLatency(resource int, latency time.Duration) {
 	m.RecordSyncLatencyCall(resource, latency)
 }
 

@@ -154,12 +154,12 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 		// Not an HTTP error, most likely a tcp/bad connection. Should retry
 		return nil, common.Int64Ref(StatusRetryableError)
 	}
-	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before).Nanoseconds())
+	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before))
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
 	}
 	m.runtimeTelemetry.RecordTokenRefreshes()
-	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC())
 	return token, nil
 }
 

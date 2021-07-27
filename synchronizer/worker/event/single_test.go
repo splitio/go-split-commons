@@ -105,7 +105,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 }
 
 func TestSynhronizeEvent(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	event1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	event2 := dtos.EventDTO{EventTypeID: "someId2", Key: "someKey2", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
@@ -119,15 +119,15 @@ func TestSynhronizeEvent(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, d time.Duration) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}

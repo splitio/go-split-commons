@@ -42,7 +42,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, time int64) {},
+		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
@@ -121,8 +121,8 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, time int64) {},
-		RecordSyncLatencyCall:    func(resource int, latency int64) {},
+		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
@@ -222,8 +222,8 @@ func TestSyncAllOk(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, time int64) {},
-		RecordSyncLatencyCall:    func(resource int, latency int64) {},
+		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
@@ -323,8 +323,8 @@ func TestPeriodicFetching(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, time int64) {},
-		RecordSyncLatencyCall:    func(resource int, latency int64) {},
+		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
@@ -430,8 +430,8 @@ func TestPeriodicRecording(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-		RecordSuccessfulSyncCall:   func(resource int, time int64) {},
-		RecordSyncLatencyCall:      func(resource int, latency int64) {},
+		RecordSuccessfulSyncCall:   func(resource int, time time.Time) {},
+		RecordSyncLatencyCall:      func(resource int, latency time.Duration) {},
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		SplitNamesCall:   func() []string { return []string{} },

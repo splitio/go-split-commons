@@ -79,11 +79,11 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 			}
 			return segments, err
 		}
-		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before).Nanoseconds())
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
 		segments = append(segments, extractSegments(splits)...)
 		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {
-			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			return segments, nil
 		}
 	}

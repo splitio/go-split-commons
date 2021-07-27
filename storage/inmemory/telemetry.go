@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
@@ -170,6 +171,7 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
+// RecordConfigData no-op
 func (i *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 	// No-Op. Config Data will be sent directly to Split Servers. No need to store.
 	return nil
@@ -231,22 +233,23 @@ func (i *TelemetryStorage) RecordEventsStats(dataType int, count int64) {
 }
 
 // RecordSuccessfulSync records sync for resource
-func (i *TelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64) {
+func (i *TelemetryStorage) RecordSuccessfulSync(resource int, when time.Time) {
+	milliseconds := when.UnixNano() / int64(time.Millisecond)
 	switch resource {
 	case constants.SplitSync:
-		atomic.StoreInt64(&i.records.splits, timestamp)
+		atomic.StoreInt64(&i.records.splits, milliseconds)
 	case constants.SegmentSync:
-		atomic.StoreInt64(&i.records.segments, timestamp)
+		atomic.StoreInt64(&i.records.segments, milliseconds)
 	case constants.ImpressionSync:
-		atomic.StoreInt64(&i.records.impressions, timestamp)
+		atomic.StoreInt64(&i.records.impressions, milliseconds)
 	case constants.ImpressionCountSync:
-		atomic.StoreInt64(&i.records.impressionsCount, timestamp)
+		atomic.StoreInt64(&i.records.impressionsCount, milliseconds)
 	case constants.EventSync:
-		atomic.StoreInt64(&i.records.events, timestamp)
+		atomic.StoreInt64(&i.records.events, milliseconds)
 	case constants.TelemetrySync:
-		atomic.StoreInt64(&i.records.telemetry, timestamp)
+		atomic.StoreInt64(&i.records.telemetry, milliseconds)
 	case constants.TokenSync:
-		atomic.StoreInt64(&i.records.token, timestamp)
+		atomic.StoreInt64(&i.records.token, milliseconds)
 	}
 }
 
@@ -281,8 +284,8 @@ func (i *TelemetryStorage) RecordSyncError(resource int, status int) {
 }
 
 // RecordSyncLatency records http error
-func (i *TelemetryStorage) RecordSyncLatency(resource int, latency int64) {
-	bucket := constants.Bucket(latency)
+func (i *TelemetryStorage) RecordSyncLatency(resource int, latency time.Duration) {
+	bucket := constants.Bucket(latency.Milliseconds())
 	switch resource {
 	case constants.SplitSync:
 		i.latencies.splits.Incr(bucket)

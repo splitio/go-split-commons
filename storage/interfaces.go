@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"time"
+
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
@@ -98,9 +100,9 @@ type TelemetryRuntimeProducer interface {
 	AddTag(tag string)
 	RecordImpressionsStats(dataType int, count int64)
 	RecordEventsStats(dataType int, count int64)
-	RecordSuccessfulSync(resource int, time int64)
+	RecordSuccessfulSync(resource int, when time.Time)
 	RecordSyncError(resource int, status int)
-	RecordSyncLatency(resource int, latency int64)
+	RecordSyncLatency(resource int, latency time.Duration)
 	RecordAuthRejections()
 	RecordTokenRefreshes()
 	RecordStreamingEvent(streamingEvent *dtos.StreamingEvent)

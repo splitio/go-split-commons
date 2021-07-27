@@ -56,7 +56,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 }
 
 func TestSegmentSynchronizer(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	addedS1 := []string{"item1", "item2", "item3", "item4"}
 	addedS2 := []string{"item5", "item6", "item7", "item8"}
 	var s1Requested int64
@@ -114,15 +114,15 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.SegmentSync {
 				t.Error("Resource should be segments")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, d time.Duration) {
 			if resource != telemetry.SegmentSync {
 				t.Error("Resource should be segments")
 			}

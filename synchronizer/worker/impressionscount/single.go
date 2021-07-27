@@ -63,7 +63,7 @@ func (m *RecorderSingle) SynchronizeImpressionsCount() error {
 		}
 		return err
 	}
-	m.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionCountSync, time.Since(before).Nanoseconds())
-	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionCountSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	m.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionCountSync, time.Since(before))
+	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionCountSync, time.Now().UTC())
 	return nil
 }

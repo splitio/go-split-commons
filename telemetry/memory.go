@@ -84,8 +84,8 @@ func (e *RecorderSingle) SynchronizeStats() error {
 		}
 		return err
 	}
-	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC())
 	return nil
 }
 
@@ -130,6 +130,6 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 		}
 		return
 	}
-	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC())
 }

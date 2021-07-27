@@ -86,10 +86,10 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 			}
 			return err
 		}
-		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before).Nanoseconds())
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
-			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
 			return nil
 		}
 	}

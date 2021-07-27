@@ -23,7 +23,7 @@ func TestImpressionCountSyncTask(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := st.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.ImpressionCountSync {
 				t.Error("Resource should be impressionsCount")
 			}
