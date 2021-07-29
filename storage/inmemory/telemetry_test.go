@@ -14,12 +14,12 @@ func TestTelemetryStorage(t *testing.T) {
 	telemetryStorage.RecordException(telemetry.Treatment)
 	telemetryStorage.RecordException(telemetry.Treatments)
 	telemetryStorage.RecordException(telemetry.Treatment)
-	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Nanosecond).Nanoseconds())
-	telemetryStorage.RecordLatency(telemetry.Treatment, (2000 * time.Nanosecond).Nanoseconds())
-	telemetryStorage.RecordLatency(telemetry.Treatments, (3000 * time.Nanosecond).Nanoseconds())
-	telemetryStorage.RecordLatency(telemetry.Treatments, (500 * time.Nanosecond).Nanoseconds())
-	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, (800 * time.Nanosecond).Nanoseconds())
-	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatment, (2000 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatments, (3000 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatments, (500 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, (800 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Millisecond))
 
 	exceptions := telemetryStorage.PopExceptions()
 	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentsWithConfig != 0 || exceptions.Track != 0 {

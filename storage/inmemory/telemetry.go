@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/storage"
 	constants "github.com/splitio/go-split-commons/v4/telemetry"
 )
 
@@ -83,7 +82,7 @@ type TelemetryStorage struct {
 }
 
 // NewTelemetryStorage builds in memory telemetry storage
-func NewTelemetryStorage() (storage.TelemetryStorage, error) {
+func NewTelemetryStorage() (*TelemetryStorage, error) {
 	treatmentLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
@@ -178,8 +177,8 @@ func (i *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 }
 
 // RecordLatency stores latency for method
-func (i *TelemetryStorage) RecordLatency(method string, latency int64) {
-	bucket := constants.Bucket(latency)
+func (i *TelemetryStorage) RecordLatency(method string, latency time.Duration) {
+	bucket := constants.Bucket(latency.Milliseconds())
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)

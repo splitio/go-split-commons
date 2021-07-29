@@ -75,8 +75,8 @@ func (t *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 }
 
 // RecordLatency stores latency for method
-func (t *TelemetryStorage) RecordLatency(method string, latency int64) {
-	bucket := telemetry.Bucket(latency)
+func (t *TelemetryStorage) RecordLatency(method string, latency time.Duration) {
+	bucket := telemetry.Bucket(latency.Milliseconds())
 	field := strings.Replace(t.latencyTemplate, name, method, 1)
 	field = strings.Replace(field, bucketName, fmt.Sprintf("%d", bucket), 1)
 	_, err := t.client.HIncrBy(redisLatency, field, 1)

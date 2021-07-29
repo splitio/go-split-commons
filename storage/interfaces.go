@@ -91,7 +91,7 @@ type TelemetryConfigProducer interface {
 
 // TelemetryEvaluationProducer for evaluation
 type TelemetryEvaluationProducer interface {
-	RecordLatency(method string, latency int64)
+	RecordLatency(method string, latency time.Duration)
 	RecordException(method string)
 }
 
