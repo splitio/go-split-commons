@@ -27,7 +27,7 @@ func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metad
 		client:   client,
 		mutex:    &sync.Mutex{},
 		logger:   logger,
-		redisKey: redisImpressionsQueue,
+		redisKey: KeyImpressionsQueue,
 		metadata: metadata,
 	}
 }
@@ -81,7 +81,7 @@ func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error
 	// Checks if expiration needs to be set
 	if inserted == int64(len(impressionsJSON)) {
 		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
-		result := r.client.Expire(r.redisKey, time.Duration(redisImpressionsTTL)*time.Second)
+		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
 		if result == false {
 			r.logger.Error("Something were wrong setting expiration", errPush)
 		}

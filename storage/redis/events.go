@@ -35,7 +35,7 @@ func NewEventStorageConsumer(redisClient *redis.PrefixedRedisClient, metadata dt
 		client:      redisClient,
 		logger:      logger,
 		metadata:    metadata,
-		redisKey:    redisEvents,
+		redisKey:    KeyEvents,
 		refillMutex: &sync.RWMutex{},
 		mutex:       &sync.RWMutex{},
 	}
@@ -47,7 +47,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 	refillFunc := func(count int) ([]interface{}, error) {
 		refillMutex.Lock()
 		defer refillMutex.Unlock()
-		lrange, err := redisClient.LRange(redisEvents, 0, int64(count-1))
+		lrange, err := redisClient.LRange(KeyEvents, 0, int64(count-1))
 		if err != nil {
 			logger.Error("Fetching events", err)
 			return nil, err
@@ -59,7 +59,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 			idxFrom = totalFetchedEvents
 		}
 
-		err = redisClient.LTrim(redisEvents, int64(idxFrom), -1)
+		err = redisClient.LTrim(KeyEvents, int64(idxFrom), -1)
 		if err != nil {
 			logger.Error("Trim events", err)
 			return nil, err
@@ -77,7 +77,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 		client:      redisClient,
 		logger:      logger,
 		metadata:    metadata,
-		redisKey:    redisEvents,
+		redisKey:    KeyEvents,
 		refillMutex: refillMutex,
 		mutex:       &sync.RWMutex{},
 	}

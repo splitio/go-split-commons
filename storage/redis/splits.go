@@ -33,7 +33,7 @@ func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.Logg
 // All returns a slice of splits dtos.
 func (r *SplitStorage) All() []dtos.SplitDTO {
 	splits := make([]dtos.SplitDTO, 0)
-	keyPattern := strings.Replace(redisSplit, "{split}", "*", 1)
+	keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
 	keys, err := r.client.Keys(keyPattern)
 	if err != nil {
 		r.logger.Error("Error fetching split keys. Returning empty split list")
@@ -63,7 +63,7 @@ func (r *SplitStorage) All() []dtos.SplitDTO {
 
 // ChangeNumber returns the latest split changeNumber
 func (r *SplitStorage) ChangeNumber() (int64, error) {
-	val, err := r.client.Get(redisSplitTill)
+	val, err := r.client.Get(KeySplitTill)
 	if err != nil {
 		return -1, err
 	}
@@ -79,7 +79,7 @@ func (r *SplitStorage) ChangeNumber() (int64, error) {
 func (r *SplitStorage) FetchMany(features []string) map[string]*dtos.SplitDTO {
 	keysToFetch := make([]string, 0)
 	for _, feature := range features {
-		keysToFetch = append(keysToFetch, strings.Replace(redisSplit, "{split}", feature, 1))
+		keysToFetch = append(keysToFetch, strings.Replace(KeySplit, "{split}", feature, 1))
 	}
 	rawSplits, err := r.client.MGet(keysToFetch)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string, ch
 
 // incr stores/increments trafficType in Redis
 func (r *SplitStorage) incr(trafficType string) error {
-	key := strings.Replace(redisTrafficType, "{trafficType}", trafficType, 1)
+	key := strings.Replace(KeyTrafficType, "{trafficType}", trafficType, 1)
 
 	_, err := r.client.Incr(key)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *SplitStorage) incr(trafficType string) error {
 
 // decr decrements trafficType count in Redis
 func (r *SplitStorage) decr(trafficType string) error {
-	key := strings.Replace(redisTrafficType, "{trafficType}", trafficType, 1)
+	key := strings.Replace(KeyTrafficType, "{trafficType}", trafficType, 1)
 
 	val, _ := r.client.Decr(key)
 	if val <= 0 {
@@ -141,14 +141,14 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
 	for _, split := range splits {
-		keyToStore := strings.Replace(redisSplit, "{split}", split.Name, 1)
+		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
 		raw, err := json.Marshal(split)
 		if err != nil {
 			r.logger.Error(fmt.Sprintf("Could not dump feature \"%s\" to json", split.Name))
 			continue
 		}
 
-		existing := r.Split(split.Name)
+		existing, _ := r.split(split.Name)
 		if existing != nil {
 			// If it's an update, we decrement the traffic type count of the existing split,
 			// and then add the updated one (as part of the normal flow), in case it's different.
@@ -162,7 +162,7 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 			r.logger.Error(fmt.Sprintf("Could not store split \"%s\" in redis: %s", split.Name, err.Error()))
 		}
 	}
-	err := r.client.Set(redisSplitTill, changeNumber, 0)
+	err := r.client.Set(KeySplitTill, changeNumber, 0)
 	if err != nil {
 		r.logger.Error("Could not update split changenumber")
 	}
@@ -172,8 +172,8 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 func (r *SplitStorage) Remove(splitName string) {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
-	keyToDelete := strings.Replace(redisSplit, "{split}", splitName, 1)
-	existing := r.Split(splitName)
+	keyToDelete := strings.Replace(KeySplit, "{split}", splitName, 1)
+	existing, _ := r.split(splitName)
 	if existing == nil {
 		r.logger.Warning("Tried to delete split " + splitName + " which doesn't exist. ignoring")
 		return
@@ -204,36 +204,44 @@ func (r *SplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 
 // SetChangeNumber sets the till value belong to segmentName
 func (r *SplitStorage) SetChangeNumber(changeNumber int64) error {
-	return r.client.Set(redisSplitTill, changeNumber, 0)
+	return r.client.Set(KeySplitTill, changeNumber, 0)
 }
 
-// Split fetches a feature in redis and returns a pointer to a split dto
-func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
-	keyToFetch := strings.Replace(redisSplit, "{split}", feature, 1)
+func (r *SplitStorage) split(feature string) (*dtos.SplitDTO, error) {
+	keyToFetch := strings.Replace(KeySplit, "{split}", feature, 1)
 	val, err := r.client.Get(keyToFetch)
 
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not fetch feature %s from redis: %s", feature, err.Error()))
-		return nil
+		return nil, fmt.Errorf("error reading split %s from redis: %w", feature, err)
 	}
 
 	var split dtos.SplitDTO
 	err = json.Unmarshal([]byte(val), &split)
 	if err != nil {
-		r.logger.Error(fmt.Sprintf("Could not parse feature %s fetched from redis", feature))
+		return nil, fmt.Errorf("Could not parse feature %s fetched from redis: %w", feature, err)
+	}
+
+	return &split, nil
+}
+
+// Split fetches a feature in redis and returns a pointer to a split dto
+func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
+	res, err := r.split(feature)
+	if err != nil {
+		r.logger.Error(err.Error())
 		return nil
 	}
 
-	return &split
+	return res
 }
 
 // SplitNames returns a slice of strings with all the split names
 func (r *SplitStorage) SplitNames() []string {
 	splitNames := make([]string, 0)
-	keyPattern := strings.Replace(redisSplit, "{split}", "*", 1)
+	keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
 	keys, err := r.client.Keys(keyPattern)
 	if err == nil {
-		toRemove := strings.Replace(redisSplit, "{split}", "", 1) // Create a string with all the prefix to remove
+		toRemove := strings.Replace(KeySplit, "{split}", "", 1) // Create a string with all the prefix to remove
 		for _, key := range keys {
 			splitNames = append(splitNames, strings.Replace(key, toRemove, "", 1)) // Extract split name from key
 		}
@@ -244,7 +252,7 @@ func (r *SplitStorage) SplitNames() []string {
 // TrafficTypeExists returns true or false depending on existence and counter
 // of trafficType
 func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
-	keyToFetch := strings.Replace(redisTrafficType, "{trafficType}", trafficType, 1)
+	keyToFetch := strings.Replace(KeyTrafficType, "{trafficType}", trafficType, 1)
 	res, err := r.client.Get(keyToFetch)
 
 	if err != nil {

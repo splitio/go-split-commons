@@ -42,3 +42,12 @@ func (a AtomicInt64Slice) FetchAndClearAll() []int64 {
 	}
 	return toRet
 }
+
+// ReadAll loads all the values and places them into a new slice to be returned
+func (a AtomicInt64Slice) ReadAll() []int64 {
+	toRet := make([]int64, len(a))
+	for index := 0; index < len(a); index++ {
+		toRet[index] = atomic.LoadInt64(&a[index])
+	}
+	return toRet
+}

@@ -30,7 +30,7 @@ func NewSegmentStorage(redisClient *redis.PrefixedRedisClient, logger logging.Lo
 
 // ChangeNumber returns the changeNumber for a particular segment
 func (r *SegmentStorage) ChangeNumber(segmentName string) (int64, error) {
-	segmentKey := strings.Replace(redisSegmentTill, "{segment}", segmentName, 1)
+	segmentKey := strings.Replace(KeySegmentTill, "{segment}", segmentName, 1)
 	tillStr, err := r.client.Get(segmentKey)
 	if err != nil {
 		return -1, err
@@ -46,7 +46,7 @@ func (r *SegmentStorage) ChangeNumber(segmentName string) (int64, error) {
 
 // Keys returns segments keys for segment if it's present
 func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
-	keyToFetch := strings.Replace(redisSegment, "{segment}", segmentName, 1)
+	keyToFetch := strings.Replace(KeySegment, "{segment}", segmentName, 1)
 	segmentKeys, err := r.client.SMembers(keyToFetch)
 	if len(segmentKeys) <= 0 {
 		r.logger.Debug(fmt.Sprintf("Nonexsitent segment requested: %s", segmentName))
@@ -65,7 +65,7 @@ func (r *SegmentStorage) Keys(segmentName string) *set.ThreadUnsafeSet {
 
 // SetChangeNumber sets the till value belong to segmentName
 func (r *SegmentStorage) SetChangeNumber(segmentName string, changeNumber int64) error {
-	segmentKey := strings.Replace(redisSegmentTill, "{segment}", segmentName, 1)
+	segmentKey := strings.Replace(KeySegmentTill, "{segment}", segmentName, 1)
 	return r.client.Set(segmentKey, changeNumber, 0)
 }
 
@@ -73,7 +73,7 @@ func (r *SegmentStorage) SetChangeNumber(segmentName string, changeNumber int64)
 func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
-	segmentKey := strings.Replace(redisSegment, "{segment}", name, 1)
+	segmentKey := strings.Replace(KeySegment, "{segment}", name, 1)
 	if !toRemove.IsEmpty() {
 		_, err := r.client.SRem(segmentKey, toRemove.List()...)
 		if err != nil {
@@ -92,7 +92,7 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 
 // SegmentContainsKey returns true if the segment contains a specific key
 func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (bool, error) {
-	segmentKey := strings.Replace(redisSegment, "{segment}", segmentName, 1)
+	segmentKey := strings.Replace(KeySegment, "{segment}", segmentName, 1)
 	exists := r.client.SIsMember(segmentKey, key)
 	return exists, nil
 }

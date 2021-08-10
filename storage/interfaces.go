@@ -142,6 +142,12 @@ type TelemetryRuntimeConsumer interface {
 	GetSessionLength() int64
 }
 
+// TelemetryPeeker interface
+type TelemetryPeeker interface {
+	PeekHttpLatencies(resource int) []int64
+	PeekHttpErrors(resource int) map[int]int
+}
+
 // --- Wide Interfaces
 
 // SplitStorage wraps consumer & producer interfaces

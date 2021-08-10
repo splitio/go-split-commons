@@ -480,3 +480,56 @@ func (i *TelemetryStorage) GetNonReadyUsages() int64 {
 func (i *TelemetryStorage) GetBURTimeouts() int64 {
 	return atomic.LoadInt64(&i.counters.burTimeouts)
 }
+
+// -- Peeker interface
+
+// PeekHTTPLatencies returns a copy of the currently registered latencies for a specific API resource
+func (i *TelemetryStorage) PeekHTTPLatencies(resource int) []int64 {
+	switch resource {
+	case constants.SplitSync:
+		return i.latencies.splits.ReadAll()
+	case constants.SegmentSync:
+		return i.latencies.segments.ReadAll()
+	case constants.ImpressionSync:
+		return i.latencies.impressions.ReadAll()
+	case constants.ImpressionCountSync:
+		return i.latencies.impressionsCount.ReadAll()
+	case constants.EventSync:
+		return i.latencies.events.ReadAll()
+	case constants.TelemetrySync:
+		return i.latencies.telemetry.ReadAll()
+	case constants.TokenSync:
+		return i.latencies.token.ReadAll()
+	}
+	return nil
+}
+
+// PeekHTTPErrors returns a copy of the currently registered latencies for a specific API resource
+func (i *TelemetryStorage) PeekHTTPErrors(resource int) map[int]int64 {
+	i.mutexHTTPErrors.Lock()
+	defer i.mutexHTTPErrors.Unlock()
+
+	var which map[int]int64
+	switch resource {
+	case constants.SplitSync:
+		which = i.httpErrors.Splits
+	case constants.SegmentSync:
+		which = i.httpErrors.Segments
+	case constants.ImpressionSync:
+		which = i.httpErrors.Impressions
+	case constants.ImpressionCountSync:
+		which = i.httpErrors.ImpressionsCount
+	case constants.EventSync:
+		which = i.httpErrors.Events
+	case constants.TelemetrySync:
+		which = i.httpErrors.Telemetry
+	case constants.TokenSync:
+		which = i.httpErrors.Token
+	}
+
+	toReturn := make(map[int]int64)
+	for k, v := range which {
+		toReturn[k] = v
+	}
+	return toReturn
+}

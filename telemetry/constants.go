@@ -1,6 +1,8 @@
 package telemetry
 
-import "github.com/splitio/go-split-commons/v4/conf"
+import (
+	"github.com/splitio/go-split-commons/v4/conf"
+)
 
 const (
 	// Treatment getTreatment
@@ -14,6 +16,20 @@ const (
 	// Track track
 	Track = "track"
 )
+
+// IsMethodValid returs true if the supplied method name is valid
+func IsMethodValid(method *string) bool {
+	switch *method {
+	case Treatment:
+	case Treatments:
+	case TreatmentWithConfig:
+	case TreatmentsWithConfig:
+	case Track:
+	default:
+		return false
+	}
+	return true
+}
 
 const (
 	// SplitSync splitChanges
@@ -87,6 +103,7 @@ const (
 const (
 	Standalone = iota
 	Consumer
+	Producer
 )
 
 const (

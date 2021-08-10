@@ -100,7 +100,7 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 
 	before := time.Now()
 	err := e.telemetryRecorder.RecordConfig(dtos.Config{
-		OperationMode:      Standalone,
+		OperationMode:      Standalone, // TODO(mredolatti: Update this! Should not be hardcoded
 		Storage:            Memory,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
