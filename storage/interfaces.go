@@ -144,8 +144,8 @@ type TelemetryRuntimeConsumer interface {
 
 // TelemetryPeeker interface
 type TelemetryPeeker interface {
-	PeekHttpLatencies(resource int) []int64
-	PeekHttpErrors(resource int) map[int]int
+	PeekHTTPLatencies(resource int) []int64
+	PeekHTTPErrors(resource int) map[int]int
 }
 
 // --- Wide Interfaces

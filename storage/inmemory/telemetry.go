@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
 	constants "github.com/splitio/go-split-commons/v4/telemetry"
 )
 
@@ -505,7 +506,7 @@ func (i *TelemetryStorage) PeekHTTPLatencies(resource int) []int64 {
 }
 
 // PeekHTTPErrors returns a copy of the currently registered latencies for a specific API resource
-func (i *TelemetryStorage) PeekHTTPErrors(resource int) map[int]int64 {
+func (i *TelemetryStorage) PeekHTTPErrors(resource int) map[int]int {
 	i.mutexHTTPErrors.Lock()
 	defer i.mutexHTTPErrors.Unlock()
 
@@ -527,9 +528,11 @@ func (i *TelemetryStorage) PeekHTTPErrors(resource int) map[int]int64 {
 		which = i.httpErrors.Token
 	}
 
-	toReturn := make(map[int]int64)
+	toReturn := make(map[int]int)
 	for k, v := range which {
-		toReturn[k] = v
+		toReturn[k] = int(v)
 	}
 	return toReturn
 }
+
+var _ storage.TelemetryPeeker = (*TelemetryStorage)(nil)
