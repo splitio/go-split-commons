@@ -76,7 +76,7 @@ func TestMMSplitStorageObjectLivesAfterDeletion(t *testing.T) {
 		})
 	}
 
-	splitStorage.PutMany(splits, 123)
+	splitStorage.Update(splits, nil, 123)
 	someSplit0 := splitStorage.Split("SomeSplit_0")
 	splitStorage.Remove("SomeSplit_0")
 

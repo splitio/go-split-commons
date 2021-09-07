@@ -22,7 +22,7 @@ func TestMMSplitStorage(t *testing.T) {
 			Algo: index,
 		})
 	}
-	splitStorage.PutMany(splits, 123)
+	splitStorage.Update(splits, nil, 123)
 
 	for index := 0; index < 10; index++ {
 		splitName := fmt.Sprintf("SomeSplit_%d", index)
@@ -79,13 +79,13 @@ func TestMMSplitStorage(t *testing.T) {
 func TestSplitKillLocally(t *testing.T) {
 	splitStorage := NewMMSplitStorage()
 
-	splitStorage.PutMany([]dtos.SplitDTO{{
+	splitStorage.Update([]dtos.SplitDTO{{
 		Name:             "some",
 		Algo:             1,
 		DefaultTreatment: "defaultTreatment",
 		Killed:           false,
 		ChangeNumber:     12345676,
-	}}, 12345678)
+	}}, nil, 12345678)
 
 	fetchedSplit := splitStorage._get("some")
 	if fetchedSplit.Killed {
@@ -127,7 +127,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 	}
 
 	splitStorage := NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{s1}, 123)
+	splitStorage.Update([]dtos.SplitDTO{s1}, nil, 123)
 
 	if !splitStorage.TrafficTypeExists("tt1") {
 		t.Error("Traffic type 1 should exist.")
@@ -138,7 +138,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 	}
 
 	s1.TrafficTypeName = "tt2"
-	splitStorage.PutMany([]dtos.SplitDTO{s1}, 123)
+	splitStorage.Update([]dtos.SplitDTO{s1}, nil, 123)
 	if splitStorage.TrafficTypeExists("tt1") {
 		t.Error("Traffic type 1 should not exist.")
 	}

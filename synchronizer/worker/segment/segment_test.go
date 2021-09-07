@@ -170,7 +170,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	var s1Requested int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{
+	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
 			Conditions: []dtos.ConditionDTO{
@@ -190,7 +190,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 				},
 			},
 		},
-	}, 123)
+	}, nil, 123)
 
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
@@ -251,7 +251,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	var s2Requested int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{
+	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
 			Conditions: []dtos.ConditionDTO{
@@ -290,7 +290,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 				},
 			},
 		},
-	}, 123)
+	}, nil, 123)
 
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
@@ -344,7 +344,7 @@ func TestSegmentTill(t *testing.T) {
 	var call int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{
+	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
 			Conditions: []dtos.ConditionDTO{
@@ -364,7 +364,7 @@ func TestSegmentTill(t *testing.T) {
 				},
 			},
 		},
-	}, 1)
+	}, nil, 1)
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{

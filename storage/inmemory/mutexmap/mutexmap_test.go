@@ -31,7 +31,7 @@ func TestSplitMutexMapConcurrency(t *testing.T) {
 		for i := 0; i < iterations; i++ {
 			go func() {
 				time.Sleep(5 * time.Second)
-				splitStorage.PutMany(splits[0:rand.Intn(len(splits)-1)], 123)
+				splitStorage.Update(splits[0:rand.Intn(len(splits)-1)], nil, 123)
 				mainWG.Done()
 			}()
 		}

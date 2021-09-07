@@ -115,16 +115,10 @@ func (s *MQEventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
 	return toReturn, nil
 }
 
-// PopNWithMetadata pop N elements from queue
-func (s *MQEventsStorage) PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error) {
-	panic("Not implemented for inmemory")
-}
-
 // Empty returns if slice len if zero
 func (s *MQEventsStorage) Empty() bool {
 	s.mutexQueue.Lock()
 	defer s.mutexQueue.Unlock()
-
 	return s.queue.Len() == 0
 }
 
@@ -132,11 +126,5 @@ func (s *MQEventsStorage) Empty() bool {
 func (s *MQEventsStorage) Count() int64 {
 	s.mutexQueue.Lock()
 	defer s.mutexQueue.Unlock()
-
 	return int64(s.queue.Len())
-}
-
-// Drop drops
-func (s *MQEventsStorage) Drop(size *int64) error {
-	panic("Not implemented for inmemory")
 }

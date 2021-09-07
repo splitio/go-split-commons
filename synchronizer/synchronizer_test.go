@@ -107,11 +107,11 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
 			}
-			if len(splits) != 2 {
+			if len(toAdd) != 2 {
 				t.Error("Wrong length of passed splits")
 			}
 		},
@@ -196,11 +196,11 @@ func TestSyncAllOk(t *testing.T) {
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
 			}
-			if len(splits) != 2 {
+			if len(toAdd) != 2 {
 				t.Error("Wrong length of passed splits")
 			}
 		},
@@ -297,11 +297,11 @@ func TestPeriodicFetching(t *testing.T) {
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
 			}
-			if len(splits) != 2 {
+			if len(toAdd) != 2 {
 				t.Error("Wrong length of passed splits")
 			}
 		},

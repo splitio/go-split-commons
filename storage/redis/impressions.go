@@ -42,14 +42,14 @@ func (r *ImpressionStorage) Count() int64 {
 }
 
 // Drop drops impressions from queue
-func (r *ImpressionStorage) Drop(size *int64) error {
+func (r *ImpressionStorage) Drop(size int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if size == nil {
+	if size == -1 {
 		_, err := r.client.Del(r.redisKey)
 		return err
 	}
-	return r.client.LTrim(r.redisKey, *size, -1)
+	return r.client.LTrim(r.redisKey, size, -1)
 }
 
 // Empty returns true if redis list is zero length

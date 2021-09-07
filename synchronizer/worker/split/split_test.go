@@ -61,19 +61,19 @@ func TestSplitSynchronizer(t *testing.T) {
 		ChangeNumberCall: func() (int64, error) {
 			return -1, nil
 		},
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
 			}
-			if len(splits) != 2 {
+			if len(toAdd) != 2 {
 				t.Error("Wrong length of passed splits")
 			}
-			s1 := splits[0]
+			s1 := toAdd[0]
 			if s1.Name != "split1" || s1.Killed {
 				t.Error("split1 stored/retrieved incorrectly")
 				t.Error(s1)
 			}
-			s2 := splits[1]
+			s2 := toAdd[1]
 			if s2.Name != "split2" || !s2.Killed {
 				t.Error("split2 stored/retrieved incorrectly")
 				t.Error(s2)
@@ -169,7 +169,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	}
 
 	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
 	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
@@ -247,7 +247,7 @@ func TestSplitTill(t *testing.T) {
 	}
 
 	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.PutMany([]dtos.SplitDTO{{}}, -1)
+	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
 	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)

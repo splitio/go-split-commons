@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
@@ -136,11 +137,68 @@ func (r *SplitStorage) decr(trafficType string) error {
 	return nil
 }
 
-// PutMany bulk stores splits in redis
-func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
+// Update bulk stores splits in redis
+func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+	// TODO(mredolatti): This should be implemented with a pipeline
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
-	for _, split := range splits {
+
+	toAddKeys := make([]string, 0, len(toAdd))
+	toIncrKeys := make([]string, 0, len(toAdd))
+	for _, split := range toAdd {
+		toAddKeys = append(toAddKeys, strings.Replace(KeySplit, "{split}", split.Name, 1))
+		toIncrKeys = append(toIncrKeys, strings.Replace(KeyTrafficType, "{trafficType}", split.TrafficTypeName, 1))
+	}
+
+	toRemoveKeys := make([]string, 0, len(toRemove))
+	for _, split := range toRemove {
+		toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", split.Name, 1))
+	}
+
+	// Gather all the EXISTING traffic types (if any) of all the added and removed splits
+	// we then decrement them and, increment the new ones
+	// \{
+	allKeys := append(make([]string, 0, len(toAdd)+len(toRemove)), toAddKeys...)
+	allKeys = append(allKeys, toRemoveKeys...)
+
+	if len(allKeys) > 0 {
+		toUpdateRaw, err := r.client.MGet(allKeys)
+		if err != nil {
+			r.logger.Error("error fetching keys to be updated:", err)
+			return
+		}
+
+		ttsToDecr := make([]string, 0, len(allKeys))
+		for _, raw := range toUpdateRaw {
+			asStr, ok := raw.(string)
+			if !ok {
+				continue
+			}
+
+			var s dtos.SplitDTO
+			err = json.Unmarshal([]byte(asStr), &s)
+			if err != nil {
+				r.logger.Error("Update: ignoring split stored in redis cannot be de-serialized: ", asStr)
+				continue
+			}
+
+			ttsToDecr = append(ttsToDecr, s.TrafficTypeName)
+		}
+
+		for _, tt := range ttsToDecr {
+			r.client.Decr(strings.Replace(KeyTrafficType, "{trafficType}", tt, 1))
+		}
+	}
+	// \}
+
+	// The next operations could be implemented in a pipeline, improving the performance
+	// of this operation (or even a Tx for even better consistency on splits vs CN).
+	// \{
+	for _, ttKey := range toIncrKeys {
+		r.client.Incr(ttKey)
+	}
+
+	for _, split := range toAdd {
 		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
 		raw, err := json.Marshal(split)
 		if err != nil {
@@ -148,20 +206,19 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 			continue
 		}
 
-		existing, _ := r.split(split.Name)
-		if existing != nil {
-			// If it's an update, we decrement the traffic type count of the existing split,
-			// and then add the updated one (as part of the normal flow), in case it's different.
-			r.decr(existing.TrafficTypeName)
-		}
-
-		r.incr(split.TrafficTypeName)
-
 		err = r.client.Set(keyToStore, raw, 0)
 		if err != nil {
 			r.logger.Error(fmt.Sprintf("Could not store split \"%s\" in redis: %s", split.Name, err.Error()))
 		}
 	}
+
+	if len(toRemoveKeys) > 0 {
+		res := r.client.Client.Del(toRemoveKeys...)
+		if res.Err() != nil {
+			r.logger.Error("error removing some keys")
+		}
+	}
+
 	err := r.client.Set(KeySplitTill, changeNumber, 0)
 	if err != nil {
 		r.logger.Error("Could not update split changenumber")
@@ -169,6 +226,7 @@ func (r *SplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
 }
 
 // Remove removes split item from redis
+// Deprecated: Though public, this method does not follow a transactional nature and should be avoided whenever possible.
 func (r *SplitStorage) Remove(splitName string) {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
@@ -267,3 +325,5 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 	}
 	return val > 0
 }
+
+var _ storage.SplitStorage = (*SplitStorage)(nil)

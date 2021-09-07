@@ -84,10 +84,7 @@ func (m *MMSegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRem
 	return nil
 }
 
-// CountRemovedKeys method
-func (m *MMSegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }
-
-// SegmentKeysCount
+// SegmentKeysCount returns the total number of cached segment keys
 func (m *MMSegmentStorage) SegmentKeysCount() int64 {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()

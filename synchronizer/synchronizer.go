@@ -17,10 +17,10 @@ import (
 type SplitTasks struct {
 	SplitSyncTask            *asynctask.AsyncTask
 	SegmentSyncTask          *asynctask.AsyncTask
-	TelemetrySyncTask        *asynctask.AsyncTask
+	TelemetrySyncTask        tasks.Task
 	ImpressionSyncTask       tasks.Task
 	EventSyncTask            tasks.Task
-	ImpressionsCountSyncTask *asynctask.AsyncTask
+	ImpressionsCountSyncTask tasks.Task
 }
 
 // Workers struct for workers

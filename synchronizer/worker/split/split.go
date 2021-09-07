@@ -28,7 +28,7 @@ func NewSplitFetcher(
 	splitFetcher service.SplitFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
-) Updater {
+) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,
 		splitFetcher:     splitFetcher,
@@ -49,12 +49,7 @@ func (s *UpdaterImpl) processUpdate(splits *dtos.SplitChangesDTO) {
 	}
 
 	// Add/Update active splits
-	s.splitStorage.PutMany(activeSplits, splits.Till)
-
-	// Remove inactive splits
-	for _, split := range inactiveSplits {
-		s.splitStorage.Remove(split.Name)
-	}
+	s.splitStorage.Update(activeSplits, inactiveSplits, splits.Till)
 }
 
 // SynchronizeSplits syncs splits

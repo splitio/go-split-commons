@@ -9,16 +9,16 @@ import (
 
 // SplitStorageProducer should be implemented by structs that offer writing splits in storage
 type SplitStorageProducer interface {
+	ChangeNumber() (int64, error)
+	Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
 	KillLocally(splitName string, defaultTreatment string, changeNumber int64)
-	PutMany(splits []dtos.SplitDTO, changeNumber int64)
-	Remove(splitName string)
 	SetChangeNumber(changeNumber int64) error
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
 type SplitStorageConsumer interface {
-	All() []dtos.SplitDTO
 	ChangeNumber() (int64, error)
+	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
 	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
@@ -35,7 +35,6 @@ type SegmentStorageProducer interface {
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading segments
 type SegmentStorageConsumer interface {
 	ChangeNumber(segmentName string) (int64, error)
-	CountRemovedKeys(segmentName string) int64
 	Keys(segmentName string) *set.ThreadUnsafeSet
 	SegmentContainsKey(segmentName string, key string) (bool, error)
 	SegmentKeysCount() int64
@@ -46,13 +45,29 @@ type ImpressionStorageProducer interface {
 	LogImpressions(impressions []dtos.Impression) error
 }
 
+// DataDropper interface is used by dependants who need to drop data from a collection
+type DataDropper interface {
+	Drop(size int64) error
+}
+
+// ImpressionMultiSdkConsumer defines the methods required to consume impressions
+// from a stored shared by many sdks
+type ImpressionMultiSdkConsumer interface {
+	Count() int64
+	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
+}
+
+// EventMultiSdkConsumer defines the methods required to consume events
+// from a stored shared by many sdks
+type EventMultiSdkConsumer interface {
+	Count() int64
+	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
+}
+
 // ImpressionStorageConsumer interface should be implemented by structs that offer popping impressions
 type ImpressionStorageConsumer interface {
-	Count() int64
-	Drop(size *int64) error
 	Empty() bool
 	PopN(n int64) ([]dtos.Impression, error)
-	PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error)
 }
 
 // EventStorageProducer interface should be implemented by structs that accept incoming events
@@ -62,11 +77,8 @@ type EventStorageProducer interface {
 
 // EventStorageConsumer interface should be implemented by structs that offer popping impressions
 type EventStorageConsumer interface {
-	Count() int64
-	Drop(size *int64) error
 	Empty() bool
 	PopN(n int64) ([]dtos.EventDTO, error)
-	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
 // TelemetryStorageProducer interface should be implemented by struct that accepts incoming telemetry
@@ -151,9 +163,21 @@ type TelemetryPeeker interface {
 // --- Wide Interfaces
 
 // SplitStorage wraps consumer & producer interfaces
+// Note: Since go's interface composition does not (yet) support interface method overlap,
+// extracting a common subset (.ChangeNumber()), embedding it in Both consumer & Producer,
+// and then having a wide interface that embeds both (diamond composition), results in a compilation error.
+// The only workaround so far is to explicitly define all the methods that make up the composed interface
 type SplitStorage interface {
-	SplitStorageProducer
-	SplitStorageConsumer
+	ChangeNumber() (int64, error)
+	Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
+	KillLocally(splitName string, defaultTreatment string, changeNumber int64)
+	SetChangeNumber(changeNumber int64) error
+	All() []dtos.SplitDTO
+	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
+	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	Split(splitName string) *dtos.SplitDTO
+	SplitNames() []string
+	TrafficTypeExists(trafficType string) bool
 }
 
 // SegmentStorage wraps consumer and producer interfaces

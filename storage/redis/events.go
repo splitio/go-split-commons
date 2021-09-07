@@ -166,12 +166,12 @@ func (r *EventsStorage) Empty() bool {
 }
 
 // Drop drops events from queue
-func (r *EventsStorage) Drop(size *int64) error {
+func (r *EventsStorage) Drop(size int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if size == nil {
+	if size == -1 {
 		_, err := r.client.Del(r.redisKey)
 		return err
 	}
-	return r.client.LTrim(r.redisKey, *size, -1)
+	return r.client.LTrim(r.redisKey, size, -1)
 }

@@ -97,8 +97,10 @@ func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (boo
 	return exists, nil
 }
 
-// CountRemovedKeys method
-func (r *SegmentStorage) CountRemovedKeys(segmentName string) int64 { return 0 }
-
 // SegmentKeysCount method
 func (r *SegmentStorage) SegmentKeysCount() int64 { return 0 }
+
+// static interface compliance assertions
+var _ storage.SegmentStorage = (*SegmentStorage)(nil)
+var _ storage.SegmentStorageConsumer = (*SegmentStorage)(nil)
+var _ storage.SegmentStorageProducer = (*SegmentStorage)(nil)
