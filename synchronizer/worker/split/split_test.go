@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
@@ -16,6 +17,8 @@ import (
 )
 
 func TestSplitSynchronizerError(t *testing.T) {
+	var notifyEventCalled int64
+
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
@@ -43,11 +46,20 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	_, err := splitSync.SynchronizeSplits(nil, true)
 	if err == nil {
 		t.Error("It should return err")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
 	}
 }
 
@@ -56,6 +68,7 @@ func TestSplitSynchronizer(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
+	var notifyEventCalled int64
 
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -118,16 +131,26 @@ func TestSplitSynchronizer(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	_, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
+	}
 }
 
 func TestSplitSyncProcess(t *testing.T) {
 	var call int64
+	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
@@ -168,11 +191,17 @@ func TestSplitSyncProcess(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
 
 	segments, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
@@ -229,10 +258,15 @@ func TestSplitSyncProcess(t *testing.T) {
 	if !splitStorage.TrafficTypeExists("two") {
 		t.Error("It should exists")
 	}
+
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
+	}
 }
 
 func TestSplitTill(t *testing.T) {
 	var call int64
+	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
@@ -246,11 +280,17 @@ func TestSplitTill(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage)
+	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
 
 	var till int64 = 1
 	_, err := splitSync.SynchronizeSplits(&till, false)
@@ -263,5 +303,8 @@ func TestSplitTill(t *testing.T) {
 	}
 	if atomic.LoadInt64(&call) != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
 	}
 }

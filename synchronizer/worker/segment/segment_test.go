@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
+	var notifyEventCalled int64
 	splitMockStorage := mocks.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
 	}
@@ -47,11 +49,20 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err == nil {
 		t.Error("It should return err")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
 	}
 }
 
@@ -61,6 +72,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 	addedS2 := []string{"item5", "item6", "item7", "item8"}
 	var s1Requested int64
 	var s2Requested int64
+	var notifyEventCalled int64
 
 	splitMockStorage := mocks.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
@@ -151,7 +163,13 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	err := segmentSync.SynchronizeSegments(true)
 	if err != nil {
@@ -164,10 +182,14 @@ func TestSegmentSynchronizer(t *testing.T) {
 	if atomic.LoadInt64(&s2Requested) != 2 {
 		t.Error("Should be called twice")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
+	}
 }
 
 func TestSegmentSyncUpdate(t *testing.T) {
 	var s1Requested int64
+	var notifyEventCalled int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.Update([]dtos.SplitDTO{
@@ -212,8 +234,14 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
@@ -242,6 +270,10 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	if atomic.LoadInt64(&s1Requested) != 2 {
 		t.Error("Should be called twice")
 	}
+
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
+	}
 }
 
 func TestSegmentSyncProcess(t *testing.T) {
@@ -249,6 +281,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	addedS2 := []string{"item5", "item6", "item7", "item8"}
 	var s1Requested int64
 	var s2Requested int64
+	var notifyEventCalled int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.Update([]dtos.SplitDTO{
@@ -313,8 +346,14 @@ func TestSegmentSyncProcess(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
@@ -337,11 +376,15 @@ func TestSegmentSyncProcess(t *testing.T) {
 	if s2Requested != 1 {
 		t.Error("Should be called once")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
+	}
 }
 
 func TestSegmentTill(t *testing.T) {
 	addedS1 := []string{"item1", "item2", "item3", "item4"}
 	var call int64
+	var notifyEventCalled int64
 
 	splitStorage := mutexmap.NewMMSplitStorage()
 	splitStorage.Update([]dtos.SplitDTO{
@@ -374,8 +417,14 @@ func TestSegmentTill(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry)
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	var till int64 = 1
 	err := segmentSync.SynchronizeSegment("segment1", &till, false)
@@ -388,5 +437,8 @@ func TestSegmentTill(t *testing.T) {
 	}
 	if atomic.LoadInt64(&call) != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 2 {
+		t.Error("It should be called twice")
 	}
 }

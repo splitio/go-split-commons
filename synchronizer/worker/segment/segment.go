@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
@@ -20,6 +21,7 @@ type UpdaterImpl struct {
 	segmentFetcher   service.SegmentFetcher
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
+	hcMonitor        application.MonitorInterface
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -29,6 +31,7 @@ func NewSegmentFetcher(
 	segmentFetcher service.SegmentFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	hcMonitor application.MonitorInterface,
 ) Updater {
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,
@@ -36,6 +39,7 @@ func NewSegmentFetcher(
 		segmentFetcher:   segmentFetcher,
 		logger:           logger,
 		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 }
 
@@ -69,6 +73,7 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 // SynchronizeSegment syncs segment
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) error {
 	for {
+		s.hcMonitor.NotifyEvent(application.Segments)
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {
