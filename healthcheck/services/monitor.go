@@ -27,6 +27,6 @@ type ItemDto struct {
 const (
 	// ByPercentage counter type
 	ByPercentage = iota
-	// Secuencial counter type
-	Secuencial
+	// Sequential counter type
+	Sequential
 )

@@ -72,8 +72,9 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 
 // SynchronizeSegment syncs segment
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) error {
+	s.hcMonitor.NotifyEvent(application.Segments)
+
 	for {
-		s.hcMonitor.NotifyEvent(application.Segments)
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
 		if changeNumber == 0 {

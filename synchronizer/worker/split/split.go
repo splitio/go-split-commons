@@ -61,9 +61,8 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 	// @TODO: add delays
 
 	segments := make([]string, 0)
+	s.hcMonitor.NotifyEvent(application.Splits)
 	for {
-		s.hcMonitor.NotifyEvent(application.Splits)
-
 		changeNumber, _ := s.splitStorage.ChangeNumber()
 		if changeNumber == 0 {
 			changeNumber = -1
