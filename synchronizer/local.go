@@ -1,6 +1,7 @@
 package synchronizer
 
 import (
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
@@ -16,9 +17,9 @@ type Local struct {
 }
 
 // NewLocal creates new Local
-func NewLocal(period int, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) Synchronizer {
+func NewLocal(period int, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorInterface) Synchronizer {
 	workers := Workers{
-		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry),
+		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor),
 	}
 	return &Local{
 		splitTasks: SplitTasks{

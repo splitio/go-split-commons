@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
@@ -15,6 +16,7 @@ import (
 
 func TestSplitSyncTask(t *testing.T) {
 	var call int64
+	var notifyEventCalled int64
 
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
@@ -77,8 +79,14 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage),
+		split.NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
@@ -96,5 +104,8 @@ func TestSplitSyncTask(t *testing.T) {
 
 	if splitTask.IsRunning() {
 		t.Error("Task should be stopped")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
 	}
 }

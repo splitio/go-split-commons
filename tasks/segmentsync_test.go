@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
@@ -19,6 +20,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	addedS2 := []string{"item5", "item6", "item7", "item8"}
 	var s1Requested int64
 	var s2Requested int64
+	var notifyEventCalled int64
 
 	splitMockStorage := mocks.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1", "segment2") },
@@ -87,8 +89,14 @@ func TestSegmentSyncTask(t *testing.T) {
 		},
 	}
 
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	segmentTask := NewFetchSegmentsTask(
-		segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage),
+		segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		10,
 		100,
@@ -108,5 +116,8 @@ func TestSegmentSyncTask(t *testing.T) {
 
 	if atomic.LoadInt64(&s1Requested) < 2 || atomic.LoadInt64(&s2Requested) < 2 {
 		t.Error("It should call fetch twice")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
 	}
 }

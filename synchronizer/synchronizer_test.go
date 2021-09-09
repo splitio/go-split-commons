@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v4/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/v4/storage/mocks"
@@ -23,6 +24,7 @@ import (
 
 func TestSyncAllErrorSplits(t *testing.T) {
 	var splitFetchCalled int64
+	var notifyEventCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
@@ -44,10 +46,15 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
 	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
@@ -67,11 +74,15 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	if atomic.LoadInt64(&splitFetchCalled) != 1 {
 		t.Error("It should be called once")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
+	}
 }
 
 func TestSyncAllErrorInSegments(t *testing.T) {
 	var splitFetchCalled int64
 	var segmentFetchCalled int64
+	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -124,10 +135,15 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
@@ -150,11 +166,15 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	if atomic.LoadInt64(&segmentFetchCalled) != 2 {
 		t.Error("It should be called twice")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
+	}
 }
 
 func TestSyncAllOk(t *testing.T) {
 	var splitFetchCalled int64
 	var segmentFetchCalled int64
+	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -225,10 +245,15 @@ func TestSyncAllOk(t *testing.T) {
 		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
@@ -251,11 +276,15 @@ func TestSyncAllOk(t *testing.T) {
 	if segmentFetchCalled != 2 {
 		t.Error("It should be called twice")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
+	}
 }
 
 func TestPeriodicFetching(t *testing.T) {
 	var splitFetchCalled int64
 	var segmentFetchCalled int64
+	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -326,10 +355,15 @@ func TestPeriodicFetching(t *testing.T) {
 		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
@@ -350,6 +384,9 @@ func TestPeriodicFetching(t *testing.T) {
 	if atomic.LoadInt64(&segmentFetchCalled) < 2 {
 		t.Error("It should be called twice")
 	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
+	}
 	syncForTest.StopPeriodicFetching()
 }
 
@@ -357,6 +394,7 @@ func TestPeriodicRecording(t *testing.T) {
 	var impressionsCalled int64
 	var eventsCalled int64
 	var statsCalled int64
+	var notifyEventCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		EventRecorder: httpMocks.MockEventRecorder{
@@ -440,10 +478,15 @@ func TestPeriodicRecording(t *testing.T) {
 	segmentMockStorage := storageMock.MockSegmentStorage{
 		SegmentKeysCountCall: func() int64 { return 30 },
 	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage),
-		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage),
+		SplitFetcher:       split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentFetcher:     segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(eventMockStorage, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
 		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, splitAPI.TelemetryRecorder, splitMockStorage, segmentMockStorage, logger, dtos.Metadata{}, telemetryMockStorage),
@@ -478,5 +521,8 @@ func TestPeriodicRecording(t *testing.T) {
 	}
 	if atomic.LoadInt64(&statsCalled) < 2 {
 		t.Error("It should be called two times")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 0 {
+		t.Error("It should not be called")
 	}
 }

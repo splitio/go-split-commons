@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
@@ -20,6 +21,7 @@ type UpdaterImpl struct {
 	splitFetcher     service.SplitFetcher
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
+	hcMonitor        application.MonitorInterface
 }
 
 // NewSplitFetcher creates new split synchronizer for processing split updates
@@ -28,12 +30,14 @@ func NewSplitFetcher(
 	splitFetcher service.SplitFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	hcMonitor application.MonitorInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,
 		splitFetcher:     splitFetcher,
 		logger:           logger,
 		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 }
 
@@ -57,6 +61,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 	// @TODO: add delays
 
 	segments := make([]string, 0)
+	s.hcMonitor.NotifyEvent(application.Splits)
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
 		if changeNumber == 0 {
