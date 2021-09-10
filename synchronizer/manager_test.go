@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v4/push"
 	pushMocks "github.com/splitio/go-split-commons/v4/push/mocks"
 	apiMocks "github.com/splitio/go-split-commons/v4/service/mocks"
@@ -31,20 +32,21 @@ func TestSynchronizerErr(t *testing.T) {
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 	status := make(chan int, 1)
-	_, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	_, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
 	myKey := "12345"
-	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey)
+	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey, appMonitor)
 	if err == nil || err.Error() != "invalid ClientKey" {
 		t.Error("It should return err")
 	}
 
 	myKey = "1234"
-	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey)
+	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey, appMonitor)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -79,8 +81,9 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -147,9 +150,10 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 	status := make(chan int, 1)
 
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -232,9 +236,10 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -364,9 +369,10 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -514,9 +520,10 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}
@@ -647,9 +654,10 @@ func TestStreamingPaused(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
 	status := make(chan int, 1)
-	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("unexpected error: ", err)
 	}

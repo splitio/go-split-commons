@@ -66,7 +66,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
 	err := syncForTest.SyncAll(true)
 	if err == nil {
 		t.Error("It should return error")
@@ -155,7 +155,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
 	err := syncForTest.SyncAll(false)
 	if err == nil {
 		t.Error("It should return error")
@@ -265,7 +265,7 @@ func TestSyncAllOk(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
 	err := syncForTest.SyncAll(true)
 	if err != nil {
 		t.Error("It should not return error")
@@ -359,6 +359,7 @@ func TestPeriodicFetching(t *testing.T) {
 		NotifyEventCall: func(counterType int) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
+		ResetCall: func(counterType, value int) {},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
@@ -375,7 +376,7 @@ func TestPeriodicFetching(t *testing.T) {
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
-	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 2200)
 	if atomic.LoadInt64(&splitFetchCalled) < 2 {
@@ -499,7 +500,7 @@ func TestPeriodicRecording(t *testing.T) {
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 1, logger),
 	}
 	workers.TelemetryRecorder.SynchronizeStats()
-	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
+	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
 	syncForTest.StartPeriodicDataRecording()
 	time.Sleep(time.Second * 2)
 	if atomic.LoadInt64(&impressionsCalled) < 1 {
