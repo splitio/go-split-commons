@@ -1,8 +1,6 @@
 package services
 
 import (
-	"time"
-
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -45,11 +43,11 @@ type HealthDto struct {
 
 // ItemDto description
 type ItemDto struct {
-	Service      string     `json:"service"`
-	Healthy      bool       `json:"healthy"`
-	Message      string     `json:"message,omitempty"`
-	HealthySince *time.Time `json:"healthySince,omitempty"`
-	LastHit      *time.Time `json:"lastHit,omitempty"`
+	Service      string `json:"service"`
+	Healthy      bool   `json:"healthy"`
+	Message      string `json:"message,omitempty"`
+	HealthySince *int64 `json:"healthySince,omitempty"`
+	LastHit      *int64 `json:"lastHit,omitempty"`
 }
 
 // HealthyResult result
@@ -58,8 +56,8 @@ type HealthyResult struct {
 	Severity     int
 	Healthy      bool
 	LastMessage  string
-	HealthySince *time.Time
-	LastHit      *time.Time
+	HealthySince *int64
+	LastHit      *int64
 }
 
 // Config counter config

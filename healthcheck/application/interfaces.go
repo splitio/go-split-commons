@@ -1,8 +1,6 @@
 package application
 
 import (
-	"time"
-
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -48,24 +46,24 @@ type HealthyResult struct {
 	Name       string
 	Severity   int
 	Healthy    bool
-	LastHit    *time.Time
+	LastHit    *int64
 	ErrorCount int
 }
 
 // HealthDto struct
 type HealthDto struct {
-	Healthy      bool       `json:"healthy"`
-	HealthySince *time.Time `json:"healthySince"`
-	Items        []ItemDto  `json:"items"`
+	Healthy      bool      `json:"healthy"`
+	HealthySince *int64    `json:"healthySince"`
+	Items        []ItemDto `json:"items"`
 }
 
 // ItemDto struct
 type ItemDto struct {
-	Name       string     `json:"name"`
-	Healthy    bool       `json:"healthy"`
-	LastHit    *time.Time `json:"lastHit,omitempty"`
-	ErrorCount int        `json:"errorCount,omitempty"`
-	Severity   int        `json:"-"`
+	Name       string `json:"name"`
+	Healthy    bool   `json:"healthy"`
+	LastHit    *int64 `json:"lastHit,omitempty"`
+	ErrorCount int    `json:"errorCount,omitempty"`
+	Severity   int    `json:"-"`
 }
 
 // Config counter configuration
