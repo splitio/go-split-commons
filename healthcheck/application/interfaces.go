@@ -5,14 +5,21 @@ import (
 )
 
 const (
-	// Splits counter type
+	// Splits monitor type
 	Splits = iota
-	// Segments counter type
+	// Segments monitor type
 	Segments
-	// Storage counter type
+	// Storage monitor type
 	Storage
-	// SyncErros counter type
+	// SyncErros monitor type
 	SyncErros
+)
+
+const (
+	// Periodic counter type
+	Periodic = iota
+	// Threshold counter type
+	Threshold
 )
 
 const (
@@ -71,7 +78,7 @@ type ItemDto struct {
 type Config struct {
 	Name                     string
 	CounterType              int
-	Periodic                 bool
+	MonitorType              int
 	TaskFunc                 func(l logging.LoggerInterface, c CounterInterface) error
 	Period                   int
 	MaxErrorsAllowedInPeriod int
@@ -81,12 +88,12 @@ type Config struct {
 // NewApplicationConfig new config with default values
 func NewApplicationConfig(
 	name string,
-	counterType int,
+	monitorType int,
 ) *Config {
 	return &Config{
 		Name:        name,
-		CounterType: counterType,
-		Periodic:    false,
+		MonitorType: monitorType,
+		CounterType: Threshold,
 		Period:      3600,
 		Severity:    Critical,
 	}
