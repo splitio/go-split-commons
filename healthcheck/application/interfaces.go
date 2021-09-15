@@ -37,6 +37,7 @@ type CounterInterface interface {
 	NotifyEvent()
 	Reset(value int) error
 	GetType() int
+	UpdateLastHit()
 	Start()
 	Stop()
 }
