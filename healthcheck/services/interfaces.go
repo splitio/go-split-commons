@@ -1,9 +1,5 @@
 package services
 
-import (
-	"github.com/splitio/go-toolkit/v5/logging"
-)
-
 const (
 	// ByPercentage counter type
 	ByPercentage = iota
@@ -71,6 +67,5 @@ type Config struct {
 	ServiceURL            string
 	ServiceHealthEndpoint string
 	Severity              int
-	TaskFunc              func(l logging.LoggerInterface, c CounterInterface) error
 	TaskPeriod            int
 }
