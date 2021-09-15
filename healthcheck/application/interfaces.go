@@ -77,3 +77,17 @@ type Config struct {
 	MaxErrorsAllowedInPeriod int
 	Severity                 int
 }
+
+// NewApplicationConfig new config
+func NewApplicationConfig(
+	name string,
+	counterType int,
+) *Config {
+	return &Config{
+		Name:        name,
+		CounterType: counterType,
+		Periodic:    false,
+		Period:      3600,
+		Severity:    Critical,
+	}
+}

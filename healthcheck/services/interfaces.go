@@ -69,3 +69,21 @@ type Config struct {
 	Severity              int
 	TaskPeriod            int
 }
+
+// NewServicesConfig new config
+func NewServicesConfig(
+	name string,
+	url string,
+	endpoint string,
+) *Config {
+	return &Config{
+		CounterType:           ByPercentage,
+		MaxLen:                10,
+		PercentageToBeHealthy: 70,
+		Name:                  name,
+		ServiceURL:            url,
+		TaskPeriod:            3600,
+		ServiceHealthEndpoint: endpoint,
+		Severity:              Critical,
+	}
+}
