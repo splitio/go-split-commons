@@ -78,7 +78,7 @@ type Config struct {
 	Severity                 int
 }
 
-// NewApplicationConfig new config
+// NewApplicationConfig new config with default values
 func NewApplicationConfig(
 	name string,
 	counterType int,

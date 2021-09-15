@@ -70,7 +70,7 @@ type Config struct {
 	TaskPeriod            int
 }
 
-// NewServicesConfig new config
+// NewServicesConfig new config with default values
 func NewServicesConfig(
 	name string,
 	url string,
