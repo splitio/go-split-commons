@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
@@ -41,6 +42,9 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
+	hcMonitor           application.MonitorInterface
+	splitsRefreshRate   int
+	segmentsRefreshRate int
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -50,6 +54,7 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
+	hcMonitor application.MonitorInterface,
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
@@ -58,6 +63,9 @@ func NewSynchronizer(
 		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
+		hcMonitor:           hcMonitor,
+		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
+		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
 	}
 }
 
@@ -98,6 +106,9 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 	if s.splitTasks.SegmentSyncTask != nil {
 		s.splitTasks.SegmentSyncTask.Start()
 	}
+
+	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate)
+	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate)
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
