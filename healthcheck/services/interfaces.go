@@ -1,5 +1,7 @@
 package services
 
+import "time"
+
 const (
 	// ByPercentage counter type
 	ByPercentage = iota
@@ -39,11 +41,11 @@ type HealthDto struct {
 
 // ItemDto description
 type ItemDto struct {
-	Service      string `json:"service"`
-	Healthy      bool   `json:"healthy"`
-	Message      string `json:"message,omitempty"`
-	HealthySince *int64 `json:"healthySince,omitempty"`
-	LastHit      *int64 `json:"lastHit,omitempty"`
+	Service      string     `json:"service"`
+	Healthy      bool       `json:"healthy"`
+	Message      string     `json:"message,omitempty"`
+	HealthySince *time.Time `json:"healthySince,omitempty"`
+	LastHit      *time.Time `json:"lastHit,omitempty"`
 }
 
 // HealthyResult result
@@ -52,8 +54,8 @@ type HealthyResult struct {
 	Severity     int
 	Healthy      bool
 	LastMessage  string
-	HealthySince *int64
-	LastHit      *int64
+	HealthySince *time.Time
+	LastHit      *time.Time
 }
 
 // Config counter config
