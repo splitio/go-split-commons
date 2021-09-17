@@ -45,6 +45,7 @@ type ImpressionStorageProducer interface {
 
 // ImpressionStorageConsumer interface should be implemented by structs that offer popping impressions
 type ImpressionStorageConsumer interface {
+	PopNRaw(int64) ([]string, error)
 	Count() int64
 	Drop(size *int64) error
 	Empty() bool

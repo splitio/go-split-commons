@@ -110,24 +110,39 @@ func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
 	panic("Not implemented for redis")
 }
 
-// PopNWithMetadata pop N elements from queue
-func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+func (r *ImpressionStorage) pop(n int64) ([]string, error) {
+
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	toReturn := make([]dtos.ImpressionQueueObject, 0, n)
 	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
 	if err != nil {
 		r.logger.Error("Error fetching impressions")
-		return toReturn, err
+		return nil, err
 	}
 
 	fetchedCount := int64(len(lrange))
+	if fetchedCount == 0 {
+		return nil, nil
+	}
+
 	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
 	if err != nil {
 		r.logger.Error("Error trimming impressions")
-		return toReturn, err
+		return nil, err
 	}
+
+	return lrange, err
+}
+
+// PopNWithMetadata pop N elements from queue
+func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+
+	lrange, err := r.pop(n)
+	if err != nil {
+		return nil, err
+	}
+	toReturn := make([]dtos.ImpressionQueueObject, 0, n)
 
 	// This operation will simply do nothing if the key no longer exists (queue is empty)
 	// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
@@ -146,4 +161,13 @@ func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObj
 	}
 
 	return toReturn, nil
+}
+
+func (r *ImpressionStorage) PopNRaw(n int64) ([]string, error) {
+	lrange, err := r.pop(n)
+	if err != nil {
+		return nil, err
+	}
+
+	return lrange, nil
 }
