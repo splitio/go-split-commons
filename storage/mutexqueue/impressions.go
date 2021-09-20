@@ -102,6 +102,11 @@ func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueue
 	panic("Not implemented for inmemory")
 }
 
+// PopNRaw pop N elements from queue
+func (s *MQImpressionsStorage) PopNRaw(n int64) ([]string, error) {
+	panic("Not implemented for inmemory")
+}
+
 // Drop drops
 func (s *MQImpressionsStorage) Drop(size *int64) error {
 	panic("Not implemented for inmemory")

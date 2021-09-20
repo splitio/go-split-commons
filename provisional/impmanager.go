@@ -13,6 +13,7 @@ const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
 // ImpressionManager interface
 type ImpressionManager interface {
 	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
+	ProcessSingle(impression *dtos.Impression) (toLog bool, toListener bool)
 }
 
 // ImpressionManagerImpl implements
@@ -73,4 +74,19 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 	}
 
 	return forLog, forListener
+}
+
+// ProcessSingle accepts a pointer to an impression, updates it's PT accordingly,
+// and returns whether it should be sent to the BE and to the lister
+func (i *ImpressionManagerImpl) ProcessSingle(impression *dtos.Impression) (toLog bool, toListener bool) {
+	if i.shouldAddPreviousTime {
+		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, impression) // Adds previous time if it is enabled
+	}
+
+	now := time.Now().UTC().UnixNano()
+	if i.isOptimized { // isOptimized
+		i.impressionsCounter.Inc(impression.FeatureName, now, 1) // Increments impression counter per featureName
+	}
+
+	return !i.isOptimized || impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now), i.listenerEnabled
 }
