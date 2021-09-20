@@ -82,7 +82,7 @@ type Config struct {
 	CounterType              int
 	MonitorType              int
 	TaskFunc                 func(l logging.LoggerInterface, c CounterInterface) error
-	GoroutineFunc            func()
+	GoroutineFunc            func(c CounterInterface)
 	Period                   int
 	MaxErrorsAllowedInPeriod int
 	Severity                 int
