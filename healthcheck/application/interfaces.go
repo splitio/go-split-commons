@@ -1,7 +1,6 @@
 package application
 
 import (
-	"sync"
 	"time"
 
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -47,7 +46,7 @@ type CounterInterface interface {
 	NotifyEvent()
 	Reset(value int) error
 	GetMonitorType() int
-	UpdateLastHit(mutex sync.RWMutex)
+	UpdateLastHit()
 	Start()
 	Stop()
 }
