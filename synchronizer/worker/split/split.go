@@ -21,7 +21,7 @@ type UpdaterImpl struct {
 	splitFetcher     service.SplitFetcher
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        application.MonitorInterface
+	hcMonitor        application.MonitorProducerInterface
 }
 
 // NewSplitFetcher creates new split synchronizer for processing split updates
@@ -30,7 +30,7 @@ func NewSplitFetcher(
 	splitFetcher service.SplitFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
-	hcMonitor application.MonitorInterface,
+	hcMonitor application.MonitorProducerInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,

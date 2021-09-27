@@ -54,7 +54,7 @@ type ManagerImpl struct {
 	lifecycle         lifecycle.Manager
 	logger            logging.LoggerInterface
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
-	hcMonitor         application.MonitorInterface
+	hcMonitor         application.MonitorProducerInterface
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -70,7 +70,7 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorInterface,
+	hcMonitor application.MonitorProducerInterface,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
