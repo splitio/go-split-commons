@@ -42,7 +42,7 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
-	hcMonitor           application.MonitorInterface
+	hcMonitor           application.MonitorProducerInterface
 	splitsRefreshRate   int
 	segmentsRefreshRate int
 }
@@ -54,7 +54,7 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
-	hcMonitor application.MonitorInterface,
+	hcMonitor application.MonitorProducerInterface,
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
