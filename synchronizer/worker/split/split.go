@@ -42,13 +42,13 @@ func NewSplitFetcher(
 }
 
 func (s *UpdaterImpl) processUpdate(splits *dtos.SplitChangesDTO) {
-	inactiveSplits := make([]dtos.SplitDTO, 0)
-	activeSplits := make([]dtos.SplitDTO, 0)
-	for _, split := range splits.Splits {
-		if split.Status == "ACTIVE" {
-			activeSplits = append(activeSplits, split)
+	inactiveSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
+	activeSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
+	for idx := range splits.Splits {
+		if splits.Splits[idx].Status == "ACTIVE" {
+			activeSplits = append(activeSplits, splits.Splits[idx])
 		} else {
-			inactiveSplits = append(inactiveSplits, split)
+			inactiveSplits = append(inactiveSplits, splits.Splits[idx])
 		}
 	}
 

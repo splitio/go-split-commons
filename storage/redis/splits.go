@@ -33,19 +33,24 @@ func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.Logg
 
 // All returns a slice of splits dtos.
 func (r *SplitStorage) All() []dtos.SplitDTO {
-	splits := make([]dtos.SplitDTO, 0)
 	keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
 	keys, err := r.client.Keys(keyPattern)
 	if err != nil {
 		r.logger.Error("Error fetching split keys. Returning empty split list")
-		return splits
+		return nil
+	}
+
+	if len(keys) == 0 {
+		return nil // no splits in cache, nothing to do here
 	}
 
 	rawSplits, err := r.client.MGet(keys)
 	if err != nil {
 		r.logger.Error("Could not get splits")
-		return splits
+		return nil
 	}
+
+	splits := make([]dtos.SplitDTO, 0, len(rawSplits))
 	for idx, raw := range rawSplits {
 		var split dtos.SplitDTO
 		rawSplit, ok := rawSplits[idx].(string)
@@ -78,7 +83,11 @@ func (r *SplitStorage) ChangeNumber() (int64, error) {
 
 // FetchMany retrieves features from redis storage
 func (r *SplitStorage) FetchMany(features []string) map[string]*dtos.SplitDTO {
-	keysToFetch := make([]string, 0)
+	if len(features) == 0 {
+		return nil
+	}
+
+	keysToFetch := make([]string, 0, len(features))
 	for _, feature := range features {
 		keysToFetch = append(keysToFetch, strings.Replace(KeySplit, "{split}", feature, 1))
 	}
@@ -145,14 +154,14 @@ func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, c
 
 	toAddKeys := make([]string, 0, len(toAdd))
 	toIncrKeys := make([]string, 0, len(toAdd))
-	for _, split := range toAdd {
-		toAddKeys = append(toAddKeys, strings.Replace(KeySplit, "{split}", split.Name, 1))
-		toIncrKeys = append(toIncrKeys, strings.Replace(KeyTrafficType, "{trafficType}", split.TrafficTypeName, 1))
+	for idx := range toAdd {
+		toAddKeys = append(toAddKeys, strings.Replace(KeySplit, "{split}", toAdd[idx].Name, 1))
+		toIncrKeys = append(toIncrKeys, strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
 	}
 
 	toRemoveKeys := make([]string, 0, len(toRemove))
-	for _, split := range toRemove {
-		toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", split.Name, 1))
+	for idx := range toRemove {
+		toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
 	}
 
 	// Gather all the EXISTING traffic types (if any) of all the added and removed splits
@@ -213,33 +222,19 @@ func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, c
 	}
 
 	if len(toRemoveKeys) > 0 {
-		res := r.client.Client.Del(toRemoveKeys...)
-		if res.Err() != nil {
-			r.logger.Error("error removing some keys")
+		count, err := r.client.Del(toRemoveKeys...)
+		if err != nil {
+			r.logger.Error("error removing some keys: ", err)
+		}
+
+		if count != int64(len(toRemoveKeys)) {
+			r.logger.Warning(fmt.Sprintf("intended to archive %d splits, but only %d succeeded.", len(toRemoveKeys), count))
 		}
 	}
 
 	err := r.client.Set(KeySplitTill, changeNumber, 0)
 	if err != nil {
 		r.logger.Error("Could not update split changenumber")
-	}
-}
-
-// Remove removes split item from redis
-// Deprecated: Though public, this method does not follow a transactional nature and should be avoided whenever possible.
-func (r *SplitStorage) Remove(splitName string) {
-	r.mutext.Lock()
-	defer r.mutext.Unlock()
-	keyToDelete := strings.Replace(KeySplit, "{split}", splitName, 1)
-	existing, _ := r.split(splitName)
-	if existing == nil {
-		r.logger.Warning("Tried to delete split " + splitName + " which doesn't exist. ignoring")
-		return
-	}
-	r.decr(existing.TrafficTypeName)
-	_, err := r.client.Del(keyToDelete)
-	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error deleting split \"%s\".", splitName))
 	}
 }
 
@@ -295,14 +290,16 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 
 // SplitNames returns a slice of strings with all the split names
 func (r *SplitStorage) SplitNames() []string {
-	splitNames := make([]string, 0)
-	keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
-	keys, err := r.client.Keys(keyPattern)
-	if err == nil {
-		toRemove := strings.Replace(KeySplit, "{split}", "", 1) // Create a string with all the prefix to remove
-		for _, key := range keys {
-			splitNames = append(splitNames, strings.Replace(key, toRemove, "", 1)) // Extract split name from key
-		}
+	keys, err := r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+	if err != nil {
+		r.logger.Error("error fetching split names form redis: ", err)
+		return nil
+	}
+
+	splitNames := make([]string, 0, len(keys))
+	toRemove := strings.Replace(KeySplit, "{split}", "", 1) // Create a string with all the prefix to remove
+	for _, key := range keys {
+		splitNames = append(splitNames, strings.Replace(key, toRemove, "", 1)) // Extract split name from key
 	}
 	return splitNames
 }
