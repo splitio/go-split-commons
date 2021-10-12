@@ -54,7 +54,7 @@ type ManagerImpl struct {
 	lifecycle         lifecycle.Manager
 	logger            logging.LoggerInterface
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
-	hcMonitor         application.MonitorInterface
+	hcMonitor         application.MonitorProducerInterface
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -70,7 +70,7 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorInterface,
+	hcMonitor application.MonitorProducerInterface,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -213,8 +213,8 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
-				m.hcMonitor.Reset(application.Splits, int(when.Milliseconds()))
-				m.hcMonitor.Reset(application.Segments, int(when.Milliseconds()))
+				m.hcMonitor.Reset(application.Splits, int(when.Seconds()))
+				m.hcMonitor.Reset(application.Segments, int(when.Seconds()))
 				// Tracking TOKEN_REFRESHES
 				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {

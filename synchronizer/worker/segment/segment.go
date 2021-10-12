@@ -21,7 +21,7 @@ type UpdaterImpl struct {
 	segmentFetcher   service.SegmentFetcher
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        application.MonitorInterface
+	hcMonitor        application.MonitorProducerInterface
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -31,7 +31,7 @@ func NewSegmentFetcher(
 	segmentFetcher service.SegmentFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
-	hcMonitor application.MonitorInterface,
+	hcMonitor application.MonitorProducerInterface,
 ) Updater {
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,
