@@ -144,7 +144,7 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 	before := time.Now()
 	token, err := m.authAPI.Authenticate()
 	if err != nil {
-		if errType, ok := err.(dtos.HTTPError); ok {
+		if errType, ok := err.(*dtos.HTTPError); ok {
 			m.runtimeTelemetry.RecordSyncError(telemetry.TokenSync, errType.Code)
 			if errType.Code >= http.StatusInternalServerError {
 				m.logger.Error(fmt.Sprintf("Error authenticating: %s", err.Error()))

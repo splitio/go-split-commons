@@ -44,30 +44,23 @@ func NewSegmentFetcher(
 }
 
 func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
-	name := segmentChanges.Name
-	oldSegment := s.segmentStorage.Keys(name)
-	if oldSegment == nil {
-		keys := set.NewSet()
-		for _, key := range segmentChanges.Added {
-			keys.Add(key)
-		}
-		s.logger.Debug(fmt.Sprintf("Segment [%s] doesn't exist now, it will add (%d) keys", name, keys.Size()))
-		s.segmentStorage.Update(name, keys, set.NewSet(), segmentChanges.Till)
-	} else {
-		toAdd := set.NewSet()
-		toRemove := set.NewSet()
-		// Segment exists, must add new members and remove old ones
-		for _, key := range segmentChanges.Added {
-			toAdd.Add(key)
-		}
-		for _, key := range segmentChanges.Removed {
-			toRemove.Add(key)
-		}
-		if toAdd.Size() > 0 || toRemove.Size() > 0 {
-			s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", name, toAdd.Size(), toRemove.Size()))
-			s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
-		}
+	if len(segmentChanges.Added) == 0 && len(segmentChanges.Removed) == 0 {
+		return
 	}
+
+	toAdd := set.NewSet()
+	toRemove := set.NewSet()
+	// Segment exists, must add new members and remove old ones
+	for _, key := range segmentChanges.Added {
+		toAdd.Add(key)
+	}
+	for _, key := range segmentChanges.Removed {
+		toRemove.Add(key)
+	}
+
+	s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", segmentChanges.Name, toAdd.Size(), toRemove.Size()))
+	s.segmentStorage.Update(segmentChanges.Name, toAdd, toRemove, segmentChanges.Till)
+
 }
 
 // SynchronizeSegment syncs segment
