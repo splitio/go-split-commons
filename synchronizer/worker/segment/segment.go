@@ -44,7 +44,10 @@ func NewSegmentFetcher(
 }
 
 func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
-	if len(segmentChanges.Added) == 0 && len(segmentChanges.Removed) == 0 {
+	if len(segmentChanges.Added) == 0 && len(segmentChanges.Removed) == 0 && segmentChanges.Since != -1 {
+		// If the Since is -1, it means the segment hasn't been fetched before.
+		// In that case we need to proceed so that we store an empty list for cases that need
+		// disambiguation between "segment isn't cached" & segment is empty (ie: split-proxy)
 		return
 	}
 
