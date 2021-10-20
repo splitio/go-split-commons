@@ -1,3 +1,7 @@
+4.0.0 (Jul 26, 2021)
+- Updated telemetry storage, metrics and updater. Added synchronizers for init and stats.
+- Added popRaw methods to redis storages
+
 3.0.1 (Jun 28, 2021)
  - Fixed SSE to use HTTPTimeout config.
 

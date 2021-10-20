@@ -1,33 +1,34 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/metric"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v3/tasks"
-	"github.com/splitio/go-toolkit/v4/asynctask"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v4/tasks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/asynctask"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // SplitTasks struct for tasks
 type SplitTasks struct {
 	SplitSyncTask            *asynctask.AsyncTask
 	SegmentSyncTask          *asynctask.AsyncTask
-	TelemetrySyncTask        *asynctask.AsyncTask
+	TelemetrySyncTask        tasks.Task
 	ImpressionSyncTask       tasks.Task
 	EventSyncTask            tasks.Task
-	ImpressionsCountSyncTask *asynctask.AsyncTask
+	ImpressionsCountSyncTask tasks.Task
 }
 
 // Workers struct for workers
 type Workers struct {
 	SplitFetcher             split.Updater
 	SegmentFetcher           segment.Updater
-	TelemetryRecorder        metric.MetricRecorder
+	TelemetryRecorder        telemetry.TelemetrySynchronizer
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
@@ -41,6 +42,9 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
+	hcMonitor           application.MonitorProducerInterface
+	splitsRefreshRate   int
+	segmentsRefreshRate int
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -50,6 +54,7 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
+	hcMonitor application.MonitorProducerInterface,
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
@@ -58,11 +63,14 @@ func NewSynchronizer(
 		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
+		hcMonitor:           hcMonitor,
+		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
+		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
 	}
 }
 
 func (s *SynchronizerImpl) dataFlusher() {
-	for true {
+	for {
 		msg := <-s.inMememoryFullQueue
 		switch msg {
 		case "EVENTS_FULL":
@@ -71,7 +79,6 @@ func (s *SynchronizerImpl) dataFlusher() {
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
-			break
 		case "IMPRESSIONS_FULL":
 			s.logger.Debug("FLUSHING storage queue")
 			err := s.workers.ImpressionRecorder.SynchronizeImpressions(s.impressionBulkSize)
@@ -99,6 +106,9 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 	if s.splitTasks.SegmentSyncTask != nil {
 		s.splitTasks.SegmentSyncTask.Start()
 	}
+
+	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate)
+	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate)
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
@@ -137,7 +147,7 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 		s.splitTasks.ImpressionSyncTask.Stop(true)
 	}
 	if s.splitTasks.TelemetrySyncTask != nil {
-		s.splitTasks.TelemetrySyncTask.Stop(false)
+		s.splitTasks.TelemetrySyncTask.Stop(true)
 	}
 	if s.splitTasks.EventSyncTask != nil {
 		s.splitTasks.EventSyncTask.Stop(true)

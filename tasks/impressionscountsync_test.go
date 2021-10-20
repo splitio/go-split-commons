@@ -4,11 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionCountSyncTask(t *testing.T) {
@@ -20,11 +22,16 @@ func TestImpressionCountSyncTask(t *testing.T) {
 			return nil
 		},
 	}
+	telemetryMockStorage := st.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("Resource should be impressionsCount")
+			}
+		},
+	}
 
 	impManager := provisional.NewImpressionsCounter()
-	impressionsCountTask := NewRecordImpressionsCountTask(impressionscount.NewRecorderSingle(
-		impManager, impressionMockRecorder, dtos.Metadata{}, logger,
-	), logger)
+	impressionsCountTask := NewRecordImpressionsCountTask(impressionscount.NewRecorderSingle(impManager, impressionMockRecorder, dtos.Metadata{}, logger, telemetryMockStorage), logger)
 
 	impressionsCountTask.Start()
 	time.Sleep(1 * time.Second)

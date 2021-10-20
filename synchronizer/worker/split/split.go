@@ -1,14 +1,14 @@
 package split
 
 import (
-	"strconv"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 const (
@@ -17,45 +17,43 @@ const (
 
 // UpdaterImpl struct for split sync
 type UpdaterImpl struct {
-	splitStorage   storage.SplitStorage
-	splitFetcher   service.SplitFetcher
-	metricsWrapper *storage.MetricWrapper
-	logger         logging.LoggerInterface
+	splitStorage     storage.SplitStorage
+	splitFetcher     service.SplitFetcher
+	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
+	hcMonitor        application.MonitorProducerInterface
 }
 
 // NewSplitFetcher creates new split synchronizer for processing split updates
 func NewSplitFetcher(
 	splitStorage storage.SplitStorage,
 	splitFetcher service.SplitFetcher,
-	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	hcMonitor application.MonitorProducerInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
-		splitStorage:   splitStorage,
-		splitFetcher:   splitFetcher,
-		metricsWrapper: metricsWrapper,
-		logger:         logger,
+		splitStorage:     splitStorage,
+		splitFetcher:     splitFetcher,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 }
 
 func (s *UpdaterImpl) processUpdate(splits *dtos.SplitChangesDTO) {
-	inactiveSplits := make([]dtos.SplitDTO, 0)
-	activeSplits := make([]dtos.SplitDTO, 0)
-	for _, split := range splits.Splits {
-		if split.Status == "ACTIVE" {
-			activeSplits = append(activeSplits, split)
+	inactiveSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
+	activeSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
+	for idx := range splits.Splits {
+		if splits.Splits[idx].Status == "ACTIVE" {
+			activeSplits = append(activeSplits, splits.Splits[idx])
 		} else {
-			inactiveSplits = append(inactiveSplits, split)
+			inactiveSplits = append(inactiveSplits, splits.Splits[idx])
 		}
 	}
 
 	// Add/Update active splits
-	s.splitStorage.PutMany(activeSplits, splits.Till)
-
-	// Remove inactive splits
-	for _, split := range inactiveSplits {
-		s.splitStorage.Remove(split.Name)
-	}
+	s.splitStorage.Update(activeSplits, inactiveSplits, splits.Till)
 }
 
 // SynchronizeSplits syncs splits
@@ -63,6 +61,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 	// @TODO: add delays
 
 	segments := make([]string, 0)
+	s.hcMonitor.NotifyEvent(application.Splits)
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
 		if changeNumber == 0 {
@@ -76,16 +75,15 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) ([]str
 		splits, err := s.splitFetcher.Fetch(changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, strconv.Itoa(httpError.Code))
+				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 			}
 			return segments, err
 		}
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
 		segments = append(segments, extractSegments(splits)...)
-		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-		s.metricsWrapper.StoreCounters(storage.SplitChangesCounter, "ok")
-		s.metricsWrapper.StoreLatencies(storage.SplitChangesLatency, bucket)
 		if splits.Till == splits.Since || (till != nil && splits.Till >= *till) {
+			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			return segments, nil
 		}
 	}

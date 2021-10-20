@@ -5,32 +5,30 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
 )
 
 const impressionsTTLRefresh = time.Duration(3600) * time.Second
 
 // ImpressionStorage is a redis-based implementation of split storage
 type ImpressionStorage struct {
-	client         *redis.PrefixedRedisClient
-	mutex          *sync.Mutex
-	logger         logging.LoggerInterface
-	redisKey       string
-	impressionsTTL time.Duration
-	metadata       dtos.Metadata
+	client   *redis.PrefixedRedisClient
+	mutex    *sync.Mutex
+	logger   logging.LoggerInterface
+	redisKey string
+	metadata dtos.Metadata
 }
 
 // NewImpressionStorage creates a new RedisSplitStorage and returns a reference to it
 func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) *ImpressionStorage {
 	return &ImpressionStorage{
-		client:         client,
-		mutex:          &sync.Mutex{},
-		logger:         logger,
-		redisKey:       redisImpressionsQueue,
-		impressionsTTL: redisImpressionsTTL,
-		metadata:       metadata,
+		client:   client,
+		mutex:    &sync.Mutex{},
+		logger:   logger,
+		redisKey: KeyImpressionsQueue,
+		metadata: metadata,
 	}
 }
 
@@ -44,14 +42,14 @@ func (r *ImpressionStorage) Count() int64 {
 }
 
 // Drop drops impressions from queue
-func (r *ImpressionStorage) Drop(size *int64) error {
+func (r *ImpressionStorage) Drop(size int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if size == nil {
+	if size == -1 {
 		_, err := r.client.Del(r.redisKey)
 		return err
 	}
-	return r.client.LTrim(r.redisKey, *size, -1)
+	return r.client.LTrim(r.redisKey, size, -1)
 }
 
 // Empty returns true if redis list is zero length
@@ -83,7 +81,7 @@ func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error
 	// Checks if expiration needs to be set
 	if inserted == int64(len(impressionsJSON)) {
 		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
-		result := r.client.Expire(r.redisKey, time.Duration(r.impressionsTTL)*time.Minute)
+		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
 		if result == false {
 			r.logger.Error("Something were wrong setting expiration", errPush)
 		}

@@ -5,38 +5,38 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	fetcherMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage"
-	storageMock "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestSplitSyncTask(t *testing.T) {
 	var call int64
+	var notifyEventCalled int64
 
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 
-	splitMockStorage := storageMock.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
-		PutManyCall: func(splits []dtos.SplitDTO, changeNumber int64) {
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if changeNumber != 3 {
 				t.Error("Wrong changenumber")
 			}
-			if len(splits) != 2 {
+			if len(toAdd) != 2 {
 				t.Error("Wrong length of passed splits")
 			}
-			s1 := splits[0]
+			s1 := toAdd[0]
 			if s1.Name != "split1" || s1.Killed {
 				t.Error("split1 stored/retrieved incorrectly")
 				t.Error(s1)
 			}
-			s2 := splits[1]
+			s2 := toAdd[1]
 			if s2.Name != "split2" || !s2.Killed {
 				t.Error("split2 stored/retrieved incorrectly")
 				t.Error(s2)
@@ -66,17 +66,27 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
-	metricTestWrapper := storage.NewMetricWrapper(storageMock.MockMetricStorage{
-		IncCounterCall: func(key string) {},
-		IncLatencyCall: func(metricName string, index int) {},
-	}, nil, nil)
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
+			if resource != telemetry.SplitSync {
+				t.Error("Resource should be splits")
+			}
+		},
+	}
+
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitFetcher(
-			splitMockStorage,
-			splitMockFetcher,
-			metricTestWrapper,
-			logging.NewLogger(&logging.LoggerOptions{}),
-		),
+		split.NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
@@ -94,5 +104,8 @@ func TestSplitSyncTask(t *testing.T) {
 
 	if splitTask.IsRunning() {
 		t.Error("Task should be stopped")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
 	}
 }

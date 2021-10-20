@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // MockSplitStorage is a mocked implementation of Split Storage
@@ -11,7 +11,7 @@ type MockSplitStorage struct {
 	ChangeNumberCall      func() (int64, error)
 	FetchManyCall         func(splitNames []string) map[string]*dtos.SplitDTO
 	KillLocallyCall       func(splitName string, defaultTreatment string, changeNumber int64)
-	PutManyCall           func(splits []dtos.SplitDTO, changeNumber int64)
+	UpdateCall            func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
 	RemoveCall            func(splitName string)
 	SegmentNamesCall      func() *set.ThreadUnsafeSet
 	SetChangeNumberCall   func(changeNumber int64) error
@@ -40,9 +40,9 @@ func (m MockSplitStorage) KillLocally(splitName string, defaultTreatment string,
 	m.KillLocallyCall(splitName, defaultTreatment, changeNumber)
 }
 
-// PutMany mock
-func (m MockSplitStorage) PutMany(splits []dtos.SplitDTO, changeNumber int64) {
-	m.PutManyCall(splits, changeNumber)
+// Update mock
+func (m MockSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+	m.UpdateCall(toAdd, toRemove, changeNumber)
 }
 
 // Remove mock

@@ -2,25 +2,26 @@ package segment
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // UpdaterImpl struct for segment sync
 type UpdaterImpl struct {
-	splitStorage   storage.SplitStorageConsumer
-	segmentStorage storage.SegmentStorage
-	segmentFetcher service.SegmentFetcher
-	metricsWrapper *storage.MetricWrapper
-	logger         logging.LoggerInterface
+	splitStorage     storage.SplitStorageConsumer
+	segmentStorage   storage.SegmentStorage
+	segmentFetcher   service.SegmentFetcher
+	logger           logging.LoggerInterface
+	runtimeTelemetry storage.TelemetryRuntimeProducer
+	hcMonitor        application.MonitorProducerInterface
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -28,47 +29,47 @@ func NewSegmentFetcher(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,
-	metricsWrapper *storage.MetricWrapper,
 	logger logging.LoggerInterface,
+	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	hcMonitor application.MonitorProducerInterface,
 ) Updater {
 	return &UpdaterImpl{
-		splitStorage:   splitStorage,
-		segmentStorage: segmentStorage,
-		segmentFetcher: segmentFetcher,
-		metricsWrapper: metricsWrapper,
-		logger:         logger,
+		splitStorage:     splitStorage,
+		segmentStorage:   segmentStorage,
+		segmentFetcher:   segmentFetcher,
+		logger:           logger,
+		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 }
 
 func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
-	name := segmentChanges.Name
-	oldSegment := s.segmentStorage.Keys(name)
-	if oldSegment == nil {
-		keys := set.NewSet()
-		for _, key := range segmentChanges.Added {
-			keys.Add(key)
-		}
-		s.logger.Debug(fmt.Sprintf("Segment [%s] doesn't exist now, it will add (%d) keys", name, keys.Size()))
-		s.segmentStorage.Update(name, keys, set.NewSet(), segmentChanges.Till)
-	} else {
-		toAdd := set.NewSet()
-		toRemove := set.NewSet()
-		// Segment exists, must add new members and remove old ones
-		for _, key := range segmentChanges.Added {
-			toAdd.Add(key)
-		}
-		for _, key := range segmentChanges.Removed {
-			toRemove.Add(key)
-		}
-		if toAdd.Size() > 0 || toRemove.Size() > 0 {
-			s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", name, toAdd.Size(), toRemove.Size()))
-			s.segmentStorage.Update(name, toAdd, toRemove, segmentChanges.Till)
-		}
+	if len(segmentChanges.Added) == 0 && len(segmentChanges.Removed) == 0 && segmentChanges.Since != -1 {
+		// If the Since is -1, it means the segment hasn't been fetched before.
+		// In that case we need to proceed so that we store an empty list for cases that need
+		// disambiguation between "segment isn't cached" & segment is empty (ie: split-proxy)
+		return
 	}
+
+	toAdd := set.NewSet()
+	toRemove := set.NewSet()
+	// Segment exists, must add new members and remove old ones
+	for _, key := range segmentChanges.Added {
+		toAdd.Add(key)
+	}
+	for _, key := range segmentChanges.Removed {
+		toRemove.Add(key)
+	}
+
+	s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", segmentChanges.Name, toAdd.Size(), toRemove.Size()))
+	s.segmentStorage.Update(segmentChanges.Name, toAdd, toRemove, segmentChanges.Till)
+
 }
 
 // SynchronizeSegment syncs segment
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) error {
+	s.hcMonitor.NotifyEvent(application.Segments)
+
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
@@ -83,16 +84,14 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
-				s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, strconv.Itoa(httpError.Code))
+				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)
 			}
 			return err
 		}
-
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
-		bucket := util.Bucket(time.Now().Sub(before).Nanoseconds())
-		s.metricsWrapper.StoreLatencies(storage.SegmentChangesLatency, bucket)
-		s.metricsWrapper.StoreCounters(storage.SegmentChangesCounter, "ok")
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
+			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
 			return nil
 		}
 	}

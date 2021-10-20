@@ -3,9 +3,11 @@ package provisional
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
 )
 
 const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
@@ -23,10 +25,11 @@ type ImpressionManagerImpl struct {
 	shouldAddPreviousTime bool
 	isOptimized           bool
 	listenerEnabled       bool
+	runtimeTelemetry      storage.TelemetryRuntimeProducer
 }
 
 // NewImpressionManager creates new ImpManager
-func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *ImpressionsCounter) (ImpressionManager, error) {
+func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *ImpressionsCounter, runtimeTelemetry storage.TelemetryRuntimeProducer) (ImpressionManager, error) {
 	impressionObserver, err := NewImpressionObserver(lastSeenCacheSize)
 	if err != nil {
 		return nil, err
@@ -38,6 +41,7 @@ func NewImpressionManager(managerConfig conf.ManagerConfig, impressionCounter *I
 		shouldAddPreviousTime: util.ShouldAddPreviousTime(managerConfig),
 		isOptimized:           impressionCounter != nil && util.ShouldBeOptimized(managerConfig),
 		listenerEnabled:       managerConfig.ListenerEnabled,
+		runtimeTelemetry:      runtimeTelemetry,
 	}
 
 	return impManager, nil
@@ -73,6 +77,7 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 		forLog, forListener = i.processImpression(impression, forLog, forListener)
 	}
 
+	i.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))
 	return forLog, forListener
 }
 

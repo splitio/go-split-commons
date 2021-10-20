@@ -9,9 +9,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionRecord(t *testing.T) {
@@ -67,7 +67,7 @@ func TestPostImpressions(t *testing.T) {
 		sdkVersion := r.Header.Get("SplitSDKVersion")
 		sdkMachine := r.Header.Get("SplitSDKMachineIP")
 
-		if sdkVersion != fmt.Sprint("go-some") {
+		if sdkVersion != "go-some" {
 			t.Error("SDK Version HEADER not match")
 			t.Error(sdkVersion)
 		}
@@ -172,7 +172,7 @@ func TestPostImpressions(t *testing.T) {
 	}
 }
 
-func TestPostMetricsLatency(t *testing.T) {
+func TestPostTelemetryStats(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +180,7 @@ func TestPostMetricsLatency(t *testing.T) {
 		sdkVersion := r.Header.Get("SplitSDKVersion")
 		sdkMachine := r.Header.Get("SplitSDKMachineIP")
 
-		if sdkVersion != fmt.Sprint("go-some") {
+		if sdkVersion != "go-some" {
 			t.Error("SDK Version HEADER not match")
 		}
 
@@ -194,156 +194,39 @@ func TestPostMetricsLatency(t *testing.T) {
 		}
 
 		rBody, _ := ioutil.ReadAll(r.Body)
-		var latenciesInPost []dtos.LatenciesDTO
-		err := json.Unmarshal(rBody, &latenciesInPost)
+		var statsInPost dtos.Stats
+		err := json.Unmarshal(rBody, &statsInPost)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
-		if latenciesInPost[0].MetricName != "some_metric_name" ||
-			latenciesInPost[0].Latencies[5] != 1234567890 {
-			t.Error("Latencies arrived mal-formed")
+		if statsInPost.TokenRefreshes != 10 {
+			t.Error("Unexpected value")
+		}
+		if statsInPost.LastSynchronizations.Splits != 123456789 {
+			t.Error("Unexpected value")
 		}
 
 		fmt.Fprintln(w, "ok")
 	}))
 	defer ts.Close()
 
-	var latencyValues = make([]int64, 23) //23 maximun number of buckets
-	latencyValues[5] = 1234567890
-	var latencies []dtos.LatenciesDTO
-	latencies = append(latencies, dtos.LatenciesDTO{MetricName: "some_metric_name", Latencies: latencyValues})
-
-	metricsRecorder := NewHTTPMetricsRecorder(
+	telemetryRecorder := NewHTTPTelemetryRecorder(
 		"",
 		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
-		},
-		logger,
-	)
-	err2 := metricsRecorder.RecordLatencies(latencies, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
-	if err2 != nil {
-		t.Error(err2)
-	}
-}
-
-func TestPostMetricsCounters(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		sdkVersion := r.Header.Get("SplitSDKVersion")
-		sdkMachine := r.Header.Get("SplitSDKMachineIP")
-
-		if sdkVersion != fmt.Sprint("go-some") {
-			t.Error("SDK Version HEADER not match")
-		}
-
-		if sdkMachine != "127.0.0.1" {
-			t.Error("SDK Machine HEADER not match")
-		}
-
-		sdkMachineName := r.Header.Get("SplitSDKMachineName")
-		if sdkMachineName != "ip-127-0-0-1" {
-			t.Error("SDK Machine Name HEADER not match", sdkMachineName)
-		}
-
-		rBody, _ := ioutil.ReadAll(r.Body)
-		var countersInPost []dtos.CounterDTO
-		err := json.Unmarshal(rBody, &countersInPost)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		if countersInPost[0].MetricName != "counter_1" ||
-			countersInPost[0].Count != 111 ||
-			countersInPost[1].MetricName != "counter_2" ||
-			countersInPost[1].Count != 222 {
-			t.Error("Counters arrived mal-formed")
-		}
-
-		fmt.Fprintln(w, "ok")
-	}))
-	defer ts.Close()
-
-	var counters []dtos.CounterDTO
-	counters = append(
-		counters,
-		dtos.CounterDTO{MetricName: "counter_1", Count: 111},
-		dtos.CounterDTO{MetricName: "counter_2", Count: 222},
-	)
-
-	metricsRecorder := NewHTTPMetricsRecorder(
-		"",
-		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
+			TelemetryServiceURL: ts.URL,
 		},
 		logger,
 	)
 
-	err2 := metricsRecorder.RecordCounters(counters, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
-	if err2 != nil {
-		t.Error(err2)
-	}
-}
-
-func TestPostMetricsGauge(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		sdkVersion := r.Header.Get("SplitSDKVersion")
-		sdkMachine := r.Header.Get("SplitSDKMachineIP")
-
-		if sdkVersion != fmt.Sprint("go-some") {
-			t.Error("SDK Version HEADER not match")
-		}
-
-		if sdkMachine != "127.0.0.1" {
-			t.Error("SDK Machine HEADER not match")
-		}
-
-		sdkMachineName := r.Header.Get("SplitSDKMachineName")
-		if sdkMachineName != "ip-127-0-0-1" {
-			t.Error("SDK Machine Name HEADER not match", sdkMachineName)
-		}
-
-		rBody, _ := ioutil.ReadAll(r.Body)
-		var gaugesInPost dtos.GaugeDTO
-		err := json.Unmarshal(rBody, &gaugesInPost)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		if gaugesInPost.MetricName != "gauge_1" ||
-			gaugesInPost.Gauge != 111.1 {
-			t.Error("Gauges arrived mal-formed")
-		}
-
-		fmt.Fprintln(w, "ok")
-	}))
-	defer ts.Close()
-
-	var gauge dtos.GaugeDTO
-	gauge = dtos.GaugeDTO{MetricName: "gauge_1", Gauge: 111.1}
-
-	metricsRecorder := NewHTTPMetricsRecorder(
-		"",
-		conf.AdvancedConfig{
-			EventsURL: ts.URL,
-			SdkURL:    ts.URL,
+	err := telemetryRecorder.RecordStats(dtos.Stats{
+		LastSynchronizations: &dtos.LastSynchronization{
+			Splits: 123456789,
 		},
-		logger,
-	)
-
-	err2 := metricsRecorder.RecordGauge(gauge, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
-	if err2 != nil {
-		t.Error(err2)
+		TokenRefreshes: 10,
+	}, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
+	if err != nil {
+		t.Error(err)
 	}
-
 }

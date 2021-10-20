@@ -1,30 +1,36 @@
 package impressionscount
 
 import (
-	"errors"
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionsCountRecorderError(t *testing.T) {
 	impressionMockRecorder := mocks.MockImpressionRecorder{
 		RecordImpressionsCountCall: func(pf dtos.ImpressionsCountDTO, metadata dtos.Metadata) error {
-			return errors.New("some")
+			return &dtos.HTTPError{Code: 500, Message: "some"}
+		},
+	}
+	telemetryMockStorage := st.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("It should be impressions")
+			}
+			if status != 500 {
+				t.Error("Status should be 500")
+			}
 		},
 	}
 
-	impressionsCountSync := NewRecorderSingle(
-		provisional.NewImpressionsCounter(),
-		impressionMockRecorder,
-		dtos.Metadata{},
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	impressionsCountSync := NewRecorderSingle(provisional.NewImpressionsCounter(), impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	err := impressionsCountSync.SynchronizeImpressionsCount()
 	if err == nil {
@@ -33,6 +39,7 @@ func TestImpressionsCountRecorderError(t *testing.T) {
 }
 
 func TestImpressionsCountRecorder(t *testing.T) {
+	before := time.Now().UTC()
 	now := time.Now().UnixNano()
 	nextHour := time.Now().Add(1 * time.Hour).UnixNano()
 	impressionMockRecorder := mocks.MockImpressionRecorder{
@@ -70,14 +77,24 @@ func TestImpressionsCountRecorder(t *testing.T) {
 			return nil
 		},
 	}
+	telemetryMockStorage := st.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("Resource should be impressionsCount")
+			}
+			if tm.Before(before) {
+				t.Error("It should be higher than before")
+			}
+		},
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
+			if resource != telemetry.ImpressionCountSync {
+				t.Error("Resource should be impresisonsCount")
+			}
+		},
+	}
 
 	impCounter := provisional.NewImpressionsCounter()
-	impressionsCountSync := NewRecorderSingle(
-		impCounter,
-		impressionMockRecorder,
-		dtos.Metadata{},
-		logging.NewLogger(&logging.LoggerOptions{}),
-	)
+	impressionsCountSync := NewRecorderSingle(impCounter, impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	impCounter.Inc("some", now, 1)
 	impCounter.Inc("another", now+1, 1)
