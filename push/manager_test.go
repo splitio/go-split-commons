@@ -74,7 +74,7 @@ func TestAuth401(t *testing.T) {
 	synchronizer := &pushMocks.LocalSyncMock{}
 	authMock := &serviceMocks.MockAuthClient{
 		AuthenticateCall: func() (*dtos.Token, error) {
-			return nil, dtos.HTTPError{Code: 401}
+			return nil, &dtos.HTTPError{Code: 401}
 		},
 	}
 	feedback := make(chan int64, 100)
