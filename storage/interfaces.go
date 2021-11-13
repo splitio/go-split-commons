@@ -62,6 +62,7 @@ type ImpressionMultiSdkConsumer interface {
 // from a stored shared by many sdks
 type EventMultiSdkConsumer interface {
 	Count() int64
+	PopNRaw(int64) ([]string, error)
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 

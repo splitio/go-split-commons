@@ -103,11 +103,6 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 	return nil
 }
 
-// PopN return N elements from 0 to N
-func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
-	panic("Not implemented for redis")
-}
-
 func (r *ImpressionStorage) pop(n int64) ([]string, error) {
 
 	r.mutex.Lock()
@@ -161,6 +156,7 @@ func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObj
 	return toReturn, nil
 }
 
+// PopNRaw pops N elements and returns them as raw strings
 func (r *ImpressionStorage) PopNRaw(n int64) ([]string, error) {
 	lrange, err := r.pop(n)
 	if err != nil {

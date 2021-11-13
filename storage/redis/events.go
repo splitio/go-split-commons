@@ -2,6 +2,7 @@ package redis
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"sync"
 
@@ -104,9 +105,26 @@ func (r *EventsStorage) Push(event dtos.EventDTO, _ int) error {
 	return nil
 }
 
-// PopN return N elements from 0 to N
-func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
-	panic("Not implemented for redis")
+func (r *EventsStorage) pop(n int64) ([]string, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
+	if err != nil {
+		return nil, fmt.Errorf("error reading events: %w", err)
+	}
+
+	fetchedCount := int64(len(lrange))
+	if fetchedCount == 0 {
+		return nil, nil
+	}
+
+	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
+	if err != nil {
+		return nil, fmt.Errorf("error deleting events after read: %w", err)
+	}
+
+	return lrange, nil
 }
 
 // PopNWithMetadata pop N elements from queue
@@ -174,4 +192,14 @@ func (r *EventsStorage) Drop(size int64) error {
 		return err
 	}
 	return r.client.LTrim(r.redisKey, size, -1)
+}
+
+// PopNRaw pops N elements and returns them as raw strings
+func (r *EventsStorage) PopNRaw(n int64) ([]string, error) {
+	lrange, err := r.pop(n)
+	if err != nil {
+		return nil, err
+	}
+
+	return lrange, nil
 }
