@@ -24,9 +24,9 @@ func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 		return Treatment, true
 	case "getTreatments", "get_treatments", "treatments", "Treatments":
 		return Treatments, true
-	case "getTreatmentWithConfig", "get_treatment_with_config", "treatmentWithConfig", "TreatmentWithConfig":
+	case "getTreatmentWithConfig", "get_treatment_with_config", "treatment_with_config", "treatmentWithConfig", "TreatmentWithConfig":
 		return TreatmentWithConfig, true
-	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatmentsWithConfig", "TreatmentsWithConfig":
+	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatments_with_config", "treatmentsWithConfig", "TreatmentsWithConfig":
 		return TreatmentsWithConfig, true
 	case "track", "Track":
 		return Track, true

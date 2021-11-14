@@ -96,7 +96,7 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
-		c.logger.Error(err.Error())
+		c.logger.Error("error readig body from: ", req.URL.String(), ": ", err.Error())
 		return nil, err
 	}
 
@@ -106,7 +106,7 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 		return body, nil
 	}
 
-	c.logger.Error(fmt.Sprintf("GET method: Status Code: %d - %s", resp.StatusCode, resp.Status))
+	c.logger.Error(fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status))
 	return nil, &dtos.HTTPError{
 		Code:    resp.StatusCode,
 		Message: resp.Status,
@@ -157,7 +157,7 @@ func (c *HTTPClient) Post(service string, body []byte, headers map[string]string
 		return nil
 	}
 
-	c.logger.Error(fmt.Sprintf("POST method: Status Code: %d - %s", resp.StatusCode, resp.Status))
+	c.logger.Error(fmt.Sprintf("POST [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status))
 	return &dtos.HTTPError{
 		Code:    resp.StatusCode,
 		Message: resp.Status,
