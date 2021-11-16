@@ -25,10 +25,7 @@ func TestLogImpressionsError(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	impressionStorage := NewImpressionStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -72,10 +69,7 @@ func TestLogImpressions(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	impressionStorage := NewImpressionStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -149,29 +143,41 @@ func TestPopNImpressionsWithMetadata(t *testing.T) {
 				},
 			}
 		},
-		LTrimCall: func(key string, start, stop int64) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			if start != 3 {
-				t.Errorf("Unexpected start. Expected: %d Actual: %d", 3, start)
-			}
-			if stop != -1 {
-				t.Errorf("Unexpected stop. Expected: %d Actual: %d", -1, stop)
-			}
-			return &mocks.MockResultOutput{
-				ErrCall: func() error { return nil },
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				LTrimCall: func(key string, start, stop int64) {
+					if key != expectedKey {
+						t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+					}
+					if start != 3 {
+						t.Errorf("Unexpected start. Expected: %d Actual: %d", 3, start)
+					}
+					if stop != -1 {
+						t.Errorf("Unexpected stop. Expected: %d Actual: %d", -1, stop)
+					}
+				},
+				LLenCall: func(key string) {
+					if key != expectedKey {
+						t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+					}
+					/*
+						return &mocks.MockResultOutput{
+							ErrCall:    func() error { return nil },
+							ResultCall: func() (int64, error) { return 3, nil },
+						}
+					*/
+				},
+				ExecCall: func() ([]redis.Result, error) {
+					return []redis.Result{
+						&mocks.MockResultOutput{},
+						&mocks.MockResultOutput{
+							ErrCall: func() error { return nil },
+							IntCall: func() int64 { return 3 },
+						}}, nil
+				},
 			}
 		},
-		LLenCall: func(key string) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			return &mocks.MockResultOutput{
-				ErrCall:    func() error { return nil },
-				ResultCall: func() (int64, error) { return 3, nil },
-			}
-		},
+
 		ExpireCall: func(key string, value time.Duration) redis.Result {
 			if key != expectedKey {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
@@ -183,10 +189,7 @@ func TestPopNImpressionsWithMetadata(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	impressionStorage := NewImpressionStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 

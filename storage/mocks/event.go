@@ -10,7 +10,7 @@ type MockEventStorage struct {
 	PopNWithMetadataCall func(n int64) ([]dtos.QueueStoredEventDTO, error)
 	PushCall             func(event dtos.EventDTO, size int) error
 	DropCall             func(size *int64) error
-	PopNRawCall          func(size int64) ([]string, error)
+	PopNRawCall          func(size int64) ([]string, int64, error)
 }
 
 // Empty mock
@@ -44,6 +44,6 @@ func (m MockEventStorage) Drop(size *int64) error {
 }
 
 // PopNRaw mock
-func (m MockEventStorage) PopNRaw(size int64) ([]string, error) {
+func (m MockEventStorage) PopNRaw(size int64) ([]string, int64, error) {
 	return m.PopNRawCall(size)
 }

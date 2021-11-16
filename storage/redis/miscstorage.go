@@ -43,7 +43,7 @@ func (m *MiscStorage) SetApikeyHash(newApikeyHash string) error {
 
 // ClearAll cleans previous used data
 func (m *MiscStorage) ClearAll() error {
-	luaCMD := strings.Replace(clearAllSCriptTemplate, "{KEY_NAMESPACE}", m.client.Prefix, 1)
+	luaCMD := strings.Replace(clearAllSCriptTemplate, "{KEY_NAMESPACE}", m.client.Prefix(), 1)
 	return m.client.Eval(luaCMD, []string{}, nil)
 }
 

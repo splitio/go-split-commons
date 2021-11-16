@@ -105,26 +105,30 @@ func (r *EventsStorage) Push(event dtos.EventDTO, _ int) error {
 	return nil
 }
 
-func (r *EventsStorage) pop(n int64) ([]string, error) {
+func (r *EventsStorage) pop(n int64) ([]string, int64, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
 	if err != nil {
-		return nil, fmt.Errorf("error reading events: %w", err)
+		return nil, 0, fmt.Errorf("error reading events: %w", err)
 	}
 
 	fetchedCount := int64(len(lrange))
 	if fetchedCount == 0 {
-		return nil, nil
+		return nil, 0, nil
 	}
 
-	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
-	if err != nil {
-		return nil, fmt.Errorf("error deleting events after read: %w", err)
+	pipe := r.client.Pipeline()
+	pipe.LTrim(r.redisKey, fetchedCount, int64(-1))
+	pipe.LLen(r.redisKey)
+	res, err := pipe.Exec()
+	if len(res) < 2 || err != nil {
+		r.logger.Error("Error trimming impressions")
+		return nil, 0, err
 	}
 
-	return lrange, nil
+	return lrange, res[1].Int(), err
 }
 
 // PopNWithMetadata pop N elements from queue
@@ -195,11 +199,11 @@ func (r *EventsStorage) Drop(size int64) error {
 }
 
 // PopNRaw pops N elements and returns them as raw strings
-func (r *EventsStorage) PopNRaw(n int64) ([]string, error) {
-	lrange, err := r.pop(n)
+func (r *EventsStorage) PopNRaw(n int64) ([]string, int64, error) {
+	lrange, left, err := r.pop(n)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return lrange, nil
+	return lrange, left, nil
 }

@@ -103,7 +103,7 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 	return nil
 }
 
-func (r *ImpressionStorage) pop(n int64) ([]string, error) {
+func (r *ImpressionStorage) pop(n int64) ([]string, int64, error) {
 
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -111,27 +111,30 @@ func (r *ImpressionStorage) pop(n int64) ([]string, error) {
 	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
 	if err != nil {
 		r.logger.Error("Error fetching impressions")
-		return nil, err
+		return nil, 0, err
 	}
 
 	fetchedCount := int64(len(lrange))
 	if fetchedCount == 0 {
-		return nil, nil
+		return nil, 0, nil
 	}
 
-	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
-	if err != nil {
+	pipe := r.client.Pipeline()
+	pipe.LTrim(r.redisKey, fetchedCount, int64(-1))
+	pipe.LLen(r.redisKey)
+	res, err := pipe.Exec()
+	if len(res) < 2 || err != nil {
 		r.logger.Error("Error trimming impressions")
-		return nil, err
+		return nil, 0, err
 	}
 
-	return lrange, err
+	return lrange, res[1].Int(), err
 }
 
 // PopNWithMetadata pop N elements from queue
 func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
 
-	lrange, err := r.pop(n)
+	lrange, _, err := r.pop(n)
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +159,12 @@ func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObj
 	return toReturn, nil
 }
 
-// PopNRaw pops N elements and returns them as raw strings
-func (r *ImpressionStorage) PopNRaw(n int64) ([]string, error) {
-	lrange, err := r.pop(n)
+// PopNRaw pops N elements and returns them as raw strings, and how many items are left in the queue
+func (r *ImpressionStorage) PopNRaw(n int64) ([]string, int64, error) {
+	lrange, left, err := r.pop(n)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return lrange, nil
+	return lrange, left, nil
 }

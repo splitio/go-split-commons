@@ -32,10 +32,7 @@ func TestRecordLatency(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(
 		mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}),
@@ -68,10 +65,7 @@ func TestRecordException(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(
 		mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}),
@@ -97,10 +91,7 @@ func TestRecordConfigDataError(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
@@ -140,10 +131,7 @@ func TestRecordConfigData(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
