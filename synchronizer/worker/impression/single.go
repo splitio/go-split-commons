@@ -18,6 +18,12 @@ const (
 	splitSDKImpressionsMode = "SplitSDKImpressionsMode"
 )
 
+// ImpressionRecorder interface
+type ImpressionRecorder interface {
+	SynchronizeImpressions(bulkSize int64) error
+	FlushImpressions(bulkSize int64) error
+}
+
 // RecorderSingle struct for impression sync
 type RecorderSingle struct {
 	impressionStorage  storage.ImpressionStorageConsumer

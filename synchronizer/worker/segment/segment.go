@@ -10,9 +10,18 @@ import (
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
+
+// Updater interface
+type Updater interface {
+	SynchronizeSegment(name string, till *int64, requestNoCache bool) (*UpdateResult, error)
+	SynchronizeSegments(requestNoCache bool) (map[string]UpdateResult, error)
+	SegmentNames() []interface{}
+	IsSegmentCached(segmentName string) bool
+}
 
 // UpdaterImpl struct for segment sync
 type UpdaterImpl struct {
@@ -22,6 +31,12 @@ type UpdaterImpl struct {
 	logger           logging.LoggerInterface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
 	hcMonitor        application.MonitorProducerInterface
+}
+
+// UpdateResult encapsulates information regarding the segment update performed
+type UpdateResult struct {
+	UpdatedKeys     []string
+	NewChangeNumber int64
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -67,8 +82,11 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 }
 
 // SynchronizeSegment syncs segment
-func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) error {
+func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCache bool) (*UpdateResult, error) {
 	s.hcMonitor.NotifyEvent(application.Segments)
+	var updatedKeys []string
+	var err error
+	var newCN int64
 
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
@@ -77,34 +95,46 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 			changeNumber = -1
 		}
 		if till != nil && *till < changeNumber {
-			return nil
+			break
 		}
 
 		before := time.Now()
-		segmentChanges, err := s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
+		var segmentChanges *dtos.SegmentChangesDTO
+		segmentChanges, err = s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)
 			}
-			return err
+			break
 		}
+
+		newCN = segmentChanges.Till
+		updatedKeys = append(updatedKeys, segmentChanges.Added...)
+		updatedKeys = append(updatedKeys, segmentChanges.Removed...)
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
 		if segmentChanges.Till == segmentChanges.Since || (till != nil && segmentChanges.Till >= *till) {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
-			return nil
+			break
 		}
 	}
+
+	return &UpdateResult{
+		UpdatedKeys:     common.DedupeStringSlice(updatedKeys),
+		NewChangeNumber: newCN,
+	}, err
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *UpdaterImpl) SynchronizeSegments(requestNoCache bool) error {
-	// @TODO: add delays
+func (s *UpdaterImpl) SynchronizeSegments(requestNoCache bool) (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
 	wg := sync.WaitGroup{}
 	wg.Add(len(segmentNames))
 	failedSegments := set.NewThreadSafeSet()
+
+	var mtx sync.Mutex
+	results := make(map[string]UpdateResult, len(segmentNames))
 	for _, name := range segmentNames {
 		conv, ok := name.(string)
 		if !ok {
@@ -113,24 +143,23 @@ func (s *UpdaterImpl) SynchronizeSegments(requestNoCache bool) error {
 		}
 		go func(segmentName string) {
 			defer wg.Done() // Make sure the "finished" signal is always sent
-			ready := false
-			var err error
-			for !ready {
-				err = s.SynchronizeSegment(segmentName, nil, requestNoCache)
-				if err != nil {
-					failedSegments.Add(segmentName)
-				}
-				return
+			res, err := s.SynchronizeSegment(segmentName, nil, requestNoCache)
+			if err != nil {
+				failedSegments.Add(segmentName)
 			}
+
+			mtx.Lock()
+			defer mtx.Unlock()
+			results[segmentName] = *res
 		}(conv)
 	}
 	wg.Wait()
 
 	if failedSegments.Size() > 0 {
-		return fmt.Errorf("The following segments failed to be fetched %v", failedSegments.List())
+		return results, fmt.Errorf("The following segments failed to be fetched %v", failedSegments.List())
 	}
 
-	return nil
+	return results, nil
 }
 
 // SegmentNames returns all segments

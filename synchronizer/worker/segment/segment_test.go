@@ -14,6 +14,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/telemetry"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/testhelpers"
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
@@ -57,7 +58,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 
 	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	err := segmentSync.SynchronizeSegments(false)
+	_, err := segmentSync.SynchronizeSegments(false)
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -171,7 +172,9 @@ func TestSegmentSynchronizer(t *testing.T) {
 
 	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	err := segmentSync.SynchronizeSegments(true)
+	res, err := segmentSync.SynchronizeSegments(true)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item6", "item7", "item8"}, res["segment2"].UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -243,7 +246,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
-	err := segmentSync.SynchronizeSegments(false)
+	res, err := segmentSync.SynchronizeSegments(false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -257,7 +260,9 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		t.Error("Should be called once")
 	}
 
-	err = segmentSync.SynchronizeSegment("segment1", nil, false)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
+
+	res2, err := segmentSync.SynchronizeSegment("segment1", nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -274,6 +279,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 2 {
 		t.Error("It should be called twice")
 	}
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item3"}, res2.UpdatedKeys, "")
 }
 
 func TestSegmentSyncProcess(t *testing.T) {
@@ -355,7 +361,9 @@ func TestSegmentSyncProcess(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
-	err := segmentSync.SynchronizeSegments(false)
+	res, err := segmentSync.SynchronizeSegments(false)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item6", "item7", "item8"}, res["segment2"].UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -427,11 +435,13 @@ func TestSegmentTill(t *testing.T) {
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	var till int64 = 1
-	err := segmentSync.SynchronizeSegment("segment1", &till, false)
+	res, err := segmentSync.SynchronizeSegment("segment1", &till, false)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res.UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	err = segmentSync.SynchronizeSegment("segment1", &till, false)
+	res, err = segmentSync.SynchronizeSegment("segment1", &till, false)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{}, res.UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
 	}

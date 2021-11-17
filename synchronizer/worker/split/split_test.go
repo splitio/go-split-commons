@@ -203,13 +203,13 @@ func TestSplitSyncProcess(t *testing.T) {
 
 	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
 
-	segments, err := splitSync.SynchronizeSplits(nil, false)
+	res, err := splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
-	if len(segments) != 0 {
-		t.Error("invalid referenced segment names. Got: ", segments)
+	if len(res.ReferencedSegments) != 0 {
+		t.Error("invalid referenced segment names. Got: ", res.ReferencedSegments)
 	}
 
 	if !splitStorage.TrafficTypeExists("one") {
@@ -220,13 +220,13 @@ func TestSplitSyncProcess(t *testing.T) {
 		t.Error("It should exists")
 	}
 
-	segments, err = splitSync.SynchronizeSplits(nil, false)
+	res, err = splitSync.SynchronizeSplits(nil, false)
 	if err != nil {
 		t.Error("It should not return err")
 	}
 
-	if len(segments) != 1 || segments[0] != "someSegment" {
-		t.Error("invalid referenced segment names. Got: ", segments)
+	if len(res.ReferencedSegments) != 1 || res.ReferencedSegments[0] != "someSegment" {
+		t.Error("invalid referenced segment names. Got: ", res.ReferencedSegments)
 	}
 
 	s1 := splitStorage.Split("split1")

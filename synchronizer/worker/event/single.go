@@ -11,6 +11,12 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+// EventRecorder interface
+type EventRecorder interface {
+	SynchronizeEvents(bulkSize int64) error
+	FlushEvents(bulkSize int64) error
+}
+
 // RecorderSingle struct for event sync
 type RecorderSingle struct {
 	eventStorage     storage.EventStorageConsumer

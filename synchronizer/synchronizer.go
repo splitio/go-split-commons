@@ -34,6 +34,18 @@ type Workers struct {
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
 }
 
+// Synchronizer interface for syncing data to and from splits servers
+type Synchronizer interface {
+	SyncAll(requestNoCache bool) error
+	SynchronizeSplits(till *int64, requestNoCache bool) error
+	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
+	SynchronizeSegment(segmentName string, till *int64, requestNoCache bool) error
+	StartPeriodicFetching()
+	StopPeriodicFetching()
+	StartPeriodicDataRecording()
+	StopPeriodicDataRecording()
+}
+
 // SynchronizerImpl implements Synchronizer
 type SynchronizerImpl struct {
 	splitTasks          SplitTasks
@@ -95,7 +107,8 @@ func (s *SynchronizerImpl) SyncAll(requestNoCache bool) error {
 	if err != nil {
 		return err
 	}
-	return s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
+	_, err = s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
+	return err
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -159,8 +172,8 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 
 // SynchronizeSplits syncs splits
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64, requstNoCache bool) error {
-	referencedSegments, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
-	for _, segment := range s.filterCachedSegments(referencedSegments) {
+	result, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
+	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
 		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
 	}
 	return err
@@ -183,7 +196,8 @@ func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, 
 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64, requstNoCache bool) error {
-	return s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
+	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
+	return err
 }
 
 var _ Synchronizer = &SynchronizerImpl{}

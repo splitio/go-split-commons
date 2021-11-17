@@ -11,6 +11,11 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+// ImpressionsCountRecorder interface
+type ImpressionsCountRecorder interface {
+	SynchronizeImpressionsCount() error
+}
+
 // RecorderSingle struct for impressionsCount sync
 type RecorderSingle struct {
 	impressionsCounter *provisional.ImpressionsCounter
