@@ -4,10 +4,10 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // NewMQImpressionsStorage returns an instance of MQEventsStorage
@@ -108,6 +108,11 @@ func (s *MQImpressionsStorage) PopN(n int64) ([]dtos.Impression, error) {
 
 // PopNWithMetadata pop N elements from queue
 func (s *MQImpressionsStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
+	panic("Not implemented for inmemory")
+}
+
+// PopNRaw pop N elements from queue
+func (s *MQImpressionsStorage) PopNRaw(n int64) ([]string, error) {
 	panic("Not implemented for inmemory")
 }
 

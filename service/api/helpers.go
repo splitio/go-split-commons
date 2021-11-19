@@ -1,6 +1,6 @@
 package api
 
-import "github.com/splitio/go-split-commons/v3/dtos"
+import "github.com/splitio/go-split-commons/v4/dtos"
 
 const (
 	splitSDKVersion     = "SplitSDKVersion"

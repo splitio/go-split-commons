@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
+	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
 func TestRecordLatency(t *testing.T) {
@@ -32,17 +32,14 @@ func TestRecordLatency(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(
 		mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{SDKVersion: "go-test-1", MachineIP: "1.1.1.1", MachineName: "test"},
 	)
 
-	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Nanosecond).Nanoseconds())
+	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Millisecond))
 	if call != 1 {
 		t.Error("It should call redis storage")
 	}
@@ -68,10 +65,7 @@ func TestRecordException(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(
 		mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}),
@@ -97,10 +91,7 @@ func TestRecordConfigDataError(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 
@@ -140,10 +131,7 @@ func TestRecordConfigData(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
 

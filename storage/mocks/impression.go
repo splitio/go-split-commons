@@ -1,9 +1,10 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v3/dtos"
+import "github.com/splitio/go-split-commons/v4/dtos"
 
 // MockImpressionStorage is a mocked implementation of Impression Storage
 type MockImpressionStorage struct {
+	PopNRawCall          func(int64) ([]string, int64, error)
 	EmptyCall            func() bool
 	CountCall            func() int64
 	LogImpressionsCall   func(impressions []dtos.Impression) error
@@ -40,4 +41,9 @@ func (m MockImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueue
 // Drop mock
 func (m MockImpressionStorage) Drop(size *int64) error {
 	return m.Drop(size)
+}
+
+// PopNRaw mock
+func (m MockImpressionStorage) PopNRaw(n int64) ([]string, int64, error) {
+	return m.PopNRawCall(n)
 }

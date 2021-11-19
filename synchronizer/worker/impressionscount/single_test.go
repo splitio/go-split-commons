@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionsCountRecorderError(t *testing.T) {
@@ -39,7 +39,7 @@ func TestImpressionsCountRecorderError(t *testing.T) {
 }
 
 func TestImpressionsCountRecorder(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	now := time.Now().UnixNano()
 	nextHour := time.Now().Add(1 * time.Hour).UnixNano()
 	impressionMockRecorder := mocks.MockImpressionRecorder{
@@ -78,15 +78,15 @@ func TestImpressionsCountRecorder(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := st.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.ImpressionCountSync {
 				t.Error("Resource should be impressionsCount")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
 			if resource != telemetry.ImpressionCountSync {
 				t.Error("Resource should be impresisonsCount")
 			}

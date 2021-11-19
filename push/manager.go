@@ -7,15 +7,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/service/api/sse"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/struct/traits/lifecycle"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/service/api/sse"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
 )
 
 // Status update contants that will be propagated to the push manager's user
@@ -53,6 +54,7 @@ type ManagerImpl struct {
 	lifecycle         lifecycle.Manager
 	logger            logging.LoggerInterface
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
+	hcMonitor         application.MonitorProducerInterface
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -68,6 +70,7 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
+	hcMonitor application.MonitorProducerInterface,
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -95,6 +98,7 @@ func NewManager(
 		parser:           parser,
 		logger:           logger,
 		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 	manager.lifecycle.Setup()
 	return manager, nil
@@ -140,7 +144,7 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 	before := time.Now()
 	token, err := m.authAPI.Authenticate()
 	if err != nil {
-		if errType, ok := err.(dtos.HTTPError); ok {
+		if errType, ok := err.(*dtos.HTTPError); ok {
 			m.runtimeTelemetry.RecordSyncError(telemetry.TokenSync, errType.Code)
 			if errType.Code >= http.StatusInternalServerError {
 				m.logger.Error(fmt.Sprintf("Error authenticating: %s", err.Error()))
@@ -154,12 +158,12 @@ func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
 		// Not an HTTP error, most likely a tcp/bad connection. Should retry
 		return nil, common.Int64Ref(StatusRetryableError)
 	}
-	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before).Nanoseconds())
+	m.runtimeTelemetry.RecordSyncLatency(telemetry.TokenSync, time.Since(before))
 	if !token.PushEnabled {
 		return nil, common.Int64Ref(StatusNonRetryableError)
 	}
 	m.runtimeTelemetry.RecordTokenRefreshes()
-	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	m.runtimeTelemetry.RecordSuccessfulSync(telemetry.TokenSync, time.Now().UTC())
 	return token, nil
 }
 
@@ -209,6 +213,8 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
+				m.hcMonitor.Reset(application.Splits, int(when.Seconds()))
+				m.hcMonitor.Reset(application.Segments, int(when.Seconds()))
 				// Tracking TOKEN_REFRESHES
 				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {

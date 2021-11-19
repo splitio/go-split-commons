@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
+	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
 func createSampleSplit(name string) dtos.SplitDTO {
@@ -65,10 +65,7 @@ func TestAll(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -94,10 +91,7 @@ func TestChangeNumberError(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -120,10 +114,7 @@ func TestChangeNumber(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -152,10 +143,7 @@ func TestFetchManyError(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -187,10 +175,7 @@ func TestFetchMany(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -237,10 +222,7 @@ func TestSegmentNames(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -264,10 +246,7 @@ func TestSplitError(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -290,10 +269,7 @@ func TestSplit(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -316,10 +292,7 @@ func TestSplitNamesError(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -342,10 +315,7 @@ func TestSplitNames(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -380,10 +350,7 @@ func TestTrafficTypeExists(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 

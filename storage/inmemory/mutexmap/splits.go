@@ -3,8 +3,9 @@ package mutexmap
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // MMSplitStorage struct contains is an in-memory implementation of split storage
@@ -110,11 +111,11 @@ func (m *MMSplitStorage) decreaseTrafficTypeCount(trafficType string) {
 	}
 }
 
-// PutMany bulk inserts splits into the in-memory storage
-func (m *MMSplitStorage) PutMany(splits []dtos.SplitDTO, till int64) {
+// Update atomically registers new splits, removes archived ones and updates the change number
+func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, till int64) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	for _, split := range splits {
+	for _, split := range toAdd {
 		existing, thisIsAnUpdate := m.data[split.Name]
 		if thisIsAnUpdate {
 			// If it's an update, we decrement the traffic type count of the existing split,
@@ -123,6 +124,14 @@ func (m *MMSplitStorage) PutMany(splits []dtos.SplitDTO, till int64) {
 		}
 		m.data[split.Name] = split
 		m.increaseTrafficTypeCount(split.TrafficTypeName)
+	}
+
+	for _, split := range toRemove {
+		cached, exists := m.data[split.Name]
+		if exists {
+			delete(m.data, split.Name)
+			m.decreaseTrafficTypeCount(cached.TrafficTypeName)
+		}
 	}
 	m.SetChangeNumber(till)
 }
@@ -192,3 +201,6 @@ func (m *MMSplitStorage) TrafficTypeExists(trafficType string) bool {
 	value, exists := m.trafficTypes[trafficType]
 	return exists && value > 0
 }
+
+var _ storage.SplitStorageConsumer = (*MMSplitStorage)(nil)
+var _ storage.SplitStorageProducer = (*MMSplitStorage)(nil)

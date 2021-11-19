@@ -1,9 +1,9 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-toolkit/v4/asynctask"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-toolkit/v5/asynctask"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 const (

@@ -3,8 +3,8 @@ package telemetry
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
 )
 
 func GetStreamingEvent(eventType int, data int64) *dtos.StreamingEvent {

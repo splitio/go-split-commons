@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v4/service/mocks"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestEventSyncTask(t *testing.T) {
@@ -50,12 +50,12 @@ func TestEventSyncTask(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
@@ -100,9 +100,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 			}
 			return []dtos.EventDTO{mockedEvent1, mockedEvent2, mockedEvent3}, nil
 		},
-		EmptyCall: func() bool {
-			return false
-		},
+		EmptyCall: func() bool { return false },
 	}
 
 	eventMockRecorder := recorderMock.MockEventRecorder{
@@ -124,12 +122,12 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
@@ -145,7 +143,7 @@ func TestEventSyncTaskMultiple(t *testing.T) {
 	)
 
 	eventTask.Start()
-	time.Sleep(3 * time.Second)
+	time.Sleep(2500 * time.Millisecond)
 	if !eventTask.IsRunning() {
 		t.Error("Task recorder task should be running")
 	}

@@ -1,5 +1,13 @@
-3.1.0 (April 14, 2021)
+4.0.0 (Jul 26, 2021)
 - Updated telemetry storage, metrics and updater. Added synchronizers for init and stats.
+- Added popRaw methods to redis storages
+- Added healthcheck
+- Full telemetry implementation for redis & extra interfaces for peeking values without cosuming them
+- Update duration units expressed in integer to use time.Duration
+
+
+3.0.1 (Jun 28, 2021)
+ - Fixed SSE to use HTTPTimeout config.
 
 3.0.0 (Feb 25, 2021)
  - BREAKING CHANGE: Sync manager interface changed

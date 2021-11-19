@@ -1,19 +1,42 @@
 package redis
 
+// Split redis keys, fields & TTLs
 const (
-	redisSplit            = "SPLITIO.split.{split}"                                    // split object
-	redisSplitTill        = "SPLITIO.splits.till"                                      // last split fetch
-	redisSegment          = "SPLITIO.segment.{segment}"                                // segment object
-	redisSegmentTill      = "SPLITIO.segment.{segment}.till"                           // last segment fetch
-	redisEvents           = "SPLITIO.events"                                           // events LIST key
-	redisImpressionsQueue = "SPLITIO.impressions"                                      // impressions LIST key
-	redisImpressionsTTL   = 3600                                                       // impressions default TTL
-	redisTrafficType      = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
-	redisHash             = "SPLITIO.hash"                                             // hash key
-	redisConfig           = "SPLITIO.telemetry.config"                                 // config Key
-	redisConfigTTL        = 3600                                                       // config TTL
-	redisLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
-	redisExceptionField   = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
-	redisException        = "SPLITIO.telemetry.exceptions"                             // exception Key
-	redisLatencyField     = "{sdkVersion}/{machineName}/{machineIP}/{method}/{bucket}" // latency field template
+	KeySplit            = "SPLITIO.split.{split}"                                    // split object
+	KeySplitTill        = "SPLITIO.splits.till"                                      // last split fetch
+	KeySegment          = "SPLITIO.segment.{segment}"                                // segment object
+	KeySegmentTill      = "SPLITIO.segment.{segment}.till"                           // last segment fetch
+	KeyEvents           = "SPLITIO.events"                                           // events LIST key
+	KeyImpressionsQueue = "SPLITIO.impressions"                                      // impressions LIST key
+	KeyTrafficType      = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
+	KeyAPIKeyHash       = "SPLITIO.hash"                                             // hash key
+	KeyConfig           = "SPLITIO.telemetry.config"                                 // config Key
+	KeyLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
+	KeyException        = "SPLITIO.telemetry.exceptions"                             // exception Key
+	FieldLatency        = "{sdkVersion}/{machineName}/{machineIP}/{method}/{bucket}" // latency field template
+	FieldException      = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
+	TTLImpressions      = 3600                                                       // impressions default TTL
+	TTLConfig           = 3600                                                       // config TTL
+)
+
+// FieldSeparator constant
+const (
+	FieldSeparator = "/"
+)
+
+// Latency field section indexes
+const (
+	FieldLatencyIndexSdkVersion  = 0
+	FieldLatencyIndexMachineName = 1
+	FieldLatencyIndexMachineIP   = 2
+	FieldLatencyIndexMethod      = 3
+	FieldLatencyIndexBucket      = 4
+)
+
+// Exception field section indexes
+const (
+	FieldExceptionIndexSdkVersion  = 0
+	FieldExceptionIndexMachineName = 1
+	FieldExceptionIndexMachineIP   = 2
+	FieldExceptionIndexMethod      = 3
 )

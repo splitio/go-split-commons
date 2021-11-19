@@ -3,10 +3,9 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 type httpRecorderBase struct {
@@ -62,7 +61,7 @@ func (i *HTTPImpressionRecorder) RecordImpressionsCount(pf dtos.ImpressionsCount
 }
 
 // NewHTTPImpressionRecorder instantiates an HTTPImpressionRecorder
-func NewHTTPImpressionRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.ImpressionsRecorder {
+func NewHTTPImpressionRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) *HTTPImpressionRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPImpressionRecorder{
 		httpRecorderBase: httpRecorderBase{
@@ -95,7 +94,7 @@ func (i *HTTPEventsRecorder) Record(events []dtos.EventDTO, metadata dtos.Metada
 }
 
 // NewHTTPEventsRecorder instantiates an HTTPEventsRecorder
-func NewHTTPEventsRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.EventsRecorder {
+func NewHTTPEventsRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) *HTTPEventsRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.EventsURL, logger, dtos.Metadata{})
 	return &HTTPEventsRecorder{
 		httpRecorderBase: httpRecorderBase{
@@ -111,7 +110,7 @@ type HTTPTelemetryRecorder struct {
 }
 
 // NewHTTPTelemetryRecorder instantiates an HTTPTelemetryRecorder
-func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) service.TelemetryRecorder {
+func NewHTTPTelemetryRecorder(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface) *HTTPTelemetryRecorder {
 	client := NewHTTPClient(apikey, cfg, cfg.TelemetryServiceURL, logger, dtos.Metadata{})
 	return &HTTPTelemetryRecorder{
 		httpRecorderBase: httpRecorderBase{

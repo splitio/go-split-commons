@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/inmemory"
-	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexqueue"
-	"github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service/api"
+	recorderMock "github.com/splitio/go-split-commons/v4/service/mocks"
+	"github.com/splitio/go-split-commons/v4/storage/inmemory"
+	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestSynhronizeEventError(t *testing.T) {
@@ -105,7 +105,7 @@ func TestSynhronizeEventWithNoEvents(t *testing.T) {
 }
 
 func TestSynhronizeEvent(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	event1 := dtos.EventDTO{EventTypeID: "someId", Key: "someKey", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 	event2 := dtos.EventDTO{EventTypeID: "someId2", Key: "someKey2", Properties: make(map[string]interface{}), Timestamp: 123456789, TrafficTypeName: "someTraffic", Value: nil}
 
@@ -119,15 +119,15 @@ func TestSynhronizeEvent(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, d time.Duration) {
 			if resource != telemetry.EventSync {
 				t.Error("Resource should be events")
 			}

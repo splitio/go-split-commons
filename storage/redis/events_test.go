@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
+	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
 func TestPushEventsError(t *testing.T) {
@@ -24,11 +24,7 @@ func TestPushEventsError(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 	eventStorage := NewEventsStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
 	event := dtos.EventDTO{
@@ -62,11 +58,7 @@ func TestPushEvents(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 	eventStorage := NewEventsStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
 	event := dtos.EventDTO{
@@ -160,11 +152,7 @@ func TestPopNEventsWithMetadata(t *testing.T) {
 		},
 	}
 
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
-
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 	eventStorage := NewEventsStorage(mockPrefixedClient, metadata, logging.NewLogger(&logging.LoggerOptions{}))
 
 	storedEvents, err := eventStorage.PopNWithMetadata(3)

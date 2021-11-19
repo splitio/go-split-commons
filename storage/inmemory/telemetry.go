@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/storage"
-	constants "github.com/splitio/go-split-commons/v3/telemetry"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
+	constants "github.com/splitio/go-split-commons/v4/telemetry"
 )
 
 type latencies struct {
@@ -82,7 +83,7 @@ type TelemetryStorage struct {
 }
 
 // NewTelemetryStorage builds in memory telemetry storage
-func NewTelemetryStorage() (storage.TelemetryStorage, error) {
+func NewTelemetryStorage() (*TelemetryStorage, error) {
 	treatmentLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
@@ -170,14 +171,15 @@ func NewTelemetryStorage() (storage.TelemetryStorage, error) {
 
 // TELEMETRY STORAGE PRODUCER
 
+// RecordConfigData no-op
 func (i *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 	// No-Op. Config Data will be sent directly to Split Servers. No need to store.
 	return nil
 }
 
 // RecordLatency stores latency for method
-func (i *TelemetryStorage) RecordLatency(method string, latency int64) {
-	bucket := constants.Bucket(latency)
+func (i *TelemetryStorage) RecordLatency(method string, latency time.Duration) {
+	bucket := constants.Bucket(latency.Milliseconds())
 	switch method {
 	case constants.Treatment:
 		i.latencies.treatment.Incr(bucket)
@@ -231,22 +233,23 @@ func (i *TelemetryStorage) RecordEventsStats(dataType int, count int64) {
 }
 
 // RecordSuccessfulSync records sync for resource
-func (i *TelemetryStorage) RecordSuccessfulSync(resource int, timestamp int64) {
+func (i *TelemetryStorage) RecordSuccessfulSync(resource int, when time.Time) {
+	milliseconds := when.UnixNano() / int64(time.Millisecond)
 	switch resource {
 	case constants.SplitSync:
-		atomic.StoreInt64(&i.records.splits, timestamp)
+		atomic.StoreInt64(&i.records.splits, milliseconds)
 	case constants.SegmentSync:
-		atomic.StoreInt64(&i.records.segments, timestamp)
+		atomic.StoreInt64(&i.records.segments, milliseconds)
 	case constants.ImpressionSync:
-		atomic.StoreInt64(&i.records.impressions, timestamp)
+		atomic.StoreInt64(&i.records.impressions, milliseconds)
 	case constants.ImpressionCountSync:
-		atomic.StoreInt64(&i.records.impressionsCount, timestamp)
+		atomic.StoreInt64(&i.records.impressionsCount, milliseconds)
 	case constants.EventSync:
-		atomic.StoreInt64(&i.records.events, timestamp)
+		atomic.StoreInt64(&i.records.events, milliseconds)
 	case constants.TelemetrySync:
-		atomic.StoreInt64(&i.records.telemetry, timestamp)
+		atomic.StoreInt64(&i.records.telemetry, milliseconds)
 	case constants.TokenSync:
-		atomic.StoreInt64(&i.records.token, timestamp)
+		atomic.StoreInt64(&i.records.token, milliseconds)
 	}
 }
 
@@ -281,8 +284,8 @@ func (i *TelemetryStorage) RecordSyncError(resource int, status int) {
 }
 
 // RecordSyncLatency records http error
-func (i *TelemetryStorage) RecordSyncLatency(resource int, latency int64) {
-	bucket := constants.Bucket(latency)
+func (i *TelemetryStorage) RecordSyncLatency(resource int, latency time.Duration) {
+	bucket := constants.Bucket(latency.Milliseconds())
 	switch resource {
 	case constants.SplitSync:
 		i.latencies.splits.Incr(bucket)
@@ -478,3 +481,58 @@ func (i *TelemetryStorage) GetNonReadyUsages() int64 {
 func (i *TelemetryStorage) GetBURTimeouts() int64 {
 	return atomic.LoadInt64(&i.counters.burTimeouts)
 }
+
+// -- Peeker interface
+
+// PeekHTTPLatencies returns a copy of the currently registered latencies for a specific API resource
+func (i *TelemetryStorage) PeekHTTPLatencies(resource int) []int64 {
+	switch resource {
+	case constants.SplitSync:
+		return i.latencies.splits.ReadAll()
+	case constants.SegmentSync:
+		return i.latencies.segments.ReadAll()
+	case constants.ImpressionSync:
+		return i.latencies.impressions.ReadAll()
+	case constants.ImpressionCountSync:
+		return i.latencies.impressionsCount.ReadAll()
+	case constants.EventSync:
+		return i.latencies.events.ReadAll()
+	case constants.TelemetrySync:
+		return i.latencies.telemetry.ReadAll()
+	case constants.TokenSync:
+		return i.latencies.token.ReadAll()
+	}
+	return nil
+}
+
+// PeekHTTPErrors returns a copy of the currently registered latencies for a specific API resource
+func (i *TelemetryStorage) PeekHTTPErrors(resource int) map[int]int {
+	i.mutexHTTPErrors.Lock()
+	defer i.mutexHTTPErrors.Unlock()
+
+	var which map[int]int64
+	switch resource {
+	case constants.SplitSync:
+		which = i.httpErrors.Splits
+	case constants.SegmentSync:
+		which = i.httpErrors.Segments
+	case constants.ImpressionSync:
+		which = i.httpErrors.Impressions
+	case constants.ImpressionCountSync:
+		which = i.httpErrors.ImpressionsCount
+	case constants.EventSync:
+		which = i.httpErrors.Events
+	case constants.TelemetrySync:
+		which = i.httpErrors.Telemetry
+	case constants.TokenSync:
+		which = i.httpErrors.Token
+	}
+
+	toReturn := make(map[int]int)
+	for k, v := range which {
+		toReturn[k] = int(v)
+	}
+	return toReturn
+}
+
+var _ storage.TelemetryPeeker = (*TelemetryStorage)(nil)

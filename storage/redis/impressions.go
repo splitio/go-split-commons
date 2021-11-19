@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
 )
 
 const impressionsTTLRefresh = time.Duration(3600) * time.Second
@@ -27,7 +27,7 @@ func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metad
 		client:   client,
 		mutex:    &sync.Mutex{},
 		logger:   logger,
-		redisKey: redisImpressionsQueue,
+		redisKey: KeyImpressionsQueue,
 		metadata: metadata,
 	}
 }
@@ -42,14 +42,14 @@ func (r *ImpressionStorage) Count() int64 {
 }
 
 // Drop drops impressions from queue
-func (r *ImpressionStorage) Drop(size *int64) error {
+func (r *ImpressionStorage) Drop(size int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if size == nil {
+	if size == -1 {
 		_, err := r.client.Del(r.redisKey)
 		return err
 	}
-	return r.client.LTrim(r.redisKey, *size, -1)
+	return r.client.LTrim(r.redisKey, size, -1)
 }
 
 // Empty returns true if redis list is zero length
@@ -81,7 +81,7 @@ func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error
 	// Checks if expiration needs to be set
 	if inserted == int64(len(impressionsJSON)) {
 		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
-		result := r.client.Expire(r.redisKey, time.Duration(redisImpressionsTTL)*time.Second)
+		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
 		if result == false {
 			r.logger.Error("Something were wrong setting expiration", errPush)
 		}
@@ -103,29 +103,42 @@ func (r *ImpressionStorage) LogImpressions(impressions []dtos.Impression) error 
 	return nil
 }
 
-// PopN return N elements from 0 to N
-func (r *ImpressionStorage) PopN(n int64) ([]dtos.Impression, error) {
-	panic("Not implemented for redis")
+func (r *ImpressionStorage) pop(n int64) ([]string, int64, error) {
+
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
+	if err != nil {
+		r.logger.Error("Error fetching impressions")
+		return nil, 0, err
+	}
+
+	fetchedCount := int64(len(lrange))
+	if fetchedCount == 0 {
+		return nil, 0, nil
+	}
+
+	pipe := r.client.Pipeline()
+	pipe.LTrim(r.redisKey, fetchedCount, int64(-1))
+	pipe.LLen(r.redisKey)
+	res, err := pipe.Exec()
+	if len(res) < 2 || err != nil {
+		r.logger.Error("Error trimming impressions")
+		return nil, 0, err
+	}
+
+	return lrange, res[1].Int(), err
 }
 
 // PopNWithMetadata pop N elements from queue
 func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObject, error) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
 
+	lrange, _, err := r.pop(n)
+	if err != nil {
+		return nil, err
+	}
 	toReturn := make([]dtos.ImpressionQueueObject, 0, n)
-	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
-	if err != nil {
-		r.logger.Error("Error fetching impressions")
-		return toReturn, err
-	}
-
-	fetchedCount := int64(len(lrange))
-	err = r.client.LTrim(r.redisKey, fetchedCount, int64(-1))
-	if err != nil {
-		r.logger.Error("Error trimming impressions")
-		return toReturn, err
-	}
 
 	// This operation will simply do nothing if the key no longer exists (queue is empty)
 	// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
@@ -144,4 +157,14 @@ func (r *ImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueueObj
 	}
 
 	return toReturn, nil
+}
+
+// PopNRaw pops N elements and returns them as raw strings, and how many items are left in the queue
+func (r *ImpressionStorage) PopNRaw(n int64) ([]string, int64, error) {
+	lrange, left, err := r.pop(n)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return lrange, left, nil
 }

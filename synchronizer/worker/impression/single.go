@@ -4,19 +4,25 @@ import (
 	"errors"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-split-commons/v3/util"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 const (
 	maxImpressionCacheSize  = 500000
 	splitSDKImpressionsMode = "SplitSDKImpressionsMode"
 )
+
+// ImpressionRecorder interface
+type ImpressionRecorder interface {
+	SynchronizeImpressions(bulkSize int64) error
+	FlushImpressions(bulkSize int64) error
+}
 
 // RecorderSingle struct for impression sync
 type RecorderSingle struct {
@@ -100,8 +106,8 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 		}
 		return err
 	}
-	i.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionSync, time.Since(before).Nanoseconds())
-	i.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	i.runtimeTelemetry.RecordSyncLatency(telemetry.ImpressionSync, time.Since(before))
+	i.runtimeTelemetry.RecordSuccessfulSync(telemetry.ImpressionSync, time.Now().UTC())
 	return nil
 }
 

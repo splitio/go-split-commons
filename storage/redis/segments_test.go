@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
+	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
 func TestSegmentKeysErrort(t *testing.T) {
@@ -23,10 +23,7 @@ func TestSegmentKeysErrort(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -49,10 +46,7 @@ func TestSegmentKeysNonExistent(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -74,10 +68,7 @@ func TestSegmentKeys(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -101,10 +92,7 @@ func TestSegmentTillError(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 
@@ -127,10 +115,7 @@ func TestSegmentTill(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &mockedRedisClient,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
 	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
 

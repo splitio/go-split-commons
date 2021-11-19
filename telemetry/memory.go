@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // RecorderSingle struct for telemetry sync
@@ -84,8 +84,8 @@ func (e *RecorderSingle) SynchronizeStats() error {
 		}
 		return err
 	}
-	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC())
 	return nil
 }
 
@@ -100,7 +100,7 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 
 	before := time.Now()
 	err := e.telemetryRecorder.RecordConfig(dtos.Config{
-		OperationMode:      Standalone,
+		OperationMode:      Standalone, // TODO(mredolatti: Update this! Should not be hardcoded
 		Storage:            Memory,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
@@ -130,6 +130,6 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 		}
 		return
 	}
-	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(TelemetrySync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(TelemetrySync, time.Now().UTC())
 }

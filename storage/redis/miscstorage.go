@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
 )
 
 // ErrorHashNotPresent constant
@@ -29,7 +29,7 @@ type MiscStorage struct {
 
 // GetApikeyHash gets hashed apikey from redis
 func (m *MiscStorage) GetApikeyHash() (string, error) {
-	res, err := m.client.Get(redisHash)
+	res, err := m.client.Get(KeyAPIKeyHash)
 	if err != nil && err.Error() == "redis: nil" {
 		return "", errors.New(ErrorHashNotPresent)
 	}
@@ -38,12 +38,12 @@ func (m *MiscStorage) GetApikeyHash() (string, error) {
 
 // SetApikeyHash sets hashed apikey in redis
 func (m *MiscStorage) SetApikeyHash(newApikeyHash string) error {
-	return m.client.Set(redisHash, newApikeyHash, 0)
+	return m.client.Set(KeyAPIKeyHash, newApikeyHash, 0)
 }
 
 // ClearAll cleans previous used data
 func (m *MiscStorage) ClearAll() error {
-	luaCMD := strings.Replace(clearAllSCriptTemplate, "{KEY_NAMESPACE}", m.client.Prefix, 1)
+	luaCMD := strings.Replace(clearAllSCriptTemplate, "{KEY_NAMESPACE}", m.client.Prefix(), 1)
 	return m.client.Eval(luaCMD, []string{}, nil)
 }
 

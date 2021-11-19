@@ -81,6 +81,8 @@ type AdvancedConfig struct {
 	StreamingServiceURL    string
 	SplitUpdateQueueSize   int64
 	SegmentUpdateQueueSize int64
+	SplitsRefreshRate      int
+	SegmentsRefreshRate    int
 }
 
 // ManagerConfig exposes configurable parameters for ImpressionManager

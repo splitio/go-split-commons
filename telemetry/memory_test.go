@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service/api"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestTelemetryRecorderError(t *testing.T) {
@@ -42,7 +42,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 		PopTagsCall:                func() []string { return []string{} },
 		GetBURTimeoutsCall:         func() int64 { return 0 },
 		GetNonReadyUsagesCall:      func() int64 { return 0 },
-		RecordSuccessfulSyncCall:   func(resource int, tm int64) {},
+		RecordSuccessfulSyncCall:   func(resource int, tm time.Time) {},
 		RecordSyncErrorCall: func(resource, status int) {
 			called++
 			if resource != TelemetrySync {
@@ -77,7 +77,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 }
 
 func TestTelemetryRecorder(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	mockedSplitStorage := st.MockSplitStorage{
 		SplitNamesCall:   func() []string { return []string{} },
 		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet() },
@@ -98,15 +98,15 @@ func TestTelemetryRecorder(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
@@ -126,7 +126,7 @@ func TestTelemetryRecorder(t *testing.T) {
 }
 
 func TestTelemetryRecorderSync(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	var requestReceived int64
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/metrics/usage" || r.Method != "POST" {
@@ -183,15 +183,15 @@ func TestTelemetryRecorderSync(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
@@ -208,22 +208,22 @@ func TestTelemetryRecorderSync(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	called := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	mockTelemetryStorage := st.MockTelemetryStorage{
 		GetBURTimeoutsCall:    func() int64 { return 3 },
 		GetNonReadyUsagesCall: func() int64 { return 5 },
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}

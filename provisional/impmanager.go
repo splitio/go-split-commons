@@ -3,11 +3,11 @@ package provisional
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-split-commons/v3/util"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
 )
 
 const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
@@ -15,6 +15,7 @@ const lastSeenCacheSize = 500000 // cache up to 500k impression hashes
 // ImpressionManager interface
 type ImpressionManager interface {
 	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
+	ProcessSingle(impression *dtos.Impression) (toLog bool, toListener bool)
 }
 
 // ImpressionManagerImpl implements
@@ -78,4 +79,19 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 
 	i.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))
 	return forLog, forListener
+}
+
+// ProcessSingle accepts a pointer to an impression, updates it's PT accordingly,
+// and returns whether it should be sent to the BE and to the lister
+func (i *ImpressionManagerImpl) ProcessSingle(impression *dtos.Impression) (toLog bool, toListener bool) {
+	if i.shouldAddPreviousTime {
+		impression.Pt, _ = i.impressionObserver.TestAndSet(impression.FeatureName, impression) // Adds previous time if it is enabled
+	}
+
+	now := time.Now().UTC().UnixNano()
+	if i.isOptimized { // isOptimized
+		i.impressionsCounter.Inc(impression.FeatureName, now, 1) // Increments impression counter per featureName
+	}
+
+	return !i.isOptimized || impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now), i.listenerEnabled
 }

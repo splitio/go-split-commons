@@ -1,26 +1,27 @@
 package synchronizer
 
 import (
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v3/tasks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/asynctask"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v4/tasks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/asynctask"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // SplitTasks struct for tasks
 type SplitTasks struct {
 	SplitSyncTask            *asynctask.AsyncTask
 	SegmentSyncTask          *asynctask.AsyncTask
-	TelemetrySyncTask        *asynctask.AsyncTask
+	TelemetrySyncTask        tasks.Task
 	ImpressionSyncTask       tasks.Task
 	EventSyncTask            tasks.Task
-	ImpressionsCountSyncTask *asynctask.AsyncTask
+	ImpressionsCountSyncTask tasks.Task
 }
 
 // Workers struct for workers
@@ -33,6 +34,18 @@ type Workers struct {
 	ImpressionsCountRecorder impressionscount.ImpressionsCountRecorder
 }
 
+// Synchronizer interface for syncing data to and from splits servers
+type Synchronizer interface {
+	SyncAll(requestNoCache bool) error
+	SynchronizeSplits(till *int64, requestNoCache bool) error
+	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
+	SynchronizeSegment(segmentName string, till *int64, requestNoCache bool) error
+	StartPeriodicFetching()
+	StopPeriodicFetching()
+	StartPeriodicDataRecording()
+	StopPeriodicDataRecording()
+}
+
 // SynchronizerImpl implements Synchronizer
 type SynchronizerImpl struct {
 	splitTasks          SplitTasks
@@ -41,6 +54,9 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
+	hcMonitor           application.MonitorProducerInterface
+	splitsRefreshRate   int
+	segmentsRefreshRate int
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -50,6 +66,7 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
+	hcMonitor application.MonitorProducerInterface,
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
@@ -58,6 +75,9 @@ func NewSynchronizer(
 		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
+		hcMonitor:           hcMonitor,
+		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
+		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
 	}
 }
 
@@ -87,7 +107,8 @@ func (s *SynchronizerImpl) SyncAll(requestNoCache bool) error {
 	if err != nil {
 		return err
 	}
-	return s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
+	_, err = s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
+	return err
 }
 
 // StartPeriodicFetching starts periodic fetchers tasks
@@ -98,6 +119,9 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 	if s.splitTasks.SegmentSyncTask != nil {
 		s.splitTasks.SegmentSyncTask.Start()
 	}
+
+	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate)
+	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate)
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
@@ -148,8 +172,8 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 
 // SynchronizeSplits syncs splits
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64, requstNoCache bool) error {
-	referencedSegments, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
-	for _, segment := range s.filterCachedSegments(referencedSegments) {
+	result, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
+	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
 		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
 	}
 	return err
@@ -172,7 +196,8 @@ func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, 
 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64, requstNoCache bool) error {
-	return s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
+	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
+	return err
 }
 
 var _ Synchronizer = &SynchronizerImpl{}

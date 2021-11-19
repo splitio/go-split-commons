@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/redis"
-	"github.com/splitio/go-toolkit/v4/redis/mocks"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/redis"
+	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
 func TestGetApikeyHash(t *testing.T) {
@@ -24,10 +24,7 @@ func TestGetApikeyHash(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &client,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&client, "someprefix")
 	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
 	if str, _ := miscStorage.GetApikeyHash(); str != "3376912823" {
 		t.Error("Invalid hash fetched!")
@@ -62,10 +59,7 @@ func TestSetApikeyHash(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &client,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&client, "someprefix")
 	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
 	err := miscStorage.SetApikeyHash("12345678")
 	if err != nil {
@@ -85,10 +79,7 @@ func TestClearAll(t *testing.T) {
 			}
 		},
 	}
-	mockPrefixedClient := &redis.PrefixedRedisClient{
-		Client: &client,
-		Prefix: "someprefix",
-	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&client, "someprefix")
 	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
 
 	err := miscStorage.ClearAll()

@@ -6,18 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	pushMocks "github.com/splitio/go-split-commons/v3/push/mocks"
-	"github.com/splitio/go-split-commons/v3/service/api/sse"
-	sseMocks "github.com/splitio/go-split-commons/v3/service/api/sse/mocks"
-	serviceMocks "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	pushMocks "github.com/splitio/go-split-commons/v4/push/mocks"
+	"github.com/splitio/go-split-commons/v4/service/api/sse"
+	sseMocks "github.com/splitio/go-split-commons/v4/service/api/sse/mocks"
+	serviceMocks "github.com/splitio/go-split-commons/v4/service/mocks"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
 
-	"github.com/splitio/go-toolkit/v4/common"
-	"github.com/splitio/go-toolkit/v4/logging"
-	rawSseMocks "github.com/splitio/go-toolkit/v4/sse/mocks"
+	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-toolkit/v5/logging"
+	rawSseMocks "github.com/splitio/go-toolkit/v5/sse/mocks"
 )
 
 func TestAuth500(t *testing.T) {
@@ -44,8 +45,9 @@ func TestAuth500(t *testing.T) {
 			}
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -72,7 +74,7 @@ func TestAuth401(t *testing.T) {
 	synchronizer := &pushMocks.LocalSyncMock{}
 	authMock := &serviceMocks.MockAuthClient{
 		AuthenticateCall: func() (*dtos.Token, error) {
-			return nil, dtos.HTTPError{Code: 401}
+			return nil, &dtos.HTTPError{Code: 401}
 		},
 	}
 	feedback := make(chan int64, 100)
@@ -88,8 +90,9 @@ func TestAuth401(t *testing.T) {
 		},
 		RecordAuthRejectionsCall: func() { called++ },
 	}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -125,13 +128,14 @@ func TestAuthPushDisabled(t *testing.T) {
 	feedback := make(chan int64, 100)
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
 	}
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
+	appMonitor := hcMock.MockApplicationMonitor{}
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -149,7 +153,7 @@ func TestAuthPushDisabled(t *testing.T) {
 }
 
 func TestStreamingConnectionFails(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	cfg := &conf.AdvancedConfig{
 		SplitUpdateQueueSize:   10000,
 		SegmentUpdateQueueSize: 10000,
@@ -165,23 +169,24 @@ func TestStreamingConnectionFails(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
 		RecordTokenRefreshesCall: func() {},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -224,12 +229,12 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -249,9 +254,12 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -303,12 +311,12 @@ func TestExpectedDisconnection(t *testing.T) {
 		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
 	}
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, tm time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -328,9 +336,12 @@ func TestExpectedDisconnection(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 	feedback := make(chan int64, 100)
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -385,12 +396,12 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -410,8 +421,11 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -480,12 +494,12 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -505,8 +519,11 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -567,12 +584,12 @@ func TestEventForwarding(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -592,8 +609,11 @@ func TestEventForwarding(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -672,12 +692,12 @@ func TestEventForwardingReturnsError(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -697,8 +717,11 @@ func TestEventForwardingReturnsError(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -776,12 +799,12 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 	}
 	feedback := make(chan int64, 100)
 	telemetryStorageMock := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TokenSync {
 				t.Error("Resource should be token")
 			}
@@ -801,8 +824,11 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 			called++
 		},
 	}
+	appMonitor := hcMock.MockApplicationMonitor{
+		ResetCall: func(counterType, value int) {},
+	}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -871,11 +897,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/push/mocks"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/push/mocks"
+	"github.com/splitio/go-split-commons/v4/service/api"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestPushManagerCustom(t *testing.T) {

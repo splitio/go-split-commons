@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/provisional"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionCountSyncTask(t *testing.T) {
@@ -23,7 +23,7 @@ func TestImpressionCountSyncTask(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := st.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.ImpressionCountSync {
 				t.Error("Resource should be impressionsCount")
 			}

@@ -4,12 +4,18 @@ import (
 	"errors"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service"
-	"github.com/splitio/go-split-commons/v3/storage"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
+
+// EventRecorder interface
+type EventRecorder interface {
+	SynchronizeEvents(bulkSize int64) error
+	FlushEvents(bulkSize int64) error
+}
 
 // RecorderSingle struct for event sync
 type RecorderSingle struct {
@@ -58,8 +64,8 @@ func (e *RecorderSingle) SynchronizeEvents(bulkSize int64) error {
 		}
 		return err
 	}
-	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before).Nanoseconds())
-	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC().UnixNano()/int64(time.Millisecond))
+	e.runtimeTelemetry.RecordSyncLatency(telemetry.EventSync, time.Since(before))
+	e.runtimeTelemetry.RecordSuccessfulSync(telemetry.EventSync, time.Now().UTC())
 	return nil
 }
 

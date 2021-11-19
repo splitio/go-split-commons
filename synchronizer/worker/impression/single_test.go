@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/conf"
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/api"
-	recorderMock "github.com/splitio/go-split-commons/v3/service/mocks"
-	"github.com/splitio/go-split-commons/v3/storage/inmemory"
-	"github.com/splitio/go-split-commons/v3/storage/inmemory/mutexqueue"
-	"github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service/api"
+	recorderMock "github.com/splitio/go-split-commons/v4/service/mocks"
+	"github.com/splitio/go-split-commons/v4/storage/inmemory"
+	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestImpressionRecorderError(t *testing.T) {
@@ -101,7 +101,7 @@ func TestSynhronizeEventErrorRecorder(t *testing.T) {
 }
 
 func TestImpressionRecorder(t *testing.T) {
-	before := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	before := time.Now().UTC()
 	impression1 := dtos.Impression{
 		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
@@ -152,15 +152,15 @@ func TestImpressionRecorder(t *testing.T) {
 	}
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.ImpressionSync {
 				t.Error("Resource should be impressions")
 			}
-			if tm < before {
+			if tm.Before(before) {
 				t.Error("It should be higher than before")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, tm int64) {
+		RecordSyncLatencyCall: func(resource int, d time.Duration) {
 			if resource != telemetry.ImpressionSync {
 				t.Error("Resource should be impresisons")
 			}

@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-split-commons/v3/service/mocks"
-	st "github.com/splitio/go-split-commons/v3/storage/mocks"
-	"github.com/splitio/go-split-commons/v3/telemetry"
-	"github.com/splitio/go-toolkit/v4/datastructures/set"
-	"github.com/splitio/go-toolkit/v4/logging"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service/mocks"
+	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestTelemetrySyncTask(t *testing.T) {
@@ -35,12 +35,12 @@ func TestTelemetrySyncTask(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-		RecordSuccessfulSyncCall: func(resource int, tm int64) {
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 			if resource != telemetry.TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}
 		},
-		RecordSyncLatencyCall: func(resource int, latency int64) {
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
 			if resource != telemetry.TelemetrySync {
 				t.Error("Resource should be telemetry")
 			}

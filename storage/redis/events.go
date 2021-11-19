@@ -2,13 +2,14 @@ package redis
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v3/dtos"
-	"github.com/splitio/go-toolkit/v4/logging"
-	"github.com/splitio/go-toolkit/v4/queuecache"
-	"github.com/splitio/go-toolkit/v4/redis"
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/queuecache"
+	"github.com/splitio/go-toolkit/v5/redis"
 )
 
 // EventsStorage redis implementation of EventsStorage interface
@@ -35,7 +36,7 @@ func NewEventStorageConsumer(redisClient *redis.PrefixedRedisClient, metadata dt
 		client:      redisClient,
 		logger:      logger,
 		metadata:    metadata,
-		redisKey:    redisEvents,
+		redisKey:    KeyEvents,
 		refillMutex: &sync.RWMutex{},
 		mutex:       &sync.RWMutex{},
 	}
@@ -47,7 +48,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 	refillFunc := func(count int) ([]interface{}, error) {
 		refillMutex.Lock()
 		defer refillMutex.Unlock()
-		lrange, err := redisClient.LRange(redisEvents, 0, int64(count-1))
+		lrange, err := redisClient.LRange(KeyEvents, 0, int64(count-1))
 		if err != nil {
 			logger.Error("Fetching events", err)
 			return nil, err
@@ -59,7 +60,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 			idxFrom = totalFetchedEvents
 		}
 
-		err = redisClient.LTrim(redisEvents, int64(idxFrom), -1)
+		err = redisClient.LTrim(KeyEvents, int64(idxFrom), -1)
 		if err != nil {
 			logger.Error("Trim events", err)
 			return nil, err
@@ -77,7 +78,7 @@ func NewEventsStorage(redisClient *redis.PrefixedRedisClient, metadata dtos.Meta
 		client:      redisClient,
 		logger:      logger,
 		metadata:    metadata,
-		redisKey:    redisEvents,
+		redisKey:    KeyEvents,
 		refillMutex: refillMutex,
 		mutex:       &sync.RWMutex{},
 	}
@@ -104,9 +105,30 @@ func (r *EventsStorage) Push(event dtos.EventDTO, _ int) error {
 	return nil
 }
 
-// PopN return N elements from 0 to N
-func (r *EventsStorage) PopN(n int64) ([]dtos.EventDTO, error) {
-	panic("Not implemented for redis")
+func (r *EventsStorage) pop(n int64) ([]string, int64, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	lrange, err := r.client.LRange(r.redisKey, 0, n-1)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error reading events: %w", err)
+	}
+
+	fetchedCount := int64(len(lrange))
+	if fetchedCount == 0 {
+		return nil, 0, nil
+	}
+
+	pipe := r.client.Pipeline()
+	pipe.LTrim(r.redisKey, fetchedCount, int64(-1))
+	pipe.LLen(r.redisKey)
+	res, err := pipe.Exec()
+	if len(res) < 2 || err != nil {
+		r.logger.Error("Error trimming impressions")
+		return nil, 0, err
+	}
+
+	return lrange, res[1].Int(), err
 }
 
 // PopNWithMetadata pop N elements from queue
@@ -166,12 +188,22 @@ func (r *EventsStorage) Empty() bool {
 }
 
 // Drop drops events from queue
-func (r *EventsStorage) Drop(size *int64) error {
+func (r *EventsStorage) Drop(size int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	if size == nil {
+	if size == -1 {
 		_, err := r.client.Del(r.redisKey)
 		return err
 	}
-	return r.client.LTrim(r.redisKey, *size, -1)
+	return r.client.LTrim(r.redisKey, size, -1)
+}
+
+// PopNRaw pops N elements and returns them as raw strings
+func (r *EventsStorage) PopNRaw(n int64) ([]string, int64, error) {
+	lrange, left, err := r.pop(n)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return lrange, left, nil
 }

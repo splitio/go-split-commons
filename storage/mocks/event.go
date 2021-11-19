@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v3/dtos"
+import "github.com/splitio/go-split-commons/v4/dtos"
 
 // MockEventStorage is a mocked implementation of Event Storage
 type MockEventStorage struct {
@@ -10,6 +10,7 @@ type MockEventStorage struct {
 	PopNWithMetadataCall func(n int64) ([]dtos.QueueStoredEventDTO, error)
 	PushCall             func(event dtos.EventDTO, size int) error
 	DropCall             func(size *int64) error
+	PopNRawCall          func(size int64) ([]string, int64, error)
 }
 
 // Empty mock
@@ -40,4 +41,9 @@ func (m MockEventStorage) Push(event dtos.EventDTO, size int) error {
 // Drop mock
 func (m MockEventStorage) Drop(size *int64) error {
 	return m.Drop(size)
+}
+
+// PopNRaw mock
+func (m MockEventStorage) PopNRaw(size int64) ([]string, int64, error) {
+	return m.PopNRawCall(size)
 }
