@@ -64,6 +64,8 @@ func TestAll(t *testing.T) {
 				},
 			}
 		},
+		// TODO(mredolatti): repeat these tests with cluster mode on, and the rest of the calls mocked as well
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -221,6 +223,8 @@ func TestSegmentNames(t *testing.T) {
 				},
 			}
 		},
+		// TODO(mredolatti): repeat these tests with cluster mode on, and the rest of the calls mocked as well
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -291,6 +295,7 @@ func TestSplitNamesError(t *testing.T) {
 				MultiCall: func() ([]string, error) { return []string{}, errors.New("Some Error") },
 			}
 		},
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -314,6 +319,7 @@ func TestSplitNames(t *testing.T) {
 				MultiCall: func() ([]string, error) { return []string{"someKey", "someKey2"}, nil },
 			}
 		},
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
