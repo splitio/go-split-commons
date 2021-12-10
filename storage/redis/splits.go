@@ -34,9 +34,6 @@ func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.Logg
 
 // All returns a slice of splits dtos.
 func (r *SplitStorage) All() []dtos.SplitDTO {
-	// keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
-	// keys, err := r.client.Keys(keyPattern)
-
 	keys, err := r.getAllSplitKeys()
 	if err != nil {
 		r.logger.Error("Error fetching split keys. Returning empty split list: ", err)
@@ -339,14 +336,11 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 		return nil, fmt.Errorf("error getting slot (cluster mode): %w", err)
 	}
 
-	fmt.Println("SLOT:", slot)
-
 	count, err := r.client.ClusterCountKeysInSlot(int(slot))
 	if err != nil {
 		return nil, fmt.Errorf("error fetching number of keys in slot (cluster mode): %w", err)
 	}
 
-	fmt.Println("COUNT:", count)
 	if count == 0 { // odd but happens :shrug:
 		count = math.MaxInt16
 	}
@@ -356,7 +350,6 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 		return nil, fmt.Errorf("error fetching of keys in slot (cluster mode): %w", err)
 	}
 
-	fmt.Println("Keys totales", len(keys))
 	result := make([]string, 0, len(keys))
 	for _, key := range keys {
 		if strings.HasPrefix(key, "SPLITIO.split.") {
@@ -364,10 +357,7 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 		}
 	}
 
-	fmt.Println("keys filtradas: ", result)
-
 	return result, nil
-
 }
 
 var _ storage.SplitStorage = (*SplitStorage)(nil)
