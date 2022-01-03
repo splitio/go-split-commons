@@ -57,6 +57,7 @@ type SynchronizerImpl struct {
 	hcMonitor           application.MonitorProducerInterface
 	splitsRefreshRate   int
 	segmentsRefreshRate int
+	httpTiemoutSecs     int
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -78,6 +79,7 @@ func NewSynchronizer(
 		hcMonitor:           hcMonitor,
 		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
 		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
+		httpTiemoutSecs:     confAdvanced.HTTPTimeout,
 	}
 }
 
@@ -120,8 +122,11 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 		s.splitTasks.SegmentSyncTask.Start()
 	}
 
-	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate)
-	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate)
+	// if we go polling, we add a tolerance margin plus the maximum time that an http request can take
+	// in case of segments, the margin is slightly larger, since there are many segments to fetch and latencies
+	// can be greater
+	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate+int(float64(s.splitsRefreshRate)*0.1)+s.httpTiemoutSecs)
+	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate+int(float64(s.segmentsRefreshRate)*0.3)+s.httpTiemoutSecs)
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
