@@ -12,12 +12,19 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis/helpers"
 )
 
+// Redis initialization erorrs
+var (
+	ErrInvalidConf           = errors.New("incompatible configuration of redis, Sentinel and Cluster cannot be enabled at the same time")
+	ErrSentinelNoMaster      = errors.New("Missing redis sentinel master name")
+	ErrClusterInvalidHashtag = errors.New("hashtag must be wrapped in '{', '}', and be at least 3 characters long")
+)
+
 // NewRedisClient returns a new Prefixed Redis Client
 func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*redis.PrefixedRedisClient, error) {
 	prefix := config.Prefix
 
 	if len(config.SentinelAddresses) > 0 && len(config.ClusterNodes) > 0 {
-		return nil, errors.New("Incompatible configuration of redis, Sentinel and Cluster cannot be enabled at the same time")
+		return nil, ErrInvalidConf
 	}
 
 	universalOptions := &redis.UniversalOptions{
@@ -32,16 +39,14 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 	}
 
 	if len(config.SentinelAddresses) > 0 {
-		logger.Info("To start as Sentinel Mode")
 		if config.SentinelMaster == "" {
-			return nil, errors.New("Missing redis sentinel master name")
+			return nil, ErrSentinelNoMaster
 		}
 
 		universalOptions.MasterName = config.SentinelMaster
 		universalOptions.Addrs = config.SentinelAddresses
 	} else {
 		if len(config.ClusterNodes) > 0 {
-			logger.Info("To start as Cluster Mode")
 			var keyHashTag = "{SPLITIO}"
 
 			if config.ClusterKeyHashTag != "" {
@@ -51,14 +56,14 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 					string(keyHashTag[len(keyHashTag)-1]) != "}" ||
 					strings.Count(keyHashTag, "{") != 1 ||
 					strings.Count(keyHashTag, "}") != 1 {
-					return nil, errors.New("keyHashTag is not valid")
+					return nil, ErrClusterInvalidHashtag
 				}
 			}
 
 			prefix = keyHashTag + prefix
 			universalOptions.Addrs = config.ClusterNodes
+			universalOptions.ForceClusterMode = true // to enable auto-discovery of nodes when providing only one
 		} else {
-			logger.Info("To start as Single Mode")
 			universalOptions.Addrs = []string{fmt.Sprintf("%s:%d", config.Host, config.Port)}
 		}
 	}
@@ -66,8 +71,9 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 	rClient, err := redis.NewClient(universalOptions)
 
 	if err != nil {
-		logger.Error(err.Error())
+		return nil, fmt.Errorf("error constructing wrapped redis client: %w", err)
 	}
+
 	helpers.EnsureConnected(rClient)
 
 	return redis.NewPrefixedRedisClient(rClient, prefix)
