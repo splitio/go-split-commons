@@ -64,6 +64,74 @@ func TestAll(t *testing.T) {
 				},
 			}
 		},
+		ClusterModeCall: func() bool { return false },
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	splits := splitStorage.All()
+	if len(splits) != 2 {
+		t.Error("Unexpected size")
+	}
+	if splits[0].Name != "split1" || splits[1].Name != "split2" {
+		t.Error("Unexpected returned splits")
+	}
+}
+
+func TestAllClusterMode(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		KeysCall: func(pattern string) redis.Result {
+			t.Error("keys should notbe called.")
+			return nil
+		},
+		MGetCall: func(keys []string) redis.Result {
+			if len(keys) > 2 {
+				t.Error("there should be 2 keys only")
+			}
+			if keys[0] != "someprefix.SPLITIO.split.split1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split.split1", keys[0])
+			}
+			if keys[1] != "someprefix.SPLITIO.split.split2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split.split2", keys[1])
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1")),
+						marshalSplit(createSampleSplit("split2")),
+					}, nil
+				},
+			}
+		},
+		ClusterModeCall: func() bool { return true },
+		ClusterSlotForKeyCall: func(key string) redis.Result {
+			if key != "someprefix.__DUMMY__" {
+				t.Error("invalid key. Got: ", key)
+			}
+			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 123, nil }}
+		},
+		ClusterCountKeysInSlotCall: func(slot int) redis.Result {
+			if slot != 123 {
+				t.Error("slot should be 123")
+			}
+			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 4, nil }}
+		},
+		ClusterKeysInSlotCall: func(slot int, count int) redis.Result {
+			if slot != 123 || count != 4 {
+				t.Error("invalid slot or count. Got: ", slot, count)
+			}
+			return &mocks.MockResultOutput{
+				MultiCall: func() ([]string, error) {
+					return []string{
+						"someprefix.SPLITIO.split.split1",
+						"someprefix.SPLITIO.split.split2",
+						"someprefix.SPLITIO.splits.changeNumber",
+						"someprefix.SPLITIO.segment.segment1",
+					}, nil
+				},
+			}
+		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -221,6 +289,7 @@ func TestSegmentNames(t *testing.T) {
 				},
 			}
 		},
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -291,6 +360,7 @@ func TestSplitNamesError(t *testing.T) {
 				MultiCall: func() ([]string, error) { return []string{}, errors.New("Some Error") },
 			}
 		},
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
@@ -314,6 +384,7 @@ func TestSplitNames(t *testing.T) {
 				MultiCall: func() ([]string, error) { return []string{"someKey", "someKey2"}, nil },
 			}
 		},
+		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 

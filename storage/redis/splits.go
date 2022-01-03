@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,10 +34,9 @@ func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.Logg
 
 // All returns a slice of splits dtos.
 func (r *SplitStorage) All() []dtos.SplitDTO {
-	keyPattern := strings.Replace(KeySplit, "{split}", "*", 1)
-	keys, err := r.client.Keys(keyPattern)
+	keys, err := r.getAllSplitKeys()
 	if err != nil {
-		r.logger.Error("Error fetching split keys. Returning empty split list")
+		r.logger.Error("Error fetching split keys. Returning empty split list: ", err)
 		return nil
 	}
 
@@ -290,7 +290,8 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 
 // SplitNames returns a slice of strings with all the split names
 func (r *SplitStorage) SplitNames() []string {
-	keys, err := r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+	//keys, err := r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+	keys, err := r.getAllSplitKeys()
 	if err != nil {
 		r.logger.Error("error fetching split names form redis: ", err)
 		return nil
@@ -321,6 +322,42 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 		return false
 	}
 	return val > 0
+}
+
+func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
+	if !r.client.ClusterMode() {
+		return r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+	}
+
+	// the hashtag is bundled in the prefix, so it will automatically be added,
+	// and we'll get the slot where all the redis keys are bound
+	slot, err := r.client.ClusterSlotForKey("__DUMMY__")
+	if err != nil {
+		return nil, fmt.Errorf("error getting slot (cluster mode): %w", err)
+	}
+
+	count, err := r.client.ClusterCountKeysInSlot(int(slot))
+	if err != nil {
+		return nil, fmt.Errorf("error fetching number of keys in slot (cluster mode): %w", err)
+	}
+
+	if count == 0 { // odd but happens :shrug:
+		count = math.MaxInt16
+	}
+
+	keys, err := r.client.ClusterKeysInSlot(int(slot), int(count))
+	if err != nil {
+		return nil, fmt.Errorf("error fetching of keys in slot (cluster mode): %w", err)
+	}
+
+	result := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if strings.HasPrefix(key, "SPLITIO.split.") {
+			result = append(result, key)
+		}
+	}
+
+	return result, nil
 }
 
 var _ storage.SplitStorage = (*SplitStorage)(nil)
