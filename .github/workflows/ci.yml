@@ -2,10 +2,10 @@ name: ci
 on:
   push:
     branches:
-      - feature/modules_support
+      - main
   pull_request:
     branches:
-      - feature/modules_support
+      - main
 
 jobs:
   test:

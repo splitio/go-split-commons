@@ -1,3 +1,6 @@
+4.0.1 (Dec 24, 2021)
+ - Fix redis cluster config
+
 4.0.0 (Jul 26, 2021)
 - Updated telemetry storage, metrics and updater. Added synchronizers for init and stats.
 - Added popRaw methods to redis storages
