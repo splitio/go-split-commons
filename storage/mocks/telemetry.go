@@ -9,7 +9,7 @@ import (
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
 type MockTelemetryStorage struct {
 	RecordConfigDataCall       func(configData dtos.Config) error
-	RecordLatencyCall          func(method string, latency int64)
+	RecordLatencyCall          func(method string, latency time.Duration)
 	RecordExceptionCall        func(method string)
 	RecordImpressionsStatsCall func(dataType int, count int64)
 	RecordEventsStatsCall      func(dataType int, count int64)
@@ -45,7 +45,7 @@ func (m MockTelemetryStorage) RecordConfigData(configData dtos.Config) error {
 }
 
 // RecordLatency mock
-func (m MockTelemetryStorage) RecordLatency(method string, latency int64) {
+func (m MockTelemetryStorage) RecordLatency(method string, latency time.Duration) {
 	m.RecordLatencyCall(method, latency)
 }
 
