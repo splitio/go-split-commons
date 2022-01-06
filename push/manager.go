@@ -213,9 +213,8 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
-				m.hcMonitor.Reset(application.Splits, int(when.Seconds()))
-				m.hcMonitor.Reset(application.Segments, int(when.Seconds()))
-				// Tracking TOKEN_REFRESHES
+				m.hcMonitor.Reset(application.Splits, int(float64(when.Seconds())*1.5))
+				m.hcMonitor.Reset(application.Segments, int(float64(when.Seconds())*1.5))
 				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {
 					m.nextRefresh = time.AfterFunc(when, func() {
