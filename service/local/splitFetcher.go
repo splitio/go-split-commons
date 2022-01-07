@@ -1,6 +1,8 @@
 package local
 
 import (
+	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,9 +28,9 @@ const (
 
 // FileSplitFetcher struct fetches splits from a file
 type FileSplitFetcher struct {
-	splitFile        string
-	fileFormat       int
-	lastChangeNumber int64
+	splitFile  string
+	fileFormat int
+	lastHash   []byte
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
@@ -230,13 +232,6 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ bool) (*dtos.SplitChanges
 	}
 
 	var splits []dtos.SplitDTO
-	var till int64
-	since := s.lastChangeNumber
-	if s.lastChangeNumber != 0 {
-		//The first time we should return since == till
-		till = since + 1
-	}
-
 	data := string(fileContents)
 	switch s.fileFormat {
 	case SplitFileFormatClassic:
@@ -250,10 +245,22 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ bool) (*dtos.SplitChanges
 
 	}
 
-	s.lastChangeNumber++
+	till := changeNumber
+
+	// Get the SHA1 sum of the raw contents of the file, and compare it to the last one seen
+	// if it's equal, nothing has changed, return since == till
+	// otherwise, something changed, return till = since + 1
+	currH := sha1.New()
+	currH.Write(fileContents)
+	currSum := currH.Sum(nil)
+	if !bytes.Equal(currSum, s.lastHash) {
+		till++
+	}
+
+	s.lastHash = currSum
 	return &dtos.SplitChangesDTO{
 		Splits: splits,
-		Since:  since,
+		Since:  changeNumber,
 		Till:   till,
 	}, nil
 }
