@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v4/push"
 	pushMocks "github.com/splitio/go-split-commons/v4/push/mocks"
@@ -25,6 +26,7 @@ func TestSynchronizerErr(t *testing.T) {
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
 		StopPeriodicDataRecordingCall:  func() {},
+		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 	}
 	logger := logging.NewLogger(nil)
 	cfg := conf.GetDefaultAdvancedConfig()
@@ -60,6 +62,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -81,7 +84,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
@@ -135,6 +138,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	startPeriodicRecordingCount := int32(0)
 	stopPeriodicRecordingCount := int32(0)
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return errors.New("some error")
@@ -150,7 +154,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 	status := make(chan int, 1)
 
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
@@ -207,6 +211,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -236,7 +241,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
@@ -253,6 +258,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	stopCalls := int32(0)
 	startWorkersCalls := int32(0)
 	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
 		StartCall: func() error {
 			go func() {
 				atomic.AddInt32(&startCalls, 1)
@@ -336,6 +342,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -369,7 +376,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
@@ -386,6 +393,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	stopCalls := int32(0)
 	startWorkersCalls := int32(0)
 	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
 		StartCall: func() error {
 			atomic.AddInt32(&startCalls, 1)
 			if atomic.LoadInt32(&startCalls) == 1 {
@@ -483,6 +491,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall: func(bool) error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -520,7 +529,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
@@ -537,6 +546,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	stopCalls := int32(0)
 	startWorkersCalls := int32(0)
 	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
 		StartCall: func() error {
 			atomic.AddInt32(&startCalls, 1)
 			if atomic.LoadInt32(&startCalls) == 1 {
@@ -620,6 +630,7 @@ func TestStreamingPaused(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
 		SyncAllCall:                    func(bool) error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
@@ -654,7 +665,7 @@ func TestStreamingPaused(t *testing.T) {
 		},
 	}
 	authClient := &apiMocks.MockAuthClient{}
-	appMonitor := hcMock.MockApplicationMonitor{}
+	appMonitor := &application.Dummy{}
 
 	status := make(chan int, 1)
 	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
@@ -668,6 +679,7 @@ func TestStreamingPaused(t *testing.T) {
 
 	// Replace push manager with a mock
 	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
 		StartCall: func() error {
 			go func() {
 				time.Sleep(1 * time.Second)

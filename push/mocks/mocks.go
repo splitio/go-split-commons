@@ -1,5 +1,7 @@
 package mocks
 
+import "time"
+
 // MockManager mocking struct for push
 type MockManager struct {
 	StartCall        func() error
@@ -7,6 +9,7 @@ type MockManager struct {
 	StartWorkersCall func()
 	StopWorkersCall  func()
 	IsRunningCall    func() bool
+	NextRefreshCall  func() time.Time
 }
 
 // Start mock
@@ -32,4 +35,9 @@ func (m MockManager) StopWorkers() {
 // IsRunning mock
 func (m MockManager) IsRunning() bool {
 	return m.IsRunningCall()
+}
+
+// NextRefresh call
+func (m MockManager) NextRefresh() time.Time {
+	return m.NextRefreshCall()
 }

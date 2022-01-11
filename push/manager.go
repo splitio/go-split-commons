@@ -39,6 +39,7 @@ type Manager interface {
 	Stop() error
 	StopWorkers()
 	StartWorkers()
+	NextRefresh() time.Time
 }
 
 // ManagerImpl implements the manager interface
@@ -50,11 +51,11 @@ type ManagerImpl struct {
 	statusTracker     StatusTracker
 	feedback          FeedbackLoop
 	nextRefresh       *time.Timer
+	nextRefreshAt     time.Time
 	refreshTokenMutex sync.Mutex
 	lifecycle         lifecycle.Manager
 	logger            logging.LoggerInterface
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
-	hcMonitor         application.MonitorProducerInterface
 }
 
 // FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
@@ -70,7 +71,7 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorProducerInterface,
+	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -98,7 +99,6 @@ func NewManager(
 		parser:           parser,
 		logger:           logger,
 		runtimeTelemetry: runtimeTelemetry,
-		hcMonitor:        hcMonitor,
 	}
 	manager.lifecycle.Setup()
 	return manager, nil
@@ -138,6 +138,13 @@ func (m *ManagerImpl) StartWorkers() {
 // StopWorkers stops the splits & segments workers
 func (m *ManagerImpl) StopWorkers() {
 	m.processor.StopWorkers()
+}
+
+// NextRefresh returns the time when the next token refresh will happen
+func (m *ManagerImpl) NextRefresh() time.Time {
+	m.refreshTokenMutex.Lock()
+	defer m.refreshTokenMutex.Unlock()
+	return m.nextRefreshAt
 }
 
 func (m *ManagerImpl) performAuthentication() (*dtos.Token, *int64) {
@@ -213,17 +220,15 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 					m.logger.Warning("Failed to calculate next token expiration time. Defaulting to 50 minutes")
 					when = 50 * time.Minute
 				}
-				m.hcMonitor.Reset(application.Splits, int(float64(when.Seconds())*1.5))
-				m.hcMonitor.Reset(application.Segments, int(float64(when.Seconds())*1.5))
 				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeTokenRefresh, when.Milliseconds()))
 				m.withRefreshTokenLock(func() {
+					m.nextRefreshAt = time.Now().Add(when)
 					m.nextRefresh = time.AfterFunc(when, func() {
 						m.logger.Info("Refreshing SSE auth token.")
 						m.Stop()
 						m.Start()
 					})
 				})
-				// Tracking CONNECTION_ESTABLISHED
 				m.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSSEConnectionEstablished, 0))
 				m.feedback <- StatusUp
 			case sse.StatusConnectionFailed:
@@ -254,3 +259,5 @@ func (m *ManagerImpl) withRefreshTokenLock(f func()) {
 	defer m.refreshTokenMutex.Unlock()
 	f()
 }
+
+var _ Manager = (*ManagerImpl)(nil)
