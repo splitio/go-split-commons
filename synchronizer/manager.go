@@ -32,6 +32,11 @@ const (
 	Polling
 )
 
+const (
+	fetchTaskTolerance    = 2 * time.Minute
+	refreshTokenTolerance = 15 * time.Minute
+)
+
 // Manager interface
 type Manager interface {
 	Start()
@@ -208,8 +213,8 @@ func (s *ManagerImpl) startPolling() {
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling))
 
 	splitRate, segmentRate := s.synchronizer.RefreshRates()
-	s.hcMonitor.Reset(application.Splits, int(splitRate.Seconds())+5*60)
-	s.hcMonitor.Reset(application.Segments, int(segmentRate.Seconds())+5*60)
+	s.hcMonitor.Reset(application.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
+	s.hcMonitor.Reset(application.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
 }
 
 func (s *ManagerImpl) stopPolling() {
@@ -229,7 +234,7 @@ func (s *ManagerImpl) enableStreaming() {
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingEnabled))
 
 	// update health monitor expirations based on remaining token life + a tolerance
-	nextExp := s.pushManager.NextRefresh().Sub(time.Now()) + 15*time.Minute
+	nextExp := s.pushManager.NextRefresh().Sub(time.Now()) + refreshTokenTolerance
 	s.hcMonitor.Reset(application.Splits, int(nextExp.Seconds()))
 	s.hcMonitor.Reset(application.Segments, int(nextExp.Seconds()))
 

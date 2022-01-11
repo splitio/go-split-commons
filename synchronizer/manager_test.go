@@ -711,3 +711,146 @@ func TestStreamingPaused(t *testing.T) {
 		t.Error("manager should not be running")
 	}
 }
+
+func TestOccupancyFlicker(t *testing.T) {
+	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 2 * time.Minute },
+		SyncAllCall:                    func(bool) error { return nil },
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
+	}
+
+	periodChanges := make(chan periodChange, 1000)
+
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = true
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {}}
+	authClient := &apiMocks.MockAuthClient{}
+	appMonitor := &hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+		ResetCall: func(counterType int, newPeriod int) {
+			periodChanges <- periodChange{ct: counterType, newp: newPeriod}
+		},
+	}
+
+	status := make(chan int, 1)
+	manager, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
+	if err != nil {
+		t.Error("unexpected error: ", err)
+	}
+
+	if manager.pushManager == nil {
+		t.Error("push manager should NOT be nil")
+	}
+
+	// Replace push manager with a mock
+	startCalls := int32(0)
+	stopCalls := int32(0)
+	startWorkersCalls := int32(0)
+	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
+		StartCall: func() error {
+			go func() {
+				atomic.AddInt32(&startCalls, 1)
+				time.Sleep(1 * time.Second)
+				manager.streamingStatus <- push.StatusUp
+				time.Sleep(1 * time.Second)
+				manager.streamingStatus <- push.StatusDown // occupancy down
+				time.Sleep(1 * time.Second)
+				manager.streamingStatus <- push.StatusUp // occupancy back
+			}()
+			return nil
+		},
+		StopCall: func() error {
+			atomic.AddInt32(&stopCalls, 1)
+			return nil
+		},
+		StartWorkersCall: func() { atomic.AddInt32(&startWorkersCalls, 1) },
+	}
+
+	manager.Start()
+	if !manager.IsRunning() {
+		t.Error("manager should be running")
+	}
+
+	message := <-status
+	if message != Ready {
+		t.Error("first message should be SDK ready")
+	}
+
+	time.Sleep(4 * time.Second) // wait 4 seconds for all events to occur
+
+	manager.Stop()
+
+	if manager.IsRunning() {
+		t.Error("manager should not be running")
+	}
+
+	// Initial period update: streaming ready
+
+	expected := 1*time.Hour + refreshTokenTolerance
+	p, ok := getFromChan(periodChanges)
+	if !ok || p.ct != application.Splits || !inRange(p.newp, expected) {
+		// change must exist
+		// must be of time split
+		// new period should be ~1hour (the token refresh period)
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.Segments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	// -------
+
+	// Second period update (when occupancy goes to 0)
+	expected = 1*time.Minute + fetchTaskTolerance
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.Splits || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	expected = 2*time.Minute + fetchTaskTolerance
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.Segments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	// -----
+
+	// Third updates (occupany back to >0)
+	expected = 1*time.Hour + refreshTokenTolerance
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.Splits || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.Segments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+}
+
+type periodChange struct {
+	ct   int
+	newp int
+}
+
+func getFromChan(c chan periodChange) (periodChange, bool) {
+	select {
+	case pc := <-c:
+		return pc, true
+	default:
+		return periodChange{}, false
+	}
+}
+
+func inRange(secs int, t time.Duration) bool {
+	return secs-1 <= int(t.Seconds()) && int(t.Seconds()) <= secs+1
+}
