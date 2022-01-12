@@ -1,3 +1,7 @@
+4.0.2 (Jan 12, 2021)
+ - Fix Healthcheck issue when streaming recovers after a pause
+ - Point to new toolkit with more bugfixes and updated dependencies
+
 4.0.1 (Dec 24, 2021)
  - Fix redis cluster config
 
