@@ -1,6 +1,8 @@
 package synchronizer
 
 import (
+	"time"
+
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
@@ -44,6 +46,7 @@ type Synchronizer interface {
 	StopPeriodicFetching()
 	StartPeriodicDataRecording()
 	StopPeriodicDataRecording()
+	RefreshRates() (splits time.Duration, segments time.Duration)
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -54,7 +57,6 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue chan string
 	impressionBulkSize  int64
 	eventBulkSize       int64
-	hcMonitor           application.MonitorProducerInterface
 	splitsRefreshRate   int
 	segmentsRefreshRate int
 	httpTiemoutSecs     int
@@ -67,7 +69,7 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
-	hcMonitor application.MonitorProducerInterface,
+	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
@@ -76,7 +78,6 @@ func NewSynchronizer(
 		workers:             workers,
 		logger:              logger,
 		inMememoryFullQueue: inMememoryFullQueue,
-		hcMonitor:           hcMonitor,
 		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
 		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
 		httpTiemoutSecs:     confAdvanced.HTTPTimeout,
@@ -121,12 +122,6 @@ func (s *SynchronizerImpl) StartPeriodicFetching() {
 	if s.splitTasks.SegmentSyncTask != nil {
 		s.splitTasks.SegmentSyncTask.Start()
 	}
-
-	// if we go polling, we add a tolerance margin plus the maximum time that an http request can take
-	// in case of segments, the margin is slightly larger, since there are many segments to fetch and latencies
-	// can be greater
-	s.hcMonitor.Reset(application.Splits, s.splitsRefreshRate+int(float64(s.splitsRefreshRate)*0.1)+s.httpTiemoutSecs)
-	s.hcMonitor.Reset(application.Segments, s.segmentsRefreshRate+int(float64(s.segmentsRefreshRate)*0.3)+s.httpTiemoutSecs)
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
@@ -182,6 +177,11 @@ func (s *SynchronizerImpl) SynchronizeSplits(till *int64, requstNoCache bool) er
 		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
 	}
 	return err
+}
+
+// RefreshRates returns the refresh rates of the splits & segment tasks
+func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.Duration) {
+	return time.Duration(s.splitsRefreshRate) * time.Second, time.Duration(s.segmentsRefreshRate) * time.Second
 }
 
 func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []string {

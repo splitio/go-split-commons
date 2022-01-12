@@ -32,6 +32,11 @@ const (
 	Polling
 )
 
+const (
+	fetchTaskTolerance    = 2 * time.Minute
+	refreshTokenTolerance = 15 * time.Minute
+)
+
 // Manager interface
 type Manager interface {
 	Start()
@@ -51,6 +56,7 @@ type ManagerImpl struct {
 	lifecycle        lifecycle.Manager
 	backoff          backoff.Interface
 	runtimeTelemetry storage.TelemetryRuntimeProducer
+	hcMonitor        application.MonitorProducerInterface
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -77,6 +83,7 @@ func NewSynchronizerManager(
 		config:           config,
 		managerStatus:    managerStatus,
 		runtimeTelemetry: runtimeTelemetry,
+		hcMonitor:        hcMonitor,
 	}
 	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
@@ -194,7 +201,6 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.pushManager.Stop()
 				s.synchronizer.SyncAll(false)
 				s.startPolling()
-				// Tracking STREAMING_DISABLED
 				s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingDisabled))
 			}
 		}
@@ -204,8 +210,11 @@ func (s *ManagerImpl) pushStatusWatcher() {
 func (s *ManagerImpl) startPolling() {
 	atomic.StoreInt32(&s.operationMode, Polling)
 	s.synchronizer.StartPeriodicFetching()
-	// Tracking POLLING
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling))
+
+	splitRate, segmentRate := s.synchronizer.RefreshRates()
+	s.hcMonitor.Reset(application.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
+	s.hcMonitor.Reset(application.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
 }
 
 func (s *ManagerImpl) stopPolling() {
@@ -214,7 +223,6 @@ func (s *ManagerImpl) stopPolling() {
 
 func (s *ManagerImpl) pauseStreaming() {
 	s.pushManager.StartWorkers()
-	// Tracking STREAMING_PAUSED
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingPaused))
 }
 
@@ -222,8 +230,12 @@ func (s *ManagerImpl) enableStreaming() {
 	s.pushManager.StartWorkers()
 	atomic.StoreInt32(&s.operationMode, Streaming)
 	s.backoff.Reset()
-	// Tracking STREAMING
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Streaming))
-	// Tracking STREAMING_ENABLED
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingEnabled))
+
+	// update health monitor expirations based on remaining token life + a tolerance
+	nextExp := s.pushManager.NextRefresh().Sub(time.Now()) + refreshTokenTolerance
+	s.hcMonitor.Reset(application.Splits, int(nextExp.Seconds()))
+	s.hcMonitor.Reset(application.Segments, int(nextExp.Seconds()))
+
 }

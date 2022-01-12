@@ -1,6 +1,8 @@
 package synchronizer
 
 import (
+	"time"
+
 	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	"github.com/splitio/go-split-commons/v4/storage"
@@ -52,6 +54,11 @@ func (s *Local) StartPeriodicDataRecording() {
 
 // StopPeriodicDataRecording stops periodic recorders tasks
 func (s *Local) StopPeriodicDataRecording() {
+}
+
+// RefreshRates returns anything
+func (s *Local) RefreshRates() (time.Duration, time.Duration) {
+	return 10 * time.Minute, 10 * time.Minute
 }
 
 // SynchronizeSplits syncs splits
