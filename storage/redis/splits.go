@@ -146,9 +146,9 @@ func (r *SplitStorage) decr(trafficType string) error {
 	return nil
 }
 
-// Update bulk stores splits in redis
-func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
-	// TODO(mredolatti): This should be implemented with a pipeline
+// UpdateWithErrors updates the storage and reports errors on a per-feature basis
+// To-be-deprecated: This method should be renamed to `Update` as the current one is removed
+func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) error {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
 
@@ -173,21 +173,21 @@ func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, c
 	if len(allKeys) > 0 {
 		toUpdateRaw, err := r.client.MGet(allKeys)
 		if err != nil {
-			r.logger.Error("error fetching keys to be updated:", err)
-			return
+			return fmt.Errorf("error fetching keys to be updated: %w", err)
 		}
 
 		ttsToDecr := make([]string, 0, len(allKeys))
 		for _, raw := range toUpdateRaw {
 			asStr, ok := raw.(string)
 			if !ok {
+				r.logger.Warning("Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: ", asStr)
 				continue
 			}
 
 			var s dtos.SplitDTO
 			err = json.Unmarshal([]byte(asStr), &s)
 			if err != nil {
-				r.logger.Error("Update: ignoring split stored in redis cannot be de-serialized: ", asStr)
+				r.logger.Warning("Update: ignoring split stored in redis taht cannot be deserialized for traffic-type updating purposes: ", asStr)
 				continue
 			}
 
@@ -207,24 +207,28 @@ func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, c
 		r.client.Incr(ttKey)
 	}
 
+	failedToAdd := make(map[string]error)
 	for _, split := range toAdd {
 		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
 		raw, err := json.Marshal(split)
 		if err != nil {
-			r.logger.Error(fmt.Sprintf("Could not dump feature \"%s\" to json", split.Name))
+			failedToAdd[split.Name] = fmt.Errorf("failed to serialize split: %w", err)
 			continue
 		}
 
 		err = r.client.Set(keyToStore, raw, 0)
 		if err != nil {
-			r.logger.Error(fmt.Sprintf("Could not store split \"%s\" in redis: %s", split.Name, err.Error()))
+			failedToAdd[split.Name] = fmt.Errorf("failed to store split in redis: %w", err)
 		}
 	}
 
+	failedToRemove := make(map[string]error)
 	if len(toRemoveKeys) > 0 {
 		count, err := r.client.Del(toRemoveKeys...)
 		if err != nil {
-			r.logger.Error("error removing some keys: ", err)
+			for idx := range toRemove {
+				failedToRemove[toRemove[idx].Name] = fmt.Errorf("failed to remove split from redis: %w", err)
+			}
 		}
 
 		if count != int64(len(toRemoveKeys)) {
@@ -232,9 +236,24 @@ func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, c
 		}
 	}
 
-	err := r.client.Set(KeySplitTill, changeNumber, 0)
-	if err != nil {
-		r.logger.Error("Could not update split changenumber")
+	if len(failedToAdd) == 0 && len(failedToRemove) == 0 {
+		err := r.client.Set(KeySplitTill, changeNumber, 0)
+		if err != nil {
+			return ErrChangeNumberUpdateFailed
+		}
+		return nil
+	}
+
+	return &UpdateError{
+		FailedToAdd:    failedToAdd,
+		FailedToRemove: failedToRemove,
+	}
+}
+
+// Update bulk stores splits in redis
+func (r *SplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+	if err := r.UpdateWithErrors(toAdd, toRemove, changeNumber); err != nil {
+		r.logger.Error("error updating splits: %s", err.Error())
 	}
 }
 

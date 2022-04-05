@@ -3,7 +3,9 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -439,4 +441,76 @@ func TestTrafficTypeExists(t *testing.T) {
 	if !exists {
 		t.Error("It should be true")
 	}
+}
+
+func TestUpdateWithErrors(t *testing.T) {
+	mockClient := &mocks.MockClient{
+		MGetCall: func(keys []string) redis.Result {
+			return &mocks.MockResultOutput{
+				ErrCall:            func() error { return nil },
+				MultiInterfaceCall: func() ([]interface{}, error) { return []interface{}{}, nil },
+			}
+		},
+		IncrCall: func(key string) redis.Result {
+			return &mocks.MockResultOutput{
+				ErrCall:    func() error { return nil },
+				ResultCall: func() (int64, error) { return 1, nil },
+			}
+		},
+		SetCall: func(key string, v interface{}, t time.Duration) redis.Result {
+			return &mocks.MockResultOutput{
+				ErrCall: func() error {
+					if key == strings.Replace(KeySplit, "{split}", "split2", 1) {
+						return errors.New("something")
+					}
+					return nil
+				},
+			}
+		},
+		DelCall: func(keys ...string) redis.Result {
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) {
+					return int64(len(keys)), nil
+				},
+			}
+		},
+	}
+	mockRedis, _ := redis.NewPrefixedRedisClient(mockClient, "")
+	logger := logging.NewLogger(nil)
+	splitStorage := NewSplitStorage(mockRedis, logger)
+
+	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}}
+	toRemove := []dtos.SplitDTO{{Name: "split3", TrafficTypeName: "tt3"}}
+	err := splitStorage.UpdateWithErrors(toAdd, toRemove, 0)
+	if err == nil {
+		t.Error("there should have been an error", err)
+	}
+
+	var updateErr *UpdateError
+	if !errors.As(err, &updateErr) {
+		t.Error("the error should have been of type UpdateError")
+		return
+	}
+
+	if len(updateErr.FailedToAdd) != 1 || len(updateErr.FailedToRemove) != 0 {
+		t.Error("there should be 1 element failed for adding and 1 failed for removal")
+	}
+
+	if _, ok := updateErr.FailedToAdd["split2"]; !ok {
+		t.Error("split2 should have failed")
+	}
+
+	mockClient.SetCall = func(key string, value interface{}, expiration time.Duration) redis.Result {
+		if key == KeySplitTill {
+			return &mocks.MockResultOutput{ErrCall: func() error { return errors.New("sarasa") }}
+		}
+		return &mocks.MockResultOutput{ErrCall: func() error { return nil }}
+	}
+	mockRedis, _ = redis.NewPrefixedRedisClient(mockClient, "")
+	splitStorage = NewSplitStorage(mockRedis, logger)
+	err = splitStorage.UpdateWithErrors(toAdd, toRemove, 0)
+	if !errors.Is(err, ErrChangeNumberUpdateFailed) {
+		t.Error("wrong error type")
+	}
+
 }
