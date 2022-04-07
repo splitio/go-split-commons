@@ -39,4 +39,26 @@ func formatMapKeys(in map[string]error) string {
 	return strings.Join(slice, ",")
 }
 
+// SegmentUpdateError includes possible failures when adding and removing keys from a segment
+type SegmentUpdateError struct {
+	FailureToAdd    error
+	FailureToRemove error
+}
+
+func (s *SegmentUpdateError) Error() string {
+	b := strings.Builder{}
+	if err := s.FailureToAdd; err != nil {
+		b.WriteString("failed to add segment keys: " + err.Error())
+		if s.FailureToRemove != nil {
+			b.WriteString(", and ")
+		}
+	}
+
+	if err := s.FailureToRemove; err != nil {
+		b.WriteString("failed to remove segment keys: " + err.Error())
+	}
+
+	return b.String()
+}
+
 var _ error = (*UpdateError)(nil)

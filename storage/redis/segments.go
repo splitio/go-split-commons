@@ -20,6 +20,7 @@ type SegmentStorage struct {
 }
 
 // NewSegmentStorage creates a new RedisSegmentStorage and returns a reference to it
+// TODO(mredolatti): This should return the concrete type, not the implementation
 func NewSegmentStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface) storage.SegmentStorage {
 	return &SegmentStorage{
 		client: *redisClient,
@@ -69,24 +70,41 @@ func (r *SegmentStorage) SetChangeNumber(segmentName string, changeNumber int64)
 	return r.client.Set(segmentKey, changeNumber, 0)
 }
 
-// Update adds a new segment
-func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
-	r.mutext.Lock()
-	defer r.mutext.Unlock()
+// UpdateWithSummary returns errors instead of just logging them.
+// This method should replace the current Update which should be deprecated in the next breaking change
+func (r *SegmentStorage) UpdateWithSummary(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) (int, int, error) {
 	segmentKey := strings.Replace(KeySegment, "{segment}", name, 1)
+
+	var mainErr SegmentUpdateError
+
+	var removed int64
 	if !toRemove.IsEmpty() {
-		_, err := r.client.SRem(segmentKey, toRemove.List()...)
-		if err != nil {
-			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
-		}
+		removed, mainErr.FailureToRemove = r.client.SRem(segmentKey, toRemove.List()...)
 	}
+
+	var added int64
 	if !toAdd.IsEmpty() {
-		_, err := r.client.SAdd(segmentKey, toAdd.List()...)
-		if err != nil {
-			r.logger.Error(fmt.Sprintf("Error removing keys in redis: %s", err.Error()))
-		}
+		added, mainErr.FailureToAdd = r.client.SAdd(segmentKey, toAdd.List()...)
 	}
 	r.SetChangeNumber(name, till)
+	if mainErr.FailureToAdd != nil || mainErr.FailureToRemove != nil {
+		return int(added), int(removed), &mainErr
+	}
+	return int(added), int(removed), nil
+}
+
+// Update adds a new segment
+func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, till int64) error {
+
+	// TODO(mredolatti): Remove this mutex. This makes no sense here, but we need to make sure that no usage of `Update`
+	// expects this sort of atomicity
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
+
+	if _, _, err := r.UpdateWithSummary(name, toAdd, toRemove, till); err != nil {
+		r.logger.Error(fmt.Sprintf("error updating segment %s in redis: %s", name, err))
+	}
+
 	return nil
 }
 

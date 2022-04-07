@@ -443,7 +443,7 @@ func TestTrafficTypeExists(t *testing.T) {
 	}
 }
 
-func TestUpdateWithErrors(t *testing.T) {
+func TestSplitUpdateWithErrors(t *testing.T) {
 	mockClient := &mocks.MockClient{
 		MGetCall: func(keys []string) redis.Result {
 			return &mocks.MockResultOutput{

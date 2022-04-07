@@ -187,7 +187,7 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 			var s dtos.SplitDTO
 			err = json.Unmarshal([]byte(asStr), &s)
 			if err != nil {
-				r.logger.Warning("Update: ignoring split stored in redis taht cannot be deserialized for traffic-type updating purposes: ", asStr)
+				r.logger.Warning("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
 				continue
 			}
 
