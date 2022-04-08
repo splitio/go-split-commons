@@ -172,5 +172,26 @@ func TestSegmentUpdateWithErrors(t *testing.T) {
 	} else {
 		t.Error("there should have been an error")
 	}
+}
 
+func TestSegmentSize(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.segment.someSegment"
+
+	mockedRedisClient := mocks.MockClient{
+		SCardCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 3, nil },
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	segmentStorage := NewSegmentStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{})).(*SegmentStorage)
+
+	count, _ := segmentStorage.Size("someSegment")
+	if count != 3 {
+		t.Error("Unexpected result")
+	}
 }

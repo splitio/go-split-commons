@@ -108,6 +108,13 @@ func (r *SegmentStorage) Update(name string, toAdd *set.ThreadUnsafeSet, toRemov
 	return nil
 }
 
+// Size returns the number of keys in a segment
+func (r *SegmentStorage) Size(name string) (int, error) {
+	res, err := r.client.SCard(strings.Replace(KeySegment, "{segment}", name, 1))
+	return int(res), err
+
+}
+
 // SegmentContainsKey returns true if the segment contains a specific key
 func (r *SegmentStorage) SegmentContainsKey(segmentName string, key string) (bool, error) {
 	segmentKey := strings.Replace(KeySegment, "{segment}", segmentName, 1)
