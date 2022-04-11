@@ -28,7 +28,8 @@ var latencyBuckets = [23]float64{
 
 // Bucket returns the bucket where the received latency falls
 func Bucket(latency int64) int {
-	floatLatency := float64(latency) / 1000 // Convert to millisencods
+
+	floatLatency := float64(latency)
 
 	index := 0
 	for index < len(latencyBuckets) && floatLatency > latencyBuckets[index] {
