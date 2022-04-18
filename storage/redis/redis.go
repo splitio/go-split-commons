@@ -3,13 +3,13 @@ package redis
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
-	"github.com/splitio/go-toolkit/v5/redis/helpers"
 )
 
 // Redis initialization erorrs
@@ -74,7 +74,12 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 		return nil, fmt.Errorf("error constructing wrapped redis client: %w", err)
 	}
 
-	helpers.EnsureConnected(rClient)
+	if res := rClient.Ping(); res.Err() != nil {
+		if asOpErr, ok := res.Err().(*net.OpError); ok {
+			return nil, asOpErr // don't wrap it to conserve type
+		}
+		return nil, fmt.Errorf("couldn't connect to redis: %w", err)
+	}
 
 	return redis.NewPrefixedRedisClient(rClient, prefix)
 }

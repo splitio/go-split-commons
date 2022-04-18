@@ -1,4 +1,10 @@
-4.0.2 (Jan 12, 2021)
+4.0.3 (Apr 18, 2022)
+ - Added new `Update`-like method to redis split storage that return a proper error when something goes wrong
+ - Added new `Update`-like method to redis segment storage that returns a summary of keys added/removed and a more informative error
+ - Fixed Latency bucketing unit
+ - Redis now returns an error instead of panicking if fails to connect
+
+4.0.2 (Jan 12, 2022)
  - Fix Healthcheck issue when streaming recovers after a pause
  - Point to new toolkit with more bugfixes and updated dependencies
 

@@ -15,7 +15,7 @@ import (
 func TestRecordLatency(t *testing.T) {
 	call := 0
 	expectedKey := "someprefix.SPLITIO.telemetry.latencies"
-	exceptedField := "go-test-1/test/1.1.1.1/treatment/1"
+	exceptedField := "go-test-1/test/1.1.1.1/treatment/19"
 
 	mockedRedisClient := mocks.MockClient{
 		HIncrByCall: func(key, field string, value int64) redis.Result {

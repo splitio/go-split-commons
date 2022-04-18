@@ -15,9 +15,9 @@ func TestTelemetryStorage(t *testing.T) {
 	telemetryStorage.RecordException(telemetry.Treatments)
 	telemetryStorage.RecordException(telemetry.Treatment)
 	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Millisecond))
-	telemetryStorage.RecordLatency(telemetry.Treatment, (2000 * time.Millisecond))
-	telemetryStorage.RecordLatency(telemetry.Treatments, (3000 * time.Millisecond))
-	telemetryStorage.RecordLatency(telemetry.Treatments, (500 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatment, (2500 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatments, (18 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.Treatments, (26 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, (800 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Millisecond))
 
@@ -30,16 +30,16 @@ func TestTelemetryStorage(t *testing.T) {
 		t.Error("Wrong result")
 	}
 	latencies := telemetryStorage.PopLatencies()
-	if latencies.Treatment[1] != 1 || latencies.Treatment[2] != 1 {
+	if latencies.Treatment[19] != 1 || latencies.Treatment[20] != 1 {
 		t.Error("Wrong result")
 	}
-	if latencies.Treatments[0] != 1 || latencies.Treatments[3] != 1 {
+	if latencies.Treatments[8] != 1 || latencies.Treatments[9] != 1 {
 		t.Error("Wrong result")
 	}
-	if latencies.TreatmentWithConfig[0] != 1 {
+	if latencies.TreatmentWithConfig[17] != 1 {
 		t.Error("Wrong result")
 	}
-	if latencies.TreatmentsWithConfig[0] != 1 {
+	if latencies.TreatmentsWithConfig[18] != 1 {
 		t.Error("Wrong result")
 	}
 	latencies = telemetryStorage.PopLatencies()
@@ -127,7 +127,7 @@ func TestTelemetryStorage(t *testing.T) {
 	}
 
 	httpLatencies := telemetryStorage.PopHTTPLatencies()
-	if httpLatencies.Splits[1] != 1 {
+	if httpLatencies.Splits[19] != 1 {
 		t.Errorf("Wrong result: %+v", httpLatencies)
 	}
 	httpLatencies = telemetryStorage.PopHTTPLatencies()
