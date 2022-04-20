@@ -17,6 +17,11 @@ const (
 	FieldException      = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
 	TTLImpressions      = 3600                                                       // impressions default TTL
 	TTLConfig           = 3600                                                       // config TTL
+
+	// TODO(mredolatti): when doing a breking change, name this `KeyConfig`, and rename `KeyConfig` to `KeyConfigLegacy`,
+	// or even better, remove the old one, so that it only exists in the split-sync
+	KeyInit        = "SPLITIO.telemetry.init"
+	InitHashFields = "{sdkVersion}/{machineName}/{machineIP}"
 )
 
 // FieldSeparator constant
@@ -39,4 +44,11 @@ const (
 	FieldExceptionIndexMachineName = 1
 	FieldExceptionIndexMachineIP   = 2
 	FieldExceptionIndexMethod      = 3
+)
+
+// Latency hash-key indexes
+const (
+	TelemetryConfigIndexSdkVersion  = 0
+	TelemetryConfigIndexMachineName = 1
+	TelemetryConfigIndexMachineIP   = 2
 )

@@ -2,6 +2,7 @@ package redis
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ type TelemetryStorage struct {
 	latencyTemplate   string
 	logger            logging.LoggerInterface
 	metadata          dtos.Metadata
+	metadataReplacer  *strings.Replacer
 }
 
 // NewTelemetryStorage creates a new RedisTelemetryStorage and returns a reference to it
@@ -40,6 +42,11 @@ func NewTelemetryStorage(redisClient *redis.PrefixedRedisClient, logger logging.
 		latencyTemplate:   replacer.Replace(FieldLatency),
 		logger:            logger,
 		metadata:          metadata,
+		metadataReplacer: strings.NewReplacer(
+			sdkVersionKey, metadata.SDKVersion,
+			machineNameKey, metadata.MachineName,
+			machineIPKey, metadata.MachineIP,
+		),
 	}
 }
 
@@ -52,23 +59,15 @@ func (t *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
 		Config:   configData,
 	})
 	if err != nil {
-		t.logger.Error("Error encoding impression in json", err.Error())
+		return fmt.Errorf("error serializing payload: %w", err)
 	}
 
-	inserted, errPush := t.client.RPush(KeyConfig, jsonData)
-	if errPush != nil {
-		t.logger.Error("Something were wrong pushing config data to redis", errPush)
-		return errPush
+	hashKey := t.metadataReplacer.Replace(InitHashFields)
+
+	if err = t.client.HSet(KeyInit, hashKey, jsonData); err != nil {
+		return fmt.Errorf("error storing init telemetry in redis: %w", err)
 	}
 
-	// Checks if expiration needs to be set
-	if inserted == 1 {
-		t.logger.Debug("Proceeding to set expiration for: ", KeyConfig)
-		result := t.client.Expire(KeyConfig, time.Duration(TTLConfig)*time.Second)
-		if !result {
-			t.logger.Error("Something were wrong setting expiration", errPush)
-		}
-	}
 	return nil
 }
 
