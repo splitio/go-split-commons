@@ -54,10 +54,7 @@ func NewTelemetryStorage(redisClient *redis.PrefixedRedisClient, logger logging.
 
 // RecordConfigData push config into queue
 func (t *TelemetryStorage) RecordConfigData(configData dtos.Config) error {
-	jsonData, err := json.Marshal(dtos.TelemetryQueueObject{
-		Metadata: t.metadata,
-		Config:   configData,
-	})
+	jsonData, err := json.Marshal(configData)
 	if err != nil {
 		return fmt.Errorf("error serializing payload: %w", err)
 	}
