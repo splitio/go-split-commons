@@ -1,3 +1,6 @@
+4.0.4 (Apr 20, 2022)
+ - Updated config telemetry logic to operate on sets
+
 4.0.3 (Apr 18, 2022)
  - Added new `Update`-like method to redis split storage that return a proper error when something goes wrong
  - Added new `Update`-like method to redis segment storage that returns a summary of keys added/removed and a more informative error
