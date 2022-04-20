@@ -79,21 +79,31 @@ func TestRecordException(t *testing.T) {
 }
 
 func TestRecordConfigDataError(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.telemetry.config"
+	expectedKey := "someprefix.SPLITIO.telemetry.init"
+	expectedHashKey := "a/b/c"
+	var called bool
 	mockedRedisClient := mocks.MockClient{
-		RPushCall: func(key string, values ...interface{}) redis.Result {
+		HSetCall: func(key string, hashKey string, value interface{}) redis.Result {
+			called = true
 			if key != expectedKey {
 				t.Errorf("Unexpected key event passeed for push. Expected: %s Actual: %s", expectedKey, key)
 			}
+
+			if hashKey != expectedHashKey {
+				t.Error("wrong hash key: ", hashKey)
+			}
+
 			return &mocks.MockResultOutput{
-				ResultCall: func() (int64, error) { return 0, errors.New("Some Error") },
+				ErrCall: func() error { return errors.New("some error") },
 			}
 		},
 	}
 
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{
+		SDKVersion: "a", MachineName: "b", MachineIP: "c",
+	})
 
 	err := telemetryStorage.RecordConfigData(dtos.Config{
 		OperationMode:      telemetry.Consumer,
@@ -104,36 +114,38 @@ func TestRecordConfigDataError(t *testing.T) {
 	if err == nil {
 		t.Error("It should return error")
 	}
+
+	if !called {
+		t.Error("hset not called")
+	}
 }
 
 func TestRecordConfigData(t *testing.T) {
-	expectedKey := "someprefix.SPLITIO.telemetry.config"
-
+	expectedKey := "someprefix.SPLITIO.telemetry.init"
+	expectedHashKey := "a/b/c"
+	var called bool
 	mockedRedisClient := mocks.MockClient{
-		RPushCall: func(key string, values ...interface{}) redis.Result {
+		HSetCall: func(key string, hashKey string, value interface{}) redis.Result {
+			called = true
 			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+				t.Errorf("Unexpected key event passeed for push. Expected: %s Actual: %s", expectedKey, key)
 			}
-			if len(values) != 1 {
-				t.Error("It should sent one config data", len(values))
+
+			if hashKey != expectedHashKey {
+				t.Error("wrong hash key: ", hashKey)
 			}
+
 			return &mocks.MockResultOutput{
-				ResultCall: func() (int64, error) { return 1, nil },
-			}
-		},
-		ExpireCall: func(key string, value time.Duration) redis.Result {
-			if key != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
-			}
-			return &mocks.MockResultOutput{
-				BoolCall: func() bool { return true },
+				ErrCall: func() error { return nil },
 			}
 		},
 	}
 
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{})
+	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{
+		SDKVersion: "a", MachineName: "b", MachineIP: "c",
+	})
 
 	err := telemetryStorage.RecordConfigData(dtos.Config{
 		OperationMode:      telemetry.Consumer,
@@ -143,5 +155,9 @@ func TestRecordConfigData(t *testing.T) {
 	})
 	if err != nil {
 		t.Error("It should not return error")
+	}
+
+	if !called {
+		t.Error("hset not called")
 	}
 }
