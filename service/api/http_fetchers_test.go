@@ -10,6 +10,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -38,7 +39,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(-1, true)
+	splitChangesDTO, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
 	if err != nil {
 		t.Error(err)
 	}
@@ -80,7 +81,7 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(-1, false)
+	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: false})
 	if err == nil {
 		t.Error("Error expected but not found")
 	}
@@ -90,7 +91,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, fmt.Sprintf(string(segmentMock)))
+		fmt.Fprintln(w, string(segmentMock))
 	}))
 	defer ts.Close()
 
@@ -104,7 +105,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	segmentFetched, err := segmentFetcher.Fetch("employees", -1, false)
+	segmentFetched, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
 	if err != nil {
 		t.Error("Error fetching segment", err)
 		return
@@ -133,7 +134,7 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := segmentFetcher.Fetch("employees", -1, false)
+	_, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
 	if err == nil {
 		t.Error("Error expected but not found")
 	}
