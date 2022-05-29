@@ -106,8 +106,8 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
 			FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-				if fetchOptions.CacheControlHeaders {
-					t.Error("noCache should be false")
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
 				if name != "segment1" && name != "segment2" {
@@ -308,8 +308,8 @@ func TestPeriodicFetching(t *testing.T) {
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
 			FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-				if fetchOptions.CacheControlHeaders {
-					t.Error("noCache should be false")
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
 				if name != "segment1" && name != "segment2" {

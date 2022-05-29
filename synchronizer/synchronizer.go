@@ -41,7 +41,7 @@ type Synchronizer interface {
 	SyncAll(requestNoCache bool) error
 	SynchronizeSplits(till *int64) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
-	SynchronizeSegment(segmentName string, till *int64, requestNoCache bool) error
+	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()
 	StopPeriodicFetching()
 	StartPeriodicDataRecording()
@@ -174,7 +174,7 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
 	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
 	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
-		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
+		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 	}
 	return err
 }
@@ -200,8 +200,8 @@ func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, 
 }
 
 // SynchronizeSegment syncs segment
-func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64, requstNoCache bool) error {
-	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till, requstNoCache)
+func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
+	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till)
 	return err
 }
 

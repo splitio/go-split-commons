@@ -131,14 +131,11 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till 
 	for {
 		remainingAttempts = remainingAttempts - 1
 		updateResult, err := s.fetchUntil(fetchOptions, till) // what we should do with err
-		if err != nil {
+		if err != nil || remainingAttempts <= 0 {
 			return false, 0, updateResult, err // should we retun update result?
 		}
 		if till == nil || *till <= updateResult.NewChangeNumber {
 			return true, remainingAttempts, updateResult, nil
-		}
-		if remainingAttempts <= 0 {
-			return false, remainingAttempts, updateResult, nil
 		}
 		howLong := s.backoff.Next()
 		time.Sleep(howLong)
@@ -148,7 +145,6 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till 
 func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	fetchOptions := service.NewFetchOptions(true, nil)
 	s.hcMonitor.NotifyEvent(application.Splits)
-	var err error
 
 	succesfulSync, remainingAttempts, updateResult, err := s.attemptSplitSync(&fetchOptions, till)
 	attempts := onDemandFetchBackoffMaxRetries - remainingAttempts
