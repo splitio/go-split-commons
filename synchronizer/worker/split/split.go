@@ -83,29 +83,24 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 	// just guessing sizes so the we don't realloc immediately
 	segmentReferences := make([]string, 0, 10)
 	updatedSplitNames := make([]string, 0, 10)
+	var err error
+	var newCN int64
 
 	for { // Fetch until since==till
-		changeNumber, err := s.splitStorage.ChangeNumber()
-		if err != nil {
-			changeNumber = -1
-		}
-		if till != nil && *till < changeNumber { // the passed till is less than change_number, no need to perform updates
-			return &UpdateResult{
-				UpdatedSplits:      updatedSplitNames,
-				ReferencedSegments: segmentReferences,
-				NewChangeNumber:    changeNumber, // check logic in the pass is 0 here
-			}, nil
+		newCN, _ = s.splitStorage.ChangeNumber()
+		if till != nil && *till < newCN { // the passed till is less than change_number, no need to perform updates
+			break
 		}
 		before := time.Now()
 		var splits *dtos.SplitChangesDTO
-		splits, err = s.splitFetcher.Fetch(changeNumber, fetchOptions)
+		splits, err = s.splitFetcher.Fetch(newCN, fetchOptions)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 			}
 			return &UpdateResult{
-				UpdatedSplits:      updatedSplitNames,
-				ReferencedSegments: segmentReferences,
+				UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
+				ReferencedSegments: common.DedupeStringSlice(segmentReferences),
 				NewChangeNumber:    0,
 			}, fmt.Errorf("an error occured getting splits %w", err)
 		}
@@ -116,12 +111,17 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 		if splits.Till == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			return &UpdateResult{
-				UpdatedSplits:      updatedSplitNames,
-				ReferencedSegments: segmentReferences,
+				UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
+				ReferencedSegments: common.DedupeStringSlice(segmentReferences),
 				NewChangeNumber:    splits.Till,
 			}, nil
 		}
 	}
+	return &UpdateResult{
+		UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
+		ReferencedSegments: common.DedupeStringSlice(segmentReferences),
+		NewChangeNumber:    newCN, // check logic in the pass is 0 here
+	}, err
 }
 
 // attemptSplitSync Hit endpoint, update storage and return True if sync is complete.
@@ -152,26 +152,16 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 
 	succesfulSync, remainingAttempts, updateResult, err := s.attemptSplitSync(&fetchOptions, till)
 	attempts := onDemandFetchBackoffMaxRetries - remainingAttempts
-	dedupedResult := &UpdateResult{
-		UpdatedSplits:      common.DedupeStringSlice(updateResult.UpdatedSplits),
-		ReferencedSegments: common.DedupeStringSlice(updateResult.ReferencedSegments),
-		NewChangeNumber:    updateResult.NewChangeNumber,
-	}
 	if err != nil {
-		return dedupedResult, err
+		return updateResult, err
 	}
 	if succesfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
-		return dedupedResult, nil
+		return updateResult, nil
 	}
-	withCDNBypass := service.NewFetchOptions(true, &dedupedResult.NewChangeNumber) // Set flag for bypassing CDN
-	withoutCDNSunccesfulSync, remainingAttempts, updateResult, err := s.attemptSplitSync(&withCDNBypass, till)
+	withCDNBypass := service.NewFetchOptions(true, &updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	withoutCDNSunccesfulSync, remainingAttempts, dedupedResultwithoutCDN, err := s.attemptSplitSync(&withCDNBypass, till)
 	withoutCDNattempts := onDemandFetchBackoffMaxRetries - remainingAttempts
-	dedupedResultwithoutCDN := &UpdateResult{
-		UpdatedSplits:      common.DedupeStringSlice(updateResult.UpdatedSplits),
-		ReferencedSegments: common.DedupeStringSlice(updateResult.ReferencedSegments),
-		NewChangeNumber:    updateResult.NewChangeNumber,
-	}
 	if err != nil {
 		return dedupedResultwithoutCDN, err
 	}
