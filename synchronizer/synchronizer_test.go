@@ -90,8 +90,8 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
 			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-				if fetchOptions.CacheControlHeaders {
-					t.Error("noCache should be false")
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
@@ -292,8 +292,8 @@ func TestPeriodicFetching(t *testing.T) {
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
 			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-				if fetchOptions.CacheControlHeaders {
-					t.Error("noCache should be false")
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {

@@ -77,7 +77,7 @@ func NewSynchronizerManager(
 	}
 
 	manager := &ManagerImpl{
-		backoff:          backoff.New(),
+		backoff:          backoff.New(nil, nil),
 		synchronizer:     synchronizer,
 		logger:           logger,
 		config:           config,
