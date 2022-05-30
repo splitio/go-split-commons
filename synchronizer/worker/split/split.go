@@ -52,14 +52,13 @@ func NewSplitFetcher(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
 ) *UpdaterImpl {
-	maxWait := onDemandFetchBackoffMaxWait
 	return &UpdaterImpl{
 		splitStorage:     splitStorage,
 		splitFetcher:     splitFetcher,
 		logger:           logger,
 		runtimeTelemetry: runtimeTelemetry,
 		hcMonitor:        hcMonitor,
-		backoff:          backoff.New(common.Int64Ref(onDemandFetchBackoffBase), &maxWait),
+		backoff:          backoff.New(onDemandFetchBackoffBase, onDemandFetchBackoffMaxWait),
 	}
 }
 
