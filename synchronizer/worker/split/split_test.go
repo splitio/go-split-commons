@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
@@ -24,8 +25,8 @@ func TestSplitSynchronizerError(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-			if !noCache {
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
 			if changeNumber != -1 {
@@ -100,8 +101,8 @@ func TestSplitSynchronizer(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-			if noCache {
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			if fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be false")
 			}
 			if changeNumber != -1 {
@@ -163,7 +164,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
@@ -270,7 +271,7 @@ func TestSplitTill(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},

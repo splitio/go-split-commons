@@ -92,7 +92,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) (*Upda
 
 		before := time.Now()
 		var splits *dtos.SplitChangesDTO
-		splits, err = s.splitFetcher.Fetch(changeNumber, requestNoCache)
+		splits, err = s.splitFetcher.Fetch(changeNumber, &service.FetchOptions{CacheControlHeaders: requestNoCache})
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)

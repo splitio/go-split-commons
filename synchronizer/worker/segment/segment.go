@@ -100,7 +100,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 
 		before := time.Now()
 		var segmentChanges *dtos.SegmentChangesDTO
-		segmentChanges, err = s.segmentFetcher.Fetch(name, changeNumber, requestNoCache)
+		segmentChanges, err = s.segmentFetcher.Fetch(name, changeNumber, &service.FetchOptions{CacheControlHeaders: requestNoCache})
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)

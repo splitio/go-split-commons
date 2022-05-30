@@ -225,7 +225,7 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSplitFetcher) Fetch(changeNumber int64, _ bool) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := ioutil.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
