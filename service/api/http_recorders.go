@@ -153,3 +153,20 @@ func (m *HTTPTelemetryRecorder) RecordStats(stats dtos.Stats, metadata dtos.Meta
 
 	return nil
 }
+
+// RecordUniqueKeys method submits unique keys
+func (m *HTTPTelemetryRecorder) RecordUniqueKeys(uniques dtos.Uniques, metadata dtos.Metadata) error {
+	data, err := json.Marshal(uniques)
+	if err != nil {
+		m.logger.Error("Error marshaling JSON", err.Error())
+		return err
+	}
+
+	err = m.RecordRaw("/keys/ss", data, metadata, nil)
+	if err != nil {
+		m.logger.Error("Error posting unique keys", err.Error())
+		return err
+	}
+
+	return nil
+}
