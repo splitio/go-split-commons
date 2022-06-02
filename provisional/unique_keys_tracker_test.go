@@ -9,9 +9,8 @@ import (
 
 func Test(t *testing.T) {
 	bf := filter.NewBloomFilter(10000, 0.01)
-	adapter := filter.NewAdapter(bf)
 
-	tracker := NewUniqueKeysTracker(adapter)
+	tracker := NewUniqueKeysTracker(bf)
 
 	for i := 0; i < 10; i++ {
 		if !tracker.Track("feature-1", "key-"+fmt.Sprint(i)) {

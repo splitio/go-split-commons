@@ -1,8 +1,10 @@
 package provisional
 
 import (
+	"sync"
+
 	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-toolkit/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // UniqueKeysTracker interface
@@ -12,26 +14,31 @@ type UniqueKeysTracker interface {
 
 // UniqueKeysTrackerImpl description
 type UniqueKeysTrackerImpl struct {
-	filterAdapter storage.FilterAdpter
-	cache         map[string]*set.ThreadUnsafeSet
+	filter storage.Filter
+	cache  map[string]*set.ThreadUnsafeSet
+	mutex  *sync.RWMutex
 }
 
 // NewUniqueKeysTracker create new implementation
-func NewUniqueKeysTracker(adapter storage.FilterAdpter) UniqueKeysTracker {
+func NewUniqueKeysTracker(f storage.Filter) UniqueKeysTracker {
 	return &UniqueKeysTrackerImpl{
-		filterAdapter: adapter,
-		cache:         make(map[string]*set.ThreadUnsafeSet),
+		filter: f,
+		cache:  make(map[string]*set.ThreadUnsafeSet),
+		mutex:  &sync.RWMutex{},
 	}
 }
 
 // Track description
 func (t *UniqueKeysTrackerImpl) Track(featureName string, key string) bool {
-	if t.filterAdapter.Contains(featureName, key) {
+	fKey := featureName + key
+	if t.filter.Contains(fKey) {
 		return false
 	}
 
-	t.filterAdapter.Add(featureName, key)
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
+	t.filter.Add(fKey)
 	_, ok := t.cache[featureName]
 	if !ok {
 		t.cache[featureName] = set.NewSet()
