@@ -205,3 +205,17 @@ type TelemetryStorage interface {
 	TelemetryStorageConsumer
 	TelemetryStorageProducer
 }
+
+// Filter interfaces
+type Filter interface {
+	Add(data string)
+	Contains(data string) bool
+	Clear()
+}
+
+// FilterAdpter interfaces
+type FilterAdpter interface {
+	Add(featureName string, key string)
+	Contains(featureName string, key string) bool
+	Clear()
+}
