@@ -129,7 +129,7 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 		updatedKeys = append(updatedKeys, segmentChanges.Removed...)
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
-		if segmentChanges.Till == segmentChanges.Since {
+		if newCN == segmentChanges.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
 			break
 		}
