@@ -42,12 +42,13 @@ type internalSplitSync struct {
 
 // UpdaterImpl struct for split sync
 type UpdaterImpl struct {
-	splitStorage     storage.SplitStorage
-	splitFetcher     service.SplitFetcher
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        application.MonitorProducerInterface
-	backoff          backoff.Interface
+	splitStorage                storage.SplitStorage
+	splitFetcher                service.SplitFetcher
+	logger                      logging.LoggerInterface
+	runtimeTelemetry            storage.TelemetryRuntimeProducer
+	hcMonitor                   application.MonitorProducerInterface
+	onDemandFetchBackoffBase    int64
+	onDemandFetchBackoffMaxWait time.Duration
 }
 
 // NewSplitFetcher creates new split synchronizer for processing split updates
@@ -59,12 +60,13 @@ func NewSplitFetcher(
 	hcMonitor application.MonitorProducerInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
-		splitStorage:     splitStorage,
-		splitFetcher:     splitFetcher,
-		logger:           logger,
-		runtimeTelemetry: runtimeTelemetry,
-		hcMonitor:        hcMonitor,
-		backoff:          backoff.New(onDemandFetchBackoffBase, onDemandFetchBackoffMaxWait),
+		splitStorage:                splitStorage,
+		splitFetcher:                splitFetcher,
+		logger:                      logger,
+		runtimeTelemetry:            runtimeTelemetry,
+		hcMonitor:                   hcMonitor,
+		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
+		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 	}
 }
 
@@ -105,12 +107,12 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 			}
 			break
 		}
+		newCN = splits.Till
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
-		newCN = splits.Till
 		segmentReferences = appendSegmentNames(segmentReferences, splits)
 		updatedSplitNames = appendSplitNames(updatedSplitNames, splits)
-		if splits.Till == splits.Since {
+		if newCN == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			break
 		}
@@ -124,7 +126,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 
 // attemptSplitSync Hit endpoint, update storage and return True if sync is complete.
 func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till *int64) (internalSplitSync, error) {
-	s.backoff.Reset()
+	internalBackoff := backoff.New(s.onDemandFetchBackoffBase, s.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
 		remainingAttempts = remainingAttempts - 1
@@ -138,7 +140,7 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till 
 		if remainingAttempts <= 0 {
 			return internalSplitSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, nil
 		}
-		howLong := s.backoff.Next()
+		howLong := internalBackoff.Next()
 		time.Sleep(howLong)
 	}
 }
@@ -146,7 +148,6 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till 
 func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	fetchOptions := service.NewFetchOptions(true, nil)
 	s.hcMonitor.NotifyEvent(application.Splits)
-	var err error
 
 	internalSyncResult, err := s.attemptSplitSync(&fetchOptions, till)
 	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
@@ -168,7 +169,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 		return internalSyncResultCDNBypass.updateResult, nil
 	}
 	s.logger.Debug(fmt.Sprintf("No changes fetched after %d attempts with CDN bypassed.", withoutCDNattempts))
-	return internalSyncResultCDNBypass.updateResult, err
+	return internalSyncResultCDNBypass.updateResult, nil
 }
 
 func appendSplitNames(dst []string, splits *dtos.SplitChangesDTO) []string {
