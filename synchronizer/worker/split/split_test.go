@@ -14,7 +14,6 @@ import (
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/telemetry"
-	backoffMock "github.com/splitio/go-toolkit/v5/backoff/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -368,14 +367,8 @@ func TestByPassingCDN(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
 	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
-
-	bMock := backoffMock.BackoffMock{
-		NextCall: func() time.Duration {
-			return 10 * time.Nanosecond
-		},
-		ResetCall: func() {},
-	}
-	splitSync.backoff = &bMock // overriding mock for taking less than expected
+	splitSync.onDemandFetchBackoffBase = 1
+	splitSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
 	_, err := splitSync.SynchronizeSplits(&till)

@@ -13,7 +13,6 @@ import (
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/telemetry"
-	backoffMock "github.com/splitio/go-toolkit/v5/backoff/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/testhelpers"
@@ -517,13 +516,8 @@ func TestSegmentCDNBypass(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
-	bMock := backoffMock.BackoffMock{
-		NextCall: func() time.Duration {
-			return 10 * time.Nanosecond
-		},
-		ResetCall: func() {},
-	}
-	segmentSync.backoff = &bMock // overriding mock for taking less than expected
+	segmentSync.onDemandFetchBackoffBase = 1
+	segmentSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
 	res, err := segmentSync.SynchronizeSegment("segment1", &till)

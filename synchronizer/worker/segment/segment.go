@@ -32,19 +32,26 @@ type Updater interface {
 
 // UpdaterImpl struct for segment sync
 type UpdaterImpl struct {
-	splitStorage     storage.SplitStorageConsumer
-	segmentStorage   storage.SegmentStorage
-	segmentFetcher   service.SegmentFetcher
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        application.MonitorProducerInterface
-	backoff          backoff.Interface
+	splitStorage                storage.SplitStorageConsumer
+	segmentStorage              storage.SegmentStorage
+	segmentFetcher              service.SegmentFetcher
+	logger                      logging.LoggerInterface
+	runtimeTelemetry            storage.TelemetryRuntimeProducer
+	hcMonitor                   application.MonitorProducerInterface
+	onDemandFetchBackoffBase    int64
+	onDemandFetchBackoffMaxWait time.Duration
 }
 
 // UpdateResult encapsulates information regarding the segment update performed
 type UpdateResult struct {
 	UpdatedKeys     []string
 	NewChangeNumber int64
+}
+
+type internalSegmentSync struct {
+	updateResult   *UpdateResult
+	successfulSync bool
+	attempt        int
 }
 
 // NewSegmentFetcher creates new segment synchronizer for processing segment updates
@@ -56,15 +63,15 @@ func NewSegmentFetcher(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
 ) *UpdaterImpl {
-	maxWait := onDemandFetchBackoffMaxWait
 	return &UpdaterImpl{
-		splitStorage:     splitStorage,
-		segmentStorage:   segmentStorage,
-		segmentFetcher:   segmentFetcher,
-		logger:           logger,
-		runtimeTelemetry: runtimeTelemetry,
-		hcMonitor:        hcMonitor,
-		backoff:          backoff.New(common.Int64Ref(onDemandFetchBackoffBase), &maxWait),
+		splitStorage:                splitStorage,
+		segmentStorage:              segmentStorage,
+		segmentFetcher:              segmentFetcher,
+		logger:                      logger,
+		runtimeTelemetry:            runtimeTelemetry,
+		hcMonitor:                   hcMonitor,
+		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
+		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 	}
 }
 
@@ -134,19 +141,19 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 	}, err
 }
 
-func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.FetchOptions) (bool, int, *UpdateResult, error) {
-	s.backoff.Reset()
+func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.FetchOptions) (internalSegmentSync, error) {
+	internalBackoff := backoff.New(s.onDemandFetchBackoffBase, s.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
 		remainingAttempts = remainingAttempts - 1
 		updateResult, err := s.fetchUntil(name, till, fetchOptions) // what we should do with err
 		if err != nil || remainingAttempts <= 0 {
-			return false, 0, updateResult, err // should we retun update result?
+			return internalSegmentSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, err
 		}
 		if till == nil || *till <= updateResult.NewChangeNumber {
-			return true, remainingAttempts, updateResult, nil
+			return internalSegmentSync{updateResult: updateResult, successfulSync: true, attempt: remainingAttempts}, nil
 		}
-		howLong := s.backoff.Next()
+		howLong := internalBackoff.Next()
 		time.Sleep(howLong)
 	}
 }
@@ -156,27 +163,27 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 	fetchOptions := service.NewFetchOptions(true, nil)
 	s.hcMonitor.NotifyEvent(application.Segments)
 
-	succesfulSync, remainingAttempts, updateResult, err := s.attemptSegmentSync(name, till, &fetchOptions)
-	attempts := onDemandFetchBackoffMaxRetries - remainingAttempts
+	internalSyncResult, err := s.attemptSegmentSync(name, till, &fetchOptions)
+	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
-		return updateResult, err
+		return internalSyncResult.updateResult, err
 	}
-	if succesfulSync {
+	if internalSyncResult.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
-		return updateResult, nil
+		return internalSyncResult.updateResult, nil
 	}
-	withCDNBypass := service.NewFetchOptions(true, &updateResult.NewChangeNumber) // Set flag for bypassing CDN
-	withoutCDNSunccesfulSync, remainingAttempts, dedupedResultwithoutCDN, err := s.attemptSegmentSync(name, till, &withCDNBypass)
-	withoutCDNattempts := onDemandFetchBackoffMaxRetries - remainingAttempts
+	withCDNBypass := service.NewFetchOptions(true, &internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	internalSyncResultCDNBypass, err := s.attemptSegmentSync(name, till, &withCDNBypass)
+	withoutCDNattempts := onDemandFetchBackoffMaxRetries - internalSyncResultCDNBypass.attempt
 	if err != nil {
-		return dedupedResultwithoutCDN, err
+		return internalSyncResultCDNBypass.updateResult, err
 	}
-	if withoutCDNSunccesfulSync {
+	if internalSyncResultCDNBypass.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed bypassing the CDN in %d attempts.", withoutCDNattempts))
-		return dedupedResultwithoutCDN, nil
+		return internalSyncResultCDNBypass.updateResult, nil
 	}
 	s.logger.Debug(fmt.Sprintf("No changes fetched after %d attempts with CDN bypassed.", withoutCDNattempts))
-	return dedupedResultwithoutCDN, err // what to do here
+	return internalSyncResultCDNBypass.updateResult, nil
 }
 
 // SynchronizeSegments syncs segments at once
