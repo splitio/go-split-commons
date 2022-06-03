@@ -39,7 +39,7 @@ type Workers struct {
 // Synchronizer interface for syncing data to and from splits servers
 type Synchronizer interface {
 	SyncAll(requestNoCache bool) error
-	SynchronizeSplits(till *int64, requestNoCache bool) error
+	SynchronizeSplits(till *int64) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64, requestNoCache bool) error
 	StartPeriodicFetching()
@@ -106,7 +106,7 @@ func (s *SynchronizerImpl) dataFlusher() {
 
 // SyncAll syncs splits and segments
 func (s *SynchronizerImpl) SyncAll(requestNoCache bool) error {
-	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	if err != nil {
 		return err
 	}
@@ -171,8 +171,8 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 }
 
 // SynchronizeSplits syncs splits
-func (s *SynchronizerImpl) SynchronizeSplits(till *int64, requstNoCache bool) error {
-	result, err := s.workers.SplitFetcher.SynchronizeSplits(till, requstNoCache)
+func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
+	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
 	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
 		go s.SynchronizeSegment(segment, nil, true) // send segment to workerpool (queue is bypassed)
 	}
