@@ -170,5 +170,8 @@ func (s *UpdaterImpl) SegmentNames() []interface{} {
 // IsSegmentCached returns true if a segment exists
 func (s *UpdaterImpl) IsSegmentCached(segmentName string) bool {
 	cn, _ := s.segmentStorage.ChangeNumber(segmentName)
+	if cn == 0 {
+		cn = -1
+	}
 	return cn != -1
 }
