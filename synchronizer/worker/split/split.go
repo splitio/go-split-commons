@@ -34,6 +34,12 @@ type UpdateResult struct {
 	NewChangeNumber    int64
 }
 
+type internalSplitSync struct {
+	updateResult   *UpdateResult
+	successfulSync bool
+	attempt        int
+}
+
 // UpdaterImpl struct for split sync
 type UpdaterImpl struct {
 	splitStorage     storage.SplitStorage
@@ -97,47 +103,40 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 			}
-			return &UpdateResult{
-				UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
-				ReferencedSegments: common.DedupeStringSlice(segmentReferences),
-				NewChangeNumber:    0,
-			}, fmt.Errorf("an error occured getting splits %w", err)
+			break
 		}
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
+		newCN = splits.Till
 		segmentReferences = appendSegmentNames(segmentReferences, splits)
 		updatedSplitNames = appendSplitNames(updatedSplitNames, splits)
 		if splits.Till == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
-			return &UpdateResult{
-				UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
-				ReferencedSegments: common.DedupeStringSlice(segmentReferences),
-				NewChangeNumber:    splits.Till,
-			}, nil
+			break
 		}
 	}
 	return &UpdateResult{
 		UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
 		ReferencedSegments: common.DedupeStringSlice(segmentReferences),
-		NewChangeNumber:    newCN, // check logic in the pass is 0 here
+		NewChangeNumber:    newCN,
 	}, err
 }
 
 // attemptSplitSync Hit endpoint, update storage and return True if sync is complete.
-func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till *int64) (bool, int, *UpdateResult, error) {
+func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till *int64) (internalSplitSync, error) {
 	s.backoff.Reset()
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
 		remainingAttempts = remainingAttempts - 1
 		updateResult, err := s.fetchUntil(fetchOptions, till) // what we should do with err
 		if err != nil {
-			return false, 0, updateResult, err // should we retun update result?
+			return internalSplitSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, err
 		}
 		if till == nil || *till <= updateResult.NewChangeNumber {
-			return true, remainingAttempts, updateResult, nil
+			return internalSplitSync{updateResult: updateResult, successfulSync: true, attempt: remainingAttempts}, nil
 		}
 		if remainingAttempts <= 0 {
-			return false, remainingAttempts, updateResult, nil
+			return internalSplitSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, nil
 		}
 		howLong := s.backoff.Next()
 		time.Sleep(howLong)
@@ -149,27 +148,27 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	s.hcMonitor.NotifyEvent(application.Splits)
 	var err error
 
-	succesfulSync, remainingAttempts, updateResult, err := s.attemptSplitSync(&fetchOptions, till)
-	attempts := onDemandFetchBackoffMaxRetries - remainingAttempts
+	internalSyncResult, err := s.attemptSplitSync(&fetchOptions, till)
+	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
-		return updateResult, err
+		return internalSyncResult.updateResult, err
 	}
-	if succesfulSync {
+	if internalSyncResult.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
-		return updateResult, nil
+		return internalSyncResult.updateResult, nil
 	}
-	withCDNBypass := service.NewFetchOptions(true, &updateResult.NewChangeNumber) // Set flag for bypassing CDN
-	withoutCDNSunccesfulSync, remainingAttempts, dedupedResultwithoutCDN, err := s.attemptSplitSync(&withCDNBypass, till)
-	withoutCDNattempts := onDemandFetchBackoffMaxRetries - remainingAttempts
+	withCDNBypass := service.NewFetchOptions(true, &internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	internalSyncResultCDNBypass, err := s.attemptSplitSync(&withCDNBypass, till)
+	withoutCDNattempts := onDemandFetchBackoffMaxRetries - internalSyncResultCDNBypass.attempt
 	if err != nil {
-		return dedupedResultwithoutCDN, err
+		return internalSyncResultCDNBypass.updateResult, err
 	}
-	if withoutCDNSunccesfulSync {
+	if internalSyncResultCDNBypass.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed bypassing the CDN in %d attempts.", withoutCDNattempts))
-		return dedupedResultwithoutCDN, nil
+		return internalSyncResultCDNBypass.updateResult, nil
 	}
 	s.logger.Debug(fmt.Sprintf("No changes fetched after %d attempts with CDN bypassed.", withoutCDNattempts))
-	return dedupedResultwithoutCDN, err // what to do here
+	return internalSyncResultCDNBypass.updateResult, err
 }
 
 func appendSplitNames(dst []string, splits *dtos.SplitChangesDTO) []string {
