@@ -105,9 +105,8 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
-		newCN, _ := s.segmentStorage.ChangeNumber(name)
+		newCN, _ = s.segmentStorage.ChangeNumber(name)
 		if till != nil && *till < newCN {
-			fmt.Println("IM HERE", *till < newCN, *till, newCN)
 			break
 		}
 
@@ -118,7 +117,6 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)
 			}
-			fmt.Println("IM ERR")
 			break
 		}
 
@@ -128,7 +126,6 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
 		if newCN == segmentChanges.Since {
-			fmt.Println("IM SINCE == TILL", newCN)
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
 			break
 		}
@@ -146,7 +143,6 @@ func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions 
 	for {
 		remainingAttempts = remainingAttempts - 1
 		updateResult, err := s.fetchUntil(name, till, fetchOptions) // what we should do with err
-		fmt.Println(updateResult, *till, updateResult.NewChangeNumber)
 		if err != nil || remainingAttempts <= 0 {
 			return internalSegmentSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, err
 		}
