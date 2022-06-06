@@ -34,7 +34,7 @@ func NewLocal(period int, splitAPI *api.SplitAPI, splitStorage storage.SplitStor
 
 // SyncAll syncs splits and segments
 func (s *Local) SyncAll(requestNoCache bool) error {
-	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	return err
 }
 
@@ -62,8 +62,8 @@ func (s *Local) RefreshRates() (time.Duration, time.Duration) {
 }
 
 // SynchronizeSplits syncs splits
-func (s *Local) SynchronizeSplits(till *int64, requestNoCache bool) error {
-	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil, requestNoCache)
+func (s *Local) SynchronizeSplits(till *int64) error {
+	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	return err
 }
 

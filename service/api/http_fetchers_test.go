@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -38,7 +40,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(-1, true)
+	splitChangesDTO, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,6 +63,71 @@ func TestSpitChangesFetch(t *testing.T) {
 	}
 }
 
+func TestSpitChangesFetchWithFlagOptions(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	var cacheControl string
+	var queryParams url.Values
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cacheControl = r.Header.Get("Cache-Control")
+		queryParams = r.URL.Query()
+		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
+	}))
+	defer ts.Close()
+
+	splitFetcher := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts.URL,
+			SdkURL:    ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "no-cache" {
+		t.Error("Wrong header sent")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Has("till") {
+		t.Error("Expected to not have till")
+	}
+	_, err = splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: false})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "" {
+		t.Error("Cache control should not be present")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Has("till") {
+		t.Error("Expected to not have till")
+	}
+	expectedTill := int64(10000)
+	_, err = splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true, ChangeNumber: &expectedTill})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "no-cache" {
+		t.Error("Wrong header sent")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Get("till") != "10000" {
+		t.Error("Expected to have till")
+	}
+}
+
 func TestSpitChangesFetchHTTPError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
@@ -80,7 +147,7 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(-1, false)
+	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: false})
 	if err == nil {
 		t.Error("Error expected but not found")
 	}
@@ -90,7 +157,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, fmt.Sprintf(string(segmentMock)))
+		fmt.Fprintln(w, string(segmentMock))
 	}))
 	defer ts.Close()
 
@@ -104,7 +171,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	segmentFetched, err := segmentFetcher.Fetch("employees", -1, false)
+	segmentFetched, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
 	if err != nil {
 		t.Error("Error fetching segment", err)
 		return
@@ -133,7 +200,7 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := segmentFetcher.Fetch("employees", -1, false)
+	_, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
 	if err == nil {
 		t.Error("Error expected but not found")
 	}

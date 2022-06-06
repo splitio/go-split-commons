@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
@@ -39,8 +40,8 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {
-			if requestNoCache {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if fetchOptions.CacheControlHeaders {
 				t.Error("should not have requested no cache")
 			}
 			if name != "segment1" && name != "segment2" {
@@ -143,8 +144,8 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-			if !noCache {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
 				t.Error("should have requested no cache")
 			}
 			if name != "segment1" && name != "segment2" {
@@ -220,7 +221,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -334,7 +335,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -419,7 +420,7 @@ func TestSegmentTill(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 		},

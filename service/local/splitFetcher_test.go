@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -26,7 +27,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger)
 
-	res, err := fetcher.Fetch(-1, true)
+	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -41,7 +42,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// second call -- no change -- since == till
 
-	res, err = fetcher.Fetch(0, true)
+	res, err = fetcher.Fetch(0, &service.FetchOptions{})
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -60,7 +61,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// third call -- change -- till > since
 
-	res, err = fetcher.Fetch(0, true)
+	res, err = fetcher.Fetch(0, &service.FetchOptions{})
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -75,7 +76,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// fourth call -- no change -- till != since
 
-	res, err = fetcher.Fetch(1, true)
+	res, err = fetcher.Fetch(1, &service.FetchOptions{})
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v4/service/mocks"
 	storageMock "github.com/splitio/go-split-commons/v4/storage/mocks"
@@ -28,8 +29,8 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-				if !noCache {
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				if !fetchOptions.CacheControlHeaders {
 					t.Error("no cache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
@@ -88,9 +89,9 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-				if noCache {
-					t.Error("noCache should be false")
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
@@ -104,8 +105,8 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-				if noCache {
+			FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+				if fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be false")
 				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
@@ -180,8 +181,8 @@ func TestSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-				if !noCache {
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
@@ -196,8 +197,8 @@ func TestSyncAllOk(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-				if !noCache {
+			FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
@@ -290,9 +291,9 @@ func TestPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-				if noCache {
-					t.Error("noCache should be false")
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				if !fetchOptions.CacheControlHeaders {
+					t.Error("noCache should be true")
 				}
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if changeNumber != -1 {
@@ -306,8 +307,8 @@ func TestPeriodicFetching(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-				if noCache {
+			FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+				if fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be false")
 				}
 				atomic.AddInt64(&segmentFetchCalled, 1)
