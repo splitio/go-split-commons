@@ -6,13 +6,13 @@ import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 )
 
-// NoneImpl description
+// NoneImpl struct for none impression mode strategy.
 type NoneImpl struct {
 	impressionsCounter *ImpressionsCounter
 	uniqueKeysTracker  UniqueKeysTracker
 }
 
-// NewNoneImpl constructor
+// NewNoneImpl creates new NoneImpl.
 func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker UniqueKeysTracker) ProcessStrategyInterface {
 	return &NoneImpl{
 		impressionsCounter: impressionCounter,
@@ -20,7 +20,7 @@ func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker Unique
 	}
 }
 
-// Apply description
+// Apply track the total amount of evaluations and the unique keys.
 func (s *NoneImpl) Apply(impression dtos.Impression) *dtos.Impression {
 	now := time.Now().UTC().UnixNano()
 

@@ -12,13 +12,13 @@ type ProcessStrategyInterface interface {
 	Apply(impression dtos.Impression) *dtos.Impression
 }
 
-// OptimizedImpl description
+// OptimizedImpl struct for optimized impression mode strategy.
 type OptimizedImpl struct {
 	impressionObserver ImpressionObserver
 	impressionsCounter *ImpressionsCounter
 }
 
-// NewOptimizedImpl constructor
+// NewOptimizedImpl creates new OptimizedImpl.
 func NewOptimizedImpl(impressionCounter *ImpressionsCounter, impressionObserver ImpressionObserver) ProcessStrategyInterface {
 	return &OptimizedImpl{
 		impressionObserver: impressionObserver,
@@ -26,7 +26,7 @@ func NewOptimizedImpl(impressionCounter *ImpressionsCounter, impressionObserver 
 	}
 }
 
-// Apply description
+// Apply track the total amount of evaluations and deduplicate the impressions.
 func (s *OptimizedImpl) Apply(impression dtos.Impression) *dtos.Impression {
 	now := time.Now().UTC().UnixNano()
 	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, &impression)
