@@ -105,11 +105,7 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
-		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
-		if changeNumber == 0 {
-			changeNumber = -1
-		}
-		newCN = changeNumber
+		newCN, _ := s.segmentStorage.ChangeNumber(name)
 		if till != nil && *till < newCN {
 			break
 		}

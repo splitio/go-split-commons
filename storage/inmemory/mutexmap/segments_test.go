@@ -23,6 +23,15 @@ func TestMMSegmentStorage(t *testing.T) {
 		segmentStorage.Update(fmt.Sprintf("segmentito_%d", index), setito, set.NewSet(), 123)
 	}
 
+	cn, _ := segmentStorage.ChangeNumber("nonexistent")
+	if cn != -1 {
+		t.Error("It should be -1")
+	}
+	newCN, _ := segmentStorage.ChangeNumber("segmentito_1")
+	if newCN != 123 {
+		t.Error("It should be 123")
+	}
+
 	for i := 0; i < 3; i++ {
 		segmentName := fmt.Sprintf("segmentito_%d", i)
 		segment := segmentStorage.Keys(segmentName)

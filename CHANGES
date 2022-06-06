@@ -1,5 +1,8 @@
-4.0.5 (May XX, 2022)
+4.0.6 (Jun XX, 2022)
  - 
+
+4.0.5 (Jun 6, 2022)
+ - Updated segments and splits storage to return -1 as default changeNumber instead of zero.
 
 4.0.4 (Apr 20, 2022)
  - Updated config telemetry logic to operate on sets
