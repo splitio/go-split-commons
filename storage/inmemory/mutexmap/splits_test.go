@@ -10,6 +10,11 @@ import (
 func TestMMSplitStorage(t *testing.T) {
 	splitStorage := NewMMSplitStorage()
 
+	cn, _ := splitStorage.ChangeNumber()
+	if cn != -1 {
+		t.Error("It should be -1")
+	}
+
 	result := splitStorage.All()
 	if len(result) != 0 {
 		t.Error("Unexpected number of splits returned")
@@ -23,6 +28,11 @@ func TestMMSplitStorage(t *testing.T) {
 		})
 	}
 	splitStorage.Update(splits, nil, 123)
+
+	newCN, _ := splitStorage.ChangeNumber()
+	if newCN != 123 {
+		t.Error("It should be 123")
+	}
 
 	for index := 0; index < 10; index++ {
 		splitName := fmt.Sprintf("SomeSplit_%d", index)
