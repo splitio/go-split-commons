@@ -83,9 +83,6 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64, requestNoCache bool) (*Upda
 	var err error
 	for {
 		changeNumber, _ := s.splitStorage.ChangeNumber()
-		if changeNumber == 0 {
-			changeNumber = -1
-		}
 		if till != nil && *till < changeNumber {
 			break
 		}
