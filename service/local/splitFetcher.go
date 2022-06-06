@@ -14,7 +14,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 const (
