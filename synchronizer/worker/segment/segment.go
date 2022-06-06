@@ -91,9 +91,6 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64, requestNoCach
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
 		changeNumber, _ := s.segmentStorage.ChangeNumber(name)
-		if changeNumber == 0 {
-			changeNumber = -1
-		}
 		if till != nil && *till < changeNumber {
 			break
 		}
