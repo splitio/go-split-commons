@@ -17,8 +17,8 @@ func NewDebugImpl(impressionObserver ImpressionObserver) ProcessStrategyInterfac
 }
 
 // Apply calculate the pt and return the impression.
-func (s *DebugImpl) Apply(impression dtos.Impression) *dtos.Impression {
-	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, &impression)
+func (s *DebugImpl) Apply(impression *dtos.Impression) bool {
+	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
 
-	return &impression
+	return true
 }

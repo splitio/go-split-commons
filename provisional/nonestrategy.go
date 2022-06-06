@@ -21,11 +21,11 @@ func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker Unique
 }
 
 // Apply track the total amount of evaluations and the unique keys.
-func (s *NoneImpl) Apply(impression dtos.Impression) *dtos.Impression {
+func (s *NoneImpl) Apply(impression *dtos.Impression) bool {
 	now := time.Now().UTC().UnixNano()
 
 	s.impressionsCounter.Inc(impression.FeatureName, now, 1)
 	s.uniqueKeysTracker.Track(impression.FeatureName, impression.BucketingKey)
 
-	return nil
+	return false
 }

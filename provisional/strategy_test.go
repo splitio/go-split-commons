@@ -23,10 +23,10 @@ func TestDebugMode(t *testing.T) {
 		FeatureName:  "feature-test",
 	}
 
-	result := debug.Apply(imp)
+	toLog := debug.Apply(&imp)
 
-	if result == nil {
-		t.Error("Should not be nil")
+	if !toLog {
+		t.Error("Should not be true")
 	}
 }
 
@@ -47,16 +47,16 @@ func TestNoneMode(t *testing.T) {
 		FeatureName:  "feature-test",
 	}
 
-	result := none.Apply(imp)
+	result := none.Apply(&imp)
 
-	if result != nil {
-		t.Error("Should be nil")
+	if result {
+		t.Error("Should be false")
 	}
 
-	result = none.Apply(imp)
+	result = none.Apply(&imp)
 
-	if result != nil {
-		t.Error("Should be nil")
+	if result {
+		t.Error("Should be false")
 	}
 
 	counts := counter.PopAll()
@@ -84,15 +84,15 @@ func TestOptimizedMode(t *testing.T) {
 		FeatureName:  "feature-test",
 	}
 
-	result := optimized.Apply(imp)
+	result := optimized.Apply(&imp)
 
-	if result == nil {
-		t.Error("Should not be nil")
+	if !result {
+		t.Error("Should not be true")
 	}
 
-	result2 := optimized.Apply(imp)
+	result2 := optimized.Apply(&imp)
 
-	if result2 != nil {
-		t.Error("Should be nil")
+	if result2 {
+		t.Error("Should be false")
 	}
 }

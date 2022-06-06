@@ -9,7 +9,7 @@ import (
 
 // ProcessStrategyInterface interface
 type ProcessStrategyInterface interface {
-	Apply(impression dtos.Impression) *dtos.Impression
+	Apply(impression *dtos.Impression) bool
 }
 
 // OptimizedImpl struct for optimized impression mode strategy.
@@ -27,14 +27,14 @@ func NewOptimizedImpl(impressionCounter *ImpressionsCounter, impressionObserver 
 }
 
 // Apply track the total amount of evaluations and deduplicate the impressions.
-func (s *OptimizedImpl) Apply(impression dtos.Impression) *dtos.Impression {
+func (s *OptimizedImpl) Apply(impression *dtos.Impression) bool {
 	now := time.Now().UTC().UnixNano()
-	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, &impression)
+	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
 	s.impressionsCounter.Inc(impression.FeatureName, now, 1)
 
 	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {
-		return &impression
+		return true
 	}
 
-	return nil
+	return false
 }
