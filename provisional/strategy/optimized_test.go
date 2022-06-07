@@ -35,3 +35,31 @@ func TestOptimizedMode(t *testing.T) {
 		t.Error("Should not have to log")
 	}
 }
+
+func TestApplySingleOptimized(t *testing.T) {
+	observer, _ := NewImpressionObserver(5000)
+	counter := NewImpressionsCounter()
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry)
+	imp := dtos.Impression{
+		BucketingKey: "someBuck",
+		ChangeNumber: 123,
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         time.Now().UTC().UnixNano(),
+		Treatment:    "on",
+		FeatureName:  "feature-test",
+	}
+
+	toLog := optimized.ApplySingle(&imp)
+
+	if !toLog {
+		t.Error("Should be true")
+	}
+
+	toLog = optimized.ApplySingle(&imp)
+
+	if toLog {
+		t.Error("Should be false")
+	}
+}
