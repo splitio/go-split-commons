@@ -14,7 +14,7 @@ func TestNoneMode(t *testing.T) {
 	filter := filter.NewBloomFilter(1000, 0.01)
 	tracker := NewUniqueKeysTracker(filter)
 	counter := NewImpressionsCounter()
-	none := NewNoneImpl(counter, tracker)
+	none := NewNoneImpl(counter, tracker, true)
 
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
@@ -54,7 +54,7 @@ func TestApplySingleNone(t *testing.T) {
 	filter := filter.NewBloomFilter(1000, 0.01)
 	tracker := NewUniqueKeysTracker(filter)
 	counter := NewImpressionsCounter()
-	none := NewNoneImpl(counter, tracker)
+	none := NewNoneImpl(counter, tracker, true)
 
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",

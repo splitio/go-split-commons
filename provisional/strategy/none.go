@@ -10,13 +10,15 @@ import (
 type NoneImpl struct {
 	impressionsCounter *ImpressionsCounter
 	uniqueKeysTracker  UniqueKeysTracker
+	listenerEnabled    bool
 }
 
 // NewNoneImpl creates new NoneImpl.
-func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker UniqueKeysTracker) ProcessStrategyInterface {
+func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker UniqueKeysTracker, listenerEnabled bool) ProcessStrategyInterface {
 	return &NoneImpl{
 		impressionsCounter: impressionCounter,
 		uniqueKeysTracker:  uniqueKeysTracker,
+		listenerEnabled:    listenerEnabled,
 	}
 }
 
@@ -36,7 +38,9 @@ func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dt
 	for _, impression := range impressions {
 		s.apply(&impression, now)
 
-		forListener = append(forListener, impression)
+		if s.listenerEnabled {
+			forListener = append(forListener, impression)
+		}
 	}
 
 	return forLog, forListener

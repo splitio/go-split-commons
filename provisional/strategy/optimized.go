@@ -14,14 +14,16 @@ type OptimizedImpl struct {
 	impressionObserver ImpressionObserver
 	impressionsCounter *ImpressionsCounter
 	runtimeTelemetry   storage.TelemetryRuntimeProducer
+	listenerEnabled    bool
 }
 
 // NewOptimizedImpl creates new OptimizedImpl.
-func NewOptimizedImpl(impressionObserver ImpressionObserver, impressionCounter *ImpressionsCounter, runtimeTelemetry storage.TelemetryRuntimeProducer) ProcessStrategyInterface {
+func NewOptimizedImpl(impressionObserver ImpressionObserver, impressionCounter *ImpressionsCounter, runtimeTelemetry storage.TelemetryRuntimeProducer, listenerEnabled bool) ProcessStrategyInterface {
 	return &OptimizedImpl{
 		impressionObserver: impressionObserver,
 		impressionsCounter: impressionCounter,
 		runtimeTelemetry:   runtimeTelemetry,
+		listenerEnabled:    listenerEnabled,
 	}
 }
 
@@ -47,7 +49,9 @@ func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression,
 			forLog = append(forLog, impression)
 		}
 
-		forListener = append(forListener, impression)
+		if s.listenerEnabled {
+			forListener = append(forListener, impression)
+		}
 	}
 
 	s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))

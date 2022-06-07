@@ -7,12 +7,14 @@ import (
 // DebugImpl struct for debug impression mode strategy.
 type DebugImpl struct {
 	impressionObserver ImpressionObserver
+	listenerEnabled    bool
 }
 
 // NewDebugImpl creates new DebugImpl.
-func NewDebugImpl(impressionObserver ImpressionObserver) ProcessStrategyInterface {
+func NewDebugImpl(impressionObserver ImpressionObserver, listenerEnabled bool) ProcessStrategyInterface {
 	return &DebugImpl{
 		impressionObserver: impressionObserver,
+		listenerEnabled:    listenerEnabled,
 	}
 }
 
@@ -31,7 +33,10 @@ func (s *DebugImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []d
 		s.apply(&impression)
 
 		forLog = append(forLog, impression)
-		forListener = append(forListener, impression)
+
+		if s.listenerEnabled {
+			forListener = append(forListener, impression)
+		}
 	}
 
 	return forLog, forListener

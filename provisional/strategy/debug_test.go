@@ -8,7 +8,7 @@ import (
 
 func TestDebugMode(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
-	debug := NewDebugImpl(observer)
+	debug := NewDebugImpl(observer, true)
 
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
@@ -35,7 +35,7 @@ func TestDebugMode(t *testing.T) {
 
 func TestApplySingleDebug(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
-	debug := NewDebugImpl(observer)
+	debug := NewDebugImpl(observer, true)
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,

@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/provisional/strategy"
 	"github.com/splitio/go-split-commons/v4/storage/filter"
@@ -14,12 +13,8 @@ import (
 
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer)
-	impManager := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: false,
-	}, debug)
+	debug := strategy.NewDebugImpl(observer, false)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -51,12 +46,8 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 
 func TestImpManagerInMemoryDebug(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer)
-	impManager := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: true,
-	}, debug)
+	debug := strategy.NewDebugImpl(observer, true)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -90,12 +81,8 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	counter := strategy.NewImpressionsCounter()
 	observer, _ := strategy.NewImpressionObserver(5000)
-	optimized := strategy.NewOptimizedImpl(observer, counter, runtimeTelemetry)
-	impManager := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeOptimized,
-		ListenerEnabled: true,
-	}, optimized)
+	optimized := strategy.NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
+	impManager := NewImpressionManager(optimized)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -136,12 +123,8 @@ func TestImpManagerInMemoryNone(t *testing.T) {
 	counter := strategy.NewImpressionsCounter()
 	filter := filter.NewBloomFilter(3000, 0.01)
 	uniqueTracker := strategy.NewUniqueKeysTracker(filter)
-	none := strategy.NewNoneImpl(counter, uniqueTracker)
-	impManager := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeNone,
-		ListenerEnabled: true,
-	}, none)
+	none := strategy.NewNoneImpl(counter, uniqueTracker, true)
+	impManager := NewImpressionManager(none)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -169,12 +152,8 @@ func TestImpManagerInMemoryNone(t *testing.T) {
 
 func TestImpManagerRedis(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer)
-	impManager := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   "redis-consumer",
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: true,
-	}, debug)
+	debug := strategy.NewDebugImpl(observer, true)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{

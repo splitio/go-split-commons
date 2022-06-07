@@ -12,7 +12,7 @@ func TestOptimizedMode(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
 	counter := NewImpressionsCounter()
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry)
+	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,
@@ -40,7 +40,7 @@ func TestApplySingleOptimized(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
 	counter := NewImpressionsCounter()
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry)
+	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,
