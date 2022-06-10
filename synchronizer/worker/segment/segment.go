@@ -101,18 +101,15 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service.FetchOptions) (*UpdateResult, error) {
 	var updatedKeys []string
 	var err error
-	var newCN int64
+	var currentSince int64
 
 	for {
 		s.logger.Debug(fmt.Sprintf("Synchronizing segment %s", name))
-		newCN, _ = s.segmentStorage.ChangeNumber(name)
-		if till != nil && *till < newCN {
-			break
-		}
+		currentSince, _ = s.segmentStorage.ChangeNumber(name)
 
 		before := time.Now()
 		var segmentChanges *dtos.SegmentChangesDTO
-		segmentChanges, err = s.segmentFetcher.Fetch(name, newCN, fetchOptions)
+		segmentChanges, err = s.segmentFetcher.Fetch(name, currentSince, fetchOptions)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)
@@ -120,12 +117,12 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 			break
 		}
 
-		newCN = segmentChanges.Till
+		currentSince = segmentChanges.Till
 		updatedKeys = append(updatedKeys, segmentChanges.Added...)
 		updatedKeys = append(updatedKeys, segmentChanges.Removed...)
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SegmentSync, time.Since(before))
 		s.processUpdate(segmentChanges)
-		if newCN == segmentChanges.Since {
+		if currentSince == segmentChanges.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SegmentSync, time.Now().UTC())
 			break
 		}
@@ -133,7 +130,7 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 
 	return &UpdateResult{
 		UpdatedKeys:     common.DedupeStringSlice(updatedKeys),
-		NewChangeNumber: newCN,
+		NewChangeNumber: currentSince,
 	}, err
 }
 
@@ -158,6 +155,11 @@ func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions 
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResult, error) {
 	fetchOptions := service.NewFetchOptions(true, nil)
 	s.hcMonitor.NotifyEvent(application.Segments)
+
+	currentSince, _ := s.segmentStorage.ChangeNumber(name)
+	if till != nil && *till <= currentSince { // the passed till is less than change_number, no need to perform updates
+		return &UpdateResult{}, nil
+	}
 
 	internalSyncResult, err := s.attemptSegmentSync(name, till, &fetchOptions)
 	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt

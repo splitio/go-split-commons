@@ -91,28 +91,25 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 	segmentReferences := make([]string, 0, 10)
 	updatedSplitNames := make([]string, 0, 10)
 	var err error
-	var newCN int64
+	var currentSince int64
 
 	for { // Fetch until since==till
-		newCN, _ = s.splitStorage.ChangeNumber()
-		if till != nil && *till < newCN { // the passed till is less than change_number, no need to perform updates
-			break
-		}
+		currentSince, _ = s.splitStorage.ChangeNumber()
 		before := time.Now()
 		var splits *dtos.SplitChangesDTO
-		splits, err = s.splitFetcher.Fetch(newCN, fetchOptions)
+		splits, err = s.splitFetcher.Fetch(currentSince, fetchOptions)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 			}
 			break
 		}
-		newCN = splits.Till
+		currentSince = splits.Till
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
 		segmentReferences = appendSegmentNames(segmentReferences, splits)
 		updatedSplitNames = appendSplitNames(updatedSplitNames, splits)
-		if newCN == splits.Since {
+		if currentSince == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			break
 		}
@@ -120,7 +117,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 	return &UpdateResult{
 		UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
 		ReferencedSegments: common.DedupeStringSlice(segmentReferences),
-		NewChangeNumber:    newCN,
+		NewChangeNumber:    currentSince,
 	}, err
 }
 
@@ -143,9 +140,13 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FetchOptions, till 
 }
 
 func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
-	fetchOptions := service.NewFetchOptions(true, nil)
 	s.hcMonitor.NotifyEvent(application.Splits)
+	currentSince, _ := s.splitStorage.ChangeNumber()
+	if till != nil && *till < currentSince { // the passed till is less than change_number, no need to perform updates
+		return &UpdateResult{}, nil
+	}
 
+	fetchOptions := service.NewFetchOptions(true, nil)
 	internalSyncResult, err := s.attemptSplitSync(&fetchOptions, till)
 	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
