@@ -15,7 +15,7 @@ func TestSegmentUpdateWorker(t *testing.T) {
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
-		SynchronizeSegmentCall: func(segmentName string, till *int64, cache bool) error {
+		SynchronizeSegmentCall: func(segmentName string, till *int64) error {
 			atomic.AddInt32(&count, 1)
 			if segmentName != "some" {
 				t.Error("Unexpected segment name")

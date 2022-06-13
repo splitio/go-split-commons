@@ -68,7 +68,7 @@ func (s *Local) SynchronizeSplits(till *int64) error {
 }
 
 // SynchronizeSegment syncs segment
-func (s *Local) SynchronizeSegment(name string, till *int64, _ bool) error {
+func (s *Local) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }
 

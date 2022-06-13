@@ -205,3 +205,68 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 		t.Error("Error expected but not found")
 	}
 }
+
+func TestSegmentChangesFetchWithFlagOptions(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	var cacheControl string
+	var queryParams url.Values
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cacheControl = r.Header.Get("Cache-Control")
+		queryParams = r.URL.Query()
+		fmt.Fprintln(w, string(segmentMock))
+	}))
+	defer ts.Close()
+
+	segmentFetcher := NewHTTPSegmentFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts.URL,
+			SdkURL:    ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	_, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: true})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "no-cache" {
+		t.Error("Wrong header sent")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Has("till") {
+		t.Error("Expected to not have till")
+	}
+	_, err = segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "" {
+		t.Error("Cache control should not be present")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Has("till") {
+		t.Error("Expected to not have till")
+	}
+	expectedTill := int64(10000)
+	_, err = segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: true, ChangeNumber: &expectedTill})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "no-cache" {
+		t.Error("Wrong header sent")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Get("till") != "10000" {
+		t.Error("Expected to have till")
+	}
+}
