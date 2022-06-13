@@ -31,13 +31,14 @@ func (s *DebugImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []d
 
 	for _, impression := range impressions {
 		s.apply(&impression)
+		forLog = append(forLog, impression)
 	}
 
 	if s.listenerEnabled {
 		forListener = forLog
 	}
 
-	return impressions, forListener
+	return forLog, forListener
 }
 
 // ApplySingle description

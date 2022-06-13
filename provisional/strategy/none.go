@@ -32,18 +32,17 @@ func (s *NoneImpl) apply(impression *dtos.Impression, now int64) bool {
 // Apply track the total amount of evaluations and the unique keys.
 func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
 	now := time.Now().UTC().UnixNano()
-	forLog := make([]dtos.Impression, 0, len(impressions))
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
 	for _, impression := range impressions {
 		s.apply(&impression, now)
+
+		if s.listenerEnabled {
+			forListener = append(forListener, impression)
+		}
 	}
 
-	if s.listenerEnabled {
-		forListener = forLog
-	}
-
-	return forLog, forListener
+	return make([]dtos.Impression, 0, 0), forListener
 }
 
 // ApplySingle description
