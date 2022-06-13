@@ -37,10 +37,10 @@ func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dt
 
 	for _, impression := range impressions {
 		s.apply(&impression, now)
+	}
 
-		if s.listenerEnabled {
-			forListener = append(forListener, impression)
-		}
+	if s.listenerEnabled {
+		forListener = forLog
 	}
 
 	return forLog, forListener
