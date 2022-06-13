@@ -44,14 +44,14 @@ func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression,
 	forLog := make([]dtos.Impression, 0, len(impressions))
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
-	for _, impression := range impressions {
-		if s.apply(&impression, now) {
-			forLog = append(forLog, impression)
+	for index := range impressions {
+		if s.apply(&impressions[index], now) {
+			forLog = append(forLog, impressions[index])
 		}
+	}
 
-		if s.listenerEnabled {
-			forListener = append(forListener, impression)
-		}
+	if s.listenerEnabled {
+		forListener = impressions
 	}
 
 	s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))

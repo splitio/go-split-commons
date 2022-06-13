@@ -29,13 +29,14 @@ func (s *DebugImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []d
 	forLog := make([]dtos.Impression, 0, len(impressions))
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
-	for _, impression := range impressions {
-		s.apply(&impression)
-		forLog = append(forLog, impression)
+	for index := range impressions {
+		s.apply(&impressions[index])
 	}
 
+	forLog = impressions
+
 	if s.listenerEnabled {
-		forListener = forLog
+		forListener = impressions
 	}
 
 	return forLog, forListener

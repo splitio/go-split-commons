@@ -34,12 +34,12 @@ func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dt
 	now := time.Now().UTC().UnixNano()
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
-	for _, impression := range impressions {
-		s.apply(&impression, now)
+	for index := range impressions {
+		s.apply(&impressions[index], now)
+	}
 
-		if s.listenerEnabled {
-			forListener = append(forListener, impression)
-		}
+	if s.listenerEnabled {
+		forListener = impressions
 	}
 
 	return make([]dtos.Impression, 0, 0), forListener
