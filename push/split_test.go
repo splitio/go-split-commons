@@ -15,12 +15,8 @@ func TestSplitUpdateWorker(t *testing.T) {
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
-		SynchronizeSplitsCall: func(till *int64, requestNoCache bool) error {
+		SynchronizeSplitsCall: func(till *int64) error {
 			atomic.AddInt32(&count, 1)
-
-			if !requestNoCache {
-				t.Error("should request that no cached responsed are returned.")
-			}
 
 			if *till != 123456789 && *till != 223456789 {
 				t.Error("Unexpected passed till")

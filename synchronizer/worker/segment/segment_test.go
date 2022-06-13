@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory/mutexmap"
@@ -39,9 +40,9 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, requestNoCache bool) (*dtos.SegmentChangesDTO, error) {
-			if requestNoCache {
-				t.Error("should not have requested no cache")
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
+				t.Error("should have requested no cache")
 			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
@@ -143,8 +144,8 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-			if !noCache {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
 				t.Error("should have requested no cache")
 			}
 			if name != "segment1" && name != "segment2" {
@@ -220,7 +221,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -262,7 +263,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
 
-	res2, err := segmentSync.SynchronizeSegment("segment1", nil, false)
+	res2, err := segmentSync.SynchronizeSegment("segment1", nil)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -334,7 +335,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -419,7 +420,7 @@ func TestSegmentTill(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 		},
@@ -435,12 +436,12 @@ func TestSegmentTill(t *testing.T) {
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	var till int64 = 1
-	res, err := segmentSync.SynchronizeSegment("segment1", &till, false)
+	res, err := segmentSync.SynchronizeSegment("segment1", &till)
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res.UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	res, err = segmentSync.SynchronizeSegment("segment1", &till, false)
+	res, err = segmentSync.SynchronizeSegment("segment1", &till)
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{}, res.UpdatedKeys, "")
 	if err != nil {
 		t.Error("It should not return err")
@@ -450,5 +451,163 @@ func TestSegmentTill(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 2 {
 		t.Error("It should be called twice")
+	}
+}
+
+func TestSegmentCDNBypass(t *testing.T) {
+	addedS1 := []string{"item1", "item2", "item3", "item4"}
+	var call int64
+	var notifyEventCalled int64
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.Update([]dtos.SplitDTO{
+		{
+			Name: "split1",
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "WHITELIST",
+					Label:         "Cond1",
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Combiner: "AND",
+						Matchers: []dtos.MatcherDTO{
+							{
+								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+									SegmentName: "segment1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil, 1)
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			switch called := atomic.LoadInt64(&call); {
+			case called == 1:
+				if fetchOptions.ChangeNumber != nil {
+					t.Error("It should be nil")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
+			case called >= 2 && called <= 11:
+				if fetchOptions.ChangeNumber != nil {
+					t.Error("It should be nil")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
+			case called == 12:
+				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
+					t.Error("ChangeNumber flag should be set with value 2")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 3, Till: 3}, nil
+			}
+			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
+		},
+	}
+
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+
+	segmentSync.onDemandFetchBackoffBase = 1
+	segmentSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
+
+	var till int64 = 3
+	res, err := segmentSync.SynchronizeSegment("segment1", &till)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res.UpdatedKeys, "")
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if atomic.LoadInt64(&call) != 12 {
+		t.Error("It should be twelve times")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
+	}
+}
+
+func TestSegmentCDNBypassLimit(t *testing.T) {
+	addedS1 := []string{"item1", "item2", "item3", "item4"}
+	var call int64
+	var notifyEventCalled int64
+
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.Update([]dtos.SplitDTO{
+		{
+			Name: "split1",
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "WHITELIST",
+					Label:         "Cond1",
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Combiner: "AND",
+						Matchers: []dtos.MatcherDTO{
+							{
+								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+									SegmentName: "segment1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil, 1)
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			switch called := atomic.LoadInt64(&call); {
+			case called == 1:
+				if fetchOptions.ChangeNumber != nil {
+					t.Error("It should be nil")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
+			case called > 1 && called <= 11:
+				if fetchOptions.ChangeNumber != nil {
+					t.Error("It should be nil")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
+			case called >= 12:
+				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
+					t.Error("ChangeNumber flag should be set with value 2")
+				}
+				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
+			}
+			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
+		},
+	}
+
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+
+	segmentSync.onDemandFetchBackoffBase = 1
+	segmentSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
+
+	var till int64 = 3
+	res, err := segmentSync.SynchronizeSegment("segment1", &till)
+	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res.UpdatedKeys, "")
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if atomic.LoadInt64(&call) != 21 {
+		t.Error("It should be twenty one times")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
 	}
 }
