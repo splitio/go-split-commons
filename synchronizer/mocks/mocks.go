@@ -4,7 +4,7 @@ import "time"
 
 // MockSynchronizer mock implementation
 type MockSynchronizer struct {
-	SyncAllCall                    func(bool) error
+	SyncAllCall                    func() error
 	SynchronizeSplitsCall          func(till *int64) error
 	SynchronizeSegmentCall         func(segmentName string, till *int64) error
 	StartPeriodicFetchingCall      func()
@@ -16,8 +16,8 @@ type MockSynchronizer struct {
 }
 
 // SyncAll mock
-func (m *MockSynchronizer) SyncAll(requestNoCache bool) error {
-	return m.SyncAllCall(requestNoCache)
+func (m *MockSynchronizer) SyncAll() error {
+	return m.SyncAllCall()
 }
 
 // SynchronizeSplits mock

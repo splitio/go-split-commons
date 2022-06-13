@@ -1,7 +1,7 @@
 package mocks
 
 type LocalSyncMock struct {
-	SyncAllCall                    func(requestNoCache bool) error
+	SyncAllCall                    func() error
 	SynchronizeSplitsCall          func(till *int64) error
 	LocalKillCall                  func(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegmentCall         func(segmentName string, till *int64) error
@@ -11,8 +11,8 @@ type LocalSyncMock struct {
 	StopPeriodicDataRecordingCall  func()
 }
 
-func (l *LocalSyncMock) SyncAll(requestNoCache bool) error {
-	return l.SyncAllCall(requestNoCache)
+func (l *LocalSyncMock) SyncAll() error {
+	return l.SyncAllCall()
 }
 
 func (l *LocalSyncMock) SynchronizeSplits(till *int64) error {
