@@ -38,7 +38,7 @@ type Workers struct {
 
 // Synchronizer interface for syncing data to and from splits servers
 type Synchronizer interface {
-	SyncAll(requestNoCache bool) error
+	SyncAll() error
 	SynchronizeSplits(till *int64) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64) error
@@ -105,12 +105,12 @@ func (s *SynchronizerImpl) dataFlusher() {
 }
 
 // SyncAll syncs splits and segments
-func (s *SynchronizerImpl) SyncAll(requestNoCache bool) error {
+func (s *SynchronizerImpl) SyncAll() error {
 	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	if err != nil {
 		return err
 	}
-	_, err = s.workers.SegmentFetcher.SynchronizeSegments(requestNoCache)
+	_, err = s.workers.SegmentFetcher.SynchronizeSegments()
 	return err
 }
 

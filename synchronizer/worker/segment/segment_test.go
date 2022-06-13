@@ -59,7 +59,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 
 	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	_, err := segmentSync.SynchronizeSegments(false)
+	_, err := segmentSync.SynchronizeSegments()
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -173,7 +173,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 
 	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	res, err := segmentSync.SynchronizeSegments(true)
+	res, err := segmentSync.SynchronizeSegments()
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item6", "item7", "item8"}, res["segment2"].UpdatedKeys, "")
 	if err != nil {
@@ -247,7 +247,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
-	res, err := segmentSync.SynchronizeSegments(false)
+	res, err := segmentSync.SynchronizeSegments()
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -362,7 +362,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
-	res, err := segmentSync.SynchronizeSegments(false)
+	res, err := segmentSync.SynchronizeSegments()
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item6", "item7", "item8"}, res["segment2"].UpdatedKeys, "")
 	if err != nil {

@@ -25,7 +25,7 @@ const (
 // Updater interface
 type Updater interface {
 	SynchronizeSegment(name string, till *int64) (*UpdateResult, error)
-	SynchronizeSegments(requestNoCache bool) (map[string]UpdateResult, error)
+	SynchronizeSegments() (map[string]UpdateResult, error)
 	SegmentNames() []interface{}
 	IsSegmentCached(segmentName string) bool
 }
@@ -185,7 +185,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 }
 
 // SynchronizeSegments syncs segments at once
-func (s *UpdaterImpl) SynchronizeSegments(requestNoCache bool) (map[string]UpdateResult, error) {
+func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
 	wg := sync.WaitGroup{}

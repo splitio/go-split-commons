@@ -21,7 +21,7 @@ import (
 
 func TestSynchronizerErr(t *testing.T) {
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall:                    func(bool) error { return nil },
+		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
@@ -63,7 +63,7 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall: func(bool) error {
+		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -139,7 +139,7 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall: func(bool) error {
+		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return errors.New("some error")
 		},
@@ -212,7 +212,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall: func(bool) error {
+		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -343,7 +343,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall: func(bool) error {
+		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -492,7 +492,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall: func(bool) error {
+		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
 		},
@@ -631,7 +631,7 @@ func TestStreamingPaused(t *testing.T) {
 
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
-		SyncAllCall:                    func(bool) error { return nil },
+		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
@@ -715,7 +715,7 @@ func TestStreamingPaused(t *testing.T) {
 func TestOccupancyFlicker(t *testing.T) {
 	syncMock := &mocks.MockSynchronizer{
 		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 2 * time.Minute },
-		SyncAllCall:                    func(bool) error { return nil },
+		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},

@@ -33,7 +33,7 @@ func NewLocal(period int, splitAPI *api.SplitAPI, splitStorage storage.SplitStor
 }
 
 // SyncAll syncs splits and segments
-func (s *Local) SyncAll(requestNoCache bool) error {
+func (s *Local) SyncAll() error {
 	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
 	return err
 }

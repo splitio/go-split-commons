@@ -68,7 +68,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
 	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
-	err := syncForTest.SyncAll(true)
+	err := syncForTest.SyncAll()
 	if err == nil {
 		t.Error("It should return error")
 	}
@@ -157,7 +157,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
 	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
-	err := syncForTest.SyncAll(false)
+	err := syncForTest.SyncAll()
 	if err == nil {
 		t.Error("It should return error")
 	}
@@ -267,7 +267,7 @@ func TestSyncAllOk(t *testing.T) {
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
 	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil, appMonitorMock)
-	err := syncForTest.SyncAll(true)
+	err := syncForTest.SyncAll()
 	if err != nil {
 		t.Error("It should not return error")
 	}
