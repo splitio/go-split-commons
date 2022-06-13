@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/provisional/strategy"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
@@ -18,7 +18,7 @@ type ImpressionsCountRecorder interface {
 
 // RecorderSingle struct for impressionsCount sync
 type RecorderSingle struct {
-	impressionsCounter *provisional.ImpressionsCounter
+	impressionsCounter *strategy.ImpressionsCounter
 	impressionRecorder service.ImpressionsRecorder
 	metadata           dtos.Metadata
 	logger             logging.LoggerInterface
@@ -27,7 +27,7 @@ type RecorderSingle struct {
 
 // NewRecorderSingle creates new impressionsCount synchronizer for posting impressionsCount
 func NewRecorderSingle(
-	impressionsCounter *provisional.ImpressionsCounter,
+	impressionsCounter *strategy.ImpressionsCounter,
 	impressionRecorder service.ImpressionsRecorder,
 	metadata dtos.Metadata,
 	logger logging.LoggerInterface,

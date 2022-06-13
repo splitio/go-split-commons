@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/provisional/strategy"
 	"github.com/splitio/go-split-commons/v4/service/mocks"
 	st "github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
@@ -30,7 +30,7 @@ func TestImpressionCountSyncTask(t *testing.T) {
 		},
 	}
 
-	impManager := provisional.NewImpressionsCounter()
+	impManager := strategy.NewImpressionsCounter()
 	impressionsCountTask := NewRecordImpressionsCountTask(impressionscount.NewRecorderSingle(impManager, impressionMockRecorder, dtos.Metadata{}, logger, telemetryMockStorage), logger)
 
 	impressionsCountTask.Start()

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/provisional"
+	"github.com/splitio/go-split-commons/v4/provisional/strategy"
 	"github.com/splitio/go-split-commons/v4/service/mocks"
 	st "github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/telemetry"
@@ -30,7 +30,7 @@ func TestImpressionsCountRecorderError(t *testing.T) {
 		},
 	}
 
-	impressionsCountSync := NewRecorderSingle(provisional.NewImpressionsCounter(), impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
+	impressionsCountSync := NewRecorderSingle(strategy.NewImpressionsCounter(), impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	err := impressionsCountSync.SynchronizeImpressionsCount()
 	if err == nil {
@@ -93,7 +93,7 @@ func TestImpressionsCountRecorder(t *testing.T) {
 		},
 	}
 
-	impCounter := provisional.NewImpressionsCounter()
+	impCounter := strategy.NewImpressionsCounter()
 	impressionsCountSync := NewRecorderSingle(impCounter, impressionMockRecorder, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage)
 
 	impCounter.Inc("some", now, 1)
