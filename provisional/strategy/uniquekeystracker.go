@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/splitio/go-split-commons/v4/storage"
@@ -10,6 +11,7 @@ import (
 // UniqueKeysTracker interface
 type UniqueKeysTracker interface {
 	Track(featureName string, key string) bool
+	PopAll() map[string]*set.ThreadUnsafeSet
 }
 
 // UniqueKeysTrackerImpl description
@@ -47,4 +49,15 @@ func (t *UniqueKeysTrackerImpl) Track(featureName string, key string) bool {
 	t.cache[featureName].Add(key)
 
 	return true
+}
+
+// PopAll returns all the elements stored in the cache and resets the cache
+func (t *UniqueKeysTrackerImpl) PopAll() map[string]*set.ThreadUnsafeSet {
+	fmt.Println("POP ALL")
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	toReturn := t.cache
+	t.cache = make(map[string]*set.ThreadUnsafeSet)
+
+	return toReturn
 }
