@@ -84,10 +84,3 @@ type AdvancedConfig struct {
 	SplitsRefreshRate      int
 	SegmentsRefreshRate    int
 }
-
-// ManagerConfig exposes configurable parameters for ImpressionManager
-type ManagerConfig struct {
-	OperationMode   string
-	ImpressionsMode string
-	ListenerEnabled bool
-}

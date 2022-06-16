@@ -22,6 +22,17 @@ func GetStreamingEvent(eventType int, data int64) *dtos.StreamingEvent {
 	return nil
 }
 
+func getImpressionMode(cfg InitConfig) int {
+	switch cfg.ImpressionsMode {
+	case conf.ImpressionsModeDebug:
+		return ImpressionsModeDebug
+	case conf.ImpressionsModeNone:
+		return ImpressionsModeNone
+	default:
+		return ImpressionsModeOptimized
+	}
+}
+
 func getURLOverrides(cfg conf.AdvancedConfig) dtos.URLOverrides {
 	defaults := conf.GetDefaultAdvancedConfig()
 	return dtos.URLOverrides{

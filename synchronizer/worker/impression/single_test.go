@@ -33,7 +33,7 @@ func TestImpressionRecorderError(t *testing.T) {
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
-	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
+	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage)
 	err := impressionSync.SynchronizeImpressions(50)
 	if err == nil {
 		t.Error("It should return err")
@@ -53,7 +53,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 	impressionMockRecorder := recorderMock.MockImpressionRecorder{}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
 
-	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
+	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage)
 
 	err := impressionSync.SynchronizeImpressions(50)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestSynhronizeEventErrorRecorder(t *testing.T) {
 		},
 	}
 
-	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
+	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage)
 	err := impressionSync.SynchronizeImpressions(50)
 	if err == nil {
 		t.Error("It should return err")
@@ -167,7 +167,7 @@ func TestImpressionRecorder(t *testing.T) {
 		},
 	}
 
-	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage)
+	impressionSync := NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage)
 
 	err := impressionSync.SynchronizeImpressions(50)
 	if err != nil {
@@ -242,7 +242,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger, runtimeTelemetry)
 	impressionStorage.LogImpressions([]dtos.Impression{impression1, impression2, impression3})
 
-	impressionSync := NewRecorderSingle(impressionStorage, impressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{OperationMode: conf.Standalone, ImpressionsMode: conf.ImpressionsModeOptimized}, runtimeTelemetry)
+	impressionSync := NewRecorderSingle(impressionStorage, impressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeOptimized, runtimeTelemetry)
 
 	impressionSync.SynchronizeImpressions(50)
 
@@ -317,7 +317,7 @@ func TestImpressionLastSeen(t *testing.T) {
 	impressionStorage := mutexqueue.NewMQImpressionsStorage(100, nil, logger, runtimeTelemetry)
 	impressionStorage.LogImpressions([]dtos.Impression{impression1})
 
-	impressionSync := NewRecorderSingle(impressionStorage, impressionRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, runtimeTelemetry)
+	impressionSync := NewRecorderSingle(impressionStorage, impressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, runtimeTelemetry)
 
 	impressionSync.SynchronizeImpressions(50)
 
