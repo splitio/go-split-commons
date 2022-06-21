@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -30,19 +29,20 @@ func TestUniqueKeysTask(t *testing.T) {
 		PopStreamingEventsCall:     func() []dtos.StreamingEvent { return []dtos.StreamingEvent{} },
 		GetSessionLengthCall:       func() int64 { return 0 },
 		PopTagsCall:                func() []string { return []string{} },
-		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
-			if resource != telemetry.TelemetrySync {
-				t.Error("Resource should be telemetry")
-			}
-		},
-		RecordSyncLatencyCall: func(resource int, latency time.Duration) {
-			if resource != telemetry.TelemetrySync {
-				t.Error("Resource should be telemetry")
-			}
+		RecordSuccessfulSyncCall:   func(resource int, tm time.Time) {},
+		RecordSyncLatencyCall:      func(resource int, latency time.Duration) {},
+		RecordUniqueKeysCall: func(uniques dtos.Uniques) error {
+			return nil
 		},
 	}
 	mockedTelemetryHTTP := mocks.MockTelemetryRecorder{
 		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error {
+			return nil
+		},
+		RecordUniqueKeysCall: func(uniques dtos.Uniques, metadata dtos.Metadata) error {
+			if len(uniques.Keys) != 2 {
+				t.Error("Should be 2")
+			}
 			call++
 			return nil
 		},
@@ -67,7 +67,7 @@ func TestUniqueKeysTask(t *testing.T) {
 
 	filter := st.MockFilter{
 		AddCall:      func(data string) {},
-		ContainsCall: func(data string) bool { return true },
+		ContainsCall: func(data string) bool { return false },
 		ClearCall:    func() {},
 	}
 	tracker := strategy.NewUniqueKeysTracker(filter)
@@ -78,7 +78,19 @@ func TestUniqueKeysTask(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
 
-	fmt.Println(task)
+	if !tracker.Track("tratment-1", "key-1") {
+		t.Error("Should be true")
+	}
+	if !tracker.Track("tratment-1", "key-2") {
+		t.Error("Should be true")
+	}
+	if !tracker.Track("tratment-2", "key-1") {
+		t.Error("Should be true")
+	}
+	if !tracker.Track("tratment-2", "key-2") {
+		t.Error("Should be true")
+	}
+
 	task.Start()
 	time.Sleep(3 * time.Second)
 
@@ -87,7 +99,7 @@ func TestUniqueKeysTask(t *testing.T) {
 	}
 
 	task.Stop(true)
-	if call != 2 {
+	if call != 1 {
 		t.Error("Request not received")
 	}
 

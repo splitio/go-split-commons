@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -133,19 +132,19 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 
 // SynchronizeUniqueKeys syncs unique keys
 func (e *RecorderSingle) SynchronizeUniqueKeys(uniques map[string]*set.ThreadUnsafeSet) error {
-	fmt.Println("RECORDER")
-	fmt.Println(uniques)
-	//uniqueKeys := getUniqueKeysDto(uniques)
-	/*
-		err := e.telemetryRecorder.RecordUniqueKeys(uniqueKeys, e.metadata)
+	if len(uniques) < 1 {
+		e.logger.Error("")
+		return nil
+	}
 
-		if err != nil {
-			e.logger.Error("Could not log unique keys", err.Error())
+	uniqueKeys := getUniqueKeysDto(uniques)
 
-			return err
-		}
+	err := e.telemetryRecorder.RecordUniqueKeys(uniqueKeys, e.metadata)
+	if err != nil {
+		e.logger.Error("Could not log unique keys", err.Error())
 
+		return err
+	}
 
-	*/
 	return nil
 }
