@@ -54,7 +54,6 @@ func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression,
 		forListener = impressions
 	}
 
-	// TODO (sanzmauro): i removed telemtry.ImpressionsDeduped because we have cycle dependecy. find the way to do better this.
 	s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))
 
 	return forLog, forListener
