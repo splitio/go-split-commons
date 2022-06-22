@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
@@ -68,9 +69,9 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, noCache bool) (*dtos.SegmentChangesDTO, error) {
-			if noCache {
-				t.Error("no cache shold be false")
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
+				t.Error("no cache shold be true")
 			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")

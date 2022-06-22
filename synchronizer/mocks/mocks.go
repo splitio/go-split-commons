@@ -4,9 +4,9 @@ import "time"
 
 // MockSynchronizer mock implementation
 type MockSynchronizer struct {
-	SyncAllCall                    func(bool) error
-	SynchronizeSplitsCall          func(till *int64, requestNoCache bool) error
-	SynchronizeSegmentCall         func(segmentName string, till *int64, requestNoCache bool) error
+	SyncAllCall                    func() error
+	SynchronizeSplitsCall          func(till *int64) error
+	SynchronizeSegmentCall         func(segmentName string, till *int64) error
 	StartPeriodicFetchingCall      func()
 	StopPeriodicFetchingCall       func()
 	StartPeriodicDataRecordingCall func()
@@ -16,18 +16,18 @@ type MockSynchronizer struct {
 }
 
 // SyncAll mock
-func (m *MockSynchronizer) SyncAll(requestNoCache bool) error {
-	return m.SyncAllCall(requestNoCache)
+func (m *MockSynchronizer) SyncAll() error {
+	return m.SyncAllCall()
 }
 
 // SynchronizeSplits mock
-func (m *MockSynchronizer) SynchronizeSplits(till *int64, requestNoCache bool) error {
-	return m.SynchronizeSplitsCall(till, requestNoCache)
+func (m *MockSynchronizer) SynchronizeSplits(till *int64) error {
+	return m.SynchronizeSplitsCall(till)
 }
 
 // SynchronizeSegment mock
-func (m *MockSynchronizer) SynchronizeSegment(segmentName string, till *int64, requestNoCache bool) error {
-	return m.SynchronizeSegmentCall(segmentName, till, requestNoCache)
+func (m *MockSynchronizer) SynchronizeSegment(segmentName string, till *int64) error {
+	return m.SynchronizeSegmentCall(segmentName, till)
 }
 
 // StartPeriodicFetching mock

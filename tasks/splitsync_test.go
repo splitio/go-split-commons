@@ -7,6 +7,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
 	"github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
@@ -50,9 +51,9 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, noCache bool) (*dtos.SplitChangesDTO, error) {
-			if noCache {
-				t.Error("noCache should be false.")
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
+				t.Error("noCache should be true.")
 			}
 			atomic.AddInt64(&call, 1)
 			if changeNumber != -1 {
