@@ -25,12 +25,11 @@ func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger loggin
 	}
 }
 
-func (r *ImpressionStorage) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
+func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	pipe := r.client.Pipeline()
-
 	for _, value := range impressions.PerFeature {
 		pipe.HIncrBy(r.redisKey, fmt.Sprintf("%s::%d", value.FeatureName, value.TimeFrame), value.RawCount)
 	}
@@ -40,6 +39,8 @@ func (r *ImpressionStorage) RecordImpressionsCount(impressions dtos.ImpressionsC
 		r.logger.Error("Error incrementing impressions count")
 		return err
 	}
+
+	fmt.Println(len(res))
 
 	return nil
 }
