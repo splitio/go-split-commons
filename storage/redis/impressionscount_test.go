@@ -10,9 +10,7 @@ import (
 )
 
 func TestRecordImpressionsCount(t *testing.T) {
-	// TODO: check the prefix
-	// expectedKey := "someprefix.SPLITIO.impressions.count"
-	expectedKey := "SPLITIO.impressions.count"
+	expectedKey := "someprefix.SPLITIO.impressions.count"
 
 	mockedRedisClient := mocks.MockClient{
 		PipelineCall: func() redis.Pipeline {
@@ -31,10 +29,7 @@ func TestRecordImpressionsCount(t *testing.T) {
 				ExecCall: func() ([]redis.Result, error) {
 					return []redis.Result{
 						&mocks.MockResultOutput{},
-						&mocks.MockResultOutput{
-							ErrCall: func() error { return nil },
-							IntCall: func() int64 { return 3 },
-						}}, nil
+						&mocks.MockResultOutput{}}, nil
 				},
 			}
 		},
@@ -61,6 +56,4 @@ func TestRecordImpressionsCount(t *testing.T) {
 	if err != nil {
 		t.Error("It should not return error")
 	}
-
-	t.Error("It should not return error")
 }

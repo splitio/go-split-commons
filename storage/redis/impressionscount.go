@@ -40,7 +40,5 @@ func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.Impres
 		return err
 	}
 
-	fmt.Println(len(res))
-
 	return nil
 }
