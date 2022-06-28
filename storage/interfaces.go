@@ -163,6 +163,11 @@ type TelemetryPeeker interface {
 	PeekHTTPErrors(resource int) map[int]int
 }
 
+// ImpressionsCountProducer interface
+type ImpressionsCountProducer interface {
+	RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error
+}
+
 // --- Wide Interfaces
 
 // SplitStorage wraps consumer & producer interfaces
