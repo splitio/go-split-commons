@@ -47,7 +47,6 @@ func (m *RecorderRedis) SynchronizeImpressionsCount() error {
 
 	err := m.impressionsCountStorage.RecordImpressionsCount(pf)
 	if err != nil {
-		m.logger.Debug("")
 		return err
 	}
 

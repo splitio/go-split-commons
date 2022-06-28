@@ -351,7 +351,7 @@ func (i *TelemetryStorage) RecordBURTimeout() {
 }
 
 func (i *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
-	// TODO: CHECK THIS
+	// No-op
 	return nil
 }
 
