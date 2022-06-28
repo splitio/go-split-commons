@@ -13,6 +13,7 @@ const (
 	KeyConfig           = "SPLITIO.telemetry.config"                                 // config Key
 	KeyLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
 	KeyException        = "SPLITIO.telemetry.exceptions"                             // exception Key
+	KeyUniquekeys       = "SPLITIO.uniquekeys"                                       // Unique keys
 	FieldLatency        = "{sdkVersion}/{machineName}/{machineIP}/{method}/{bucket}" // latency field template
 	FieldException      = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
 	TTLImpressions      = 3600                                                       // impressions default TTL

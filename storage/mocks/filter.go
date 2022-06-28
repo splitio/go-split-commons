@@ -8,16 +8,16 @@ type MockFilter struct {
 }
 
 // Add mock
-func (m *MockFilter) Add(data string) {
+func (m MockFilter) Add(data string) {
 	m.AddCall(data)
 }
 
 // Contains mock
-func (m *MockFilter) Contains(data string) bool {
+func (m MockFilter) Contains(data string) bool {
 	return m.ContainsCall(data)
 }
 
 // Clear mock
-func (m *MockFilter) Clear() {
+func (m MockFilter) Clear() {
 	m.ClearCall()
 }

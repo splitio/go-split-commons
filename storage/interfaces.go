@@ -101,6 +101,7 @@ type TelemetryConfigProducer interface {
 	RecordConfigData(configData dtos.Config) error
 	RecordNonReadyUsage()
 	RecordBURTimeout()
+	RecordUniqueKeys(uniques dtos.Uniques) error
 }
 
 // TelemetryEvaluationProducer for evaluation
