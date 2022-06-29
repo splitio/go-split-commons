@@ -31,7 +31,7 @@ func TestImpressionCountSyncTask(t *testing.T) {
 	}
 
 	impManager := strategy.NewImpressionsCounter()
-	impressionsCountTask := NewRecordImpressionsCountTask(impressionscount.NewRecorderSingle(impManager, impressionMockRecorder, dtos.Metadata{}, logger, telemetryMockStorage), logger)
+	impressionsCountTask := NewRecordImpressionsCountTask(impressionscount.NewRecorderSingle(impManager, impressionMockRecorder, dtos.Metadata{}, logger, telemetryMockStorage), logger, 1800)
 
 	impressionsCountTask.Start()
 	time.Sleep(1 * time.Second)
