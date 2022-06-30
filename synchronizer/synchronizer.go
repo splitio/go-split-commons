@@ -25,6 +25,7 @@ type SplitTasks struct {
 	EventSyncTask            tasks.Task
 	ImpressionsCountSyncTask tasks.Task
 	UniqueKeysTask           tasks.Task
+	CleanFilterTask          tasks.Task
 }
 
 // Workers struct for workers
@@ -156,6 +157,9 @@ func (s *SynchronizerImpl) StartPeriodicDataRecording() {
 	if s.splitTasks.UniqueKeysTask != nil {
 		s.splitTasks.UniqueKeysTask.Start()
 	}
+	if s.splitTasks.CleanFilterTask != nil {
+		s.splitTasks.CleanFilterTask.Start()
+	}
 }
 
 // StopPeriodicDataRecording stops periodic recorders tasks
@@ -174,6 +178,9 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	}
 	if s.splitTasks.UniqueKeysTask != nil {
 		s.splitTasks.UniqueKeysTask.Stop(true)
+	}
+	if s.splitTasks.CleanFilterTask != nil {
+		s.splitTasks.CleanFilterTask.Stop(true)
 	}
 }
 

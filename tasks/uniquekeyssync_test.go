@@ -95,7 +95,7 @@ func TestUniqueKeysTask(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	if !task.IsRunning() {
-		t.Error("Telemetry task should be running")
+		t.Error("UniqueKeys task should be running")
 	}
 
 	task.Stop(true)
