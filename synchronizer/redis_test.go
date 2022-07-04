@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v4/synchronizer/mocks"
-	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestSynchronizerManagerRedis(t *testing.T) {
@@ -18,7 +17,7 @@ func TestSynchronizerManagerRedis(t *testing.T) {
 		},
 	}
 
-	syncManager := NewSynchronizerManagerRedis(syncMock, logging.NewLogger(nil))
+	syncManager := NewSynchronizerManagerRedis(syncMock)
 
 	if !syncManager.IsRunning() {
 		t.Error("SyncManager should be running")

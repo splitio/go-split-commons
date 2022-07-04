@@ -1,23 +1,14 @@
 package synchronizer
 
-import (
-	"github.com/splitio/go-toolkit/v5/logging"
-)
-
 // ManagerImpl struct
 type ManagerRedisImpl struct {
 	synchronizer Synchronizer
-	logger       logging.LoggerInterface
 }
 
 // NewSynchronizerManagerRedis creates new sync manager for redis
-func NewSynchronizerManagerRedis(
-	synchronizer Synchronizer,
-	logger logging.LoggerInterface,
-) Manager {
+func NewSynchronizerManagerRedis(synchronizer Synchronizer) Manager {
 	return &ManagerRedisImpl{
 		synchronizer: synchronizer,
-		logger:       logger,
 	}
 }
 
