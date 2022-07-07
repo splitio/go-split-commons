@@ -22,5 +22,5 @@ func NewCleanFilterTask(
 		filter.Clear()
 	}
 
-	return asynctask.NewAsyncTask("SubmitTelemetry", record, period, nil, onStop, logger)
+	return asynctask.NewAsyncTask("CleanFilter", record, period, nil, onStop, logger)
 }
