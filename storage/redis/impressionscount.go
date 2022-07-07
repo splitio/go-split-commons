@@ -50,8 +50,6 @@ func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.Impres
 		return fmt.Errorf("Error incrementing impressions count")
 	}
 
-	fmt.Println(shouldSetExpirationKey(&impressions, res))
-
 	// Checks if expiration needs to be set
 	if shouldSetExpirationKey(&impressions, res) {
 		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
