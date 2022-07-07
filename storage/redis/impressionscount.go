@@ -3,6 +3,7 @@ package redis
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
@@ -27,6 +28,10 @@ func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger loggin
 }
 
 func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
+	if len(impressions.PerFeature) < 1 {
+		return nil
+	}
+
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -35,11 +40,39 @@ func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.Impres
 		pipe.HIncrBy(r.redisKey, fmt.Sprintf("%s::%d", value.FeatureName, value.TimeFrame), value.RawCount)
 	}
 
+	pipe.HLen(r.redisKey)
 	res, err := pipe.Exec()
-	if len(res) < len(impressions.PerFeature) || err != nil {
-		r.logger.Error("Error incrementing impressions count")
+	if err != nil {
+		r.logger.Error("Error incrementing impressions count, %w", err)
 		return err
+	}
+	if len(res) < len(impressions.PerFeature) {
+		return fmt.Errorf("Error incrementing impressions count")
+	}
+
+	fmt.Println(shouldSetExpirationKey(&impressions, res))
+
+	// Checks if expiration needs to be set
+	if shouldSetExpirationKey(&impressions, res) {
+		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
+		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
+		if result == false {
+			r.logger.Error("Something were wrong setting expiration for %s", r.redisKey)
+		}
 	}
 
 	return nil
+}
+
+func shouldSetExpirationKey(impressions *dtos.ImpressionsCountDTO, res []redis.Result) bool {
+	hlenRes := res[len(res)-1]
+
+	var totalCounts int64
+	var resCounts int64
+	for i := 0; i < len(impressions.PerFeature); i++ {
+		totalCounts += impressions.PerFeature[i].RawCount
+		resCounts += res[i].Int()
+	}
+
+	return totalCounts+int64(len(impressions.PerFeature)) == hlenRes.Int()+resCounts
 }

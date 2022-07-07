@@ -106,10 +106,19 @@ func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
 		return err
 	}
 
-	_, errPush := t.client.RPush(KeyUniquekeys, uniquesJSON)
+	inserted, errPush := t.client.RPush(KeyUniquekeys, uniquesJSON)
 	if errPush != nil {
 		t.logger.Error("Something were wrong pushing event to redis", errPush)
 		return errPush
+	}
+
+	// Checks if expiration needs to be set
+	if inserted == int64(len(uniquesJSON)) {
+		t.logger.Debug("Proceeding to set expiration for: ", KeyUniquekeys)
+		result := t.client.Expire(KeyUniquekeys, time.Duration(TTLUniquekeys)*time.Second)
+		if result == false {
+			t.logger.Error("Something were wrong setting expiration for %s", KeyUniquekeys)
+		}
 	}
 
 	return nil
