@@ -24,7 +24,7 @@ func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker Unique
 
 func (s *NoneImpl) apply(impression *dtos.Impression, now int64) bool {
 	s.impressionsCounter.Inc(impression.FeatureName, now, 1)
-	s.uniqueKeysTracker.Track(impression.FeatureName, impression.BucketingKey)
+	s.uniqueKeysTracker.Track(impression.FeatureName, impression.KeyName)
 
 	return false
 }
