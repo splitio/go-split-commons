@@ -1,36 +1,28 @@
 package synchronizer
 
 import (
-	"sync"
-	"sync/atomic"
-
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/sync"
 )
 
 // ManagerImpl struct
 type ManagerRedisImpl struct {
 	synchronizer Synchronizer
-	mutex        *sync.RWMutex
-	running      atomic.Value
+	running      sync.AtomicBool
 	logger       logging.LoggerInterface
 }
 
 // NewSynchronizerManagerRedis creates new sync manager for redis
 func NewSynchronizerManagerRedis(synchronizer Synchronizer, logger logging.LoggerInterface) Manager {
-	manager := &ManagerRedisImpl{
+	return &ManagerRedisImpl{
 		synchronizer: synchronizer,
-		mutex:        &sync.RWMutex{},
-		running:      atomic.Value{},
+		running:      *sync.NewAtomicBool(false),
 		logger:       logger,
 	}
-
-	manager.running.Store(false)
-
-	return manager
 }
 
 func (m *ManagerRedisImpl) Start() {
-	if !m.running.CompareAndSwap(false, true) {
+	if !m.running.TestAndSet() {
 		m.logger.Info("Manager is already running, skipping start")
 		return
 	}
@@ -38,7 +30,7 @@ func (m *ManagerRedisImpl) Start() {
 }
 
 func (m *ManagerRedisImpl) Stop() {
-	if !m.running.CompareAndSwap(true, false) {
+	if !m.running.TestAndClear() {
 		m.logger.Info("sync manager not yet running, skipping shutdown.")
 		return
 	}
@@ -46,8 +38,5 @@ func (m *ManagerRedisImpl) Stop() {
 }
 
 func (m *ManagerRedisImpl) IsRunning() bool {
-	m.mutex.RLock()
-	defer m.mutex.RUnlock()
-
-	return m.running.Load().(bool)
+	return m.running.IsSet()
 }

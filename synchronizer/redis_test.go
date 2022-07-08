@@ -21,6 +21,7 @@ func TestSynchronizerManagerRedis(t *testing.T) {
 	syncManager := NewSynchronizerManagerRedis(syncMock, logging.NewLogger(nil))
 
 	syncManager.Start()
+	syncManager.Start()
 	if call != 1 {
 		t.Error("Start should be called once.")
 	}
@@ -29,6 +30,7 @@ func TestSynchronizerManagerRedis(t *testing.T) {
 		t.Error("SyncManager should be running")
 	}
 
+	syncManager.Stop()
 	syncManager.Stop()
 	if call != 0 {
 		t.Error("Stop should be called once.")
