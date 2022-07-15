@@ -1,6 +1,8 @@
 package telemetry
 
-import "github.com/splitio/go-toolkit/v5/datastructures/set"
+import (
+	"github.com/splitio/go-split-commons/v4/dtos"
+)
 
 type NoOp struct{}
 
@@ -11,6 +13,6 @@ func (n *NoOp) SynchronizeStats() error {
 	return nil
 }
 
-func (n *NoOp) SynchronizeUniqueKeys(uniques map[string]*set.ThreadUnsafeSet) error {
+func (n *NoOp) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
 	return nil
 }
