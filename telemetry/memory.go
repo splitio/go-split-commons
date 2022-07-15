@@ -8,7 +8,6 @@ import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -131,15 +130,12 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (e *RecorderSingle) SynchronizeUniqueKeys(uniques map[string]*set.ThreadUnsafeSet) error {
-	if len(uniques) < 1 {
-		e.logger.Error("")
+func (e *RecorderSingle) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
+	if len(uniques.Keys) < 1 {
 		return nil
 	}
 
-	uniqueKeys := getUniqueKeysDto(uniques)
-
-	err := e.telemetryRecorder.RecordUniqueKeys(uniqueKeys, e.metadata)
+	err := e.telemetryRecorder.RecordUniqueKeys(uniques, e.metadata)
 	if err != nil {
 		e.logger.Error("Could not log unique keys", err.Error())
 

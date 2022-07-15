@@ -3,6 +3,7 @@ package strategy
 import (
 	"sync"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
@@ -10,7 +11,7 @@ import (
 // UniqueKeysTracker interface
 type UniqueKeysTracker interface {
 	Track(featureName string, key string) bool
-	PopAll() map[string]*set.ThreadUnsafeSet
+	PopAll() dtos.Uniques
 }
 
 // UniqueKeysTrackerImpl description
@@ -51,11 +52,34 @@ func (t *UniqueKeysTrackerImpl) Track(featureName string, key string) bool {
 }
 
 // PopAll returns all the elements stored in the cache and resets the cache
-func (t *UniqueKeysTrackerImpl) PopAll() map[string]*set.ThreadUnsafeSet {
+func (t *UniqueKeysTrackerImpl) PopAll() dtos.Uniques {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 	toReturn := t.cache
 	t.cache = make(map[string]*set.ThreadUnsafeSet)
 
-	return toReturn
+	return getUniqueKeysDto(toReturn)
+}
+
+func getUniqueKeysDto(uniques map[string]*set.ThreadUnsafeSet) dtos.Uniques {
+	uniqueKeys := dtos.Uniques{
+		Keys: make([]dtos.Key, 0, len(uniques)),
+	}
+
+	for name, keys := range uniques {
+		list := keys.List()
+		keysDto := make([]string, 0, len(list))
+
+		for _, value := range list {
+			keysDto = append(keysDto, value.(string))
+		}
+		keyDto := dtos.Key{
+			Feature: name,
+			Keys:    keysDto,
+		}
+
+		uniqueKeys.Keys = append(uniqueKeys.Keys, keyDto)
+	}
+
+	return uniqueKeys
 }

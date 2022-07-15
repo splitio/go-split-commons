@@ -3,7 +3,6 @@ package telemetry
 import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -42,10 +41,8 @@ func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady in
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (r *SynchronizerRedis) SynchronizeUniqueKeys(uniques map[string]*set.ThreadUnsafeSet) error {
-	uniqueKeys := getUniqueKeysDto(uniques)
-
-	err := r.storage.RecordUniqueKeys(uniqueKeys)
+func (r *SynchronizerRedis) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
+	err := r.storage.RecordUniqueKeys(uniques)
 	if err != nil {
 		r.logger.Error("Could not record the unique keys.", err.Error())
 	}
