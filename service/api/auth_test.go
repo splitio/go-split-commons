@@ -18,7 +18,7 @@ func TestAuthErr(t *testing.T) {
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
 			GetCall: func(service string, headers map[string]string) ([]byte, error) {
-				if service != "/auth" {
+				if service != "/v2/auth" {
 					t.Error("Wrong service passed")
 				}
 				return nil, errors.New("Some")
@@ -42,7 +42,7 @@ func TestAuthPushEnabledFalse(t *testing.T) {
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
 			GetCall: func(service string, headers map[string]string) ([]byte, error) {
-				if service != "/auth" {
+				if service != "/v2/auth" {
 					t.Error("Wrong service passed")
 				}
 				return []byte("{\"pushEnabled\":false,\"token\":\"\"}"), nil
@@ -73,7 +73,7 @@ func TestAuthPushEnabledTrue(t *testing.T) {
 	mockedAuth := AuthAPIClient{
 		client: mocks.ClientMock{
 			GetCall: func(service string, headers map[string]string) ([]byte, error) {
-				if service != "/auth" {
+				if service != "/v2/auth" {
 					t.Error("Wrong service passed")
 				}
 				return []byte("{\"pushEnabled\":true,\"token\":\"eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo\"}"), nil

@@ -1,5 +1,5 @@
 4.1.1 (Jul 15, 2022)
- - Removed v2 path from auth https://auth.split.io/api/.
+ - Fixed auth path for sync healthcheck.
 
 4.1.0 (Jun 13, 2022)
  - Updated dependency `gopkg.in/yaml` to `v3` for vulnerability fixes.
