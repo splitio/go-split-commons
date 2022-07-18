@@ -6,12 +6,11 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-const period = 3600 // 24 hours
-
 // NewRecordTelemetryTask creates a new telemtry recording task
 func NewCleanFilterTask(
 	filter storage.Filter,
 	logger logging.LoggerInterface,
+	period int,
 ) *asynctask.AsyncTask {
 	record := func(logger logging.LoggerInterface) error {
 		filter.Clear()

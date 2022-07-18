@@ -66,6 +66,13 @@ type EventMultiSdkConsumer interface {
 	PopNWithMetadata(n int64) ([]dtos.QueueStoredEventDTO, error)
 }
 
+// UniqueKeysMultiSdkConsumer defines the methods required to consume unique keys
+// from a stored shared by many sdks
+type UniqueKeysMultiSdkConsumer interface {
+	Count() int64
+	PopNRaw(int64) ([]string, int64, error)
+}
+
 // ImpressionStorageConsumer interface should be implemented by structs that offer popping impressions
 type ImpressionStorageConsumer interface {
 	Empty() bool

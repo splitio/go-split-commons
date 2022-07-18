@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // GetStreamingEvent get streaming event
@@ -52,26 +51,4 @@ func getRedudantActiveFactories(factoryInstances map[string]int64) int64 {
 		toReturn = toReturn + instances - 1
 	}
 	return toReturn
-}
-
-func getUniqueKeysDto(uniques map[string]*set.ThreadUnsafeSet) dtos.Uniques {
-	uniqueKeys := dtos.Uniques{
-		Keys: make([]dtos.Key, 0),
-	}
-
-	for name, keys := range uniques {
-		keysDto := make([]string, 0)
-
-		for _, value := range keys.List() {
-			keysDto = append(keysDto, value.(string))
-		}
-		keyDto := dtos.Key{
-			Feature: name,
-			Keys:    keysDto,
-		}
-
-		uniqueKeys.Keys = append(uniqueKeys.Keys, keyDto)
-	}
-
-	return uniqueKeys
 }

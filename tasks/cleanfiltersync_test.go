@@ -17,7 +17,7 @@ func TestCleanFilterTask(t *testing.T) {
 		},
 	}
 
-	task := NewCleanFilterTask(filter, logger)
+	task := NewCleanFilterTask(filter, logger, 100)
 
 	task.Start()
 	time.Sleep(3 * time.Second)
