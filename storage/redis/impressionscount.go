@@ -2,24 +2,25 @@ package redis
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
-type ImpressionsCountStorage struct {
+type ImpressionsCountStorageImp struct {
 	client   *redis.PrefixedRedisClient
 	mutex    *sync.Mutex
 	logger   logging.LoggerInterface
 	redisKey string
 }
 
-func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger logging.LoggerInterface) storage.ImpressionsCountProducer {
-	return &ImpressionsCountStorage{
+func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger logging.LoggerInterface) *ImpressionsCountStorageImp {
+	return &ImpressionsCountStorageImp{
 		client:   client,
 		mutex:    &sync.Mutex{},
 		logger:   logger,
@@ -27,7 +28,47 @@ func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger loggin
 	}
 }
 
-func (r *ImpressionsCountStorage) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
+func (r *ImpressionsCountStorageImp) GetImpressionsCount() (*dtos.ImpressionsCountDTO, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	res, err := r.client.HGetAll(r.redisKey)
+	if err != nil {
+		r.logger.Error("Error reading impressions count, %w", err)
+		return nil, err
+	}
+
+	toReturn := dtos.ImpressionsCountDTO{PerFeature: []dtos.ImpressionsInTimeFrameDTO{}}
+
+	for key, value := range res {
+		nameandtime := strings.Split(key, "::")
+		if len(nameandtime) != 2 {
+			r.logger.Error("Error spliting key from redis, %w", err)
+			continue
+		}
+		featureName := nameandtime[0]
+		timeFrame, err := strconv.ParseInt(nameandtime[1], 10, 64)
+		if err != nil {
+			r.logger.Error("Error parsing time frame from redis, %w", err)
+			continue
+		}
+		rawCount, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			r.logger.Error("Error parsing raw count from redis, %w", err)
+			continue
+		}
+
+		toReturn.PerFeature = append(toReturn.PerFeature, dtos.ImpressionsInTimeFrameDTO{
+			FeatureName: featureName,
+			TimeFrame:   timeFrame,
+			RawCount:    rawCount,
+		})
+	}
+
+	return &toReturn, nil
+}
+
+func (r *ImpressionsCountStorageImp) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
 	if len(impressions.PerFeature) < 1 {
 		return nil
 	}

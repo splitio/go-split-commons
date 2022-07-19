@@ -175,6 +175,11 @@ type ImpressionsCountProducer interface {
 	RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error
 }
 
+// ImpressionsCountProducer interface
+type ImpressionsCountConsumer interface {
+	GetImpressionsCount() (dtos.ImpressionsCountDTO, error)
+}
+
 // --- Wide Interfaces
 
 // SplitStorage wraps consumer & producer interfaces

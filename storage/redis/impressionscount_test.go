@@ -10,6 +10,49 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
+func TestGetImpressionsCount(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.impressions.count"
+	mockedRedisClient := mocks.MockClient{
+		HGetAllCall: func(key string) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+			return &mocks.MockResultOutput{
+				MapStringStringCall: func() (map[string]string, error) {
+					mapa := map[string]string{
+						"Feature-1::2222222": "5",
+						"Feature-2::5555555": "6",
+						"Feature-5::6666666": "7",
+					}
+
+					return mapa, nil
+				},
+			}
+		},
+	}
+
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	storage := NewImpressionsCountStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	result, _ := storage.GetImpressionsCount()
+
+	if len(result.PerFeature) != 3 {
+		t.Error("Len should be 3")
+	}
+
+	for _, impcount := range result.PerFeature {
+		if impcount.FeatureName == "Feature-1" && (impcount.RawCount != 5 || impcount.TimeFrame != 2222222) {
+			t.Errorf("Unexpected value for Feature-1. Expected : 5 - 2222222, Actual: %d - %d", impcount.RawCount, impcount.TimeFrame)
+		}
+		if impcount.FeatureName == "Feature-2" && (impcount.RawCount != 6 || impcount.TimeFrame != 5555555) {
+			t.Errorf("Unexpected value for Feature-2. Expected : 6 - 5555555, Actual: %d - %d", impcount.RawCount, impcount.TimeFrame)
+		}
+		if impcount.FeatureName == "Feature-5" && (impcount.RawCount != 7 || impcount.TimeFrame != 6666666) {
+			t.Errorf("Unexpected value for Feature-5. Expected : 7 - 6666666, Actual: %d - %d", impcount.RawCount, impcount.TimeFrame)
+		}
+	}
+}
+
 func TestRecordImpressionsCount(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.impressions.count"
 	hincrbyCall := 0
