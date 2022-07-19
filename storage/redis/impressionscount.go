@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 )
@@ -19,7 +20,7 @@ type ImpressionsCountStorageImp struct {
 	redisKey string
 }
 
-func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger logging.LoggerInterface) *ImpressionsCountStorageImp {
+func NewImpressionsCountStorage(client *redis.PrefixedRedisClient, logger logging.LoggerInterface) storage.ImpressionsCountStorage {
 	return &ImpressionsCountStorageImp{
 		client:   client,
 		mutex:    &sync.Mutex{},

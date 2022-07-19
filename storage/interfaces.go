@@ -177,7 +177,12 @@ type ImpressionsCountProducer interface {
 
 // ImpressionsCountProducer interface
 type ImpressionsCountConsumer interface {
-	GetImpressionsCount() (dtos.ImpressionsCountDTO, error)
+	GetImpressionsCount() (*dtos.ImpressionsCountDTO, error)
+}
+
+type ImpressionsCountStorage interface {
+	ImpressionsCountConsumer
+	ImpressionsCountProducer
 }
 
 // --- Wide Interfaces
