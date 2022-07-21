@@ -13,6 +13,16 @@ import (
 func TestGetImpressionsCount(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.impressions.count"
 	mockedRedisClient := mocks.MockClient{
+		DelCall: func(keys ...string) redis.Result {
+			if len(keys) != 1 && keys[0] != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, keys[0])
+			}
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) {
+					return int64(len(keys)), nil
+				},
+			}
+		},
 		HGetAllCall: func(key string) redis.Result {
 			if key != expectedKey {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)

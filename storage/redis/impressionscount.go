@@ -39,6 +39,8 @@ func (r *ImpressionsCountStorageImp) GetImpressionsCount() (*dtos.ImpressionsCou
 		return nil, err
 	}
 
+	r.client.Del(r.redisKey)
+
 	toReturn := dtos.ImpressionsCountDTO{PerFeature: []dtos.ImpressionsInTimeFrameDTO{}}
 
 	for key, value := range res {
