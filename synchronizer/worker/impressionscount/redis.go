@@ -1,7 +1,6 @@
 package impressionscount
 
 import (
-	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/provisional/strategy"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -31,19 +30,7 @@ func NewRecorderRedis(
 func (m *RecorderRedis) SynchronizeImpressionsCount() error {
 	impressionsCount := m.impressionsCounter.PopAll()
 
-	impressionsInTimeFrame := make([]dtos.ImpressionsInTimeFrameDTO, 0)
-	for key, count := range impressionsCount {
-		impressionInTimeFrame := dtos.ImpressionsInTimeFrameDTO{
-			FeatureName: key.FeatureName,
-			RawCount:    count,
-			TimeFrame:   key.TimeFrame,
-		}
-		impressionsInTimeFrame = append(impressionsInTimeFrame, impressionInTimeFrame)
-	}
-
-	pf := dtos.ImpressionsCountDTO{
-		PerFeature: impressionsInTimeFrame,
-	}
+	pf := impressionsCountMapper(impressionsCount)
 
 	err := m.impressionsCountStorage.RecordImpressionsCount(pf)
 	if err != nil {
