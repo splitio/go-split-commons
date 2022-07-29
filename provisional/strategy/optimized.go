@@ -1,8 +1,7 @@
 package strategy
 
 import (
-	"time"
-
+	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
@@ -27,11 +26,11 @@ func NewOptimizedImpl(impressionObserver ImpressionObserver, impressionCounter *
 	}
 }
 
-func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
+func (s *OptimizedImpl) apply(impression *dtos.Impression) bool {
 	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
-	s.impressionsCounter.Inc(impression.FeatureName, now, 1)
+	s.impressionsCounter.Inc(impression.FeatureName, impression.Time, 1)
 
-	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {
+	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(impression.Time) {
 		return true
 	}
 
@@ -40,12 +39,12 @@ func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
 
 // Apply track the total amount of evaluations and deduplicate the impressions.
 func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
-	now := time.Now().UTC().UnixNano()
 	forLog := make([]dtos.Impression, 0, len(impressions))
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
 	for index := range impressions {
-		if s.apply(&impressions[index], now) {
+		impressions[index].Strategy = util.ImpressionModeShortVersion(conf.ImpressionsModeOptimized)
+		if s.apply(&impressions[index]) {
 			forLog = append(forLog, impressions[index])
 		}
 	}
@@ -61,7 +60,14 @@ func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression,
 
 // ApplySingle track the total amount of evaluations and deduplicate the impressions.
 func (s *OptimizedImpl) ApplySingle(impression *dtos.Impression) bool {
-	now := time.Now().UTC().UnixNano()
+	if util.ImpressionModeMapper(impression.Strategy) != conf.ImpressionsModeOptimized {
+		return s.apply(impression)
+	}
 
-	return s.apply(impression, now)
+	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(impression.Time) {
+		return true
+	}
+
+	return false
 }

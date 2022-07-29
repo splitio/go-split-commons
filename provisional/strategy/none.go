@@ -1,9 +1,9 @@
 package strategy
 
 import (
-	"time"
-
+	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/util"
 )
 
 // NoneImpl struct for none impression mode strategy.
@@ -22,8 +22,8 @@ func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker Unique
 	}
 }
 
-func (s *NoneImpl) apply(impression *dtos.Impression, now int64) bool {
-	s.impressionsCounter.Inc(impression.FeatureName, now, 1)
+func (s *NoneImpl) apply(impression *dtos.Impression) bool {
+	s.impressionsCounter.Inc(impression.FeatureName, impression.Time, 1)
 	s.uniqueKeysTracker.Track(impression.FeatureName, impression.KeyName)
 
 	return false
@@ -31,11 +31,11 @@ func (s *NoneImpl) apply(impression *dtos.Impression, now int64) bool {
 
 // Apply track the total amount of evaluations and the unique keys.
 func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression) {
-	now := time.Now().UTC().UnixNano()
 	forListener := make([]dtos.Impression, 0, len(impressions))
 
 	for index := range impressions {
-		s.apply(&impressions[index], now)
+		impressions[index].Strategy = util.ImpressionModeShortVersion(conf.ImpressionsModeNone)
+		s.apply(&impressions[index])
 	}
 
 	if s.listenerEnabled {
@@ -47,7 +47,5 @@ func (s *NoneImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression, []dt
 
 // ApplySingle description
 func (s *NoneImpl) ApplySingle(impression *dtos.Impression) bool {
-	now := time.Now().UTC().UnixNano()
-
-	return s.apply(impression, now)
+	return s.apply(impression)
 }

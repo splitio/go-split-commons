@@ -1,26 +1,22 @@
 package util
 
-/*
-// ShouldAddPreviousTime returns if previous time should be set up or not depending on operationMode
-func ShouldAddPreviousTime(managerConfig conf.ManagerConfig) bool {
-	switch strings.ToLower(managerConfig.OperationMode) {
-	case conf.ProducerSync:
-		fallthrough
-	case conf.Standalone:
-		return true
+import "github.com/splitio/go-split-commons/v4/conf"
+
+func ImpressionModeMapper(mode string) string {
+	switch mode {
+	case "d":
+		return conf.ImpressionsModeDebug
+	case "n":
+		return conf.ImpressionsModeNone
 	default:
-		return false
+		return conf.ImpressionsModeOptimized
 	}
 }
 
-// ShouldBeOptimized returns if should dedupe impressions or not depending on configs
-func ShouldBeOptimized(managerConfig conf.ManagerConfig) bool {
-	if !ShouldAddPreviousTime(managerConfig) {
-		return false
+func ImpressionModeShortVersion(mode string) string {
+	if mode == "" {
+		return "o"
 	}
-	if strings.ToLower(managerConfig.ImpressionsMode) == conf.ImpressionsModeOptimized {
-		return true
-	}
-	return false
+
+	return string(mode[0])
 }
-*/

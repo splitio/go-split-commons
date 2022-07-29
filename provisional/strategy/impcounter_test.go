@@ -9,13 +9,13 @@ import (
 func TestMakeKey(t *testing.T) {
 	timestamp := time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano() / int64(time.Millisecond)
 
-	actualKey := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	actualKey := makeKey("someFeature", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
 	expectedKey := Key{FeatureName: "someFeature", TimeFrame: timestamp}
 	if actualKey != expectedKey {
 		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey, expectedKey))
 	}
 
-	actualKey2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano())
+	actualKey2 := makeKey("", time.Date(2020, 9, 2, 10, 0, 0, 0, time.UTC).UnixNano()/int64(time.Millisecond))
 	expectedKey2 := Key{FeatureName: "", TimeFrame: timestamp}
 	if actualKey2 != expectedKey2 {
 		t.Error(fmt.Sprintf("Unexpected key generated %v, %v", actualKey2, expectedKey2))

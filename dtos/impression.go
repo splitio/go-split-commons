@@ -10,6 +10,7 @@ type Impression struct {
 	ChangeNumber int64  `json:"c"`
 	Time         int64  `json:"m"`
 	Pt           int64  `json:"pt,omitempty"`
+	Strategy     string `json:"s,omitempty"`
 }
 
 // ImpressionQueueObject struct mapping impressions

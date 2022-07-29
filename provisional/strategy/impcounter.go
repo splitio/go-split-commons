@@ -42,6 +42,19 @@ func (i *ImpressionsCounter) Inc(splitName string, timeFrame int64, amount int64
 	i.impressionsCounts[key] = currentAmount + amount
 }
 
+// Dec decrements the quantity of impressions with the passed splitName and timeFrame
+func (i *ImpressionsCounter) Dec(splitName string, timeFrame int64, amount int64) {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	key := makeKey(splitName, timeFrame)
+	currentAmount, _ := i.impressionsCounts[key]
+	if currentAmount < 1 {
+		return
+	}
+
+	i.impressionsCounts[key] = currentAmount - amount
+}
+
 // PopAll returns all the elements stored in the cache and resets the cache
 func (i *ImpressionsCounter) PopAll() map[Key]int64 {
 	i.mutex.Lock()

@@ -2,13 +2,16 @@ package strategy
 
 import (
 	"testing"
+	"time"
 
+	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/util"
 )
 
 func TestDebugMode(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
-	debug := NewDebugImpl(observer, true)
+	debug := NewDebugImpl(observer, true, nil)
 
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
@@ -35,26 +38,54 @@ func TestDebugMode(t *testing.T) {
 
 func TestApplySingleDebug(t *testing.T) {
 	observer, _ := NewImpressionObserver(5000)
-	debug := NewDebugImpl(observer, true)
+	counter := NewImpressionsCounter()
+	debug := NewDebugImpl(observer, true, counter)
+	featureName := "feature-test"
+	timeI := time.Now().UTC().UnixNano()
+	key := Key{
+		FeatureName: featureName,
+		TimeFrame:   util.TruncateTimeFrame(timeI),
+	}
 	imp := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123,
 		KeyName:      "someKey",
 		Label:        "someLabel",
-		Time:         123456,
+		Time:         timeI,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		FeatureName:  featureName,
+		Strategy:     util.ImpressionModeShortVersion(conf.ImpressionsModeDebug),
 	}
 
 	toLog := debug.ApplySingle(&imp)
-
 	if !toLog {
 		t.Error("Should be true")
 	}
 
 	toLog = debug.ApplySingle(&imp)
-
 	if !toLog {
 		t.Error("Should be true")
+	}
+
+	imp.Strategy = util.ImpressionModeShortVersion(conf.ImpressionsModeOptimized)
+	toLog = debug.ApplySingle(&imp)
+	if !toLog {
+		t.Error("Should be true")
+	}
+
+	counts := counter.PopAll()
+	if counts[key] != 0 {
+		t.Error("Count should be 0.")
+	}
+
+	counter.Inc(featureName, timeI, 10)
+	toLog = debug.ApplySingle(&imp)
+	if !toLog {
+		t.Error("Should be true")
+	}
+
+	counts = counter.PopAll()
+	if counts[key] != 9 {
+		t.Errorf("Count should be 9. Actual: %d", counts[key])
 	}
 }

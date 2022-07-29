@@ -13,7 +13,7 @@ import (
 
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer, false)
+	debug := strategy.NewDebugImpl(observer, false, nil)
 	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
@@ -46,7 +46,7 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 
 func TestImpManagerInMemoryDebug(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer, true)
+	debug := strategy.NewDebugImpl(observer, true, nil)
 	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
@@ -152,7 +152,7 @@ func TestImpManagerInMemoryNone(t *testing.T) {
 
 func TestImpManagerRedis(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
-	debug := strategy.NewDebugImpl(observer, true)
+	debug := strategy.NewDebugImpl(observer, true, nil)
 	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
