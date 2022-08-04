@@ -11,7 +11,7 @@ import (
 )
 
 func marshalUniqueKeys(uniques dtos.Uniques) string {
-	json, _ := json.Marshal(uniques)
+	json, _ := json.Marshal(uniques.Keys)
 	return string(json)
 }
 

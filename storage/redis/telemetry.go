@@ -100,7 +100,7 @@ func (t *TelemetryStorage) RecordBURTimeout() {
 
 // RecordUniqueKeys records unique keys
 func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
-	uniquesJSON, err := json.Marshal(uniques)
+	uniquesJSON, err := json.Marshal(uniques.Keys)
 	if err != nil {
 		t.logger.Error("Something were wrong marshaling provided event to JSON", err.Error())
 		return err
