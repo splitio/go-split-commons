@@ -215,6 +215,7 @@ type SegmentStorage interface {
 type ImpressionStorage interface {
 	ImpressionStorageConsumer
 	ImpressionStorageProducer
+	ImpressionMultiSdkConsumer
 }
 
 // EventsStorage wraps consumer and producer interfaces
