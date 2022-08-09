@@ -79,7 +79,8 @@ func NewNotificationParserImpl(
 		onSegmentUpdate:   onSegmentUpdate,
 		onControlUpdate:   onControlUpdate,
 		onOccupancyMesage: onOccupancyMessage,
-		onAblyError:       onAblyError}
+		onAblyError:       onAblyError,
+	}
 }
 
 // ParseAndForward accepts an incoming RAW event and returns a properly parsed & typed event
