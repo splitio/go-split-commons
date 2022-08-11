@@ -132,6 +132,7 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 // SynchronizeUniqueKeys syncs unique keys
 func (e *RecorderSingle) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
 	if len(uniques.Keys) < 1 {
+		e.logger.Debug("Unique keys list is empty, nothing to synchronize.")
 		return nil
 	}
 

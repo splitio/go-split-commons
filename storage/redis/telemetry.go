@@ -100,6 +100,11 @@ func (t *TelemetryStorage) RecordBURTimeout() {
 
 // RecordUniqueKeys records unique keys
 func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
+	if len(uniques.Keys) < 1 {
+		t.logger.Debug("Unique Keys list is empty, nothing to record.")
+		return nil
+	}
+
 	uniquesJSON, err := json.Marshal(uniques.Keys)
 	if err != nil {
 		t.logger.Error("Something were wrong marshaling provided event to JSON", err.Error())

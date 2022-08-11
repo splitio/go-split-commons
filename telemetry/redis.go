@@ -42,6 +42,11 @@ func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady in
 
 // SynchronizeUniqueKeys syncs unique keys
 func (r *SynchronizerRedis) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
+	if len(uniques.Keys) < 1 {
+		r.logger.Debug("Unique keys list is empty, nothing to synchronize.")
+		return nil
+	}
+
 	err := r.storage.RecordUniqueKeys(uniques)
 	if err != nil {
 		r.logger.Error("Could not record the unique keys.", err.Error())
