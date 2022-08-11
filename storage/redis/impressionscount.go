@@ -73,6 +73,7 @@ func (r *ImpressionsCountStorageImp) GetImpressionsCount() (*dtos.ImpressionsCou
 
 func (r *ImpressionsCountStorageImp) RecordImpressionsCount(impressions dtos.ImpressionsCountDTO) error {
 	if len(impressions.PerFeature) < 1 {
+		r.logger.Debug("Impression Count list is empty, nothing to record.")
 		return nil
 	}
 
