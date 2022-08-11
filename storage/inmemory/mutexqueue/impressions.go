@@ -11,12 +11,7 @@ import (
 )
 
 // NewMQImpressionsStorage returns an instance of MQEventsStorage
-func NewMQImpressionsStorage(
-	queueSize int,
-	isFull chan<- string,
-	logger logging.LoggerInterface,
-	runtimeTelemetry storage.TelemetryRuntimeProducer,
-) storage.ImpressionStorage {
+func NewMQImpressionsStorage(queueSize int, isFull chan<- string, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) storage.ImpressionStorage {
 	return &MQImpressionsStorage{
 		queue:            list.New(),
 		size:             queueSize,
