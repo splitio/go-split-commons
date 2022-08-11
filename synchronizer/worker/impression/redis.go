@@ -8,27 +8,23 @@ import (
 )
 
 type RecorderRedis struct {
-	impressionStorage storage.ImpressionStorageConsumer
-	redisStorage      storage.ImpressionStorageProducer
-	logger            logging.LoggerInterface
+	impsInMemoryStorage storage.ImpressionStorageConsumer
+	impsRedisStorage    storage.ImpressionStorageProducer
+	logger              logging.LoggerInterface
 }
 
 // NewRecorderRedis creates new impressionsCount synchronizer for log impressionsCount in redis
-func NewRecorderRedis(
-	impressionStorage storage.ImpressionStorageConsumer,
-	redisStorage storage.ImpressionStorageProducer,
-	logger logging.LoggerInterface,
-) ImpressionRecorder {
+func NewRecorderRedis(impsInMemoryStorage storage.ImpressionStorageConsumer, impsRedisStorage storage.ImpressionStorageProducer, logger logging.LoggerInterface) ImpressionRecorder {
 	return &RecorderRedis{
-		impressionStorage: impressionStorage,
-		redisStorage:      redisStorage,
-		logger:            logger,
+		impsInMemoryStorage: impsInMemoryStorage,
+		impsRedisStorage:    impsRedisStorage,
+		logger:              logger,
 	}
 }
 
 // SynchronizeImpressions syncs impressions
 func (i *RecorderRedis) SynchronizeImpressions(bulkSize int64) error {
-	queuedImpressions, err := i.impressionStorage.PopN(bulkSize)
+	queuedImpressions, err := i.impsInMemoryStorage.PopN(bulkSize)
 	if err != nil {
 		i.logger.Error("Error reading impressions queue", err)
 		return errors.New("Error reading impressions queue")
@@ -39,7 +35,7 @@ func (i *RecorderRedis) SynchronizeImpressions(bulkSize int64) error {
 		return nil
 	}
 
-	err = i.redisStorage.LogImpressions(queuedImpressions)
+	err = i.impsRedisStorage.LogImpressions(queuedImpressions)
 	if err != nil {
 		i.logger.Error("Error saving impressions in redis", err)
 		return errors.New("Error saving impressions in redis")
@@ -50,7 +46,7 @@ func (i *RecorderRedis) SynchronizeImpressions(bulkSize int64) error {
 
 // FlushImpressions flushes impressions
 func (i *RecorderRedis) FlushImpressions(bulkSize int64) error {
-	for !i.impressionStorage.Empty() {
+	for !i.impsInMemoryStorage.Empty() {
 		err := i.SynchronizeImpressions(bulkSize)
 		if err != nil {
 			return err

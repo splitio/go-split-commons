@@ -23,11 +23,7 @@ type ImpressionStorage struct {
 }
 
 // NewImpressionStorage creates a new RedisSplitStorage and returns a reference to it
-func NewImpressionStorage(
-	client *redis.PrefixedRedisClient,
-	metadata dtos.Metadata,
-	logger logging.LoggerInterface,
-) storage.ImpressionStorage {
+func NewImpressionStorage(client *redis.PrefixedRedisClient, metadata dtos.Metadata, logger logging.LoggerInterface) storage.ImpressionStorage {
 	return &ImpressionStorage{
 		client:   client,
 		mutex:    &sync.Mutex{},
