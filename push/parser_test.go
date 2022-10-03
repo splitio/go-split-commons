@@ -348,3 +348,43 @@ func TestInnerDataJSONError(t *testing.T) {
 		t.Error("invalid status or returned error", err)
 	}
 }
+
+func TestNewNotificationParserImpl(t *testing.T) {
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:    SSEEventTypeMessage,
+				Metrics: metrics{Publishers: 3},
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Name:      occupancuName,
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "control_pri",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := NewNotificationParserImpl(logger, nil, nil, nil, nil,
+		func(u *OccupancyMessage) *int64 {
+			if u.Channel() != "control_pri" {
+				t.Error("channel should be control_pri. Is:", u.Channel())
+			}
+			if u.Publishers() != 3 {
+				t.Error("there should be 12 publishers. Got: ", u.Publishers())
+			}
+			return common.Int64Ref(123)
+		},
+		nil)
+
+	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
+		t.Error("no error should have been returned. Got: ", err)
+	}
+}
