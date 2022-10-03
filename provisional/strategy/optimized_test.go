@@ -29,10 +29,27 @@ func TestOptimizedMode(t *testing.T) {
 		t.Error("Should have 1 to log")
 	}
 
+	if len(counter.impressionsCounts) != 0 {
+		t.Error("Should not have counts")
+	}
+
 	toLog, toListener = optimized.Apply([]dtos.Impression{imp})
 
 	if len(toLog) != 0 || len(toListener) != 1 {
 		t.Error("Should not have to log")
+	}
+
+	rawCounts := counter.PopAll()
+	if len(rawCounts) != 1 {
+		t.Error("Should have counts")
+	}
+	for key, counts := range counter.PopAll() {
+		if key.FeatureName != "feature-test" {
+			t.Error("Feature should be feature-test")
+		}
+		if counts != 1 {
+			t.Error("It should be tracked only once")
+		}
 	}
 }
 
