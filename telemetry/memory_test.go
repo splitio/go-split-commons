@@ -70,7 +70,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 		t.Error("It should return err")
 	}
 
-	telemetrySync.SynchronizeConfig(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, make(map[string]int64), []string{})
+	telemetrySync.SynchronizeConfig(InitConfig{ImpressionsMode: conf.ImpressionsModeDebug}, 123456789, make(map[string]int64), []string{})
 	if called != 2 {
 		t.Error("It should be called twice")
 	}
@@ -256,7 +256,7 @@ func TestConfig(t *testing.T) {
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1
-	sync.SynchronizeConfig(InitConfig{ManagerConfig: conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}}, 123456789, factories, []string{})
+	sync.SynchronizeConfig(InitConfig{ImpressionsMode: conf.ImpressionsModeDebug}, 123456789, factories, []string{})
 	if called != 1 {
 		t.Error("It should be called once")
 	}

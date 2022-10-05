@@ -230,3 +230,104 @@ func TestPostTelemetryStats(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestJsonUniqueKeys(t *testing.T) {
+	uniquesTXT := `{"keys":[{"f":"feature-1","ks":["key-1","key-2"]},{"f":"feature-2","ks":["key-10","key-20"]}]}`
+	uniquesRecords := dtos.Uniques{
+		Keys: []dtos.Key{
+			{
+				Feature: "feature-1",
+				Keys:    []string{"key-1", "key-2"},
+			},
+			{
+				Feature: "feature-2",
+				Keys:    []string{"key-10", "key-20"},
+			},
+		},
+	}
+
+	json, err := json.Marshal(uniquesRecords)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(json) != uniquesTXT {
+		t.Error("Error marshaling uniques")
+	}
+}
+
+func TestPostUniqueKeys(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		sdkVersion := r.Header.Get("SplitSDKVersion")
+		sdkMachine := r.Header.Get("SplitSDKMachineIP")
+
+		if sdkVersion != "go-some" {
+			t.Error("SDK Version HEADER not match")
+		}
+
+		if sdkMachine != "127.0.0.1" {
+			t.Error("SDK Machine HEADER not match")
+		}
+
+		sdkMachineName := r.Header.Get("SplitSDKMachineName")
+		if sdkMachineName != "ip-127-0-0-1" {
+			t.Error("SDK Machine Name HEADER not match", sdkMachineName)
+		}
+
+		rBody, _ := ioutil.ReadAll(r.Body)
+
+		var uniqueInPost dtos.Uniques
+		err := json.Unmarshal(rBody, &uniqueInPost)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if uniqueInPost.Keys[0].Feature != "feature-1" {
+			t.Error("Feature name not match. Expected feature-1")
+		}
+
+		if uniqueInPost.Keys[0].Keys[0] != "key-1" && uniqueInPost.Keys[0].Keys[1] != "key-2" {
+			t.Error("Keys value not match")
+		}
+
+		if uniqueInPost.Keys[1].Feature != "feature-2" {
+			t.Error("Feature name not match. Expected feature-2")
+		}
+
+		if uniqueInPost.Keys[1].Keys[0] != "key-3" && uniqueInPost.Keys[1].Keys[1] != "key-4" {
+			t.Error("Keys value not match")
+		}
+
+		fmt.Fprintln(w, "ok")
+	}))
+	defer ts.Close()
+
+	telemetryRecorder := NewHTTPTelemetryRecorder(
+		"",
+		conf.AdvancedConfig{
+			TelemetryServiceURL: ts.URL,
+		},
+		logger,
+	)
+
+	keys := []dtos.Key{
+		{
+			Feature: "feature-1",
+			Keys:    []string{"key-1", "key-2"},
+		},
+		{
+			Feature: "feature-2",
+			Keys:    []string{"key-3", "key-4"},
+		},
+	}
+	err := telemetryRecorder.RecordUniqueKeys(dtos.Uniques{
+		Keys: keys,
+	}, dtos.Metadata{SDKVersion: "go-some", MachineIP: "127.0.0.1", MachineName: "ip-127-0-0-1"})
+	if err != nil {
+		t.Error(err)
+	}
+}

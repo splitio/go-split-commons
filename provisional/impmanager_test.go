@@ -4,151 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/provisional/strategy"
+	"github.com/splitio/go-split-commons/v4/storage/filter"
 	"github.com/splitio/go-split-commons/v4/storage/inmemory"
 	"github.com/splitio/go-split-commons/v4/telemetry"
 )
 
-func TestProcessImpressionAllDisabled(t *testing.T) {
-	observer, _ := NewImpressionObserver(5000)
-	impManagerImpl := ImpressionManagerImpl{
-		impressionObserver:    observer,
-		impressionsCounter:    NewImpressionsCounter(),
-		isOptimized:           false,
-		shouldAddPreviousTime: false,
-		listenerEnabled:       true,
-	}
-
-	now := time.Now().UTC().UnixNano()
-	imp1 := dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
-	}
-
-	forLog := make([]dtos.Impression, 0)
-	forListener := make([]dtos.Impression, 0)
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-
-	if len(forLog) != 1 || len(forListener) != 1 {
-		t.Error("It should add impression")
-	}
-
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-	if len(forLog) != 2 || len(forListener) != 2 {
-		t.Error("It should have two impressions")
-	}
-
-	if forLog[0].Pt != 0 {
-		t.Error("It should not have pt associated yet")
-	}
-	if forLog[1].Pt != 0 {
-		t.Error("It should have pt associated")
-	}
-}
-
-func TestProcessImpressionOptimizedDisabled(t *testing.T) {
-	observer, _ := NewImpressionObserver(5000)
-	impManagerImpl := ImpressionManagerImpl{
-		impressionObserver:    observer,
-		impressionsCounter:    NewImpressionsCounter(),
-		isOptimized:           false,
-		shouldAddPreviousTime: true,
-		listenerEnabled:       true,
-	}
-
-	now := time.Now().UTC().UnixNano()
-	imp1 := dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
-	}
-
-	forLog := make([]dtos.Impression, 0)
-	forListener := make([]dtos.Impression, 0)
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-
-	if len(forLog) != 1 || len(forListener) != 1 {
-		t.Error("It should add impression")
-	}
-
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-	if len(forLog) != 2 || len(forListener) != 2 {
-		t.Error("It should have two impressions")
-	}
-
-	if forLog[0].Pt != 0 {
-		t.Error("It should not have pt associated yet")
-	}
-	if forLog[1].Pt != now {
-		t.Error("It should have pt associated")
-	}
-}
-
-func TestProcessImpressionOptimizedEnabled(t *testing.T) {
-	observer, _ := NewImpressionObserver(5000)
-	impManagerImpl := ImpressionManagerImpl{
-		impressionObserver:    observer,
-		impressionsCounter:    NewImpressionsCounter(),
-		isOptimized:           true,
-		shouldAddPreviousTime: true,
-		listenerEnabled:       true,
-	}
-
-	now := time.Now().UTC().UnixNano()
-	imp1 := dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
-	}
-
-	forLog := make([]dtos.Impression, 0)
-	forListener := make([]dtos.Impression, 0)
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-
-	if len(forLog) != 1 || len(forListener) != 1 {
-		t.Error("It should add impression")
-	}
-
-	forLog, forListener = impManagerImpl.processImpression(imp1, forLog, forListener)
-	if len(forLog) != 1 {
-		t.Error("It should not add new impression")
-	}
-	if len(forListener) != 2 {
-		t.Error("It should have two impressions")
-	}
-
-	if forListener[0].Pt != 0 {
-		t.Error("It should not have pt associated yet")
-	}
-	if forListener[1].Pt != now {
-		t.Error("It should have pt associated")
-	}
-}
-
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
-	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: false,
-	}, NewImpressionsCounter(), runtimeTelemetry)
-	if err != nil {
-		t.Error("It should not return err")
-	}
+	observer, _ := strategy.NewImpressionObserver(5000)
+	debug := strategy.NewDebugImpl(observer, false)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -176,22 +42,12 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 	if len(impressionsForListener) != 0 || len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-
-	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
-		t.Error("It should be 0")
-	}
 }
 
 func TestImpManagerInMemoryDebug(t *testing.T) {
-	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: true,
-	}, NewImpressionsCounter(), runtimeTelemetry)
-	if err != nil {
-		t.Error("It should not return err")
-	}
+	observer, _ := strategy.NewImpressionObserver(5000)
+	debug := strategy.NewDebugImpl(observer, true)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -219,22 +75,14 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 	if impressionsForListener[0].Pt != now {
 		t.Error("It should have pt associated")
 	}
-
-	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
-		t.Error("It should be 0")
-	}
 }
 
 func TestImpManagerInMemoryOptimized(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   conf.Standalone,
-		ImpressionsMode: conf.ImpressionsModeOptimized,
-		ListenerEnabled: true,
-	}, NewImpressionsCounter(), runtimeTelemetry)
-	if err != nil {
-		t.Error("It should not return err")
-	}
+	counter := strategy.NewImpressionsCounter()
+	observer, _ := strategy.NewImpressionObserver(5000)
+	optimized := strategy.NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
+	impManager := NewImpressionManager(optimized)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -271,16 +119,41 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 	}
 }
 
-func TestImpManagerRedis(t *testing.T) {
-	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	impManager, err := NewImpressionManager(conf.ManagerConfig{
-		OperationMode:   "redis-consumer",
-		ImpressionsMode: conf.ImpressionsModeDebug,
-		ListenerEnabled: true,
-	}, NewImpressionsCounter(), runtimeTelemetry)
-	if err != nil {
-		t.Error("It should not return err")
+func TestImpManagerInMemoryNone(t *testing.T) {
+	counter := strategy.NewImpressionsCounter()
+	filter := filter.NewBloomFilter(3000, 0.01)
+	uniqueTracker := strategy.NewUniqueKeysTracker(filter)
+	none := strategy.NewNoneImpl(counter, uniqueTracker, true)
+	impManager := NewImpressionManager(none)
+
+	now := time.Now().UTC().UnixNano()
+	imp1 := &dtos.Impression{
+		BucketingKey: "someBucketingKey",
+		ChangeNumber: 123456789,
+		FeatureName:  "someFeature",
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         now,
+		Treatment:    "someTreatment",
 	}
+
+	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
+	if len(impressionsForListener) != 1 {
+		t.Error("It should return an impression")
+	}
+	if len(impressionsForLog) != 0 {
+		t.Error("It should not return an impression")
+	}
+
+	if impressionsForListener[0].Pt != 0 {
+		t.Error("It should not have pt associated")
+	}
+}
+
+func TestImpManagerRedis(t *testing.T) {
+	observer, _ := strategy.NewImpressionObserver(5000)
+	debug := strategy.NewDebugImpl(observer, true)
+	impManager := NewImpressionManager(debug)
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
@@ -308,11 +181,7 @@ func TestImpManagerRedis(t *testing.T) {
 	if len(impressionsForLog) != 1 {
 		t.Error("It should return an impression")
 	}
-	if impressionsForListener[0].Pt != 0 {
-		t.Error("It should not have pt")
-	}
-
-	if runtimeTelemetry.GetImpressionsStats(telemetry.ImpressionsDeduped) != 0 {
-		t.Error("It should be 0")
+	if impressionsForListener[0].Pt == 0 {
+		t.Error("It should have pt")
 	}
 }

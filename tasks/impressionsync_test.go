@@ -86,7 +86,7 @@ func TestImpressionSyncTask(t *testing.T) {
 	}
 
 	impressionTask := NewRecordImpressionsTask(
-		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
 		2,
 		logger,
 		50,
@@ -177,7 +177,7 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 	}
 
 	impressionTask := NewRecordImpressionsTasks(
-		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ManagerConfig{ImpressionsMode: conf.ImpressionsModeDebug}, telemetryMockStorage),
+		impression.NewRecorderSingle(impressionMockStorage, impressionMockRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
 		2,
 		logger,
 		50,
