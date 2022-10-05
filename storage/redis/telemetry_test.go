@@ -161,3 +161,42 @@ func TestRecordConfigData(t *testing.T) {
 		t.Error("hset not called")
 	}
 }
+
+func TestRecordUniqueKeys(t *testing.T) {
+	expectedKey := "uniquekeyprefix.SPLITIO.uniquekeys"
+
+	mockedRedisClient := mocks.MockClient{
+		RPushCall: func(key string, values ...interface{}) redis.Result {
+			if key != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
+			}
+
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 1, nil },
+			}
+		},
+	}
+
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "uniquekeyprefix")
+
+	telemetryStorage := NewTelemetryStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{
+		SDKVersion: "a", MachineName: "b", MachineIP: "c",
+	})
+
+	err := telemetryStorage.RecordUniqueKeys(dtos.Uniques{
+		Keys: []dtos.Key{
+			{
+				Feature: "feature-1",
+				Keys:    []string{"key-1", "key-2"},
+			},
+			{
+				Feature: "feature-2",
+				Keys:    []string{"key-1", "key-2"},
+			},
+		},
+	})
+
+	if err != nil {
+		t.Error("It should not return error")
+	}
+}
