@@ -1,3 +1,6 @@
+4.2.1 (Oct 12, 2022)
+ - Added user to redis config.
+
 4.2.0 (Oct 5, 2022)
  - Refactored ImpressionManager to use different strategies: None, Optimized and Debug.
 

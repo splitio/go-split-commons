@@ -141,7 +141,7 @@ func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error
 	if inserted == int64(len(impressionsJSON)) {
 		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
 		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
-		if result == false {
+		if !result {
 			r.logger.Error("Something were wrong setting expiration", errPush)
 		}
 	}

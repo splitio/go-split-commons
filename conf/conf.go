@@ -10,6 +10,7 @@ type RedisConfig struct {
 	Port     int
 	Database int
 	Password string
+	Username string
 	Prefix   string
 
 	// The network type, either tcp or unix.
