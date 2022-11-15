@@ -1,4 +1,4 @@
-4.2.3 (Nov 14, 2022)
+4.2.2 (Nov 14, 2022)
  - Fix redis cleanup to use `SPLITIO` prefix portion as well.
 
 4.2.1 (Oct 12, 2022)
