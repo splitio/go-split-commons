@@ -71,7 +71,7 @@ func TestClearAll(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	client := mocks.MockClient{
 		EvalCall: func(script string, keys []string, args ...interface{}) redis.Result {
-			if !strings.Contains(script, "redis.call('KEYS', 'someprefix*')") {
+			if !strings.Contains(script, "redis.call('KEYS', 'someprefix.SPLITIO.*')") {
 				t.Error("It should perform a delete with someprefix")
 			}
 			return &mocks.MockResultOutput{
@@ -80,6 +80,27 @@ func TestClearAll(t *testing.T) {
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&client, "someprefix")
+	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
+
+	err := miscStorage.ClearAll()
+	if err != nil {
+		t.Error("It should not return err")
+	}
+}
+
+func TestClearAllNoPrefix(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	client := mocks.MockClient{
+		EvalCall: func(script string, keys []string, args ...interface{}) redis.Result {
+			if !strings.Contains(script, "redis.call('KEYS', 'SPLITIO.*')") {
+				t.Error("It should perform a delete with someprefix. GOT: ", script)
+			}
+			return &mocks.MockResultOutput{
+				ErrCall: func() error { return nil },
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&client, "")
 	miscStorage := NewMiscStorage(mockPrefixedClient, logger)
 
 	err := miscStorage.ClearAll()
