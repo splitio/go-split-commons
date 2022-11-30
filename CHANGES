@@ -1,3 +1,6 @@
+4.2.3 (Nov 30, 2022)
+ - Fix warning when trying to fetch a split by name that might noy yet exist in redis
+
 4.2.2 (Nov 14, 2022)
  - Fix redis cleanup to use `SPLITIO` prefix portion as well.
 
