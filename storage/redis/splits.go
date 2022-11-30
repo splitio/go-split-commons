@@ -180,7 +180,12 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 		for _, raw := range toUpdateRaw {
 			asStr, ok := raw.(string)
 			if !ok {
-				r.logger.Warning("Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: ", asStr)
+				if raw != nil { // object missing in redis
+					r.logger.Warning(fmt.Sprintf(
+						"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
+						raw, raw,
+					))
+				}
 				continue
 			}
 
