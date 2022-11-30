@@ -181,7 +181,7 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 			asStr, ok := raw.(string)
 			if !ok {
 				if raw != nil { // object missing in redis
-					r.logger.Warning(fmt.Sprintf(
+					r.logger.Debug(fmt.Sprintf(
 						"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
 						raw, raw,
 					))
@@ -192,7 +192,7 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 			var s dtos.SplitDTO
 			err = json.Unmarshal([]byte(asStr), &s)
 			if err != nil {
-				r.logger.Warning("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
+				r.logger.Debug("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
 				continue
 			}
 
