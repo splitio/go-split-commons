@@ -3,6 +3,7 @@ package local
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -40,6 +41,13 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) *File
 		return &FileSplitFetcher{
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatYAML,
+		}
+	}
+	r = regexp.MustCompile("(?i)(.Json$|.JSON$|.json$)")
+	if r.MatchString(splitFile) {
+		return &FileSplitFetcher{
+			splitFile:  splitFile,
+			fileFormat: SplitFileFormatJSON,
 		}
 	}
 	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
@@ -224,6 +232,18 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
+func parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
+
+	var splitChangesDto dtos.SplitChangesDTO
+	err := json.Unmarshal([]byte(data), &splitChangesDto)
+	if err != nil {
+		log.Fatalf("Error parsing json split change: %v", err)
+		return nil, err
+	}
+
+	return &splitChangesDto, nil
+}
+
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := ioutil.ReadFile(s.splitFile)
@@ -239,7 +259,7 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatYAML:
 		splits = parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return nil, fmt.Errorf("JSON is not yet supported")
+		return parseSplitsJson(data)
 	default:
 		return nil, fmt.Errorf("Unsupported file format")
 

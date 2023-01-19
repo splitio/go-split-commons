@@ -88,5 +88,31 @@ func TestLocalSplitFetcher(t *testing.T) {
 	if len(res.Splits) != 3 {
 		t.Error("should have 2 splits. has: ", res.Splits)
 	}
+}
 
+func TestLocalSplitFetcherJson(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	fetcher := NewFileSplitFetcher("../../testdata/splitChange_mock.json", logger)
+
+	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	if err != nil {
+		t.Error("fetching should not fail. Got: ", err)
+	}
+
+	if res.Since != -1 || res.Till != 1660326991072 {
+		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	}
+
+	if len(res.Splits) != 7 {
+		t.Error("should have 7 splits. has: ", res.Splits)
+	}
+
+	if res.Till != 1660326991072 || res.Splits[0].Name != "split_1" {
+		t.Error("DTO mal formed")
+	}
+
+	if res.Splits[0].Configurations == nil {
+		t.Error("DTO mal formed")
+	}
 }
