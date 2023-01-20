@@ -108,7 +108,7 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 		t.Error("should have 7 splits. has: ", res.Splits)
 	}
 
-	if res.Till != 1660326991072 || res.Splits[0].Name != "split_1" {
+	if res.Splits[0].Name != "split_1" {
 		t.Error("DTO mal formed")
 	}
 

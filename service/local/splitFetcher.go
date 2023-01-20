@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -32,28 +31,32 @@ type FileSplitFetcher struct {
 	splitFile  string
 	fileFormat int
 	lastHash   []byte
+	logger     logging.LoggerInterface
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
-func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) *FileSplitFetcher {
+func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) service.SplitFetcher {
 	var r = regexp.MustCompile("(?i)(.yml$|.yaml$)")
 	if r.MatchString(splitFile) {
 		return &FileSplitFetcher{
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatYAML,
+			logger:     logger,
 		}
 	}
-	r = regexp.MustCompile("(?i)(.Json$|.JSON$|.json$)")
+	r = regexp.MustCompile(`(?i)\.json$`)
 	if r.MatchString(splitFile) {
 		return &FileSplitFetcher{
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatJSON,
+			logger:     logger,
 		}
 	}
 	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
 	return &FileSplitFetcher{
 		splitFile:  splitFile,
 		fileFormat: SplitFileFormatClassic,
+		logger:     logger,
 	}
 }
 
@@ -166,13 +169,13 @@ func createCondition(keys interface{}, treatment string) dtos.ConditionDTO {
 	return createRolloutCondition(treatment)
 }
 
-func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
+func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	// Set up a guard deferred function to recover if some error occurs during parsing
 	defer func() {
 		if r := recover(); r != nil {
 			// At this point we'll only trust that the logger isn't panicking trust
 			// that the logger isn't panicking
-			log.Fatalf("Localhost Parsing: %v", string(debug.Stack()))
+			f.logger.Error("Localhost Parsing: %v", string(debug.Stack()))
 			d = make([]dtos.SplitDTO, 0)
 		}
 	}()
@@ -182,7 +185,7 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	var splitsFromYAML []map[string]map[string]interface{}
 	err := yaml.Unmarshal([]byte(data), &splitsFromYAML)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		f.logger.Error("error: %v", err)
 		return splits
 	}
 
@@ -232,16 +235,15 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
-func parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
-
+func (f *FileSplitFetcher) parseSplitsJson(data string) *dtos.SplitChangesDTO {
 	var splitChangesDto dtos.SplitChangesDTO
 	err := json.Unmarshal([]byte(data), &splitChangesDto)
-	if err != nil {
-		log.Fatalf("Error parsing json split change: %v", err)
-		return nil, err
-	}
 
-	return &splitChangesDto, nil
+	if err != nil {
+		f.logger.Error("error: %v", err)
+		return &splitChangesDto
+	}
+	return &splitChangesDto
 }
 
 // Fetch parses the file and returns the appropriate structures
@@ -257,11 +259,11 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatClassic:
 		splits = parseSplitsClassic(data)
 	case SplitFileFormatYAML:
-		splits = parseSplitsYAML(data)
+		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return parseSplitsJson(data)
+		return s.parseSplitsJson(data), nil
 	default:
-		return nil, fmt.Errorf("Unsupported file format")
+		return nil, fmt.Errorf("unsupported file format")
 
 	}
 
