@@ -175,7 +175,7 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 		if r := recover(); r != nil {
 			// At this point we'll only trust that the logger isn't panicking trust
 			// that the logger isn't panicking
-			f.logger.Error("Localhost Parsing: %v", string(debug.Stack()))
+			f.logger.Error(fmt.Sprintf("Localhost Parsing: %v", string(debug.Stack())))
 			d = make([]dtos.SplitDTO, 0)
 		}
 	}()
@@ -185,7 +185,7 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	var splitsFromYAML []map[string]map[string]interface{}
 	err := yaml.Unmarshal([]byte(data), &splitsFromYAML)
 	if err != nil {
-		f.logger.Error("error: %v", err)
+		f.logger.Error(fmt.Sprintf("error: %v", err))
 		return splits
 	}
 
@@ -240,7 +240,7 @@ func (f *FileSplitFetcher) parseSplitsJson(data string) *dtos.SplitChangesDTO {
 	err := json.Unmarshal([]byte(data), &splitChangesDto)
 
 	if err != nil {
-		f.logger.Error("error: %v", err)
+		f.logger.Error(fmt.Sprintf("error: %v", err))
 		return &splitChangesDto
 	}
 	return &splitChangesDto
