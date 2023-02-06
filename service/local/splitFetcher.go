@@ -261,7 +261,9 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatYAML:
 		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return s.parseSplitsJson(data), nil
+		splitChange := s.parseSplitsJson(data)
+		splitChange.Since = splitChange.Till
+		return splitChange, nil
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 
