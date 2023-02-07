@@ -148,6 +148,6 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	}
 
 	if len(res.Splits) != 0 {
-		t.Error("should have 7 splits. has: ", res.Splits)
+		t.Error("should have 0 split. has: ", res.Splits)
 	}
 }
