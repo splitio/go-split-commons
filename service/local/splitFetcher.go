@@ -294,7 +294,7 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 
 	// Get the SHA1 sum of the raw contents of the file, and compare it to the last one seen
 	// if it's equal, nothing has changed, return since == till
-	// otherwise, something changed, return till = since + 1  s
+	// otherwise, something changed, return till = since + 1
 	currH := sha1.New()
 	currH.Write(fileContents)
 	currSum := currH.Sum(nil)
