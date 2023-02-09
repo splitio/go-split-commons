@@ -246,6 +246,29 @@ func (f *FileSplitFetcher) parseSplitsJson(data string) *dtos.SplitChangesDTO {
 	return &splitChangesDto
 }
 
+func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
+	var splitChangesDto dtos.SplitChangesDTO
+	splitChangesDto.Since = changeNumber
+	splitChangesDto.Till = changeNumber
+	splitChange := s.parseSplitsJson(data)
+	splitsJson, err := json.Marshal(splitChange.Splits)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("error: %v", err))
+		s.logger.Error("ignoring file and defaulting to empty change")
+		return &splitChangesDto, nil
+	}
+	currH := sha1.New()
+	currH.Write(splitsJson)
+	currSum := currH.Sum(nil)
+	if bytes.Equal(currSum, s.lastHash) || splitChange.Till < changeNumber {
+		return &splitChangesDto, nil
+	}
+	s.lastHash = currSum
+	splitChange.Since = splitChange.Till
+	splitChange.Till++
+	return splitChange, nil
+}
+
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := ioutil.ReadFile(s.splitFile)
@@ -261,7 +284,7 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatYAML:
 		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return s.parseSplitsJson(data), nil
+		return s.processSplitJson(data, changeNumber)
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 
