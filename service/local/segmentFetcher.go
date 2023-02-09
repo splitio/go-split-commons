@@ -5,15 +5,17 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+const defaultTill = -1
+
 // FileSegmentFetcher struct fetches segments from a file
 type FileSegmentFetcher struct {
+	reader           Reader
 	segmentDirectory string
 	lastHash         map[string][]byte
 	logger           logging.LoggerInterface
@@ -25,9 +27,11 @@ func NewFileSegmentFetcher(segmentDirectory string, logger logging.LoggerInterfa
 		segmentDirectory: segmentDirectory,
 		lastHash:         make(map[string][]byte),
 		logger:           logger,
+		reader:           NewFileReader(),
 	}
 }
 
+// parseSegmentJson returns a SegmentChangesDTO parsed from data
 func (f *FileSegmentFetcher) parseSegmentJson(data string) *dtos.SegmentChangesDTO {
 	var segmentChangesDto dtos.SegmentChangesDTO
 	err := json.Unmarshal([]byte(data), &segmentChangesDto)
@@ -38,48 +42,40 @@ func (f *FileSegmentFetcher) parseSegmentJson(data string) *dtos.SegmentChangesD
 	return &segmentChangesDto
 }
 
-func (s *FileSegmentFetcher) processSegmentJson(segmentName string, data string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
-	var segmentChangesDto dtos.SegmentChangesDTO
-	segmentChangesDto.Since = changeNumber
-	segmentChangesDto.Till = changeNumber
-	segmentChange := s.parseSegmentJson(data)
-	addedJson, err := json.Marshal(segmentChange.Added)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("error: %v", err))
-		return &segmentChangesDto, nil
-	}
-	removedJson, err := json.Marshal(segmentChange.Removed)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("error: %v", err))
-		return &segmentChangesDto, nil
+// processSegmentJson returns a SegmentChangesDTO after apply the logic
+func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
+	segmentChange := s.parseSegmentJson(string(fileContents))
+	// if the till is less than storage CN and different from the default till ignore the change
+	if segmentChange.Till < changeNumber && segmentChange.Till != defaultTill {
+		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
 	}
 
-	jsonToSha := append(addedJson, removedJson...)
-
+	// create a json SegmentChangeDto with Added and Removed
+	asJson, _ := json.Marshal(dtos.SegmentChangesDTO{Added: segmentChange.Added, Removed: segmentChange.Removed})
 	currH := sha1.New()
-	currH.Write(jsonToSha)
+	currH.Write(asJson)
+	// calculate the json sha
 	currSum := currH.Sum(nil)
 
-	if lastHash, ok := s.lastHash[segmentName]; ok {
-		if bytes.Equal(currSum, lastHash) {
-			return &segmentChangesDto, nil
-		}
+	lastHash := s.lastHash[segmentName]
+	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
+	if (lastHash != nil && bytes.Equal(currSum, lastHash)) || segmentChange.Till == defaultTill {
+		s.lastHash[segmentName] = currSum
+		segmentChange.Since = changeNumber
+		segmentChange.Till = changeNumber
+		return segmentChange, nil
 	}
-	if segmentChange.Till < changeNumber {
-		return &segmentChangesDto, nil
-	}
+	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash[segmentName] = currSum
 	segmentChange.Since = segmentChange.Till
-	segmentChange.Till++
 	return segmentChange, nil
 }
 
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSegmentFetcher) Fetch(segmentName string, changeNumber int64, _ *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-	fileContents, err := ioutil.ReadFile(fmt.Sprintf("%v/%v.json", s.segmentDirectory, segmentName))
+	fileContents, err := s.reader.ReadFile(fmt.Sprintf("%v/%v.json", s.segmentDirectory, segmentName))
 	if err != nil {
 		return nil, err
 	}
-	data := string(fileContents)
-	return s.processSegmentJson(segmentName, data, changeNumber)
+	return s.processSegmentJson(fileContents, segmentName, changeNumber)
 }
