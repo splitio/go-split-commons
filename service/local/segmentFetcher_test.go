@@ -179,7 +179,7 @@ func TestFetchSomeSegments(t *testing.T) {
 	}
 
 	fetches++
-	// 4) The CN from storage is -1, till is 445345, and since is -1, and sha is the same as before. It's going to return a segment change with same data.
+	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a segment change with same data.
 	segmentChange, _ = mockedFetchers.Fetch("test_1", 2323, nil)
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
@@ -192,7 +192,7 @@ func TestFetchSomeSegments(t *testing.T) {
 	}
 
 	fetches++
-	// 5) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a segment change with updates.
+	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a segment change with updates.
 	segmentChange, _ = mockedFetchers.Fetch("test_1", 2323, nil)
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
