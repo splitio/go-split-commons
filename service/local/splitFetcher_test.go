@@ -102,7 +102,7 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 1660326991072 || res.Till != 1660326991073 {
+	if res.Since != 1660326991072 || res.Till != 1660326991072 {
 		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
 	}
 
@@ -137,17 +137,9 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	_, err = fetcher.Fetch(-1, &service.FetchOptions{})
 
-	if err != nil {
-		t.Error("fetching should not fail. Got: ", err)
-	}
-
-	if res.Since != -1 || res.Till != -1 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
-	}
-
-	if len(res.Splits) != 0 {
-		t.Error("should have 0 split. has: ", res.Splits)
+	if err == nil {
+		t.Error("fetching should fail.")
 	}
 }

@@ -26,6 +26,8 @@ const (
 	SplitFileFormatYAML
 )
 
+const defaultTill = -1
+
 // FileSplitFetcher struct fetches splits from a file
 type FileSplitFetcher struct {
 	splitFile  string
@@ -251,6 +253,10 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	splitChangesDto.Since = changeNumber
 	splitChangesDto.Till = changeNumber
 	splitChange := s.parseSplitsJson(data)
+	// if the till is less than storage CN and different from the default till ignore the change
+	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
+		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
+	}
 	splitsJson, err := json.Marshal(splitChange.Splits)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("error: %v", err))
@@ -259,13 +265,17 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	}
 	currH := sha1.New()
 	currH.Write(splitsJson)
+	// calculate the json sha
 	currSum := currH.Sum(nil)
-	if bytes.Equal(currSum, s.lastHash) || splitChange.Till < changeNumber {
-		return &splitChangesDto, nil
+	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
+	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == changeNumber {
+		splitChange.Till = changeNumber
+		splitChange.Since = changeNumber
+		return splitChange, nil
 	}
+	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
 	splitChange.Since = splitChange.Till
-	splitChange.Till++
 	return splitChange, nil
 }
 
