@@ -32,19 +32,22 @@ func NewFileSegmentFetcher(segmentDirectory string, logger logging.LoggerInterfa
 }
 
 // parseSegmentJson returns a SegmentChangesDTO parsed from data
-func (f *FileSegmentFetcher) parseSegmentJson(data string) *dtos.SegmentChangesDTO {
+func (f *FileSegmentFetcher) parseSegmentJson(data string) (*dtos.SegmentChangesDTO, error) {
 	var segmentChangesDto dtos.SegmentChangesDTO
 	err := json.Unmarshal([]byte(data), &segmentChangesDto)
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
-		return &segmentChangesDto
+		return nil, fmt.Errorf("couldn't parse segmentChange json")
 	}
-	return &segmentChangesDto
+	return &segmentChangesDto, nil
 }
 
 // processSegmentJson returns a SegmentChangesDTO after apply the logic
 func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
-	segmentChange := s.parseSegmentJson(string(fileContents))
+	segmentChange, err := s.parseSegmentJson(string(fileContents))
+	if err != nil {
+		return nil, err
+	}
 	// if the till is less than storage CN and different from the default till ignore the change
 	if segmentChange.Till < changeNumber && segmentChange.Till != defaultTill {
 		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
