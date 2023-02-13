@@ -6,10 +6,18 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v4/service"
+	"github.com/splitio/go-split-commons/v4/service/local/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-var jsonTest_1 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-2}`)
+var jsonTest_default = []byte(`{"splits":[],"since":-1,"till":-1}`)
+var jsonTest_0 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
+var jsonTest_1 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
+var jsonTest_2 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":2323}`)
+var jsonTest_3 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":2323}`)
+var jsonTest_4 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":445345}`)
+var jsonTest_5 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
+var jsonTest = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-2}`)
 
 func TestLocalSplitFetcher(t *testing.T) {
 	file, err := ioutil.TempFile("", "localhost_test")
@@ -102,7 +110,7 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 1660326991072 || res.Till != 1660326991073 {
+	if res.Since != 1660326991072 || res.Till != 1660326991072 {
 		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
 	}
 
@@ -126,7 +134,7 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
-	if _, err := file.Write(jsonTest_1); err != nil {
+	if _, err := file.Write(jsonTest); err != nil {
 		t.Error("writing to the file should not fail")
 	}
 
@@ -137,17 +145,97 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	_, err = fetcher.Fetch(-1, &service.FetchOptions{})
 
-	if err != nil {
-		t.Error("fetching should not fail. Got: ", err)
+	if err == nil {
+		t.Error("fetching should fail.")
+	}
+}
+
+func TestFetchSomeSplits(t *testing.T) {
+	fetches := 0
+	mockedFetchers := FileSplitFetcher{
+		reader: mocks.MockReader{
+			ReadFileCall: func(filename string) ([]byte, error) {
+				if filename != "" {
+					t.Error("Cannot construct path")
+				}
+				switch fetches {
+				case 0:
+					return jsonTest_0, nil
+				case 1:
+					return jsonTest_1, nil
+				case 2:
+					return jsonTest_2, nil
+				case 3:
+					return jsonTest_3, nil
+				case 4:
+					return jsonTest_4, nil
+				case 5:
+					return jsonTest_5, nil
+				}
+				return jsonTest_default, nil
+			},
+		},
+		logger:     &logging.Logger{},
+		fileFormat: SplitFileFormatJSON,
+	}
+	// 0) The CN from storage is -1, till and since are -1, and sha doesn't exist in the hash. It's going to return a split change with updates.
+	splitChange, _ := mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	if splitChange.Since != -1 || splitChange.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.Splits)
 	}
 
-	if res.Since != -1 || res.Till != -1 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	fetches++
+	// 1) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a split change with updates.
+	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	if splitChange.Since != -1 || splitChange.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 2 {
+		t.Error("should have 1 split. has: ", splitChange.Splits)
 	}
 
-	if len(res.Splits) != 0 {
-		t.Error("should have 0 split. has: ", res.Splits)
+	fetches++
+	// 2) The CN from storage is -1, till is 2323, and since is -1, and sha is the same as before. It's going to return a split change with the same data.
+	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	if splitChange.Since != -1 || splitChange.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.Splits)
+	}
+
+	fetches++
+	// 3) The CN from storage is -1, till is 2323, and since is -1, sha is different than before. It's going to return a split change with updates.
+	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	if splitChange.Since != 2323 || splitChange.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.Splits)
+	}
+
+	fetches++
+	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a split change with same data.
+	splitChange, _ = mockedFetchers.Fetch(2323, &service.FetchOptions{})
+	if splitChange.Since != 2323 || splitChange.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.Splits)
+	}
+
+	fetches++
+	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a split change with updates.
+	splitChange, _ = mockedFetchers.Fetch(2323, &service.FetchOptions{})
+	if splitChange.Since != 2323 || splitChange.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	}
+	if len(splitChange.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.Splits)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -26,8 +25,11 @@ const (
 	SplitFileFormatYAML
 )
 
+const defaultTill = -1
+
 // FileSplitFetcher struct fetches splits from a file
 type FileSplitFetcher struct {
+	reader     Reader
 	splitFile  string
 	fileFormat int
 	lastHash   []byte
@@ -42,6 +44,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatYAML,
 			logger:     logger,
+			reader:     NewFileReader(),
 		}
 	}
 	r = regexp.MustCompile(`(?i)\.json$`)
@@ -50,6 +53,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatJSON,
 			logger:     logger,
+			reader:     NewFileReader(),
 		}
 	}
 	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
@@ -57,6 +61,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 		splitFile:  splitFile,
 		fileFormat: SplitFileFormatClassic,
 		logger:     logger,
+		reader:     NewFileReader(),
 	}
 }
 
@@ -235,43 +240,47 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
-func (f *FileSplitFetcher) parseSplitsJson(data string) *dtos.SplitChangesDTO {
+func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
 	var splitChangesDto dtos.SplitChangesDTO
 	err := json.Unmarshal([]byte(data), &splitChangesDto)
 
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
-		return &splitChangesDto
+		return nil, fmt.Errorf("couldn't parse splitChange json")
 	}
-	return &splitChangesDto
+	return &splitChangesDto, nil
 }
 
 func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
-	var splitChangesDto dtos.SplitChangesDTO
-	splitChangesDto.Since = changeNumber
-	splitChangesDto.Till = changeNumber
-	splitChange := s.parseSplitsJson(data)
-	splitsJson, err := json.Marshal(splitChange.Splits)
+	splitChange, err := s.parseSplitsJson(data)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("error: %v", err))
-		s.logger.Error("ignoring file and defaulting to empty change")
-		return &splitChangesDto, nil
+		return nil, err
 	}
+	// if the till is less than storage CN and different from the default till ignore the change
+	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
+		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
+	}
+	splitsJson, _ := json.Marshal(splitChange.Splits)
 	currH := sha1.New()
 	currH.Write(splitsJson)
+	// calculate the json sha
 	currSum := currH.Sum(nil)
-	if bytes.Equal(currSum, s.lastHash) || splitChange.Till < changeNumber {
-		return &splitChangesDto, nil
+	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
+	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == defaultTill {
+		s.lastHash = currSum
+		splitChange.Till = changeNumber
+		splitChange.Since = changeNumber
+		return splitChange, nil
 	}
+	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
 	splitChange.Since = splitChange.Till
-	splitChange.Till++
 	return splitChange, nil
 }
 
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-	fileContents, err := ioutil.ReadFile(s.splitFile)
+	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
 	}
