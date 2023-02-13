@@ -11,8 +11,6 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-const defaultTill = -1
-
 // FileSegmentFetcher struct fetches segments from a file
 type FileSegmentFetcher struct {
 	reader           Reader

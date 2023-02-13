@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -30,6 +29,7 @@ const defaultTill = -1
 
 // FileSplitFetcher struct fetches splits from a file
 type FileSplitFetcher struct {
+	reader     Reader
 	splitFile  string
 	fileFormat int
 	lastHash   []byte
@@ -44,6 +44,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatYAML,
 			logger:     logger,
+			reader:     NewFileReader(),
 		}
 	}
 	r = regexp.MustCompile(`(?i)\.json$`)
@@ -52,6 +53,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 			splitFile:  splitFile,
 			fileFormat: SplitFileFormatJSON,
 			logger:     logger,
+			reader:     NewFileReader(),
 		}
 	}
 	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
@@ -59,6 +61,7 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) servi
 		splitFile:  splitFile,
 		fileFormat: SplitFileFormatClassic,
 		logger:     logger,
+		reader:     NewFileReader(),
 	}
 }
 
@@ -276,7 +279,7 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-	fileContents, err := ioutil.ReadFile(s.splitFile)
+	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
 	}
