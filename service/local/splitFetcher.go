@@ -237,32 +237,27 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
-func (f *FileSplitFetcher) parseSplitsJson(data string) *dtos.SplitChangesDTO {
+func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
 	var splitChangesDto dtos.SplitChangesDTO
 	err := json.Unmarshal([]byte(data), &splitChangesDto)
 
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
-		return &splitChangesDto
+		return nil, fmt.Errorf("couldn't parse splitChange json")
 	}
-	return &splitChangesDto
+	return &splitChangesDto, nil
 }
 
 func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
-	var splitChangesDto dtos.SplitChangesDTO
-	splitChangesDto.Since = changeNumber
-	splitChangesDto.Till = changeNumber
-	splitChange := s.parseSplitsJson(data)
+	splitChange, err := s.parseSplitsJson(data)
+	if err != nil {
+		return nil, err
+	}
 	// if the till is less than storage CN and different from the default till ignore the change
 	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
 		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
 	}
-	splitsJson, err := json.Marshal(splitChange.Splits)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("error: %v", err))
-		s.logger.Error("ignoring file and defaulting to empty change")
-		return &splitChangesDto, nil
-	}
+	splitsJson, _ := json.Marshal(splitChange.Splits)
 	currH := sha1.New()
 	currH.Write(splitsJson)
 	// calculate the json sha
