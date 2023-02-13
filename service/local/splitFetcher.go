@@ -266,7 +266,8 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	// calculate the json sha
 	currSum := currH.Sum(nil)
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
-	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == changeNumber {
+	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == defaultTill {
+		s.lastHash = currSum
 		splitChange.Till = changeNumber
 		splitChange.Since = changeNumber
 		return splitChange, nil
