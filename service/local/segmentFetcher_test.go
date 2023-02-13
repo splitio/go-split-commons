@@ -46,7 +46,7 @@ func TestInvalidTill(t *testing.T) {
 
 	_, err := fetcher.Fetch("segmentTillInvalid", -1, &service.FetchOptions{})
 	if err == nil {
-		t.Error("fetching should not fail. Got: ", err)
+		t.Error("fetching should fail.")
 	}
 }
 
