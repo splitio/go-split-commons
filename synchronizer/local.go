@@ -34,14 +34,18 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 	workers := Workers{
 		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor),
 	}
-	splitTasks := SplitTasks{
-		SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger),
-	}
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentFetcher = segment.NewSegmentFetcher(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
-		splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
 	}
-
+	var splitTasks SplitTasks
+	if cfg.RefreshEnabled {
+		splitTasks = SplitTasks{
+			SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger),
+		}
+		if cfg.SegmentDirectory != "" {
+			splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
+		}
+	}
 	return &Local{
 		splitTasks:     splitTasks,
 		workers:        workers,
@@ -64,25 +68,21 @@ func (s *Local) SyncAll() error {
 
 // StartPeriodicFetching starts periodic fetchers tasks
 func (s *Local) StartPeriodicFetching() {
-	if s.refreshEnabled {
-		if s.splitTasks.SplitSyncTask != nil {
-			s.splitTasks.SplitSyncTask.Start()
-		}
-		if s.splitTasks.SegmentSyncTask != nil {
-			s.splitTasks.SegmentSyncTask.Start()
-		}
+	if s.splitTasks.SplitSyncTask != nil {
+		s.splitTasks.SplitSyncTask.Start()
+	}
+	if s.splitTasks.SegmentSyncTask != nil {
+		s.splitTasks.SegmentSyncTask.Start()
 	}
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *Local) StopPeriodicFetching() {
-	if s.refreshEnabled {
-		if s.splitTasks.SplitSyncTask != nil {
-			s.splitTasks.SplitSyncTask.Stop(false)
-		}
-		if s.splitTasks.SegmentSyncTask != nil {
-			s.splitTasks.SegmentSyncTask.Stop(true)
-		}
+	if s.splitTasks.SplitSyncTask != nil {
+		s.splitTasks.SplitSyncTask.Stop(false)
+	}
+	if s.splitTasks.SegmentSyncTask != nil {
+		s.splitTasks.SegmentSyncTask.Stop(true)
 	}
 }
 
