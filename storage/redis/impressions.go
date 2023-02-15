@@ -139,11 +139,11 @@ func (r *ImpressionStorage) push(impressions []dtos.ImpressionQueueObject) error
 
 	// Checks if expiration needs to be set
 	if inserted == int64(len(impressionsJSON)) {
-		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
-		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
-		if !result {
-			r.logger.Error("Something were wrong setting expiration", errPush)
-		}
+		// This operation will simply do nothing if the key no longer exists (queue is empty)
+		// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
+		// popped correctly. This will result in impressions getting lost but will prevent the queue from taking
+		// a huge amount of memory.
+		r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
 	}
 	return nil
 }
