@@ -36,15 +36,14 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentFetcher = segment.NewSegmentFetcher(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
 	}
-	var splitTasks SplitTasks
+	splitTasks := SplitTasks{}
 	if cfg.RefreshEnabled {
-		splitTasks = SplitTasks{
-			SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger),
-		}
+		splitTasks.SplitSyncTask = tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger)
 		if cfg.SegmentDirectory != "" {
 			splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
 		}
 	}
+
 	return &Local{
 		splitTasks: splitTasks,
 		workers:    workers,
