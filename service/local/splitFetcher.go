@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"runtime/debug"
 	"strings"
 
@@ -14,15 +13,6 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 
 	yaml "gopkg.in/yaml.v3"
-)
-
-const (
-	// SplitFileFormatClassic represents the file format of the standard split definition file <feature treatment>
-	SplitFileFormatClassic = iota
-	// SplitFileFormatJSON represents the file format of a JSON representation of split dtos
-	SplitFileFormatJSON
-	// SplitFileFormatYAML represents the file format of a YAML representation of split dtos
-	SplitFileFormatYAML
 )
 
 const defaultTill = -1
@@ -37,29 +27,10 @@ type FileSplitFetcher struct {
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
-func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) service.SplitFetcher {
-	var r = regexp.MustCompile("(?i)(.yml$|.yaml$)")
-	if r.MatchString(splitFile) {
-		return &FileSplitFetcher{
-			splitFile:  splitFile,
-			fileFormat: SplitFileFormatYAML,
-			logger:     logger,
-			reader:     NewFileReader(),
-		}
-	}
-	r = regexp.MustCompile(`(?i)\.json$`)
-	if r.MatchString(splitFile) {
-		return &FileSplitFetcher{
-			splitFile:  splitFile,
-			fileFormat: SplitFileFormatJSON,
-			logger:     logger,
-			reader:     NewFileReader(),
-		}
-	}
-	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
+func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface, fileFormat int) service.SplitFetcher {
 	return &FileSplitFetcher{
 		splitFile:  splitFile,
-		fileFormat: SplitFileFormatClassic,
+		fileFormat: fileFormat,
 		logger:     logger,
 		reader:     NewFileReader(),
 	}
