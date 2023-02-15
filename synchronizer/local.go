@@ -14,9 +14,10 @@ import (
 
 // Local implements Local Synchronizer
 type Local struct {
-	splitTasks SplitTasks
-	workers    Workers
-	logger     logging.LoggerInterface
+	splitTasks     SplitTasks
+	workers        Workers
+	logger         logging.LoggerInterface
+	refreshEnabled bool
 }
 
 type LocalConfig struct {
@@ -25,6 +26,7 @@ type LocalConfig struct {
 	SegmentWorkers   int
 	QueueSize        int
 	SegmentDirectory string
+	RefreshEnabled   bool
 }
 
 // NewLocal creates new Local
@@ -41,9 +43,10 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 	}
 
 	return &Local{
-		splitTasks: splitTasks,
-		workers:    workers,
-		logger:     logger,
+		splitTasks:     splitTasks,
+		workers:        workers,
+		logger:         logger,
+		refreshEnabled: cfg.RefreshEnabled,
 	}
 }
 
@@ -61,21 +64,25 @@ func (s *Local) SyncAll() error {
 
 // StartPeriodicFetching starts periodic fetchers tasks
 func (s *Local) StartPeriodicFetching() {
-	if s.splitTasks.SplitSyncTask != nil {
-		s.splitTasks.SplitSyncTask.Start()
-	}
-	if s.splitTasks.SegmentSyncTask != nil {
-		s.splitTasks.SegmentSyncTask.Start()
+	if s.refreshEnabled {
+		if s.splitTasks.SplitSyncTask != nil {
+			s.splitTasks.SplitSyncTask.Start()
+		}
+		if s.splitTasks.SegmentSyncTask != nil {
+			s.splitTasks.SegmentSyncTask.Start()
+		}
 	}
 }
 
 // StopPeriodicFetching stops periodic fetchers tasks
 func (s *Local) StopPeriodicFetching() {
-	if s.splitTasks.SplitSyncTask != nil {
-		s.splitTasks.SplitSyncTask.Stop(false)
-	}
-	if s.splitTasks.SegmentSyncTask != nil {
-		s.splitTasks.SegmentSyncTask.Stop(true)
+	if s.refreshEnabled {
+		if s.splitTasks.SplitSyncTask != nil {
+			s.splitTasks.SplitSyncTask.Stop(false)
+		}
+		if s.splitTasks.SegmentSyncTask != nil {
+			s.splitTasks.SegmentSyncTask.Stop(true)
+		}
 	}
 }
 
