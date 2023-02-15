@@ -95,8 +95,10 @@ func (s *Local) RefreshRates() (time.Duration, time.Duration) {
 // SynchronizeSplits syncs splits
 func (s *Local) SynchronizeSplits(till *int64) error {
 	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
-	for _, segment := range s.filterCachedLocalSegments(result.ReferencedSegments) {
-		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
+	if s.workers.SegmentFetcher != nil {
+		for _, segment := range s.filterCachedLocalSegments(result.ReferencedSegments) {
+			go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
+		}
 	}
 	return err
 }
@@ -113,8 +115,11 @@ func (s *Local) filterCachedLocalSegments(segmentsReferenced []string) []string 
 
 // SynchronizeSegment syncs segment
 func (s *Local) SynchronizeSegment(name string, till *int64) error {
-	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till)
-	return err
+	if s.workers.SegmentFetcher != nil {
+		_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till)
+		return err
+	}
+	return nil
 }
 
 // LocalKill does nothing
