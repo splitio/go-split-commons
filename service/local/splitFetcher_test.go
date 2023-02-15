@@ -35,7 +35,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 	}
 
 	logger := logging.NewLogger(nil)
-	fetcher := NewFileSplitFetcher(file.Name(), logger)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatClassic)
 
 	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
 	if err != nil {
@@ -103,7 +103,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 func TestLocalSplitFetcherJson(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
-	fetcher := NewFileSplitFetcher("../../testdata/splitChange_mock.json", logger)
+	fetcher := NewFileSplitFetcher("../../testdata/splitChange_mock.json", logger, SplitFileFormatJSON)
 
 	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
 	if err != nil {
@@ -143,7 +143,7 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	}
 
 	logger := logging.NewLogger(nil)
-	fetcher := NewFileSplitFetcher(file.Name(), logger)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
 
 	_, err = fetcher.Fetch(-1, &service.FetchOptions{})
 
