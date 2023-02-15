@@ -25,6 +25,7 @@ type LocalConfig struct {
 	SegmentWorkers   int
 	QueueSize        int
 	SegmentDirectory string
+	RefreshEnabled   bool
 }
 
 // NewLocal creates new Local
@@ -32,12 +33,15 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 	workers := Workers{
 		SplitFetcher: split.NewSplitFetcher(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor),
 	}
-	splitTasks := SplitTasks{
-		SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger),
-	}
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentFetcher = segment.NewSegmentFetcher(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
-		splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
+	}
+	splitTasks := SplitTasks{}
+	if cfg.RefreshEnabled {
+		splitTasks.SplitSyncTask = tasks.NewFetchSplitsTask(workers.SplitFetcher, cfg.SplitPeriod, logger)
+		if cfg.SegmentDirectory != "" {
+			splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentFetcher, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
+		}
 	}
 
 	return &Local{
