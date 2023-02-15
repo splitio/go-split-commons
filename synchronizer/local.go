@@ -14,10 +14,9 @@ import (
 
 // Local implements Local Synchronizer
 type Local struct {
-	splitTasks     SplitTasks
-	workers        Workers
-	logger         logging.LoggerInterface
-	refreshEnabled bool
+	splitTasks SplitTasks
+	workers    Workers
+	logger     logging.LoggerInterface
 }
 
 type LocalConfig struct {
@@ -47,10 +46,9 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 		}
 	}
 	return &Local{
-		splitTasks:     splitTasks,
-		workers:        workers,
-		logger:         logger,
-		refreshEnabled: cfg.RefreshEnabled,
+		splitTasks: splitTasks,
+		workers:    workers,
+		logger:     logger,
 	}
 }
 
