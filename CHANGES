@@ -1,3 +1,6 @@
+4.3.0 (March X, 2023)
+ - Pointed to new version of go-toolkit 5.3.0.
+
 4.2.3 (Nov 30, 2022)
  - Fix warning when trying to fetch a split by name that might noy yet exist in redis
 
