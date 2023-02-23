@@ -3,10 +3,8 @@ package local
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"regexp"
 	"runtime/debug"
 	"strings"
 
@@ -17,35 +15,24 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-const (
-	// SplitFileFormatClassic represents the file format of the standard split definition file <feature treatment>
-	SplitFileFormatClassic = iota
-	// SplitFileFormatJSON represents the file format of a JSON representation of split dtos
-	SplitFileFormatJSON
-	// SplitFileFormatYAML represents the file format of a YAML representation of split dtos
-	SplitFileFormatYAML
-)
+const defaultTill = -1
 
 // FileSplitFetcher struct fetches splits from a file
 type FileSplitFetcher struct {
+	reader     Reader
 	splitFile  string
 	fileFormat int
 	lastHash   []byte
+	logger     logging.LoggerInterface
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
-func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface) *FileSplitFetcher {
-	var r = regexp.MustCompile("(?i)(.yml$|.yaml$)")
-	if r.MatchString(splitFile) {
-		return &FileSplitFetcher{
-			splitFile:  splitFile,
-			fileFormat: SplitFileFormatYAML,
-		}
-	}
-	logger.Warning("Localhost mode: .split mocks will be deprecated soon in favor of YAML files, which provide more targeting power. Take a look in our documentation.")
+func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface, fileFormat int) service.SplitFetcher {
 	return &FileSplitFetcher{
 		splitFile:  splitFile,
-		fileFormat: SplitFileFormatClassic,
+		fileFormat: fileFormat,
+		logger:     logger,
+		reader:     NewFileReader(),
 	}
 }
 
@@ -158,13 +145,13 @@ func createCondition(keys interface{}, treatment string) dtos.ConditionDTO {
 	return createRolloutCondition(treatment)
 }
 
-func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
+func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	// Set up a guard deferred function to recover if some error occurs during parsing
 	defer func() {
 		if r := recover(); r != nil {
 			// At this point we'll only trust that the logger isn't panicking trust
 			// that the logger isn't panicking
-			log.Fatalf("Localhost Parsing: %v", string(debug.Stack()))
+			f.logger.Error(fmt.Sprintf("Localhost Parsing: %v", string(debug.Stack())))
 			d = make([]dtos.SplitDTO, 0)
 		}
 	}()
@@ -174,7 +161,7 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	var splitsFromYAML []map[string]map[string]interface{}
 	err := yaml.Unmarshal([]byte(data), &splitsFromYAML)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		f.logger.Error(fmt.Sprintf("error: %v", err))
 		return splits
 	}
 
@@ -224,9 +211,47 @@ func parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
+func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
+	var splitChangesDto dtos.SplitChangesDTO
+	err := json.Unmarshal([]byte(data), &splitChangesDto)
+
+	if err != nil {
+		f.logger.Error(fmt.Sprintf("error: %v", err))
+		return nil, fmt.Errorf("couldn't parse splitChange json")
+	}
+	return &splitChangesDto, nil
+}
+
+func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
+	splitChange, err := s.parseSplitsJson(data)
+	if err != nil {
+		return nil, err
+	}
+	// if the till is less than storage CN and different from the default till ignore the change
+	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
+		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
+	}
+	splitsJson, _ := json.Marshal(splitChange.Splits)
+	currH := sha1.New()
+	currH.Write(splitsJson)
+	// calculate the json sha
+	currSum := currH.Sum(nil)
+	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
+	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == defaultTill {
+		s.lastHash = currSum
+		splitChange.Till = changeNumber
+		splitChange.Since = changeNumber
+		return splitChange, nil
+	}
+	// In the last case, the sha is different and till upper or equal to storage CN
+	s.lastHash = currSum
+	splitChange.Since = splitChange.Till
+	return splitChange, nil
+}
+
 // Fetch parses the file and returns the appropriate structures
 func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-	fileContents, err := ioutil.ReadFile(s.splitFile)
+	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
 	}
@@ -237,11 +262,11 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatClassic:
 		splits = parseSplitsClassic(data)
 	case SplitFileFormatYAML:
-		splits = parseSplitsYAML(data)
+		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return nil, fmt.Errorf("JSON is not yet supported")
+		return s.processSplitJson(data, changeNumber)
 	default:
-		return nil, fmt.Errorf("Unsupported file format")
+		return nil, fmt.Errorf("unsupported file format")
 
 	}
 

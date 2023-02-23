@@ -1,11 +1,12 @@
 4.3.0 (March X, 2023)
  - Pointed to new version of go-toolkit 5.3.0.
+ - Removed logs at error level on setting expiration when key was already processed by split sync.
 
 4.2.3 (Nov 30, 2022)
- - Fix warning when trying to fetch a split by name that might noy yet exist in redis
+ - Fixed warning when trying to fetch a split by name that might noy yet exist in redis
 
 4.2.2 (Nov 14, 2022)
- - Fix redis cleanup to use `SPLITIO` prefix portion as well.
+ - Fixed redis cleanup to use `SPLITIO` prefix portion as well.
 
 4.2.1 (Oct 12, 2022)
  - Added user to redis config.
