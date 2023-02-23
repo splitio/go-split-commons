@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches:
-      - main
+    branches-ignore:
+      - none
   pull_request:
-    branches:
-      - main
+    branches-ignore:
+      - none
 
 jobs:
   test:
