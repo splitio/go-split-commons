@@ -225,6 +225,7 @@ func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, 
 func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
 	splitChange, err := s.parseSplitsJson(data)
 	if err != nil {
+		s.logger.Error(fmt.Sprintf("could not find the splitChange file. error: %v", err))
 		return nil, err
 	}
 	// if the till is less than storage CN and different from the default till ignore the change
