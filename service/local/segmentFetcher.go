@@ -76,6 +76,7 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 func (s *FileSegmentFetcher) Fetch(segmentName string, changeNumber int64, _ *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 	fileContents, err := s.reader.ReadFile(fmt.Sprintf("%v/%v.json", s.segmentDirectory, segmentName))
 	if err != nil {
+		s.logger.Error(fmt.Sprintf("could not find the segmentChange file. error: %v", err))
 		return nil, err
 	}
 	return s.processSegmentJson(fileContents, segmentName, changeNumber)

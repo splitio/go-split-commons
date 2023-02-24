@@ -50,7 +50,7 @@ func (m *MiscStorage) ClearAll() error {
 	}
 
 	luaCMD := strings.Replace(clearAllSCriptTemplate, "{KEY_NAMESPACE}", finalPrefix, 1)
-	return m.client.Eval(luaCMD, []string{}, nil)
+	return m.client.Eval(luaCMD, []string{})
 }
 
 // NewMiscStorage creates a new MiscStorageAdapter and returns a reference to it
