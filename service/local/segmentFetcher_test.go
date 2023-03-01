@@ -44,9 +44,12 @@ func TestInvalidTill(t *testing.T) {
 
 	fetcher := NewFileSegmentFetcher("../../testdata", logger)
 
-	_, err := fetcher.Fetch("segmentTillInvalid", -1, &service.FetchOptions{})
-	if err == nil {
-		t.Error("fetching should fail.")
+	res, err := fetcher.Fetch("segmentTillInvalid", -1, &service.FetchOptions{})
+	if err != nil {
+		t.Error("should not fail.")
+	}
+	if res.Till != -1 {
+		t.Error("till should be -1. Got: ", res.Till)
 	}
 }
 
@@ -61,6 +64,7 @@ func TestFetchSomeSegments(t *testing.T) {
 				switch fetches {
 				case 0:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_0",
 						Added:   []string{"user-1"},
 						Removed: make([]string, 0),
 						Till:    -1,
@@ -70,6 +74,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				case 1:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_1",
 						Added:   []string{"user-1"},
 						Removed: []string{"user-2"},
 						Till:    -1,
@@ -79,6 +84,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				case 2:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_2",
 						Added:   []string{"user-1"},
 						Removed: []string{"user-2"},
 						Till:    2323,
@@ -88,6 +94,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				case 3:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_3",
 						Added:   []string{"user-1", "user-3"},
 						Removed: []string{"user-2"},
 						Till:    2323,
@@ -97,6 +104,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				case 4:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_4",
 						Added:   []string{"user-1", "user-3"},
 						Removed: []string{"user-2"},
 						Till:    445345,
@@ -106,6 +114,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				case 5:
 					segmentChange := dtos.SegmentChangesDTO{
+						Name:    "case_5",
 						Added:   []string{"user-1"},
 						Removed: []string{"user-2", "user-3"},
 						Till:    -1,
@@ -115,6 +124,7 @@ func TestFetchSomeSegments(t *testing.T) {
 					return asJson, nil
 				}
 				segmentChange := dtos.SegmentChangesDTO{
+					Name:    "case_6",
 					Added:   make([]string, 0),
 					Removed: make([]string, 0),
 					Till:    -1,
@@ -202,5 +212,42 @@ func TestFetchSomeSegments(t *testing.T) {
 	}
 	if segmentChange.Removed[0] != "user-2" && segmentChange.Removed[1] != "user-3" {
 		t.Error("DTO mal formed")
+	}
+}
+
+func TestSegmentWithoutName(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	fetcher := NewFileSegmentFetcher("../../testdata", logger)
+
+	_, err := fetcher.Fetch("segmentWithoutName", -1, &service.FetchOptions{})
+	if err == nil {
+		t.Error("fetching should fail.")
+	}
+}
+
+func TestSegmentSanitization(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	fetcher := NewFileSegmentFetcher("../../testdata", logger)
+
+	res, err := fetcher.Fetch("segmentSanitization", -1, &service.FetchOptions{})
+	if err != nil {
+		t.Error("fetching should not fail. Got: ", err)
+	}
+	if res.Name != "segmentSanitization" {
+		t.Error("the segment name should be segmentSanitization. Got: ", res.Name)
+	}
+	if len(res.Added) != 2 {
+		t.Error("added size sould be 2. Got: ", res.Added)
+	}
+	if len(res.Removed) != 1 {
+		t.Error("removed size sould be =1. Got: ", res.Removed)
+	}
+	if res.Since != -1 {
+		t.Error("since should be -1. Got: ", res.Since)
+	}
+	if res.Till != -1 {
+		t.Error("till should be -1. Got: ", res.Till)
 	}
 }

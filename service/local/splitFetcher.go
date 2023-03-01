@@ -219,7 +219,7 @@ func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, 
 		f.logger.Error(fmt.Sprintf("error: %v", err))
 		return nil, fmt.Errorf("couldn't parse splitChange json")
 	}
-	return &splitChangesDto, nil
+	return splitSanitization(splitChangesDto), nil
 }
 
 func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
