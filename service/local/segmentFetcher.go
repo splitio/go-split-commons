@@ -37,7 +37,7 @@ func (f *FileSegmentFetcher) parseSegmentJson(data string) (*dtos.SegmentChanges
 		f.logger.Error(fmt.Sprintf("error: %v", err))
 		return nil, fmt.Errorf("couldn't parse segmentChange json")
 	}
-	return &segmentChangesDto, nil
+	return segmentSanitization(segmentChangesDto)
 }
 
 // processSegmentJson returns a SegmentChangesDTO after apply the logic
