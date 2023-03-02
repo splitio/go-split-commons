@@ -28,7 +28,6 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		}
 		if split.TrafficAllocationSeed == 0 {
 			split.TrafficAllocationSeed = -(rand.Int63n(9) + 1) * 1000
-
 		}
 		if split.Seed == 0 {
 			split.Seed = -(rand.Int63n(9) + 1) * 1000
@@ -54,7 +53,6 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 			split.Conditions = append(split.Conditions, condition)
 		}
 		splitResult = append(splitResult, split)
-
 	}
 	splitChange.Splits = splitResult
 	return &splitChange
