@@ -64,19 +64,23 @@ func segmentSanitization(segmentChange dtos.SegmentChangesDTO) (*dtos.SegmentCha
 	if segmentChange.Name == "" {
 		return nil, fmt.Errorf("the segment dto doesn't have name")
 	}
-	var elementsToRemoved []int
-	for i := 0; i < len(segmentChange.Added); i++ {
-		for j := 0; j < len(segmentChange.Removed); j++ {
-			if (segmentChange.Added[i]) == segmentChange.Removed[j] {
-				elementsToRemoved = append(elementsToRemoved, j)
-			}
+	addedKeys := make(map[string]struct{}, len(segmentChange.Added))
+	for _, key := range segmentChange.Added {
+		addedKeys[key] = struct{}{}
+	}
+	removedKeys := make(map[string]struct{}, len(segmentChange.Removed))
+	for _, key := range segmentChange.Removed {
+		_, exists := addedKeys[key]
+		if !exists {
+			removedKeys[key] = struct{}{}
 		}
 	}
-	if len(elementsToRemoved) != 0 {
-		for i := 0; i < len(elementsToRemoved); i++ {
-			segmentChange.Removed = append(segmentChange.Removed[:elementsToRemoved[i]], segmentChange.Removed[elementsToRemoved[i]+1:]...)
-		}
+	newRemoved := make([]string, 0, len(removedKeys))
+	for k := range removedKeys {
+		newRemoved = append(newRemoved, k)
 	}
+	segmentChange.Removed = newRemoved
+
 	if segmentChange.Till < -1 || segmentChange.Till == 0 {
 		segmentChange.Till = -1
 	}
