@@ -1,0 +1,13 @@
+{
+    "name": "segmentSanitization",
+    "added": [
+      "test1",
+      "test2"
+    ],
+    "removed": [
+        "test3",
+        "test1"
+    ],
+    "since": -4,
+    "till": -3
+  }
