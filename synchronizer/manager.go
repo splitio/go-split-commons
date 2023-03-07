@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -122,6 +123,7 @@ func (s *ManagerImpl) Start() {
 	err := s.synchronizer.SyncAll()
 	if err != nil {
 		defer s.lifecycle.ShutdownComplete()
+		s.logger.Error(fmt.Sprintf("error performing syncAll operation: %v", err))
 		s.managerStatus <- Error
 		return
 	}
