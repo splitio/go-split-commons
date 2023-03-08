@@ -44,7 +44,7 @@ func (f *FileSegmentFetcher) parseSegmentJson(data string) (*dtos.SegmentChanges
 func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName string, changeNumber int64) (*dtos.SegmentChangesDTO, error) {
 	segmentChange, err := s.parseSegmentJson(string(fileContents))
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("error: %s", err))
+		s.logger.Error(fmt.Sprintf("error fetching %s: %s", segmentName, err))
 		return nil, err
 	}
 	// if the till is less than storage CN and different from the default till ignore the change
