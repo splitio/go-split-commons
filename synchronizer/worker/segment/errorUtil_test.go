@@ -9,20 +9,14 @@ func TestCreateErrorUtil(t *testing.T) {
 
 	errorTest := NewErrors()
 
-	errorTest.addSegmentName("segment-1")
 	err1 := fmt.Errorf("error for segment-1")
-	errorTest.addError(err1)
+	errorTest.addError("segment-1", err1)
 
-	errorTest.addSegmentName("segment-2")
 	err2 := fmt.Errorf("error for segment-2")
-	errorTest.addError(err2)
+	errorTest.addError("segment-2", err2)
 
-	if len(errorTest.SegmentNames) != 2 {
-		t.Error("the error size should be 2. it was: ", len(errorTest.SegmentNames))
-	}
-
-	if len(errorTest.ErrorList) != 2 {
-		t.Error("the error size should be 2. it was: ", len(errorTest.ErrorList))
+	if len(errorTest.ErrorMap) != 2 {
+		t.Error("the error size should be 2. it was: ", len(errorTest.ErrorMap))
 	}
 
 	if errorTest.PrintErrors() != "{segment-1: error for segment-1} {segment-2: error for segment-2} " {

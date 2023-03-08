@@ -206,8 +206,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {
 				failedSegments.Add(segmentName)
-				errorsToPrint.addSegmentName(segmentName)
-				errorsToPrint.addError(err)
+				errorsToPrint.addError(segmentName, err)
 			}
 
 			mtx.Lock()

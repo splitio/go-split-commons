@@ -35,7 +35,7 @@ func (f *FileSegmentFetcher) parseSegmentJson(data string, segmentName string) (
 	err := json.Unmarshal([]byte(data), &segmentChangesDto)
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
-		return nil, fmt.Errorf("couldn't parse segmentChange json")
+		return nil, fmt.Errorf("couldn't parse segmentChange json for %s", segmentName)
 	}
 	return segmentSanitization(segmentChangesDto, segmentName)
 }
@@ -76,7 +76,7 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 func (s *FileSegmentFetcher) Fetch(segmentName string, changeNumber int64, _ *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
 	fileContents, err := s.reader.ReadFile(fmt.Sprintf("%v/%v.json", s.segmentDirectory, segmentName))
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("could not find the segmentChange file. error: %v", err))
+		s.logger.Error(fmt.Sprintf("could not find the segmentChange file for %s. error: %v", segmentName, err))
 		return nil, err
 	}
 	return s.processSegmentJson(fileContents, segmentName, changeNumber)
