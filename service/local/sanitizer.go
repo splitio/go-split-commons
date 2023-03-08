@@ -58,9 +58,9 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 	return &splitChange
 }
 
-func segmentSanitization(segmentChange dtos.SegmentChangesDTO) (*dtos.SegmentChangesDTO, error) {
+func segmentSanitization(segmentChange dtos.SegmentChangesDTO, segmentName string) (*dtos.SegmentChangesDTO, error) {
 	if segmentChange.Name == "" {
-		return nil, fmt.Errorf("the segment dto doesn't have name")
+		return nil, fmt.Errorf("the %s segment dto doesn't have name", segmentName)
 	}
 	addedKeys := make(map[string]struct{}, len(segmentChange.Added))
 	for _, key := range segmentChange.Added {
