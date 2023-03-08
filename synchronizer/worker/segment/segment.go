@@ -190,11 +190,11 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	s.logger.Debug("Segment Sync", segmentNames)
 	wg := sync.WaitGroup{}
 	wg.Add(len(segmentNames))
+	failedSegments := set.NewThreadSafeSet()
 
 	var mtx sync.Mutex
 	results := make(map[string]UpdateResult, len(segmentNames))
-	var errors []error
-	var segments []string
+	errorsToPrint := NewErrors()
 	for _, name := range segmentNames {
 		conv, ok := name.(string)
 		if !ok {
@@ -205,8 +205,9 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			defer wg.Done() // Make sure the "finished" signal is always sent
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {
-				segments = append(segments, segmentName)
-				errors = append(errors, err)
+				failedSegments.Add(segmentName)
+				errorsToPrint.addSegmentName(segmentName)
+				errorsToPrint.addError(err)
 			}
 
 			mtx.Lock()
@@ -216,8 +217,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	}
 	wg.Wait()
 
-	if len(segments) > 0 {
-		errorsToPrint := NewErrors(errors, segments)
+	if failedSegments.Size() > 0 {
 		return results, fmt.Errorf("the following errors happened when synchronizing segments: %v", errorsToPrint.PrintErrors())
 	}
 
