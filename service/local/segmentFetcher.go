@@ -61,18 +61,18 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 	// calculate the json sha
 	currSum := currH.Sum(nil)
 
-	lastHash := s.lastHash[segmentName]
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	lastHash, ok := s.lastHash[segmentName]
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
-	if (lastHash != nil && bytes.Equal(currSum, lastHash)) || segmentChange.Till == defaultTill {
+	if (ok && bytes.Equal(currSum, lastHash)) || segmentChange.Till == defaultTill {
 		s.lastHash[segmentName] = currSum
 		segmentChange.Since = changeNumber
 		segmentChange.Till = changeNumber
 		return segmentChange, nil
 	}
 	// In the last case, the sha is different and till upper or equal to storage CN
-	s.mutex.Lock()
 	s.lastHash[segmentName] = currSum
-	s.mutex.Unlock()
 	segmentChange.Since = segmentChange.Till
 	return segmentChange, nil
 }

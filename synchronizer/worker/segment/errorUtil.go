@@ -16,7 +16,9 @@ func NewErrors() SegmentError {
 
 func (e *SegmentError) Error() string {
 	errorsToPrint := ""
-	for key, _ := range e.errors {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	for key := range e.errors {
 		errorsToPrint = errorsToPrint + "{" + key + ": " + e.errors[key].Error() + "} "
 	}
 	return errorsToPrint
