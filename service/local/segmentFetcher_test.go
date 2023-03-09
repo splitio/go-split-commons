@@ -142,7 +142,7 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" {
+	if !contains(segmentChange.Added, "user-1") {
 		t.Error("DTO mal formed")
 	}
 	if len(segmentChange.Removed) != 0 {
@@ -155,10 +155,10 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" {
+	if !contains(segmentChange.Added, "user-1") {
 		t.Error("DTO mal formed")
 	}
-	if segmentChange.Removed[0] != "user-2" {
+	if !contains(segmentChange.Removed, "user-2") {
 		t.Error("DTO mal formed")
 	}
 
@@ -168,10 +168,10 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" {
+	if !contains(segmentChange.Added, "user-1") {
 		t.Error("DTO mal formed")
 	}
-	if segmentChange.Removed[0] != "user-2" {
+	if !contains(segmentChange.Removed, "user-2") {
 		t.Error("DTO mal formed")
 	}
 
@@ -181,10 +181,10 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" && segmentChange.Added[1] != "user-3" {
+	if !contains(segmentChange.Added, "user-1") || !contains(segmentChange.Added, "user-3") {
 		t.Error("DTO mal formed")
 	}
-	if segmentChange.Removed[0] != "user-2" {
+	if !contains(segmentChange.Removed, "user-2") {
 		t.Error("DTO mal formed")
 	}
 
@@ -194,10 +194,10 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" && segmentChange.Added[1] != "user-3" {
+	if !contains(segmentChange.Added, "user-1") || !contains(segmentChange.Added, "user-3") {
 		t.Error("DTO mal formed")
 	}
-	if segmentChange.Removed[0] != "user-2" {
+	if !contains(segmentChange.Removed, "user-2") {
 		t.Error("DTO mal formed")
 	}
 
@@ -207,10 +207,11 @@ func TestFetchSomeSegments(t *testing.T) {
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
-	if segmentChange.Added[0] != "user-1" {
+	if !contains(segmentChange.Added, "user-1") {
 		t.Error("DTO mal formed")
 	}
-	if segmentChange.Removed[0] != "user-2" && segmentChange.Removed[1] != "user-3" {
+
+	if !contains(segmentChange.Removed, "user-2") || !contains(segmentChange.Removed, "user-3") {
 		t.Error("DTO mal formed")
 	}
 }
@@ -250,4 +251,13 @@ func TestSegmentSanitization(t *testing.T) {
 	if res.Till != -1 {
 		t.Error("till should be -1. Got: ", res.Till)
 	}
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
