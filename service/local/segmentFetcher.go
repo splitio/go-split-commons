@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service"
@@ -17,6 +18,7 @@ type FileSegmentFetcher struct {
 	segmentDirectory string
 	lastHash         map[string][]byte
 	logger           logging.LoggerInterface
+	mutex            sync.Mutex
 }
 
 // NewFileSegmentFetcher returns a new instance of LocalFileSegmentFetcher
@@ -26,6 +28,7 @@ func NewFileSegmentFetcher(segmentDirectory string, logger logging.LoggerInterfa
 		lastHash:         make(map[string][]byte),
 		logger:           logger,
 		reader:           NewFileReader(),
+		mutex:            sync.Mutex{},
 	}
 }
 
@@ -58,6 +61,7 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 	// calculate the json sha
 	currSum := currH.Sum(nil)
 
+	s.mutex.Lock()
 	lastHash := s.lastHash[segmentName]
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
 	if (lastHash != nil && bytes.Equal(currSum, lastHash)) || segmentChange.Till == defaultTill {
@@ -68,6 +72,7 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 	}
 	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash[segmentName] = currSum
+	s.mutex.Unlock()
 	segmentChange.Since = segmentChange.Till
 	return segmentChange, nil
 }
