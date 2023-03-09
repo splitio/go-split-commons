@@ -2,29 +2,28 @@ package segment
 
 import "sync"
 
-type Errors struct {
-	ErrorMap map[string]error
-	Error    func() string
-	mutex    sync.Mutex
+type SegmentError struct {
+	errors map[string]error
+	mutex  sync.Mutex
 }
 
-func NewErrors() Errors {
-	return Errors{
-		ErrorMap: make(map[string]error),
+func NewErrors() SegmentError {
+	return SegmentError{
+		errors: make(map[string]error),
+		mutex:  sync.Mutex{},
 	}
 }
 
-func (e *Errors) PrintErrors() string {
-	var errorsToPrint string
-	for key, _ := range e.ErrorMap {
-		errorsToPrint = errorsToPrint + "{" + key + ": " + e.ErrorMap[key].Error() + "} "
+func (e *SegmentError) Error() string {
+	errorsToPrint := ""
+	for key, _ := range e.errors {
+		errorsToPrint = errorsToPrint + "{" + key + ": " + e.errors[key].Error() + "} "
 	}
 	return errorsToPrint
 }
 
-func (e *Errors) addError(name string, err error) error {
+func (e *SegmentError) addError(name string, err error) {
 	e.mutex.Lock()
-	e.ErrorMap[name] = err
+	e.errors[name] = err
 	e.mutex.Unlock()
-	return nil
 }

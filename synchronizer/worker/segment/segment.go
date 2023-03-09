@@ -217,7 +217,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	wg.Wait()
 
 	if failedSegments.Size() > 0 {
-		return results, fmt.Errorf("the following errors happened when synchronizing segments: %v", errorsToPrint.PrintErrors())
+		return results, fmt.Errorf("the following errors happened when synchronizing segments: %v", errorsToPrint.Error())
 	}
 
 	return results, nil
