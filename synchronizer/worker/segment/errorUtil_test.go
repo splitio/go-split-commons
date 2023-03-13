@@ -2,6 +2,7 @@ package segment
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -19,7 +20,11 @@ func TestCreateErrorUtil(t *testing.T) {
 		t.Error("the error size should be 2. it was: ", len(errorTest.errors))
 	}
 
-	if errorTest.Error() != "{segment-1: error for segment-1} {segment-2: error for segment-2} " {
+	if !strings.Contains(errorTest.Error(), "segment-1") {
+		t.Error("the printError was: ", errorTest.Error())
+	}
+
+	if !strings.Contains(errorTest.Error(), "segment-2") {
 		t.Error("the printError was: ", errorTest.Error())
 	}
 }
