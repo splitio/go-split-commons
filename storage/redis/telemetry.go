@@ -119,11 +119,8 @@ func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
 
 	// Checks if expiration needs to be set
 	if inserted == int64(len(uniquesJSON)) {
-		t.logger.Debug("Proceeding to set expiration for: ", KeyUniquekeys)
-		result := t.client.Expire(KeyUniquekeys, time.Duration(TTLUniquekeys)*time.Second)
-		if !result {
-			t.logger.Error("Something were wrong setting expiration for %s", KeyUniquekeys)
-		}
+		// No need to handle err because if key doesn't exist it's because sync has already processed it
+		t.client.Expire(KeyUniquekeys, time.Duration(TTLUniquekeys)*time.Second)
 	}
 
 	return nil

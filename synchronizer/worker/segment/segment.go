@@ -194,6 +194,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 
 	var mtx sync.Mutex
 	results := make(map[string]UpdateResult, len(segmentNames))
+	errorsToPrint := NewErrors()
 	for _, name := range segmentNames {
 		conv, ok := name.(string)
 		if !ok {
@@ -205,6 +206,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {
 				failedSegments.Add(segmentName)
+				errorsToPrint.addError(segmentName, err)
 			}
 
 			mtx.Lock()
@@ -215,7 +217,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	wg.Wait()
 
 	if failedSegments.Size() > 0 {
-		return results, fmt.Errorf("the following segments failed to be fetched %v", failedSegments.List())
+		return results, fmt.Errorf("the following errors happened when synchronizing segments: %v", errorsToPrint.Error())
 	}
 
 	return results, nil

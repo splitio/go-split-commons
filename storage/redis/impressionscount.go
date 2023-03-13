@@ -97,11 +97,11 @@ func (r *ImpressionsCountStorageImp) RecordImpressionsCount(impressions dtos.Imp
 
 	// Checks if expiration needs to be set
 	if shouldSetExpirationKey(&impressions, res) {
-		r.logger.Debug("Proceeding to set expiration for: ", r.redisKey)
-		result := r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
-		if !result {
-			r.logger.Error("Something were wrong setting expiration for %s", r.redisKey)
-		}
+		// This operation will simply do nothing if the key no longer exists (queue is empty)
+		// It's only done in the "successful" exit path so that the TTL is not overriden if impressons weren't
+		// popped correctly. This will result in impressions getting lost but will prevent the queue from taking
+		// a huge amount of memory.
+		r.client.Expire(r.redisKey, time.Duration(TTLImpressions)*time.Second)
 	}
 
 	return nil
