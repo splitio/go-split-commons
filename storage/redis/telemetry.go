@@ -105,20 +105,14 @@ func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
 		return nil
 	}
 
-	uniquesJSON, err := json.Marshal(uniques.Keys)
+	inserted, err := t.client.RPush(KeyUniquekeys, uniques.Keys)
 	if err != nil {
-		t.logger.Error("Something were wrong marshaling provided event to JSON", err.Error())
+		t.logger.Error("Something were wrong pushing event to redis", err)
 		return err
 	}
 
-	inserted, errPush := t.client.RPush(KeyUniquekeys, uniquesJSON)
-	if errPush != nil {
-		t.logger.Error("Something were wrong pushing event to redis", errPush)
-		return errPush
-	}
-
 	// Checks if expiration needs to be set
-	if inserted == int64(len(uniquesJSON)) {
+	if inserted == int64(len(uniques.Keys)) {
 		// No need to handle err because if key doesn't exist it's because sync has already processed it
 		t.client.Expire(KeyUniquekeys, time.Duration(TTLUniquekeys)*time.Second)
 	}
