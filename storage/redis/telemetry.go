@@ -119,7 +119,7 @@ func (t *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
 
 	res, err := t.client.RPush(KeyUniquekeys, keysJSON...)
 	if err != nil {
-		t.logger.Error("Something were wrong pushing unique keys to redis", err)
+		t.logger.Error("Something went wrong pushing unique keys to redis", err)
 		return err
 	}
 
