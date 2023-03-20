@@ -171,6 +171,10 @@ func TestRecordUniqueKeys(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 
+			if len(values) != 2 {
+				t.Errorf("Unexpected values len, Expected: 2 Actual: %d", len(values))
+			}
+
 			return &mocks.MockResultOutput{
 				ResultCall: func() (int64, error) { return 1, nil },
 			}
