@@ -18,5 +18,6 @@ type SegmentKeyDTO struct {
 
 // MySegmentDTO struct mapping segment data for mySegments endpoint
 type MySegmentDTO struct {
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }

@@ -1,3 +1,9 @@
+4.3.2 (Apr 19, 2923)
+- Add empty `id` field to MySegments DTO for consistency with SDK server
+
+4.3.1 (March 20, 2023)
+ - Updated MTK dtos for redis
+
 4.3.0 (March 13, 2023)
  - Added support to use JSON files in localhost mode.
  - Pointed to new version of go-toolkit 5.3.0.
