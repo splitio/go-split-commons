@@ -36,7 +36,7 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 			split.Status = "ACTIVE"
 		}
 		if split.DefaultTreatment == "" {
-			split.DefaultTreatment = "on"
+			split.DefaultTreatment = "control"
 		}
 		if split.ChangeNumber < 0 {
 			split.ChangeNumber = 0
