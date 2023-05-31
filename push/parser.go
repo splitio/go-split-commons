@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service/api/sse"
 
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -44,6 +45,29 @@ const (
 	occupancuName   = "[meta]occupancy"
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
 )
+
+type compressType int64
+
+const (
+	NotCompressed compressType = 0
+	Gzip          compressType = 1
+	Zlib          compressType = 2
+)
+
+func (c compressType) String() *string {
+	switch c {
+	case NotCompressed:
+		var ret = "NOT_COMPRESSED"
+		return &ret
+	case Gzip:
+		var ret = "GZIP"
+		return &ret
+	case Zlib:
+		var ret = "ZLIB"
+		return &ret
+	}
+	return nil
+}
 
 // ErrEmptyEvent indicates an event without message and event fields
 var ErrEmptyEvent = errors.New("empty incoming event")
@@ -148,8 +172,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	}
 
 	base := BaseUpdate{
-		BaseMessage:  BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
-		changeNumber: nested.ChangeNumber,
+		BaseMessage:          BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
+		changeNumber:         nested.ChangeNumber,
+		previousChangeNumber: nested.PreviousChangeNumber,
+		compressType:         compressType(nested.CompressType),
+		// TODO add featureFlag definition after decode and decompress
 	}
 
 	switch nested.Type {
@@ -284,7 +311,10 @@ type Update interface {
 // BaseUpdate contains fields & methods related to update-based messages
 type BaseUpdate struct {
 	BaseMessage
-	changeNumber int64
+	changeNumber         int64
+	previousChangeNumber int64
+	compressType         compressType
+	featureFlag          dtos.SplitDTO
 }
 
 // MessageType alwats returns MessageType for Update messages
@@ -395,13 +425,16 @@ type metrics struct {
 }
 
 type genericMessageData struct {
-	Metrics          metrics `json:"metrics"`
-	Type             string  `json:"type"`
-	ChangeNumber     int64   `json:"changeNumber"`
-	SplitName        string  `json:"splitName"`
-	DefaultTreatment string  `json:"defaultTreatment"`
-	SegmentName      string  `json:"segmentName"`
-	ControlType      string  `json:"controlType"`
+	Metrics               metrics `json:"metrics"`
+	Type                  string  `json:"type"`
+	ChangeNumber          int64   `json:"changeNumber"`
+	SplitName             string  `json:"splitName"`
+	DefaultTreatment      string  `json:"defaultTreatment"`
+	SegmentName           string  `json:"segmentName"`
+	ControlType           string  `json:"controlType"`
+	PreviousChangeNumber  int64   `json:"pcn"`
+	CompressType          int64   `json:"c"`
+	FeatureFlagDefinition string  `json:"d"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }
