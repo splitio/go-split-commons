@@ -54,21 +54,6 @@ const (
 	Zlib          compressType = 2
 )
 
-func (c compressType) String() *string {
-	switch c {
-	case NotCompressed:
-		var ret = "NOT_COMPRESSED"
-		return &ret
-	case Gzip:
-		var ret = "GZIP"
-		return &ret
-	case Zlib:
-		var ret = "ZLIB"
-		return &ret
-	}
-	return nil
-}
-
 // ErrEmptyEvent indicates an event without message and event fields
 var ErrEmptyEvent = errors.New("empty incoming event")
 
@@ -172,16 +157,14 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	}
 
 	base := BaseUpdate{
-		BaseMessage:          BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
-		changeNumber:         nested.ChangeNumber,
-		previousChangeNumber: nested.PreviousChangeNumber,
-		compressType:         compressType(nested.CompressType),
+		BaseMessage:  BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
+		changeNumber: nested.ChangeNumber,
 		// TODO add featureFlag definition after decode and decompress
 	}
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressType(nested.CompressType)})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -311,10 +294,7 @@ type Update interface {
 // BaseUpdate contains fields & methods related to update-based messages
 type BaseUpdate struct {
 	BaseMessage
-	changeNumber         int64
-	previousChangeNumber int64
-	compressType         compressType
-	featureFlag          dtos.SplitDTO
+	changeNumber int64
 }
 
 // MessageType alwats returns MessageType for Update messages
@@ -326,6 +306,9 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 // SplitChangeUpdate represents a SplitChange notification generated in the split servers
 type SplitChangeUpdate struct {
 	BaseUpdate
+	previousChangeNumber int64
+	compressType         compressType
+	featureFlag          dtos.SplitDTO
 }
 
 // UpdateType always returns UpdateTypeSplitChange for SplitKillUpdate messages
