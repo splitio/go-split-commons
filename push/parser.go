@@ -1,6 +1,7 @@
 package push
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service/api/sse"
 
+	"github.com/splitio/go-toolkit/v5/datautils"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -171,12 +173,35 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		return nil, errors.New("parseUpdate: data cannot be nil")
 	}
 
+	var ffDecoded []byte
+	if nested.FeatureFlagDefinition != "" {
+		ffDecoded, err := base64.StdEncoding.DecodeString(nested.FeatureFlagDefinition)
+		if err != nil {
+			p.logger.Warning("parseUpdate: error decoding FeatureFlagDefinition")
+		}
+		isCompress := compressType(nested.CompressType)
+		if isCompress == 1 || isCompress == 2 {
+			ffDecoded, err = datautils.Decompress(ffDecoded, int(isCompress))
+			if err != nil {
+				p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
+			}
+		}
+	}
+
+	var featureFlagDtos dtos.SplitDTO
+	if ffDecoded != nil {
+		err := json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
+		if err != nil {
+			p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
+		}
+	}
+
 	base := BaseUpdate{
 		BaseMessage:          BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
 		changeNumber:         nested.ChangeNumber,
 		previousChangeNumber: nested.PreviousChangeNumber,
 		compressType:         compressType(nested.CompressType),
-		// TODO add featureFlag definition after decode and decompress
+		featureFlag:          featureFlagDtos,
 	}
 
 	switch nested.Type {
