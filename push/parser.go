@@ -46,12 +46,10 @@ const (
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
 )
 
-type compressType int64
-
 const (
-	NotCompressed compressType = 0
-	Gzip          compressType = 1
-	Zlib          compressType = 2
+	NotCompressed = iota
+	Gzip
+	Zlib
 )
 
 // ErrEmptyEvent indicates an event without message and event fields
