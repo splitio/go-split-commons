@@ -48,28 +48,11 @@ const (
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
 )
 
-type compressType int64
-
 const (
-	NotCompressed compressType = 0
-	Gzip          compressType = 1
-	Zlib          compressType = 2
+	NotCompressed = iota
+	Gzip
+	Zlib
 )
-
-func (c compressType) String() *string {
-	switch c {
-	case NotCompressed:
-		var ret = "NOT_COMPRESSED"
-		return &ret
-	case Gzip:
-		var ret = "GZIP"
-		return &ret
-	case Zlib:
-		var ret = "ZLIB"
-		return &ret
-	}
-	return nil
-}
 
 // ErrEmptyEvent indicates an event without message and event fields
 var ErrEmptyEvent = errors.New("empty incoming event")
@@ -179,7 +162,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		if err != nil {
 			p.logger.Warning("parseUpdate: error decoding FeatureFlagDefinition")
 		}
-		isCompress := compressType(nested.CompressType)
+		isCompress := nested.CompressType
 		if isCompress == 1 || isCompress == 2 {
 			ffDecoded, err = datautils.Decompress(ffDecoded, int(isCompress))
 			if err != nil {
@@ -197,16 +180,13 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	}
 
 	base := BaseUpdate{
-		BaseMessage:          BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
-		changeNumber:         nested.ChangeNumber,
-		previousChangeNumber: nested.PreviousChangeNumber,
-		compressType:         compressType(nested.CompressType),
-		featureFlag:          featureFlagDtos,
+		BaseMessage:  BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
+		changeNumber: nested.ChangeNumber,
 	}
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: nested.CompressType}) // TODO add featureFlag definition after decode and decompress
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -336,10 +316,7 @@ type Update interface {
 // BaseUpdate contains fields & methods related to update-based messages
 type BaseUpdate struct {
 	BaseMessage
-	changeNumber         int64
-	previousChangeNumber int64
-	compressType         compressType
-	featureFlag          dtos.SplitDTO
+	changeNumber int64
 }
 
 // MessageType alwats returns MessageType for Update messages
@@ -351,6 +328,9 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 // SplitChangeUpdate represents a SplitChange notification generated in the split servers
 type SplitChangeUpdate struct {
 	BaseUpdate
+	previousChangeNumber int64
+	compressType         int
+	featureFlag          dtos.SplitDTO
 }
 
 // UpdateType always returns UpdateTypeSplitChange for SplitKillUpdate messages
@@ -458,7 +438,7 @@ type genericMessageData struct {
 	SegmentName           string  `json:"segmentName"`
 	ControlType           string  `json:"controlType"`
 	PreviousChangeNumber  int64   `json:"pcn"`
-	CompressType          int64   `json:"c"`
+	CompressType          int     `json:"c"`
 	FeatureFlagDefinition string  `json:"d"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
