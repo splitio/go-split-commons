@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service/api/sse"
 
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -43,6 +44,12 @@ const (
 const (
 	occupancuName   = "[meta]occupancy"
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
+)
+
+const (
+	NotCompressed = iota
+	Gzip
+	Zlib
 )
 
 // ErrEmptyEvent indicates an event without message and event fields
@@ -154,7 +161,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: nested.CompressType}) // TODO add featureFlag definition after decode and decompress
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -296,6 +303,9 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 // SplitChangeUpdate represents a SplitChange notification generated in the split servers
 type SplitChangeUpdate struct {
 	BaseUpdate
+	previousChangeNumber int64
+	compressType         int
+	featureFlag          dtos.SplitDTO
 }
 
 // UpdateType always returns UpdateTypeSplitChange for SplitKillUpdate messages
@@ -395,13 +405,16 @@ type metrics struct {
 }
 
 type genericMessageData struct {
-	Metrics          metrics `json:"metrics"`
-	Type             string  `json:"type"`
-	ChangeNumber     int64   `json:"changeNumber"`
-	SplitName        string  `json:"splitName"`
-	DefaultTreatment string  `json:"defaultTreatment"`
-	SegmentName      string  `json:"segmentName"`
-	ControlType      string  `json:"controlType"`
+	Metrics               metrics `json:"metrics"`
+	Type                  string  `json:"type"`
+	ChangeNumber          int64   `json:"changeNumber"`
+	SplitName             string  `json:"splitName"`
+	DefaultTreatment      string  `json:"defaultTreatment"`
+	SegmentName           string  `json:"segmentName"`
+	ControlType           string  `json:"controlType"`
+	PreviousChangeNumber  int64   `json:"pcn"`
+	CompressType          int     `json:"c"`
+	FeatureFlagDefinition string  `json:"d"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }
