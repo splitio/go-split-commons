@@ -304,7 +304,7 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber int64
-	compressType         compressType
+	compressType         int
 	featureFlag          dtos.SplitDTO
 }
 
@@ -413,7 +413,7 @@ type genericMessageData struct {
 	SegmentName           string  `json:"segmentName"`
 	ControlType           string  `json:"controlType"`
 	PreviousChangeNumber  int64   `json:"pcn"`
-	CompressType          int64   `json:"c"`
+	CompressType          int     `json:"c"`
 	FeatureFlagDefinition string  `json:"d"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
