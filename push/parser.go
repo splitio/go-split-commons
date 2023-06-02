@@ -157,12 +157,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	base := BaseUpdate{
 		BaseMessage:  BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
 		changeNumber: nested.ChangeNumber,
-		// TODO add featureFlag definition after decode and decompress
 	}
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressType(nested.CompressType)})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: nested.CompressType}) // TODO add featureFlag definition after decode and decompress
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
