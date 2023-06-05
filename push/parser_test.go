@@ -49,6 +49,147 @@ func TestParseSplitUpdate(t *testing.T) {
 	}
 }
 
+func TestParseInstantFF(t *testing.T) {
+	compressType := 0
+	ffDefinition := "feature flga definition"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                  UpdateTypeSplitChange,
+				ChangeNumber:          123,
+				PreviousChangeNumber:  1,
+				CompressType:          common.IntRef(compressType),
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onSplitUpdate: func(u *SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error("change number should be 123. Is: ", u.changeNumber)
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error("channel should be sarasa_splits. Is:", u.channel)
+			}
+			if *u.compressType != 0 {
+				t.Error("compress type should be 0")
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error("no error should have been returned. Got: ", err)
+	}
+}
+func TestParseInstantFFCompressTypeNil(t *testing.T) {
+	ffDefinition := "feature flga definition"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                  UpdateTypeSplitChange,
+				ChangeNumber:          123,
+				PreviousChangeNumber:  1,
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onSplitUpdate: func(u *SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error("change number should be 123. Is: ", u.changeNumber)
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error("channel should be sarasa_splits. Is:", u.channel)
+			}
+			if u.compressType != nil {
+				t.Error("compress type should be nil")
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error("no error should have been returned. Got: ", err)
+	}
+}
+
+func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
+	compressType := 3
+	ffDefinition := "feature flga definition"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                  UpdateTypeSplitChange,
+				ChangeNumber:          123,
+				PreviousChangeNumber:  1,
+				CompressType:          common.IntRef(compressType),
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onSplitUpdate: func(u *SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error("change number should be 123. Is: ", u.changeNumber)
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error("channel should be sarasa_splits. Is:", u.channel)
+			}
+			if u.compressType != nil {
+				t.Error("compress type should be nil")
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error("no error should have been returned. Got: ", err)
+	}
+}
+
 func TestParseSplitKill(t *testing.T) {
 	event := &sseMocks.RawEventMock{
 		IDCall:    func() string { return "abc" },
