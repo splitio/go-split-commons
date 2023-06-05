@@ -46,11 +46,12 @@ const (
 	occupancyPrefix = "[?occupancy=metrics.publishers]"
 )
 
-const (
-	NotCompressed = iota
-	Gzip
-	Zlib
-)
+func getCompressType(number *int) *int {
+	if number == nil || *number > 2 {
+		return nil
+	}
+	return number
+}
 
 // ErrEmptyEvent indicates an event without message and event fields
 var ErrEmptyEvent = errors.New("empty incoming event")
@@ -159,9 +160,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		changeNumber: nested.ChangeNumber,
 	}
 
+	compressTypePointer := getCompressType(nested.CompressType)
+
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: nested.CompressType}) // TODO add featureFlag definition after decode and decompress
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer}) // TODO add featureFlag definition after decode and decompress
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -304,8 +307,8 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber int64
-	compressType         int
-	featureFlag          dtos.SplitDTO
+	compressType         *int
+	featureFlag          *dtos.SplitDTO
 }
 
 // UpdateType always returns UpdateTypeSplitChange for SplitKillUpdate messages
@@ -413,8 +416,8 @@ type genericMessageData struct {
 	SegmentName           string  `json:"segmentName"`
 	ControlType           string  `json:"controlType"`
 	PreviousChangeNumber  int64   `json:"pcn"`
-	CompressType          int     `json:"c"`
-	FeatureFlagDefinition string  `json:"d"`
+	CompressType          *int    `json:"c"`
+	FeatureFlagDefinition *string `json:"d"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }
