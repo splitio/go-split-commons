@@ -60,8 +60,8 @@ func TestParseInstantFF(t *testing.T) {
 				Type:                  UpdateTypeSplitChange,
 				ChangeNumber:          123,
 				PreviousChangeNumber:  1,
-				CompressType:          &compressType,
-				FeatureFlagDefinition: &ffDefinition,
+				CompressType:          common.IntRef(compressType),
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -106,7 +106,7 @@ func TestParseInstantFFCompressTypeNil(t *testing.T) {
 				Type:                  UpdateTypeSplitChange,
 				ChangeNumber:          123,
 				PreviousChangeNumber:  1,
-				FeatureFlagDefinition: &ffDefinition,
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -153,8 +153,8 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 				Type:                  UpdateTypeSplitChange,
 				ChangeNumber:          123,
 				PreviousChangeNumber:  1,
-				CompressType:          &compressType,
-				FeatureFlagDefinition: &ffDefinition,
+				CompressType:          common.IntRef(compressType),
+				FeatureFlagDefinition: common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
