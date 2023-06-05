@@ -10,6 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/service/api/sse"
 
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datautils"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -157,15 +158,16 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		return nil, errors.New("parseUpdate: data cannot be nil")
 	}
 
+	compressTypePointer := getCompressType(nested.CompressType)
 	var ffDecoded []byte
-	if nested.FeatureFlagDefinition != "" {
-		ffDecoded, err := base64.StdEncoding.DecodeString(nested.FeatureFlagDefinition)
+	var err error
+	if nested.FeatureFlagDefinition != nil && nested.CompressType != nil {
+		ffDecoded, err = base64.StdEncoding.DecodeString(common.StringFromRef(nested.FeatureFlagDefinition))
 		if err != nil {
 			p.logger.Warning("parseUpdate: error decoding FeatureFlagDefinition")
 		}
-		isCompress := nested.CompressType
-		if isCompress == 1 || isCompress == 2 {
-			ffDecoded, err = datautils.Decompress(ffDecoded, int(isCompress))
+		if len(ffDecoded) > 0 && common.IntFromRef(compressTypePointer) != 0 {
+			ffDecoded, err = datautils.Decompress(ffDecoded, common.IntFromRef(compressTypePointer))
 			if err != nil {
 				p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
 			}
@@ -173,7 +175,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	}
 
 	var featureFlagDtos dtos.SplitDTO
-	if ffDecoded != nil {
+	if ffDecoded != nil || len(ffDecoded) > 0 {
 		err := json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
 		if err != nil {
 			p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
@@ -185,11 +187,12 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		changeNumber: nested.ChangeNumber,
 	}
 
-	compressTypePointer := getCompressType(nested.CompressType)
-
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer}) // TODO add featureFlag definition after decode and decompress
+		if featureFlagDtos.Name == "" {
+			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer})
+		}
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer, featureFlag: &featureFlagDtos})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
