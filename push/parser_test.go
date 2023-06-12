@@ -9,6 +9,9 @@ import (
 	sseMocks "github.com/splitio/go-toolkit/v5/sse/mocks"
 )
 
+const FF_SHOULD_BE_NIL = "feature flag dto should be nil"
+const FF_NOT_SHOULD_BE_NIL = "feature flag dto should be not nil"
+
 func TestParseSplitUpdate(t *testing.T) {
 	event := &sseMocks.RawEventMock{
 		IDCall:    func() string { return "abc" },
@@ -670,7 +673,7 @@ func TestParseFFDtoNotCompress(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto == nil {
-		t.Error("feature flag dto should be not nil")
+		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
 }
 
@@ -691,7 +694,7 @@ func TestParseFFDtoNotCompressWrongDefinition(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto != nil {
-		t.Error("feature flag dto should be nil")
+		t.Error(FF_SHOULD_BE_NIL)
 	}
 }
 
@@ -712,7 +715,7 @@ func TestParseFFDtoGzipCompress(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto == nil {
-		t.Error("feature flag dto should not be nil")
+		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
 }
 
@@ -733,7 +736,7 @@ func TestParseFFDtoZlibCompressWrongCompressType(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto != nil {
-		t.Error("feature flag dto should be nil")
+		t.Error(FF_SHOULD_BE_NIL)
 	}
 }
 
@@ -754,7 +757,7 @@ func TestParseFFDtoZlibCompress(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto == nil {
-		t.Error("feature flag dto should not be nil")
+		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
 }
 
@@ -775,7 +778,7 @@ func TestParseFFDtoGzipCompressWrongDefinition(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto != nil {
-		t.Error("feature flag dto should be nil")
+		t.Error(FF_SHOULD_BE_NIL)
 	}
 }
 
@@ -794,7 +797,7 @@ func TestParseFFDtoCompressTypeNil(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto != nil {
-		t.Error("feature flag dto should be nil")
+		t.Error(FF_SHOULD_BE_NIL)
 	}
 }
 
@@ -813,6 +816,6 @@ func TestParseFFDtoDefinitionNil(t *testing.T) {
 	}
 	ffDto := parser.parseFFDto(&data)
 	if ffDto != nil {
-		t.Error("feature flag dto should be nil")
+		t.Error(FF_SHOULD_BE_NIL)
 	}
 }
