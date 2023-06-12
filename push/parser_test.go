@@ -11,6 +11,10 @@ import (
 
 const FF_SHOULD_BE_NIL = "feature flag dto should be nil"
 const FF_NOT_SHOULD_BE_NIL = "feature flag dto should be not nil"
+const CN_SHOULD_BE_123 = "change number should be 123. Is: "
+const CHANNEL_SHOULD_BE = "channel should be sarasa_splits. Is: "
+const ERROR_SHOULD_RETURNED = "no error should have been returned. Got: "
+const FF_SHOULD_BE_MAURO_JAVA = "feature flag should be mauro_java"
 
 func TestParseSplitUpdate(t *testing.T) {
 	event := &sseMocks.RawEventMock{
@@ -38,17 +42,17 @@ func TestParseSplitUpdate(t *testing.T) {
 		logger: logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			return nil
 		},
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -84,10 +88,10 @@ func TestParseInstantFF(t *testing.T) {
 		logger:    logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if *u.compressType != 0 {
 				t.Error("compress type should be 0")
@@ -96,14 +100,14 @@ func TestParseInstantFF(t *testing.T) {
 				t.Error("change number should be 1684329854385")
 			}
 			if u.featureFlag.Name != "mauro_java" {
-				t.Error("change number should be mauro_java")
+				t.Error(FF_SHOULD_BE_MAURO_JAVA)
 			}
 			return nil
 		},
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -139,10 +143,10 @@ func TestParseInstantFFCompressTypeZlib(t *testing.T) {
 		logger:    logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if *u.compressType != 2 {
 				t.Error("compress type should be 2")
@@ -151,14 +155,14 @@ func TestParseInstantFFCompressTypeZlib(t *testing.T) {
 				t.Error("change number should be 1684265694505")
 			}
 			if u.featureFlag.Name != "mauro_java" {
-				t.Error("change number should be mauro_java")
+				t.Error(FF_SHOULD_BE_MAURO_JAVA)
 			}
 			return nil
 		},
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -194,10 +198,10 @@ func TestParseInstantFFCompressTypeGzip(t *testing.T) {
 		logger:    logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if *u.compressType != 1 {
 				t.Error("compress type should be 1")
@@ -206,14 +210,14 @@ func TestParseInstantFFCompressTypeGzip(t *testing.T) {
 				t.Error("change number should be 1684333081259")
 			}
 			if u.featureFlag.Name != "mauro_java" {
-				t.Error("change number should be mauro_java")
+				t.Error(FF_SHOULD_BE_MAURO_JAVA)
 			}
 			return nil
 		},
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -247,10 +251,10 @@ func TestParseInstantFFCompressTypeNil(t *testing.T) {
 		logger:    logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if u.compressType != nil {
 				t.Error("compress type should be nil")
@@ -263,7 +267,7 @@ func TestParseInstantFFCompressTypeNil(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -299,10 +303,10 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 		logger:    logger,
 		onSplitUpdate: func(u *SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if u.compressType != nil {
 				t.Error("compress type should be nil")
@@ -312,7 +316,7 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -344,10 +348,10 @@ func TestParseSplitKill(t *testing.T) {
 		logger: logger,
 		onSplitKill: func(u *SplitKillUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_splits" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if u.SplitName() != "someSplit" {
 				t.Error("split name should be someSplit. Is: ", u.SplitName())
@@ -361,7 +365,7 @@ func TestParseSplitKill(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -392,10 +396,10 @@ func TestParseSegmentChange(t *testing.T) {
 		logger: logger,
 		onSegmentUpdate: func(u *SegmentChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
-				t.Error("change number should be 123. Is: ", u.changeNumber)
+				t.Error(CN_SHOULD_BE_123, u.changeNumber)
 			}
 			if u.Channel() != "sarasa_segments" {
-				t.Error("channel should be sarasa_splits. Is:", u.channel)
+				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
 			if u.SegmentName() != "someSegment" {
 				t.Error("segment name should be someSegment. Is: ", u.SegmentName())
@@ -405,7 +409,7 @@ func TestParseSegmentChange(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -435,7 +439,7 @@ func TestControl(t *testing.T) {
 		logger: logger,
 		onControlUpdate: func(u *ControlUpdate) *int64 {
 			if u.Channel() != "control_pri" {
-				t.Error("channel should be sarasa_splits. Is:", u.Channel())
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
 			}
 			if u.ControlType() != ControlTypeStreamingDisabled {
 				t.Error("incorrect control type. Expected: ", u.ControlType())
@@ -445,7 +449,7 @@ func TestControl(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -476,7 +480,7 @@ func TestOccupancy(t *testing.T) {
 		logger: logger,
 		onOccupancyMesage: func(u *OccupancyMessage) *int64 {
 			if u.Channel() != "control_pri" {
-				t.Error("channel should be sarasa_splits. Is:", u.Channel())
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
 			}
 			if u.Publishers() != 12 {
 				t.Error("there should be 12 publishers. Got: ", u.Publishers())
@@ -486,7 +490,7 @@ func TestOccupancy(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -533,7 +537,7 @@ func TestAblyError(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -551,7 +555,7 @@ func TestSyncMessage(t *testing.T) {
 	parser := &NotificationParserImpl{logger: logger}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
@@ -652,7 +656,7 @@ func TestNewNotificationParserImpl(t *testing.T) {
 		nil)
 
 	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
-		t.Error("no error should have been returned. Got: ", err)
+		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
 
