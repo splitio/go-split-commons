@@ -27,6 +27,9 @@ func TestRecorderRedis(t *testing.T) {
 			if len(configData.Tags) != 1 || configData.Tags[0] != "sentinel" {
 				t.Error("It should send tags")
 			}
+			if configData.ImpressionsMode != 0 {
+				t.Error("impression mode shoould be optimized")
+			}
 			return nil
 		},
 	}
