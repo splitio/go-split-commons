@@ -190,13 +190,13 @@ func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dto
 	}
 	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
 	if err != nil {
-		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err))
+		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err.Error()))
 		return nil
 	}
 	if common.IntFromRef(compressType) != datautils.None {
 		ffDecoded, err = p.dataUtils.Decompress(ffDecoded, common.IntFromRef(compressType))
 		if err != nil {
-			p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err))
+			p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err.Error()))
 			return nil
 		}
 	}
@@ -204,7 +204,7 @@ func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dto
 	var featureFlag dtos.SplitDTO
 	err = json.Unmarshal([]byte(ffDecoded), &featureFlag)
 	if err != nil {
-		p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err))
+		p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err.Error()))
 		return nil
 	}
 	return &featureFlag
