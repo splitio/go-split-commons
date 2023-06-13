@@ -185,7 +185,6 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
 	compressType := getCompressType(nested.CompressType)
-	var err error
 	if nested.FeatureFlagDefinition == nil || compressType == nil {
 		return nil
 	}
