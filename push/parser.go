@@ -168,7 +168,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	case UpdateTypeSplitChange:
 		featureFlag := p.processMessage(nested)
 		if featureFlag == nil {
-			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber})
+			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
 		}
 		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, featureFlag: featureFlag})
 	case UpdateTypeSplitKill:
