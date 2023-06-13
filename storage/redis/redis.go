@@ -79,7 +79,7 @@ func NewRedisClient(config *conf.RedisConfig, logger logging.LoggerInterface) (*
 		if asOpErr, ok := res.Err().(*net.OpError); ok {
 			return nil, asOpErr // don't wrap it to conserve type
 		}
-		return nil, fmt.Errorf("couldn't connect to redis: %w", err)
+		return nil, fmt.Errorf("couldn't connect to redis: %w", res.Err())
 	}
 
 	return redis.NewPrefixedRedisClient(rClient, prefix)

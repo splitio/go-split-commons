@@ -28,12 +28,14 @@ func (r *SynchronizerRedis) SynchronizeStats() error {
 
 // SynchronizeConfig syncs config
 func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady int64, factoryInstances map[string]int64, tags []string) {
+	impressionsMode := getImpressionMode(cfg)
 	err := r.storage.RecordConfigData(dtos.Config{
 		OperationMode:      Consumer,
 		Storage:            Redis,
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
 		Tags:               tags,
+		ImpressionsMode:    impressionsMode,
 	})
 	if err != nil {
 		r.logger.Error("Could not log config data", err.Error())
