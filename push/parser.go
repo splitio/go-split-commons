@@ -202,13 +202,13 @@ func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dto
 		}
 	}
 
-	var featureFlagDtos dtos.SplitDTO
-	err = json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
+	var featureFlag dtos.SplitDTO
+	err = json.Unmarshal([]byte(ffDecoded), &featureFlag)
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err))
 		return nil
 	}
-	return &featureFlagDtos
+	return &featureFlag
 }
 
 // Event basic interface
