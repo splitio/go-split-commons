@@ -95,9 +95,6 @@ func TestParseInstantFF(t *testing.T) {
 			if u.Channel() != "sarasa_splits" {
 				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
-			if *u.compressType != 0 {
-				t.Error("compress type should be 0")
-			}
 			if u.featureFlag.ChangeNumber != 1684329854385 {
 				t.Error("change number should be 1684329854385")
 			}
@@ -149,9 +146,6 @@ func TestParseInstantFFCompressTypeZlib(t *testing.T) {
 			}
 			if u.Channel() != "sarasa_splits" {
 				t.Error(CHANNEL_SHOULD_BE, u.channel)
-			}
-			if *u.compressType != 2 {
-				t.Error("compress type should be 2")
 			}
 			if u.featureFlag.ChangeNumber != 1684265694505 {
 				t.Error("change number should be 1684265694505")
@@ -205,9 +199,6 @@ func TestParseInstantFFCompressTypeGzip(t *testing.T) {
 			if u.Channel() != "sarasa_splits" {
 				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
-			if *u.compressType != 1 {
-				t.Error("compress type should be 1")
-			}
 			if u.featureFlag.ChangeNumber != 1684333081259 {
 				t.Error("change number should be 1684333081259")
 			}
@@ -258,9 +249,6 @@ func TestParseInstantFFCompressTypeNil(t *testing.T) {
 			if u.Channel() != "sarasa_splits" {
 				t.Error(CHANNEL_SHOULD_BE, u.channel)
 			}
-			if u.compressType != nil {
-				t.Error("compress type should be nil")
-			}
 			if u.featureFlag != nil {
 				t.Error("featureFlag type should be nil")
 			}
@@ -309,9 +297,6 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 			}
 			if u.Channel() != "sarasa_splits" {
 				t.Error(CHANNEL_SHOULD_BE, u.channel)
-			}
-			if u.compressType != nil {
-				t.Error("compress type should be nil")
 			}
 			return nil
 		},

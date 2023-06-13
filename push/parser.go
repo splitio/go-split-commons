@@ -10,6 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/service/api/sse"
 
 	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-toolkit/v5/datautils"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -167,9 +168,9 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	case UpdateTypeSplitChange:
 		featureFlag := p.processMessage(nested)
 		if featureFlag == nil {
-			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: getCompressType(nested.CompressType)})
+			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber})
 		}
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: getCompressType(nested.CompressType), featureFlag: featureFlag})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, featureFlag: featureFlag})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -184,17 +185,16 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
 	compressType := getCompressType(nested.CompressType)
-	var ffDecoded []byte
 	var err error
-	if nested.FeatureFlagDefinition == nil || nested.CompressType == nil {
+	if nested.FeatureFlagDefinition == nil || compressType == nil {
 		return nil
 	}
-	ffDecoded, err = p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err))
 		return nil
 	}
-	if common.IntFromRef(compressType) != 0 {
+	if common.IntFromRef(compressType) != datautils.None {
 		ffDecoded, err = p.dataUtils.Decompress(ffDecoded, common.IntFromRef(compressType))
 		if err != nil {
 			p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err))
@@ -341,7 +341,6 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber int64
-	compressType         *int
 	featureFlag          *dtos.SplitDTO
 }
 
