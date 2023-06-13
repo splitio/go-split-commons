@@ -1,7 +1,6 @@
 package push
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -66,6 +65,7 @@ type NotificationParser interface {
 
 // NotificationParserImpl implementas the NotificationParser interface
 type NotificationParserImpl struct {
+	dataUtils         DataUtils
 	logger            logging.LoggerInterface
 	onSplitUpdate     func(*SplitChangeUpdate) error
 	onSplitKill       func(*SplitKillUpdate) error
@@ -84,6 +84,7 @@ func NewNotificationParserImpl(
 	onOccupancyMessage func(*OccupancyMessage) *int64,
 	onAblyError func(*AblyError) *int64) *NotificationParserImpl {
 	return &NotificationParserImpl{
+		dataUtils:         NewDataUtilsImpl(),
 		logger:            loggerInterface,
 		onSplitUpdate:     onSplitUpdate,
 		onSplitKill:       onSplitKill,
@@ -158,30 +159,6 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		return nil, errors.New("parseUpdate: data cannot be nil")
 	}
 
-	compressTypePointer := getCompressType(nested.CompressType)
-	var ffDecoded []byte
-	var err error
-	if nested.FeatureFlagDefinition != nil && nested.CompressType != nil {
-		ffDecoded, err = base64.StdEncoding.DecodeString(common.StringFromRef(nested.FeatureFlagDefinition))
-		if err != nil {
-			p.logger.Warning("parseUpdate: error decoding FeatureFlagDefinition")
-		}
-		if len(ffDecoded) > 0 && common.IntFromRef(compressTypePointer) != 0 {
-			ffDecoded, err = datautils.Decompress(ffDecoded, common.IntFromRef(compressTypePointer))
-			if err != nil {
-				p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
-			}
-		}
-	}
-
-	var featureFlagDtos dtos.SplitDTO
-	if ffDecoded != nil || len(ffDecoded) > 0 {
-		err := json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
-		if err != nil {
-			p.logger.Warning("parseUpdate: error decompressing FeatureFlagDefinition")
-		}
-	}
-
 	base := BaseUpdate{
 		BaseMessage:  BaseMessage{timestamp: data.Timestamp, channel: data.Channel},
 		changeNumber: nested.ChangeNumber,
@@ -189,10 +166,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		if featureFlagDtos.Name == "" {
-			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer})
+		featureFlag := p.processMessage(nested)
+		if featureFlag == nil {
+			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
 		}
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: compressTypePointer, featureFlag: &featureFlagDtos})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, featureFlag: featureFlag})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -203,6 +181,33 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		// TODO: log full event in debug mode
 		return nil, fmt.Errorf("invalid update type: %s", nested.Type)
 	}
+}
+
+func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
+	compressType := getCompressType(nested.CompressType)
+	if nested.FeatureFlagDefinition == nil || compressType == nil {
+		return nil
+	}
+	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err.Error()))
+		return nil
+	}
+	if common.IntFromRef(compressType) != datautils.None {
+		ffDecoded, err = p.dataUtils.Decompress(ffDecoded, common.IntFromRef(compressType))
+		if err != nil {
+			p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err.Error()))
+			return nil
+		}
+	}
+
+	var featureFlag dtos.SplitDTO
+	err = json.Unmarshal([]byte(ffDecoded), &featureFlag)
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err.Error()))
+		return nil
+	}
+	return &featureFlag
 }
 
 // Event basic interface
@@ -335,7 +340,6 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber int64
-	compressType         *int
 	featureFlag          *dtos.SplitDTO
 }
 
