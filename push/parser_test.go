@@ -677,7 +677,7 @@ func TestParseFFDtoNotCompress(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto == nil {
 		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
@@ -698,7 +698,7 @@ func TestParseFFDtoNotCompressWrongDefinition(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto != nil {
 		t.Error(FF_SHOULD_BE_NIL)
 	}
@@ -719,7 +719,7 @@ func TestParseFFDtoGzipCompress(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto == nil {
 		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
@@ -740,7 +740,7 @@ func TestParseFFDtoZlibCompressWrongCompressType(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto != nil {
 		t.Error(FF_SHOULD_BE_NIL)
 	}
@@ -761,7 +761,7 @@ func TestParseFFDtoZlibCompress(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto == nil {
 		t.Error(FF_NOT_SHOULD_BE_NIL)
 	}
@@ -782,7 +782,7 @@ func TestParseFFDtoGzipCompressWrongDefinition(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto != nil {
 		t.Error(FF_SHOULD_BE_NIL)
 	}
@@ -801,7 +801,7 @@ func TestParseFFDtoCompressTypeNil(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto != nil {
 		t.Error(FF_SHOULD_BE_NIL)
 	}
@@ -820,7 +820,7 @@ func TestParseFFDtoDefinitionNil(t *testing.T) {
 		dataUtils: NewDataUtilsImpl(),
 		logger:    logger,
 	}
-	ffDto := parser.parseFFDto(&data)
+	ffDto := parser.processMessage(&data)
 	if ffDto != nil {
 		t.Error(FF_SHOULD_BE_NIL)
 	}

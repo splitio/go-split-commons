@@ -165,11 +165,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
-		ffDto := p.parseFFDto(nested)
-		if ffDto == nil {
+		featureFlag := p.processMessage(nested)
+		if featureFlag == nil {
 			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: getCompressType(nested.CompressType)})
 		}
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: getCompressType(nested.CompressType), featureFlag: ffDto})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, compressType: getCompressType(nested.CompressType), featureFlag: featureFlag})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -182,35 +182,33 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	}
 }
 
-func (p *NotificationParserImpl) parseFFDto(nested *genericMessageData) *dtos.SplitDTO {
-	compressTypePointer := getCompressType(nested.CompressType)
+func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
+	compressType := getCompressType(nested.CompressType)
 	var ffDecoded []byte
 	var err error
-	if nested.FeatureFlagDefinition != nil && nested.CompressType != nil {
-		ffDecoded, err = p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	if nested.FeatureFlagDefinition == nil || nested.CompressType == nil {
+		return nil
+	}
+	ffDecoded, err = p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err))
+		return nil
+	}
+	if common.IntFromRef(compressType) != 0 {
+		ffDecoded, err = p.dataUtils.Decompress(ffDecoded, common.IntFromRef(compressType))
 		if err != nil {
-			p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err))
+			p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err))
 			return nil
-		}
-		if len(ffDecoded) > 0 && common.IntFromRef(compressTypePointer) != 0 {
-			ffDecoded, err = p.dataUtils.Decompress(ffDecoded, common.IntFromRef(compressTypePointer))
-			if err != nil {
-				p.logger.Debug(fmt.Sprintf("error decompressing FeatureFlagDefinition: '%s'", err))
-				return nil
-			}
 		}
 	}
 
-	if len(ffDecoded) > 0 {
-		var featureFlagDtos dtos.SplitDTO
-		err := json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
-		if err != nil {
-			p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err))
-			return nil
-		}
-		return &featureFlagDtos
+	var featureFlagDtos dtos.SplitDTO
+	err = json.Unmarshal([]byte(ffDecoded), &featureFlagDtos)
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error parsing feature flag json definition: '%s'", err))
+		return nil
 	}
-	return nil
+	return &featureFlagDtos
 }
 
 // Event basic interface
