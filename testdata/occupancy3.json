@@ -6,4 +6,4 @@
     "channel": "[?occupancy=metrics.publishers]control_sec",
     "data": "{\"metrics\":{\"publishers\":2}}",
     "name": "[meta]occupancy"
-} 
+}
