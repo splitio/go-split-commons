@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
@@ -15,6 +17,7 @@ type SplitUpdateWorker struct {
 	sync       synchronizerInterface
 	logger     logging.LoggerInterface
 	lifecycle  lifecycle.Manager
+	ffStorage  storage.SplitStorage
 }
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
@@ -22,6 +25,7 @@ func NewSplitUpdateWorker(
 	splitQueue chan SplitChangeUpdate,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
+	storage storage.SplitStorage,
 ) (*SplitUpdateWorker, error) {
 	if cap(splitQueue) < 5000 {
 		return nil, errors.New("")
@@ -31,6 +35,7 @@ func NewSplitUpdateWorker(
 		splitQueue: splitQueue,
 		sync:       synchronizer,
 		logger:     logger,
+		ffStorage:  storage,
 	}
 	worker.lifecycle.Setup()
 	return worker, nil
@@ -54,9 +59,11 @@ func (s *SplitUpdateWorker) Start() {
 			case splitUpdate := <-s.splitQueue:
 				s.logger.Debug("Received Split update and proceding to perform fetch")
 				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", splitUpdate.ChangeNumber()))
-				err := s.sync.SynchronizeSplits(common.Int64Ref(splitUpdate.ChangeNumber()))
-				if err != nil {
-					s.logger.Error(err)
+				if !s.addOrUpdateFeatureFlag(splitUpdate) {
+					err := s.sync.SynchronizeSplits(common.Int64Ref(splitUpdate.ChangeNumber()))
+					if err != nil {
+						s.logger.Error(err)
+					}
 				}
 			case <-s.lifecycle.ShutdownRequested():
 				return
@@ -77,4 +84,23 @@ func (s *SplitUpdateWorker) Stop() {
 // IsRunning indicates if worker is running or not
 func (s *SplitUpdateWorker) IsRunning() bool {
 	return s.lifecycle.IsRunning()
+}
+
+func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChangeUpdate) bool {
+	if changeNumber, err := s.ffStorage.ChangeNumber(); err == nil {
+		if changeNumber >= featureFlagUpdate.changeNumber {
+			return true
+		}
+		if featureFlagUpdate.featureFlag != nil && featureFlagUpdate.previousChangeNumber == changeNumber {
+			splits := make([]dtos.SplitDTO, 0, 1)
+			splits = append(splits, *featureFlagUpdate.featureFlag)
+			if featureFlagUpdate.featureFlag.Status == "ACTIVE" {
+				s.ffStorage.Update(splits, nil, changeNumber)
+				return true
+			}
+			s.ffStorage.Update(nil, splits, changeNumber)
+			return true
+		}
+	}
+	return false
 }
