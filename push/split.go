@@ -103,7 +103,7 @@ func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChange
 		featureFlags = append(featureFlags, *featureFlagUpdate.featureFlag)
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
 		activeFFs, inactiveFFs := util.GetActiveAndInactiveFF(&featureFlagChange)
-		s.ffStorage.Update(activeFFs, inactiveFFs, changeNumber)
+		s.ffStorage.Update(activeFFs, inactiveFFs, featureFlagUpdate.BaseUpdate.changeNumber)
 		return true
 	}
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
