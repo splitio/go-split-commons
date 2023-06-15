@@ -99,7 +99,7 @@ func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChange
 	}
 	if featureFlagUpdate.featureFlag != nil && featureFlagUpdate.previousChangeNumber == changeNumber {
 		s.logger.Debug("updating feature flag %s", featureFlagUpdate.featureFlag.Name)
-		var featureFlags []dtos.SplitDTO
+		featureFlags := make([]dtos.SplitDTO, 0, 1)
 		featureFlags = append(featureFlags, *featureFlagUpdate.featureFlag)
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
 		activeFFs, inactiveFFs := util.ProcessFeatureFlagChanges(&featureFlagChange)
