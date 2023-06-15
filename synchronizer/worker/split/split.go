@@ -73,7 +73,7 @@ func NewSplitFetcher(
 
 func (s *UpdaterImpl) processUpdate(featureFlags *dtos.SplitChangesDTO) {
 
-	activeSplits, inactiveSplits := util.GetActiveAndInactiveFF(featureFlags)
+	activeSplits, inactiveSplits := util.ProcessFeatureFlagChanges(featureFlags)
 
 	// Add/Update active splits
 	s.splitStorage.Update(activeSplits, inactiveSplits, featureFlags.Till)

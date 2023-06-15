@@ -102,7 +102,7 @@ func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChange
 		var featureFlags []dtos.SplitDTO
 		featureFlags = append(featureFlags, *featureFlagUpdate.featureFlag)
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
-		activeFFs, inactiveFFs := util.GetActiveAndInactiveFF(&featureFlagChange)
+		activeFFs, inactiveFFs := util.ProcessFeatureFlagChanges(&featureFlagChange)
 		s.ffStorage.Update(activeFFs, inactiveFFs, featureFlagUpdate.BaseUpdate.changeNumber)
 		return true
 	}

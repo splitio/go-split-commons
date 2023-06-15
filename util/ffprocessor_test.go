@@ -13,7 +13,7 @@ func TestGetActiveFF(t *testing.T) {
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ACTIVE})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
-	actives, inactives := GetActiveAndInactiveFF(featureFlagChanges)
+	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 2 {
 		t.Error("active length should be 2")
@@ -27,11 +27,11 @@ func TestGetActiveFF(t *testing.T) {
 func TestGetInactiveFF(t *testing.T) {
 
 	var featureFlags []dtos.SplitDTO
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: INACTIVE})
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVE})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
-	actives, inactives := GetActiveAndInactiveFF(featureFlagChanges)
+	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 0 {
 		t.Error("active length should be 2")
@@ -46,10 +46,10 @@ func TestGetActiveAndInactiveFF(t *testing.T) {
 
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ACTIVE})
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVE})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
-	actives, inactives := GetActiveAndInactiveFF(featureFlagChanges)
+	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 1 {
 		t.Error("active length should be 2")
