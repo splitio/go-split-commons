@@ -267,8 +267,11 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 			return 2, nil
 		},
 		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {
-			if toAdd == nil {
+			if len(toAdd) == 0 {
 				t.Error("toAdd should have a feature flag")
+			}
+			if len(toRemove) != 0 {
+				t.Error("toRemove shouldn't have a feature flag")
 			}
 		},
 	}
@@ -292,8 +295,11 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 			return 2, nil
 		},
 		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {
-			if toRemove == nil {
-				t.Error("toAdd should have a feature flag")
+			if len(toRemove) == 0 {
+				t.Error("toRemove should have a feature flag")
+			}
+			if len(toAdd) != 0 {
+				t.Error("toAdd shouldn't have a feature flag")
 			}
 		},
 	}
