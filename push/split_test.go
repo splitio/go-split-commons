@@ -229,6 +229,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 		t.Error("should haven been called. got: ", c)
 	}
 }
+
 func TestAddOrUpdateFFStorageCNGreaterThanFFCN(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitQueue := make(chan SplitChangeUpdate, 5000)
