@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v4/util"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
@@ -87,20 +88,24 @@ func (s *SplitUpdateWorker) IsRunning() bool {
 }
 
 func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChangeUpdate) bool {
-	if changeNumber, err := s.ffStorage.ChangeNumber(); err == nil {
-		if changeNumber >= featureFlagUpdate.changeNumber {
-			return true
-		}
-		if featureFlagUpdate.featureFlag != nil && featureFlagUpdate.previousChangeNumber == changeNumber {
-			splits := make([]dtos.SplitDTO, 0, 1)
-			splits = append(splits, *featureFlagUpdate.featureFlag)
-			if featureFlagUpdate.featureFlag.Status == "ACTIVE" {
-				s.ffStorage.Update(splits, nil, changeNumber)
-				return true
-			}
-			s.ffStorage.Update(nil, splits, changeNumber)
-			return true
-		}
+	changeNumber, err := s.ffStorage.ChangeNumber()
+	if err != nil {
+		s.logger.Debug("problem getting change number from feature flag storage: %s", err.Error())
+		return false
 	}
+	if changeNumber >= featureFlagUpdate.BaseUpdate.changeNumber {
+		s.logger.Debug("the feature flag it's already updated")
+		return true
+	}
+	if featureFlagUpdate.featureFlag != nil && featureFlagUpdate.previousChangeNumber == changeNumber {
+		s.logger.Debug("updating feature flag %s", featureFlagUpdate.featureFlag.Name)
+		var featureFlags []dtos.SplitDTO
+		featureFlags = append(featureFlags, *featureFlagUpdate.featureFlag)
+		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
+		activeFFs, inactiveFFs := util.GetActiveAndInactiveFF(&featureFlagChange)
+		s.ffStorage.Update(activeFFs, inactiveFFs, changeNumber)
+		return true
+	}
+	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
 	return false
 }

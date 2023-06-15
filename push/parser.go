@@ -170,7 +170,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		if featureFlag == nil {
 			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
 		}
-		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, changeNumber: nested.ChangeNumber, featureFlag: featureFlag})
+		return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base, previousChangeNumber: nested.PreviousChangeNumber, featureFlag: featureFlag})
 	case UpdateTypeSplitKill:
 		return nil, p.onSplitKill(&SplitKillUpdate{BaseUpdate: base, splitName: nested.SplitName, defaultTreatment: nested.DefaultTreatment})
 	case UpdateTypeSegmentChange:
@@ -340,7 +340,6 @@ func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
 type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber int64
-	changeNumber         int64
 	featureFlag          *dtos.SplitDTO
 }
 

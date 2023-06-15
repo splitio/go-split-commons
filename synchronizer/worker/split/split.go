@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v4/util"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -70,19 +71,12 @@ func NewSplitFetcher(
 	}
 }
 
-func (s *UpdaterImpl) processUpdate(splits *dtos.SplitChangesDTO) {
-	inactiveSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
-	activeSplits := make([]dtos.SplitDTO, 0, len(splits.Splits))
-	for idx := range splits.Splits {
-		if splits.Splits[idx].Status == "ACTIVE" {
-			activeSplits = append(activeSplits, splits.Splits[idx])
-		} else {
-			inactiveSplits = append(inactiveSplits, splits.Splits[idx])
-		}
-	}
+func (s *UpdaterImpl) processUpdate(featureFlags *dtos.SplitChangesDTO) {
+
+	activeSplits, inactiveSplits := util.GetActiveAndInactiveFF(featureFlags)
 
 	// Add/Update active splits
-	s.splitStorage.Update(activeSplits, inactiveSplits, splits.Till)
+	s.splitStorage.Update(activeSplits, inactiveSplits, featureFlags.Till)
 }
 
 // fetchUntil Hit endpoint, update storage and return when since==till.
