@@ -91,6 +91,42 @@ func TestSplitUpdateWorkerStorageCNGreaterThanFFCN(t *testing.T) {
 	}
 }
 
+func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitQueue := make(chan SplitChangeUpdate, 5000)
+
+	var count int32
+	mockSync := &mocks.LocalSyncMock{
+		SynchronizeSplitsCall: func(till *int64) error {
+			atomic.AddInt32(&count, 1)
+
+			if *till != 223456789 {
+				t.Error("Unexpected passed till")
+			}
+			return nil
+		},
+	}
+	ffStorageMock := storageMocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 223456790, nil
+		},
+	}
+
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
+	splitWorker.Start()
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456790, Status: "ACTIVE"}
+	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456790}, featureFlag: &featureFlag, previousChangeNumber: 223456790}
+
+	time.Sleep(1 * time.Second)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt32(&count); c != 0 {
+		t.Error("should haven't been called. got: ", c)
+	}
+}
+
 func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitQueue := make(chan SplitChangeUpdate, 5000)
