@@ -166,6 +166,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 	switch nested.Type {
 	case UpdateTypeSplitChange:
+		fmt.Println("updatetypeSplitChange")
 		featureFlag := p.processMessage(nested)
 		if featureFlag == nil {
 			return nil, p.onSplitUpdate(&SplitChangeUpdate{BaseUpdate: base})
@@ -185,10 +186,17 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
 	compressType := getCompressType(nested.CompressType)
+	fmt.Println("before checking ff")
+	fmt.Println(nested.FeatureFlagDefinition)
 	if nested.FeatureFlagDefinition == nil || compressType == nil {
 		return nil
 	}
-	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	fmt.Println("before to decode")
+	fmt.Println(common.StringFromRef(nested.FeatureFlagDefinition))
+	fmt.Println(p.dataUtils)
+	data := common.StringFromRef(nested.FeatureFlagDefinition)
+	ffDecoded, err := p.dataUtils.Decode(data)
+	fmt.Println("after decode")
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err.Error()))
 		return nil

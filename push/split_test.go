@@ -196,8 +196,8 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	if c := atomic.LoadInt32(&count); c == 0 {
-		t.Error("should haven been called. got: ", c)
+	if c := atomic.LoadInt32(&count); c != 1 {
+		t.Error("should haven been called once. got: ", c)
 	}
 }
 
@@ -228,8 +228,8 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	if c := atomic.LoadInt32(&count); c == 0 {
-		t.Error("should haven been called. got: ", c)
+	if c := atomic.LoadInt32(&count); c != 1 {
+		t.Error("should haven been called once. got: ", c)
 	}
 }
 
@@ -261,8 +261,8 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	if c := atomic.LoadInt32(&count); c == 0 {
-		t.Error("should haven been called. got: ", c)
+	if c := atomic.LoadInt32(&count); c != 1 {
+		t.Error("should haven been called once. got: ", c)
 	}
 }
 
