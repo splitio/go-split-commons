@@ -19,8 +19,6 @@ func NewDataUtilsImpl() DataUtils {
 }
 
 func (d *DataUtilsImpl) Decode(data string) ([]byte, error) {
-	fmt.Println("in Decode")
-	fmt.Println(data)
 	if data == "" {
 		return []byte{}, fmt.Errorf("data len is 0")
 	}
