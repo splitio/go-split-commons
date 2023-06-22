@@ -66,7 +66,7 @@ func NewSynchronizerManager(
 	logger logging.LoggerInterface,
 	config conf.AdvancedConfig,
 	authClient service.AuthClient,
-	splitStorage storage.SplitStorage,
+	ffStorage storage.SplitStorage,
 	managerStatus chan int,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
@@ -92,7 +92,7 @@ func NewSynchronizerManager(
 		if clientKey != nil && len(*clientKey) != 4 {
 			return nil, errors.New("invalid ClientKey")
 		}
-		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey, hcMonitor)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey, hcMonitor, ffStorage)
 		if err != nil {
 			return nil, err
 		}

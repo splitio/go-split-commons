@@ -72,23 +72,17 @@ func NewManager(
 	metadata dtos.Metadata,
 	clientKey *string,
 	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
+	ffStorage storage.SplitStorage,
 ) (*ManagerImpl, error) {
 
-	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
+	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, ffStorage)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}
 
 	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
-	parser := &NotificationParserImpl{
-		logger:            logger,
-		onSplitUpdate:     processor.ProcessSplitChangeUpdate,
-		onSplitKill:       processor.ProcessSplitKillUpdate,
-		onSegmentUpdate:   processor.ProcessSegmentChangeUpdate,
-		onControlUpdate:   statusTracker.HandleControl,
-		onOccupancyMesage: statusTracker.HandleOccupancy,
-		onAblyError:       statusTracker.HandleAblyError,
-	}
+	parser := NewNotificationParserImpl(logger, processor.ProcessSplitChangeUpdate, processor.ProcessSplitKillUpdate, processor.ProcessSegmentChangeUpdate,
+		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError)
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,

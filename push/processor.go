@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -37,6 +38,7 @@ func NewProcessor(
 	segmentQueueSize int64,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
+	ffStorage storage.SplitStorage,
 ) (*ProcessorImpl, error) {
 	if segmentQueueSize < segmentQueueMinSize {
 		return nil, errors.New("Small size of segmentQueue")
@@ -46,7 +48,7 @@ func NewProcessor(
 	}
 
 	splitQueue := make(chan SplitChangeUpdate, splitQueueSize)
-	splitWorker, err := NewSplitUpdateWorker(splitQueue, synchronizer, logger)
+	splitWorker, err := NewSplitUpdateWorker(splitQueue, synchronizer, logger, ffStorage)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating split worker: %w", err)
 	}
