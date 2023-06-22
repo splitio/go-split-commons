@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/push/mocks"
 	storageMocks "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v4/util"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -114,7 +115,7 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456790, Status: "ACTIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456790, Status: util.ACTIVE}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456790}, featureFlag: &featureFlag, previousChangeNumber: 223456790}
 
 	time.Sleep(1 * time.Second)
@@ -146,7 +147,7 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 		ChangeNumberCall: func() (int64, error) {
 			return 123456789, nil
 		},
-		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if len(toAdd) == 0 {
 				t.Error("toAdd should have one feature flag")
 			}
@@ -158,7 +159,7 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: "ACTIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 123456789}
 
 	time.Sleep(1 * time.Second)
@@ -191,7 +192,7 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: "ACTIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 0}
 
 	time.Sleep(1 * time.Second)
@@ -256,7 +257,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: "ACTIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 2}
 
 	time.Sleep(1 * time.Second)
@@ -310,7 +311,7 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 		ChangeNumberCall: func() (int64, error) {
 			return 2, nil
 		},
-		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if len(toAdd) == 0 {
 				t.Error("toAdd should have a feature flag")
 			}
@@ -322,7 +323,7 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
-	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: "ACTIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.ACTIVE}
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 4},
 		featureFlag: &featureFlag, previousChangeNumber: 2})
 	if result != true {
@@ -338,7 +339,7 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 		ChangeNumberCall: func() (int64, error) {
 			return 2, nil
 		},
-		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
 			if len(toRemove) == 0 {
 				t.Error("toRemove should have a feature flag")
 			}
@@ -350,7 +351,7 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
-	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: "ARCHIVE"}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.ARCHIVED}
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 4},
 		featureFlag: &featureFlag, previousChangeNumber: 2})
 	if result != true {
