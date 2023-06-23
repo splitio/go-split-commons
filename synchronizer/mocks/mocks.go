@@ -13,6 +13,7 @@ type MockSynchronizer struct {
 	StopPeriodicDataRecordingCall  func()
 	LocalKillCall                  func(string, string, int64)
 	RefreshRatesCall               func() (time.Duration, time.Duration)
+	FilterCachedSegmentsCall       func(segmentsReferenced []string) []string
 }
 
 // SyncAll mock
@@ -58,4 +59,9 @@ func (m *MockSynchronizer) LocalKill(name string, treatment string, cn int64) {
 // RefreshRates call
 func (m *MockSynchronizer) RefreshRates() (time.Duration, time.Duration) {
 	return m.RefreshRatesCall()
+}
+
+// FilterCachedSegments call
+func (m *MockSynchronizer) FilterCachedSegments(segmentsReferenced []string) []string {
+	return m.FilterCachedSegmentsCall(segmentsReferenced)
 }

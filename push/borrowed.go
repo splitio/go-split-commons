@@ -10,4 +10,5 @@ type synchronizerInterface interface {
 	StopPeriodicFetching()
 	StartPeriodicDataRecording()
 	StopPeriodicDataRecording()
+	FilterCachedSegments(segmentsReferenced []string) []string
 }

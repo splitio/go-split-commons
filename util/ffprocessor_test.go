@@ -9,8 +9,8 @@ import (
 func TestGetActiveFF(t *testing.T) {
 
 	var featureFlags []dtos.SplitDTO
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ACTIVE})
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ACTIVE})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
 	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)
@@ -27,8 +27,8 @@ func TestGetActiveFF(t *testing.T) {
 func TestGetInactiveFF(t *testing.T) {
 
 	var featureFlags []dtos.SplitDTO
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
 	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)
@@ -45,8 +45,8 @@ func TestGetInactiveFF(t *testing.T) {
 func TestGetActiveAndInactiveFF(t *testing.T) {
 
 	var featureFlags []dtos.SplitDTO
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ACTIVE})
-	featureFlags = append(featureFlags, dtos.SplitDTO{Status: ARCHIVED})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
+	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
 	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
 
 	actives, inactives := ProcessFeatureFlagChanges(featureFlagChanges)

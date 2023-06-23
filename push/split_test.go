@@ -37,8 +37,8 @@ func TestSplitUpdateWorker(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 123456789}}
+	time.Sleep(500 * time.Millisecond)
 
-	time.Sleep(1 * time.Second)
 	if !splitWorker.IsRunning() {
 		t.Error("It should be running")
 	}
@@ -50,8 +50,8 @@ func TestSplitUpdateWorker(t *testing.T) {
 
 	splitWorker.Start()
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}}
+	time.Sleep(500 * time.Millisecond)
 
-	time.Sleep(1 * time.Second)
 	if c := atomic.LoadInt32(&count); c != 2 {
 		t.Error("should have been called twice. got: ", c)
 	}
@@ -71,6 +71,7 @@ func TestSplitUpdateWorkerStorageCNGreaterThanFFCN(t *testing.T) {
 			}
 			return nil
 		},
+		FilterCachedSegmentsCall: func(segmentsReferenced []string) []string { return []string{} },
 	}
 	ffStorageMock := storageMocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -81,8 +82,8 @@ func TestSplitUpdateWorkerStorageCNGreaterThanFFCN(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 123456789}}
+	time.Sleep(500 * time.Millisecond)
 
-	time.Sleep(1 * time.Second)
 	if !splitWorker.IsRunning() {
 		t.Error("It should be running")
 	}
@@ -106,6 +107,7 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 			}
 			return nil
 		},
+		FilterCachedSegmentsCall: func(segmentsReferenced []string) []string { return []string{} },
 	}
 	ffStorageMock := storageMocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -115,10 +117,10 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456790, Status: util.ACTIVE}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456790, Status: util.Active}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456790}, featureFlag: &featureFlag, previousChangeNumber: 223456790}
+	time.Sleep(500 * time.Millisecond)
 
-	time.Sleep(1 * time.Second)
 	if !splitWorker.IsRunning() {
 		t.Error("It should be running")
 	}
@@ -142,6 +144,7 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 			}
 			return nil
 		},
+		FilterCachedSegmentsCall: func(segmentsReferenced []string) []string { return []string{} },
 	}
 	ffStorageMock := storageMocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -159,10 +162,9 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.Active}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 123456789}
-
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	if c := atomic.LoadInt32(&count); c != 0 {
 		t.Error("shouldn't haven been called. got: ", c)
@@ -183,6 +185,7 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 			}
 			return nil
 		},
+		FilterCachedSegmentsCall: func(segmentsReferenced []string) []string { return []string{} },
 	}
 	ffStorageMock := storageMocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -192,10 +195,9 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.Active}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 0}
-
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	if c := atomic.LoadInt32(&count); c != 1 {
 		t.Error("should haven been called once. got: ", c)
@@ -216,6 +218,7 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 			}
 			return nil
 		},
+		FilterCachedSegmentsCall: func(segmentsReferenced []string) []string { return []string{} },
 	}
 	ffStorageMock := storageMocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -226,8 +229,7 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, previousChangeNumber: 0}
-
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	if c := atomic.LoadInt32(&count); c != 1 {
 		t.Error("should haven been called once. got: ", c)
@@ -257,10 +259,9 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
 	splitWorker.Start()
-	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.ACTIVE}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 223456789, Status: util.Active}
 	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}, featureFlag: &featureFlag, previousChangeNumber: 2}
-
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	if c := atomic.LoadInt32(&count); c != 1 {
 		t.Error("should haven been called once. got: ", c)
@@ -280,7 +281,7 @@ func TestAddOrUpdateFFStorageCNGreaterThanFFCN(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 12}})
-	if result != true {
+	if result.storageUpdated != true {
 		t.Error("should be true")
 	}
 }
@@ -298,7 +299,7 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{})
-	if result != false {
+	if result.storageUpdated != false {
 		t.Error("should be false")
 	}
 }
@@ -323,10 +324,10 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
-	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.ACTIVE}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.Active}
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 4},
 		featureFlag: &featureFlag, previousChangeNumber: 2})
-	if result != true {
+	if result.storageUpdated != true {
 		t.Error("should be true")
 	}
 }
@@ -351,10 +352,10 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
-	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.ARCHIVED}
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: util.Archived}
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 4},
 		featureFlag: &featureFlag, previousChangeNumber: 2})
-	if result != true {
+	if result.storageUpdated != true {
 		t.Error("should be true")
 	}
 }
@@ -372,7 +373,7 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, nil, logger, ffStorageMock)
 
 	result := splitWorker.addOrUpdateFeatureFlag(SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 12}})
-	if result != false {
+	if result.storageUpdated != false {
 		t.Error("should be false")
 	}
 }

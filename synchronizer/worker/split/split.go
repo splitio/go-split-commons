@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	matcherTypeInSegment           = "IN_SEGMENT"
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
@@ -101,7 +100,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 		currentSince = splits.Till
 		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 		s.processUpdate(splits)
-		segmentReferences = appendSegmentNames(segmentReferences, splits)
+		segmentReferences = util.AppendSegmentNames(segmentReferences, splits)
 		updatedSplitNames = appendSplitNames(updatedSplitNames, splits)
 		if currentSince == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
@@ -167,19 +166,6 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 func appendSplitNames(dst []string, splits *dtos.SplitChangesDTO) []string {
 	for idx := range splits.Splits {
 		dst = append(dst, splits.Splits[idx].Name)
-	}
-	return dst
-}
-
-func appendSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
-	for _, split := range splits.Splits {
-		for _, cond := range split.Conditions {
-			for _, matcher := range cond.MatcherGroup.Matchers {
-				if matcher.MatcherType == matcherTypeInSegment && matcher.UserDefinedSegment != nil {
-					dst = append(dst, matcher.UserDefinedSegment.SegmentName)
-				}
-			}
-		}
 	}
 	return dst
 }

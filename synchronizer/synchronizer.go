@@ -50,6 +50,7 @@ type Synchronizer interface {
 	StartPeriodicDataRecording()
 	StopPeriodicDataRecording()
 	RefreshRates() (splits time.Duration, segments time.Duration)
+	FilterCachedSegments(segmentsReferenced []string) []string
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -194,7 +195,7 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 // SynchronizeSplits syncs splits
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
 	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
-	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
+	for _, segment := range s.FilterCachedSegments(result.ReferencedSegments) {
 		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 	}
 	return err
@@ -205,7 +206,7 @@ func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.D
 	return time.Duration(s.splitsRefreshRate) * time.Second, time.Duration(s.segmentsRefreshRate) * time.Second
 }
 
-func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []string {
+func (s *SynchronizerImpl) FilterCachedSegments(segmentsReferenced []string) []string {
 	toRet := make([]string, 0, len(segmentsReferenced))
 	for _, name := range segmentsReferenced {
 		if !s.workers.SegmentFetcher.IsSegmentCached(name) {

@@ -21,6 +21,11 @@ type SplitUpdateWorker struct {
 	ffStorage  storage.SplitStorage
 }
 
+type updateResult struct {
+	storageUpdated     bool
+	referencedSegments []string
+}
+
 // NewSplitUpdateWorker creates SplitUpdateWorker
 func NewSplitUpdateWorker(
 	splitQueue chan SplitChangeUpdate,
@@ -60,10 +65,15 @@ func (s *SplitUpdateWorker) Start() {
 			case splitUpdate := <-s.splitQueue:
 				s.logger.Debug("Received Split update and proceding to perform fetch")
 				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", splitUpdate.ChangeNumber()))
-				if !s.addOrUpdateFeatureFlag(splitUpdate) {
+				splitChangeProccessedResult := s.addOrUpdateFeatureFlag(splitUpdate)
+				if !splitChangeProccessedResult.storageUpdated {
 					err := s.sync.SynchronizeSplits(common.Int64Ref(splitUpdate.ChangeNumber()))
 					if err != nil {
 						s.logger.Error(err)
+					}
+				} else {
+					for _, segment := range s.sync.FilterCachedSegments(splitChangeProccessedResult.referencedSegments) {
+						go s.sync.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 					}
 				}
 			case <-s.lifecycle.ShutdownRequested():
@@ -87,15 +97,20 @@ func (s *SplitUpdateWorker) IsRunning() bool {
 	return s.lifecycle.IsRunning()
 }
 
-func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChangeUpdate) bool {
+func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChangeUpdate) updateResult {
+	splitUpdateResult := updateResult{
+		storageUpdated:     false,
+		referencedSegments: make([]string, 0),
+	}
 	changeNumber, err := s.ffStorage.ChangeNumber()
 	if err != nil {
 		s.logger.Debug("problem getting change number from feature flag storage: %s", err.Error())
-		return false
+		return splitUpdateResult
 	}
 	if changeNumber >= featureFlagUpdate.BaseUpdate.changeNumber {
 		s.logger.Debug("the feature flag it's already updated")
-		return true
+		splitUpdateResult.storageUpdated = true
+		return splitUpdateResult
 	}
 	if featureFlagUpdate.featureFlag != nil && featureFlagUpdate.previousChangeNumber == changeNumber {
 		s.logger.Debug("updating feature flag %s", featureFlagUpdate.featureFlag.Name)
@@ -104,8 +119,10 @@ func (s *SplitUpdateWorker) addOrUpdateFeatureFlag(featureFlagUpdate SplitChange
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
 		activeFFs, inactiveFFs := util.ProcessFeatureFlagChanges(&featureFlagChange)
 		s.ffStorage.Update(activeFFs, inactiveFFs, featureFlagUpdate.BaseUpdate.changeNumber)
-		return true
+		splitUpdateResult.storageUpdated = true
+		splitUpdateResult.referencedSegments = util.AppendSegmentNames(splitUpdateResult.referencedSegments, &featureFlagChange)
+		return splitUpdateResult
 	}
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
-	return false
+	return splitUpdateResult
 }

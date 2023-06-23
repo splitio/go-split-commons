@@ -9,6 +9,7 @@ type LocalSyncMock struct {
 	StopPeriodicFetchingCall       func()
 	StartPeriodicDataRecordingCall func()
 	StopPeriodicDataRecordingCall  func()
+	FilterCachedSegmentsCall       func(segmentsReferenced []string) []string
 }
 
 func (l *LocalSyncMock) SyncAll() error {
@@ -41,4 +42,8 @@ func (l *LocalSyncMock) StartPeriodicDataRecording() {
 
 func (l *LocalSyncMock) StopPeriodicDataRecording() {
 	l.StopPeriodicDataRecordingCall()
+}
+
+func (l *LocalSyncMock) FilterCachedSegments(segmentsReferenced []string) []string {
+	return l.FilterCachedSegmentsCall(segmentsReferenced)
 }

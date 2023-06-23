@@ -100,14 +100,14 @@ func (s *Local) RefreshRates() (time.Duration, time.Duration) {
 func (s *Local) SynchronizeSplits(till *int64) error {
 	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
 	if s.workers.SegmentFetcher != nil {
-		for _, segment := range s.filterCachedLocalSegments(result.ReferencedSegments) {
+		for _, segment := range s.FilterCachedSegments(result.ReferencedSegments) {
 			go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 		}
 	}
 	return err
 }
 
-func (s *Local) filterCachedLocalSegments(segmentsReferenced []string) []string {
+func (s *Local) FilterCachedSegments(segmentsReferenced []string) []string {
 	toRet := make([]string, 0, len(segmentsReferenced))
 	for _, name := range segmentsReferenced {
 		if !s.workers.SegmentFetcher.IsSegmentCached(name) {
