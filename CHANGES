@@ -1,4 +1,18 @@
-4.3.2 (Apr 19, 2923)
+4.3.6 (Jun 13, 2023)
+- Fix SonarQube settings.
+- Bump GHA actions versions.
+- Linting.
+
+4.3.5 (Jun 12, 2023)
+- Updated SynchronizeConfig for Redis to set impression mode.
+
+4.3.4 (Jun 9, 2023)
+- Updated error message for Redis connection.
+
+4.3.3 (May 31, 2023)
+- Pointed to new version of go-toolkit 5.3.1.
+
+4.3.2 (Apr 19, 2023)
 - Add empty `id` field to MySegments DTO for consistency with SDK server
 
 4.3.1 (March 20, 2023)
