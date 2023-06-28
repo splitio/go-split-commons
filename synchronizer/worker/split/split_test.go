@@ -479,8 +479,8 @@ func TestProcessFFChange(t *testing.T) {
 	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 12), nil, nil,
 	))
-	if !result.AlreadyProcessed {
-		t.Error("should be true")
+	if result.RequiresFetch {
+		t.Error("should be false")
 	}
 	if atomic.LoadInt64(&fetchCallCalled) != 0 {
 		t.Error("Fetch should not be called")
@@ -513,12 +513,9 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 
 	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
-	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
 	))
-	if result.AlreadyProcessed {
-		t.Error("should be false")
-	}
 	if atomic.LoadInt64(&fetchCallCalled) != 1 {
 		t.Error("Fetch should be called once")
 	}
@@ -557,12 +554,9 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Active}
 
-	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4), common.Int64Ref(2), &featureFlag,
 	))
-	if !result.AlreadyProcessed {
-		t.Error("should be true")
-	}
 	if atomic.LoadInt64(&fetchCallCalled) != 0 {
 		t.Error("It should not fetch splits")
 	}
@@ -603,12 +597,9 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Archived}
-	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4), common.Int64Ref(2), &featureFlag,
 	))
-	if !result.AlreadyProcessed {
-		t.Error("should be true")
-	}
 	if atomic.LoadInt64(&fetchCallCalled) != 0 {
 		t.Error("It should not fetch splits")
 	}
@@ -648,12 +639,9 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	}
 	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
-	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
 	))
-	if result.AlreadyProcessed {
-		t.Error("should be false")
-	}
 	if atomic.LoadInt64(&fetchCallCalled) != 1 {
 		t.Error("It should fetch splits")
 	}

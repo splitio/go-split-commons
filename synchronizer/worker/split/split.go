@@ -38,7 +38,7 @@ type UpdateResult struct {
 	UpdatedSplits      []string
 	ReferencedSegments []string
 	NewChangeNumber    int64
-	AlreadyProcessed   bool
+	RequiresFetch      bool
 }
 
 type internalSplitSync struct {
@@ -210,11 +210,11 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	changeNumber, err := s.splitStorage.ChangeNumber()
 	if err != nil {
 		s.logger.Debug("problem getting change number from feature flag storage: %s", err.Error())
-		return &UpdateResult{AlreadyProcessed: false}
+		return &UpdateResult{RequiresFetch: true}
 	}
 	if changeNumber >= ffChange.BaseUpdate.ChangeNumber() {
 		s.logger.Debug("the feature flag it's already updated")
-		return &UpdateResult{AlreadyProcessed: true}
+		return &UpdateResult{RequiresFetch: false}
 	}
 	if ffChange.FeatureFlag() != nil && *ffChange.PreviousChangeNumber() == changeNumber {
 		segmentReferences := make([]string, 0, 10)
@@ -231,15 +231,15 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 			UpdatedSplits:      updatedSplitNames,
 			ReferencedSegments: segmentReferences,
 			NewChangeNumber:    ffChange.BaseUpdate.ChangeNumber(),
-			AlreadyProcessed:   true,
+			RequiresFetch:      false,
 		}
 	}
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
-	return &UpdateResult{AlreadyProcessed: false}
+	return &UpdateResult{RequiresFetch: true}
 }
 func (s *UpdaterImpl) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) (*UpdateResult, error) {
 	result := s.processFFChange(ffChange)
-	if !result.AlreadyProcessed {
+	if result.RequiresFetch {
 		return s.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
 	}
 	return result, nil
