@@ -5,23 +5,18 @@ import (
 )
 
 type LocalSyncMock struct {
-	SyncAllCall                           func() error
-	SynchronizeSplitsCall                 func(till *int64) error
-	SynchronizeFeatureFlagWithPayloadCall func(ffChange dtos.SplitChangeUpdate) error
-	LocalKillCall                         func(splitName string, defaultTreatment string, changeNumber int64)
-	SynchronizeSegmentCall                func(segmentName string, till *int64) error
-	StartPeriodicFetchingCall             func()
-	StopPeriodicFetchingCall              func()
-	StartPeriodicDataRecordingCall        func()
-	StopPeriodicDataRecordingCall         func()
+	SyncAllCall                    func() error
+	SynchronizeFeatureFlagsCall    func(ffChange *dtos.SplitChangeUpdate) error
+	LocalKillCall                  func(splitName string, defaultTreatment string, changeNumber int64)
+	SynchronizeSegmentCall         func(segmentName string, till *int64) error
+	StartPeriodicFetchingCall      func()
+	StopPeriodicFetchingCall       func()
+	StartPeriodicDataRecordingCall func()
+	StopPeriodicDataRecordingCall  func()
 }
 
 func (l *LocalSyncMock) SyncAll() error {
 	return l.SyncAllCall()
-}
-
-func (l *LocalSyncMock) SynchronizeSplits(till *int64) error {
-	return l.SynchronizeSplitsCall(till)
 }
 
 func (l *LocalSyncMock) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
@@ -48,6 +43,6 @@ func (l *LocalSyncMock) StopPeriodicDataRecording() {
 	l.StopPeriodicDataRecordingCall()
 }
 
-func (l *LocalSyncMock) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) error {
-	return l.SynchronizeFeatureFlagWithPayloadCall(ffChange)
+func (l *LocalSyncMock) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
+	return l.SynchronizeFeatureFlagsCall(ffChange)
 }

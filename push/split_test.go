@@ -17,7 +17,7 @@ func TestSplitUpdateWorker(t *testing.T) {
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
-		SynchronizeFeatureFlagWithPayloadCall: func(ffChange dtos.SplitChangeUpdate) error {
+		SynchronizeFeatureFlagsCall: func(ffChange *dtos.SplitChangeUpdate) error {
 			atomic.AddInt32(&count, 1)
 			switch atomic.LoadInt32(&count) {
 			case 1:

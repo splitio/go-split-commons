@@ -118,7 +118,7 @@ func (m MockTelemetryStorage) PopLatencies() dtos.MethodLatencies {
 	return m.PopLatenciesCall()
 }
 
-//PopExceptions mock
+// PopExceptions mock
 func (m MockTelemetryStorage) PopExceptions() dtos.MethodExceptions {
 	return m.PopExceptionsCall()
 }

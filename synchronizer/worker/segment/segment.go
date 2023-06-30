@@ -54,8 +54,8 @@ type internalSegmentSync struct {
 	attempt        int
 }
 
-// NewSegmentFetcher creates new segment synchronizer for processing segment updates
-func NewSegmentFetcher(
+// NewSegmentUpdater creates new segment synchronizer for processing segment updates
+func NewSegmentUpdater(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,

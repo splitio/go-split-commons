@@ -97,7 +97,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentTask := NewFetchSegmentsTask(
-		segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
+		segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		10,
 		100,

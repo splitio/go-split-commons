@@ -57,7 +57,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	_, err := segmentSync.SynchronizeSegments()
 	if err == nil {
@@ -171,7 +171,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 
-	segmentSync := NewSegmentFetcher(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
 	res, err := segmentSync.SynchronizeSegments()
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
@@ -245,7 +245,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	}
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	res, err := segmentSync.SynchronizeSegments()
 	if err != nil {
@@ -360,7 +360,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	}
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	res, err := segmentSync.SynchronizeSegments()
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item1", "item2", "item3", "item4"}, res["segment1"].UpdatedKeys, "")
@@ -433,7 +433,7 @@ func TestSegmentTill(t *testing.T) {
 	}
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	var till int64 = 1
 	res, err := segmentSync.SynchronizeSegment("segment1", &till)
@@ -514,7 +514,7 @@ func TestSegmentCDNBypass(t *testing.T) {
 	}
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	segmentSync.onDemandFetchBackoffBase = 1
 	segmentSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
@@ -593,7 +593,7 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 	}
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
-	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
+	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
 
 	segmentSync.onDemandFetchBackoffBase = 1
 	segmentSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
