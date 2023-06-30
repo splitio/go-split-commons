@@ -1,18 +1,23 @@
 package mocks
 
-import "time"
+import (
+	"time"
+
+	"github.com/splitio/go-split-commons/v4/dtos"
+)
 
 // MockSynchronizer mock implementation
 type MockSynchronizer struct {
-	SyncAllCall                    func() error
-	SynchronizeSplitsCall          func(till *int64) error
-	SynchronizeSegmentCall         func(segmentName string, till *int64) error
-	StartPeriodicFetchingCall      func()
-	StopPeriodicFetchingCall       func()
-	StartPeriodicDataRecordingCall func()
-	StopPeriodicDataRecordingCall  func()
-	LocalKillCall                  func(string, string, int64)
-	RefreshRatesCall               func() (time.Duration, time.Duration)
+	SyncAllCall                           func() error
+	SynchronizeSplitsCall                 func(till *int64) error
+	SynchronizeFeatureFlagWithPayloadCall func(ffChange dtos.SplitChangeUpdate) error
+	SynchronizeSegmentCall                func(segmentName string, till *int64) error
+	StartPeriodicFetchingCall             func()
+	StopPeriodicFetchingCall              func()
+	StartPeriodicDataRecordingCall        func()
+	StopPeriodicDataRecordingCall         func()
+	LocalKillCall                         func(string, string, int64)
+	RefreshRatesCall                      func() (time.Duration, time.Duration)
 }
 
 // SyncAll mock
@@ -58,4 +63,9 @@ func (m *MockSynchronizer) LocalKill(name string, treatment string, cn int64) {
 // RefreshRates call
 func (m *MockSynchronizer) RefreshRates() (time.Duration, time.Duration) {
 	return m.RefreshRatesCall()
+}
+
+// RefreshRates call
+func (m *MockSynchronizer) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) error {
+	return m.SynchronizeFeatureFlagWithPayloadCall(ffChange)
 }

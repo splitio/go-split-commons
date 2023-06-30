@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/telemetry"
 	"github.com/splitio/go-toolkit/v5/common"
@@ -17,9 +18,9 @@ const (
 
 // StatusTracker keeps track of the status of the push subsystem and generates appropriate status change notifications.
 type StatusTracker interface {
-	HandleOccupancy(*OccupancyMessage) *int64
-	HandleControl(*ControlUpdate) *int64
-	HandleAblyError(*AblyError) *int64
+	HandleOccupancy(*dtos.OccupancyMessage) *int64
+	HandleControl(*dtos.ControlUpdate) *int64
+	HandleAblyError(*dtos.AblyError) *int64
 	HandleDisconnection() *int64
 	NotifySSEShutdownExpected()
 	Reset()
@@ -50,13 +51,13 @@ func (p *StatusTrackerImpl) Reset() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.occupancy = map[string]int64{pri: 2, sec: 2}
-	p.lastControlMessage = ControlTypeStreamingEnabled
+	p.lastControlMessage = dtos.ControlTypeStreamingEnabled
 	p.lastStatusPropagated = StatusUp
 	p.shutdownExpected = false
 }
 
 // HandleOccupancy should be called for every occupancy notification received
-func (p *StatusTrackerImpl) HandleOccupancy(message *OccupancyMessage) (newStatus *int64) {
+func (p *StatusTrackerImpl) HandleOccupancy(message *dtos.OccupancyMessage) (newStatus *int64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	if p.shutdownExpected {
@@ -82,7 +83,7 @@ func (p *StatusTrackerImpl) HandleOccupancy(message *OccupancyMessage) (newStatu
 }
 
 // HandleAblyError should be called whenever an ably error is received
-func (p *StatusTrackerImpl) HandleAblyError(errorEvent *AblyError) (newStatus *int64) {
+func (p *StatusTrackerImpl) HandleAblyError(errorEvent *dtos.AblyError) (newStatus *int64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	if p.shutdownExpected {
@@ -105,20 +106,20 @@ func (p *StatusTrackerImpl) HandleAblyError(errorEvent *AblyError) (newStatus *i
 }
 
 // HandleControl should be called whenever a control notification is received
-func (p *StatusTrackerImpl) HandleControl(controlUpdate *ControlUpdate) *int64 {
+func (p *StatusTrackerImpl) HandleControl(controlUpdate *dtos.ControlUpdate) *int64 {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	if p.shutdownExpected {
 		return nil // we don't care about occupancy if we're disconnecting
 	}
 
-	if p.lastControlTimestamp > controlUpdate.timestamp {
+	if p.lastControlTimestamp > controlUpdate.Timestamp() {
 		p.logger.Warning("Received an old control update. Ignoring")
 		return nil
 	}
 
-	p.lastControlMessage = controlUpdate.controlType
-	p.lastControlTimestamp = controlUpdate.timestamp
+	p.lastControlMessage = controlUpdate.ControlType()
+	p.lastControlTimestamp = controlUpdate.Timestamp()
 	return p.updateStatus()
 }
 
@@ -152,18 +153,18 @@ func (p *StatusTrackerImpl) occupancyOk() bool {
 
 func (p *StatusTrackerImpl) updateStatus() *int64 {
 	if p.lastStatusPropagated == StatusUp {
-		if !p.occupancyOk() || p.lastControlMessage == ControlTypeStreamingPaused {
+		if !p.occupancyOk() || p.lastControlMessage == dtos.ControlTypeStreamingPaused {
 			return p.propagateStatus(StatusDown)
 		}
-		if p.lastControlMessage == ControlTypeStreamingDisabled {
+		if p.lastControlMessage == dtos.ControlTypeStreamingDisabled {
 			return p.propagateStatus(StatusNonRetryableError)
 		}
 	}
 	if p.lastStatusPropagated == StatusDown {
-		if p.occupancyOk() && p.lastControlMessage == ControlTypeStreamingEnabled {
+		if p.occupancyOk() && p.lastControlMessage == dtos.ControlTypeStreamingEnabled {
 			return p.propagateStatus(StatusUp)
 		}
-		if p.lastControlMessage == ControlTypeStreamingDisabled {
+		if p.lastControlMessage == dtos.ControlTypeStreamingDisabled {
 			return p.propagateStatus(StatusNonRetryableError)
 		}
 	}

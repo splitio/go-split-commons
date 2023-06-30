@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/conf"
 	"github.com/splitio/go-split-commons/v4/dtos"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v4/push"
 	"github.com/splitio/go-split-commons/v4/service"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v4/service/mocks"
@@ -19,6 +20,7 @@ import (
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v4/tasks"
 	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -526,5 +528,383 @@ func TestPeriodicRecording(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 0 {
 		t.Error("It should not be called")
+	}
+}
+
+func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
+	var splitFetchCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return nil, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 2, nil
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMock.MockApplicationMonitor{})
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	// Testing Storage With Changenumber Greater Than FF
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 1), nil, nil,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
+		t.Error("should haven't been called. got: ", c)
+	}
+}
+
+func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
+	var splitFetchCalled int64
+	var updateCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return nil, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 2, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			atomic.AddInt64(&updateCalled, 1)
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMock.MockApplicationMonitor{})
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{ChangeNumber: 2, Status: split.Active}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2),
+		common.Int64Ref(2), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
+		t.Error("should haven't been called. got: ", c)
+	}
+	if u := atomic.LoadInt64(&updateCalled); u != 0 {
+		t.Error("should haven't been called. got: ", u)
+	}
+}
+
+func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
+	var splitFetchCalled int64
+	var updateCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return nil, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 2, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 4 {
+				t.Error("Wrong changeNumber")
+			}
+			atomic.AddInt64(&updateCalled, 1)
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMock.MockApplicationMonitor{})
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4),
+		common.Int64Ref(2), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
+		t.Error("should haven't been called. got: ", c)
+	}
+	if u := atomic.LoadInt64(&updateCalled); u != 1 {
+		t.Error("should have been called once. got: ", u)
+	}
+}
+
+func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
+	var splitFetchCalled int64
+	var updateCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				if changeNumber != 0 {
+					t.Error("Wrong changenumber passed")
+				}
+				return &dtos.SplitChangesDTO{
+					Till:   2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{},
+				}, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 0, errors.New("error getting change number")
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			atomic.AddInt64(&updateCalled, 1)
+			if changeNumber != 2 {
+				t.Error("changenumber should be 2")
+			}
+			if len(toAdd) != 0 {
+				t.Error("toAdd should have one feature flag")
+			}
+			if len(toRemove) != 0 {
+				t.Error("toRemove should be empty")
+			}
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
+	}
+	hcMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMonitorMock)
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4),
+		common.Int64Ref(2), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 1 {
+		t.Error("should have been called once. got: ", c)
+	}
+	if u := atomic.LoadInt64(&updateCalled); u != 1 {
+		t.Error("should have been called once. got: ", u)
+	}
+}
+
+func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
+	var splitFetchCalled int64
+	var updateCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return &dtos.SplitChangesDTO{
+					Till:   4,
+					Since:  4,
+					Splits: []dtos.SplitDTO{},
+				}, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 2, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 4 {
+				t.Error("It should be 4")
+			}
+			atomic.AddInt64(&updateCalled, 1)
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
+	}
+	hcMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMonitorMock)
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4),
+		common.Int64Ref(2), nil,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 1 {
+		t.Error("should have been called once. got: ", c)
+	}
+	if u := atomic.LoadInt64(&updateCalled); u != 1 {
+		t.Error("should have been called once. got: ", u)
+	}
+}
+
+func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
+	var splitFetchCalled int64
+	var updateCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return &dtos.SplitChangesDTO{
+					Till:   2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{},
+				}, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 1, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			if changeNumber != 2 {
+				t.Error("It should be 2")
+			}
+			atomic.AddInt64(&updateCalled, 1)
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
+	}
+	hcMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	workers := Workers{
+		SplitFetcher:   split.NewSplitFetcher(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock),
+		SegmentFetcher: segment.NewSegmentFetcher(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentFetcher, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitFetcher, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil, hcMonitorMock)
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 5),
+		common.Int64Ref(2), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 1 {
+		t.Error("should have been called once. got: ", c)
+	}
+	if u := atomic.LoadInt64(&updateCalled); u != 1 {
+		t.Error("should have been called once. got: ", u)
 	}
 }

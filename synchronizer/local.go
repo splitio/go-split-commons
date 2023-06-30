@@ -3,12 +3,14 @@ package synchronizer
 import (
 	"time"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/service/api"
 	"github.com/splitio/go-split-commons/v4/storage"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v4/tasks"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -128,4 +130,14 @@ func (s *Local) SynchronizeSegment(name string, till *int64) error {
 
 // LocalKill does nothing
 func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
+}
+
+func (s *Local) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) error {
+	result, err := s.workers.SplitFetcher.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
+	if s.workers.SegmentFetcher != nil {
+		for _, segment := range s.filterCachedLocalSegments(result.ReferencedSegments) {
+			go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
+		}
+	}
+	return err
 }

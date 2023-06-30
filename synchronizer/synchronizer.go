@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impression"
@@ -43,6 +44,7 @@ type Workers struct {
 type Synchronizer interface {
 	SyncAll() error
 	SynchronizeSplits(till *int64) error
+	SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()
@@ -194,9 +196,7 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 // SynchronizeSplits syncs splits
 func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
 	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
-	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
-		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
-	}
+	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments)
 	return err
 }
 
@@ -223,6 +223,19 @@ func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till)
+	return err
+}
+
+func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments []string) {
+	for _, segment := range s.filterCachedSegments(referencedSegments) {
+		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
+	}
+}
+
+// SynchronizeFeatureFlagWithPayload syncs featureFlags with Payload
+func (s *SynchronizerImpl) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) error {
+	result, err := s.workers.SplitFetcher.SynchronizeFeatureFlagWithPayload(ffChange)
+	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments)
 	return err
 }
 

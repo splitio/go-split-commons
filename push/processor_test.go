@@ -3,6 +3,7 @@ package push
 import (
 	"testing"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/push/mocks"
 	storageMocks "github.com/splitio/go-split-commons/v4/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -34,14 +35,11 @@ func TestProcessor(t *testing.T) {
 		t.Error("It should not return err")
 	}
 
-	sk3 := &SplitKillUpdate{
-		BaseUpdate: BaseUpdate{
-			BaseMessage:  BaseMessage{channel: "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits"},
-			changeNumber: changeNumber,
-		},
-		defaultTreatment: defaultTreatment,
-		splitName:        splitName,
-	}
+	sk3 := dtos.NewSplitKillUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits"), changeNumber),
+		splitName,
+		defaultTreatment,
+	)
 	err = processor.ProcessSplitKillUpdate(sk3)
 	if err != nil {
 		t.Error("It should not return error")
@@ -53,12 +51,9 @@ func TestProcessor(t *testing.T) {
 		t.Error("It should be 1")
 	}
 
-	s1 := &SplitChangeUpdate{
-		BaseUpdate: BaseUpdate{
-			BaseMessage:  BaseMessage{channel: "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits"},
-			changeNumber: changeNumber,
-		},
-	}
+	s1 := dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_splits"), changeNumber),
+		nil, nil)
 	err = processor.ProcessSplitChangeUpdate(s1)
 	if err != nil {
 		t.Error("It should not return error")
@@ -70,13 +65,10 @@ func TestProcessor(t *testing.T) {
 		t.Error("It should be 2")
 	}
 
-	se2 := &SegmentChangeUpdate{
-		BaseUpdate: BaseUpdate{
-			changeNumber: changeNumber,
-			BaseMessage:  BaseMessage{channel: "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments"},
-		},
-		segmentName: segment,
-	}
+	se2 := dtos.NewSegmentChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_segments"), changeNumber),
+		segment,
+	)
 
 	err = processor.ProcessSegmentChangeUpdate(se2)
 	if err != nil {

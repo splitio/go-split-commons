@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/splitio/go-split-commons/v4/dtos"
 	"github.com/splitio/go-split-commons/v4/push/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestSegmentUpdateWorker(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	segmentQUeue := make(chan SegmentChangeUpdate, 5000)
+	segmentQueue := make(chan dtos.SegmentChangeUpdate, 5000)
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
@@ -27,12 +28,12 @@ func TestSegmentUpdateWorker(t *testing.T) {
 		},
 	}
 
-	segmentWorker, _ := NewSegmentUpdateWorker(segmentQUeue, mockSync, logger)
+	segmentWorker, _ := NewSegmentUpdateWorker(segmentQueue, mockSync, logger)
 	segmentWorker.Start()
-	segmentQUeue <- SegmentChangeUpdate{
-		segmentName: "some",
-		BaseUpdate:  BaseUpdate{BaseMessage: BaseMessage{channel: "some"}, changeNumber: 123456789},
-	}
+	segmentQueue <- *dtos.NewSegmentChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 123456789),
+		"some",
+	)
 
 	time.Sleep(1 * time.Second)
 	if !segmentWorker.IsRunning() {
@@ -55,10 +56,10 @@ func TestSegmentUpdateWorker(t *testing.T) {
 	segmentWorker.Start()
 	segmentWorker.Start()
 	segmentWorker.Start()
-	segmentQUeue <- SegmentChangeUpdate{
-		segmentName: "some",
-		BaseUpdate:  BaseUpdate{BaseMessage: BaseMessage{channel: "some"}, changeNumber: 223456789},
-	}
+	segmentQueue <- *dtos.NewSegmentChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 223456789),
+		"some",
+	)
 
 	time.Sleep(1 * time.Second)
 	if c := atomic.LoadInt32(&count); c != 2 {
