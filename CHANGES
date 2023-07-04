@@ -1,3 +1,14 @@
+5.0.0 (Jul XX, 2023)
+- BREAKING CHANGE:
+    Synchronizer interface changed:
+        Added `SynchronizeFeatureFlags` method from `Synchronizer`.
+        Removed `SynchronizeSplits` method from `Synchronizer`.
+        Removed hcMonitor.
+    Added engine components into the library.
+- Instant Feature Flag Updates:
+    Added support to handle SPLIT_UPDATE notification from streaming directy without going to Fastly/Split fetching the update.
+    Added new telemetry to track the instant update for feature flags.
+
 4.3.6 (Jun 13, 2023)
 - Fix SonarQube settings.
 - Bump GHA actions versions.
