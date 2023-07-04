@@ -916,5 +916,86 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 }
 
 func TestSplitUpdateWithReferencedSegments(t *testing.T) {
-	// @TODO
+	var splitFetchCalled int64
+	var ffUpdateCalled int64
+	var segmentUpdateCall int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{
+		SplitFetcher: httpMocks.MockSplitFetcher{
+			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return nil, nil
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 2, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			atomic.AddInt64(&ffUpdateCalled, 1)
+		},
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			return 2, nil
+		},
+		UpdateCall: func(name string, toAdd, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			atomic.AddInt64(&segmentUpdateCall, 1)
+			return nil
+		},
+	}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+
+	workers := Workers{
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{ChangeNumber: 2, Status: split.Active,
+		Conditions: []dtos.ConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				Label:         "Cond1",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+								SegmentName: "segment1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2),
+		common.Int64Ref(2), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
+		t.Error("should haven't been called. got: ", c)
+	}
+	if u := atomic.LoadInt64(&ffUpdateCalled); u != 0 {
+		t.Error("should haven't been called. got: ", u)
+	}
+	if u := atomic.LoadInt64(&segmentUpdateCall); u != 0 {
+		t.Error("should haven't been called. got: ", u)
+	}
 }
