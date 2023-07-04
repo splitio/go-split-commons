@@ -52,6 +52,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 				t.Error("Status should be 500")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorderMock := mocks.MockTelemetryRecorder{
@@ -111,6 +112,7 @@ func TestTelemetryRecorder(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorderMock := mocks.MockTelemetryRecorder{
@@ -196,6 +198,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)

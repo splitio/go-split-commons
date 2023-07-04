@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/service"
 	"github.com/splitio/go-split-commons/v5/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v5/service/mocks"
+	"github.com/splitio/go-split-commons/v5/storage/inmemory"
 	storageMock "github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/impression"
@@ -474,6 +475,7 @@ func TestPeriodicRecording(t *testing.T) {
 		PopTagsCall:                func() []string { return []string{} },
 		RecordSuccessfulSyncCall:   func(resource int, time time.Time) {},
 		RecordSyncLatencyCall:      func(resource int, latency time.Duration) {},
+		PopUpdatesFromSSECall:      func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		SplitNamesCall:   func() []string { return []string{} },
@@ -659,11 +661,11 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 		},
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{}
-	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
-		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, hcMock.MockApplicationMonitor{}),
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryStorage, hcMock.MockApplicationMonitor{}),
 	}
 	splitTasks := SplitTasks{
 		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
@@ -691,6 +693,10 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	}
 	if u := atomic.LoadInt64(&updateCalled); u != 1 {
 		t.Error("should have been called once. got: ", u)
+	}
+	updatesFromSSE := telemetryStorage.PopUpdatesFromSSE()
+	if updatesFromSSE.Splits != 1 {
+		t.Error("It should track 1 splitUpdate")
 	}
 }
 
@@ -907,4 +913,8 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	if u := atomic.LoadInt64(&updateCalled); u != 1 {
 		t.Error("should have been called once. got: ", u)
 	}
+}
+
+func TestSplitUpdateWithReferencedSegments(t *testing.T) {
+	//TODO
 }

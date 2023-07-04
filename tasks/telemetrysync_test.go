@@ -45,6 +45,7 @@ func TestTelemetrySyncTask(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	mockedTelemetryHTTP := mocks.MockTelemetryRecorder{
