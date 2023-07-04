@@ -68,6 +68,7 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 		StreamingEvents:      e.telemetryStorage.PopStreamingEvents(),
 		SessionLengthMs:      e.telemetryStorage.GetSessionLength(),
 		Tags:                 e.telemetryStorage.PopTags(),
+		UpdatesFromSSE:       e.telemetryStorage.PopUpdatesFromSSE(),
 	}
 }
 

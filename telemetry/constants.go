@@ -135,6 +135,10 @@ const (
 	Memory = "memory"
 )
 
+const (
+	SplitUpdate = iota
+)
+
 // InitConfig involves entire config for init
 type InitConfig struct {
 	AdvancedConfig  conf.AdvancedConfig

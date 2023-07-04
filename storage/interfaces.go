@@ -129,6 +129,7 @@ type TelemetryRuntimeProducer interface {
 	RecordTokenRefreshes()
 	RecordStreamingEvent(streamingEvent *dtos.StreamingEvent)
 	RecordSessionLength(session int64)
+	RecordUpdatesFromSSE(updateType int)
 }
 
 // TelemetryStorageConsumer interface should be implemented by structs that offer popping telemetry
@@ -162,6 +163,7 @@ type TelemetryRuntimeConsumer interface {
 	PopStreamingEvents() []dtos.StreamingEvent
 	PopTags() []string
 	GetSessionLength() int64
+	PopUpdatesFromSSE() dtos.UpdatesFromSSE
 }
 
 // TelemetryPeeker interface
