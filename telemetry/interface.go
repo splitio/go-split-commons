@@ -1,6 +1,6 @@
 package telemetry
 
-import "github.com/splitio/go-split-commons/v4/dtos"
+import "github.com/splitio/go-split-commons/v5/dtos"
 
 // TelemetrySynchronizer interface
 type TelemetrySynchronizer interface {

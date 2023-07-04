@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/push/mocks"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/push/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
