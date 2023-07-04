@@ -3,7 +3,7 @@ package tasks
 import (
 	"fmt"
 
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/event"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
 )

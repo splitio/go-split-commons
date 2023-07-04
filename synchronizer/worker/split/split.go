@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/healthcheck/application"
-	"github.com/splitio/go-split-commons/v4/service"
-	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-split-commons/v4/telemetry"
-	"github.com/splitio/go-split-commons/v4/util"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/healthcheck/application"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/storage"
+	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -22,9 +21,15 @@ const (
 	onDemandFetchBackoffMaxRetries = 10
 )
 
+const (
+	Active   = "ACTIVE"
+	Archived = "ARCHIVED"
+)
+
 // Updater interface
 type Updater interface {
 	SynchronizeSplits(till *int64) (*UpdateResult, error)
+	SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error)
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 }
 
@@ -33,6 +38,7 @@ type UpdateResult struct {
 	UpdatedSplits      []string
 	ReferencedSegments []string
 	NewChangeNumber    int64
+	RequiresFetch      bool
 }
 
 type internalSplitSync struct {
@@ -52,8 +58,8 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffMaxWait time.Duration
 }
 
-// NewSplitFetcher creates new split synchronizer for processing split updates
-func NewSplitFetcher(
+// NewSplitUpdater creates new split synchronizer for processing split updates
+func NewSplitUpdater(
 	splitStorage storage.SplitStorage,
 	splitFetcher service.SplitFetcher,
 	logger logging.LoggerInterface,
@@ -72,9 +78,7 @@ func NewSplitFetcher(
 }
 
 func (s *UpdaterImpl) processUpdate(featureFlags *dtos.SplitChangesDTO) {
-
-	activeSplits, inactiveSplits := util.ProcessFeatureFlagChanges(featureFlags)
-
+	activeSplits, inactiveSplits := processFeatureFlagChanges(featureFlags)
 	// Add/Update active splits
 	s.splitStorage.Update(activeSplits, inactiveSplits, featureFlags.Till)
 }
@@ -184,7 +188,59 @@ func appendSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
 	return dst
 }
 
+func processFeatureFlagChanges(featureFlags *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
+	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
+	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
+	for idx := range featureFlags.Splits {
+		if featureFlags.Splits[idx].Status == Active {
+			toAdd = append(toAdd, featureFlags.Splits[idx])
+		} else {
+			toRemove = append(toRemove, featureFlags.Splits[idx])
+		}
+	}
+	return toAdd, toRemove
+}
+
 // LocalKill marks a spit as killed in local storage
 func (s *UpdaterImpl) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
 	s.splitStorage.KillLocally(splitName, defaultTreatment, changeNumber)
+}
+
+func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateResult {
+	changeNumber, err := s.splitStorage.ChangeNumber()
+	if err != nil {
+		s.logger.Debug("problem getting change number from feature flag storage: %s", err.Error())
+		return &UpdateResult{RequiresFetch: true}
+	}
+	if changeNumber >= ffChange.BaseUpdate.ChangeNumber() {
+		s.logger.Debug("the feature flag it's already updated")
+		return &UpdateResult{RequiresFetch: false}
+	}
+	if ffChange.FeatureFlag() != nil && *ffChange.PreviousChangeNumber() == changeNumber {
+		segmentReferences := make([]string, 0, 10)
+		updatedSplitNames := make([]string, 0, 1)
+		s.logger.Debug("updating feature flag %s", ffChange.FeatureFlag().Name)
+		featureFlags := make([]dtos.SplitDTO, 0, 1)
+		featureFlags = append(featureFlags, *ffChange.FeatureFlag())
+		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
+		activeFFs, inactiveFFs := processFeatureFlagChanges(&featureFlagChange)
+		s.splitStorage.Update(activeFFs, inactiveFFs, ffChange.BaseUpdate.ChangeNumber())
+		updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
+		segmentReferences = appendSegmentNames(segmentReferences, &featureFlagChange)
+		return &UpdateResult{
+			UpdatedSplits:      updatedSplitNames,
+			ReferencedSegments: segmentReferences,
+			NewChangeNumber:    ffChange.BaseUpdate.ChangeNumber(),
+			RequiresFetch:      false,
+		}
+	}
+	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
+	return &UpdateResult{RequiresFetch: true}
+}
+func (s *UpdaterImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error) {
+	result := s.processFFChange(*ffChange)
+	if result.RequiresFetch {
+		return s.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
+	}
+	return result, nil
 }

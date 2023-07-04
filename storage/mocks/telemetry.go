@@ -3,7 +3,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v5/dtos"
 )
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
@@ -118,7 +118,7 @@ func (m MockTelemetryStorage) PopLatencies() dtos.MethodLatencies {
 	return m.PopLatenciesCall()
 }
 
-//PopExceptions mock
+// PopExceptions mock
 func (m MockTelemetryStorage) PopExceptions() dtos.MethodExceptions {
 	return m.PopExceptionsCall()
 }

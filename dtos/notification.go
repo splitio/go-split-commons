@@ -1,151 +1,322 @@
 package dtos
 
-/*
-const (
-	// SplitUpdate used when split is updated
-	SplitUpdate = "SPLIT_UPDATE"
-	// SplitKill used when split is killed
-	SplitKill = "SPLIT_KILL"
-	// SegmentUpdate used when segment is updated
-	SegmentUpdate = "SEGMENT_UPDATE"
-	// MySegmentsUpdate used when mySegment is updated
-	MySegmentsUpdate = "MY_SEGMENTS_UPDATE"
-	// Control for control
-	Control = "CONTROL"
-	// StreamingPause for controlType
-	StreamingPause = "STREAMING_PAUSED"
-	// StreamingResumed for controlType
-	StreamingResumed = "STREAMING_RESUMED"
-	// StreamingDisabled for controlType
-	StreamingDisabled = "STREAMING_DISABLED"
+import (
+	"fmt"
+	"strings"
 )
 
-// IncomingNotification struct for incoming notification from streaming
-type IncomingNotification struct {
-	Channel          string  `json:"channel"`
-	ChangeNumber     *int64  `json:"changeNumber,omitempty"`
-	ControlType      *string `json:"controlType,omitempty"`
-	DefaultTreatment *string `json:"defaultTreatment,omitempty"`
-	SegmentName      *string `json:"segmentName,omitempty"`
-	SplitName        *string `json:"splitName,omitempty"`
-	Timestamp        *int64  `json:"timestamp,omitempty"`
-	Type             string  `json:"type"`
+// Message type constants
+const (
+	MessageTypeUpdate = iota
+	MessageTypeControl
+	MessageTypeOccupancy
+)
+
+// Update type constants
+const (
+	UpdateTypeSplitChange   = "SPLIT_UPDATE"
+	UpdateTypeSplitKill     = "SPLIT_KILL"
+	UpdateTypeSegmentChange = "SEGMENT_UPDATE"
+	UpdateTypeContol        = "CONTROL"
+)
+
+// Control type constants
+const (
+	ControlTypeStreamingEnabled  = "STREAMING_ENABLED"
+	ControlTypeStreamingPaused   = "STREAMING_PAUSED"
+	ControlTypeStreamingDisabled = "STREAMING_DISABLED"
+)
+
+const (
+	occupancyPrefix = "[?occupancy=metrics.publishers]"
+)
+
+// SSE event type constants
+const (
+	SSEEventTypeError   = "error"
+	SSEEventTypeSync    = "sync"
+	SSEEventTypeMessage = "message"
+)
+
+// Event basic interface
+type Event interface {
+	fmt.Stringer
+	EventType() string
+	Timestamp() int64
 }
 
-// Notification should be implemented by all notification types
-type Notification interface {
-	ChannelName() string
-	NotificationType() string
+// SSESyncEvent represents an SSE Sync event with only id (used for resuming connections)
+type SSESyncEvent struct {
+	id        string
+	timestamp int64
 }
 
-// base struct with added logic that wraps around a DTO
-type base struct {
-	channelName      string
-	notificationType string
+// EventType always returns SSEEventTypeSync for SSESyncEvents
+func (e *SSESyncEvent) EventType() string { return SSEEventTypeSync }
+
+// Timestamp returns the timestamp of the event parsing
+func (e *SSESyncEvent) Timestamp() int64 { return e.timestamp }
+
+// String returns the string represenation of the event
+func (e *SSESyncEvent) String() string {
+	return fmt.Sprintf("SSESync(id=%s,timestamp=%d)", e.id, e.timestamp)
 }
 
-// ChannelName returns channel name
-func (b base) ChannelName() string {
-	return b.channelName
+// AblyError struct
+type AblyError struct {
+	code       int
+	statusCode int
+	message    string
+	href       string
+	timestamp  int64
 }
 
-// NotificationType returns the type of the notification
-func (b base) NotificationType() string {
-	return b.notificationType
-}
-
-// ControlNotification notification for control channels
-type ControlNotification struct {
-	base
-	ControlType string
-}
-
-// NewControlNotification builds a notification for controlling connection
-func NewControlNotification(channelName string, controlType string) ControlNotification {
-	return ControlNotification{
-		base: base{
-			channelName:      channelName,
-			notificationType: Control,
-		},
-		ControlType: controlType,
+func NewAblyError(code int, statusCode int, message string, href string, timestamp int64) *AblyError {
+	return &AblyError{
+		code:       code,
+		statusCode: statusCode,
+		message:    message,
+		href:       href,
+		timestamp:  timestamp,
 	}
 }
 
-// MySegmentsNotification notification when MySegments is updated
-type MySegmentsNotification struct {
-	base
-	IncludesPayload bool
-	Payload         []string
-	ChangeNumber    int64
+// EventType always returns SSEEventTypeError for AblyError
+func (a *AblyError) EventType() string { return SSEEventTypeError }
+
+// Code returns the error code
+func (a *AblyError) Code() int { return a.code }
+
+// StatusCode returns the status code
+func (a *AblyError) StatusCode() int { return a.statusCode }
+
+// Message returns the error message
+func (a *AblyError) Message() string { return a.message }
+
+// Href returns the documentation link
+func (a *AblyError) Href() string { return a.href }
+
+// Timestamp returns the error timestamp
+func (a *AblyError) Timestamp() int64 { return a.timestamp }
+
+// IsRetryable returns whether the error is recoverable via a push subsystem restart
+func (a *AblyError) IsRetryable() bool { return a.code >= 40140 && a.code <= 40149 }
+
+// String returns the string representation of the ably error
+func (a *AblyError) String() string {
+	return fmt.Sprintf("AblyError(code=%d,statusCode=%d,message=%s,timestamp=%d,isRetryable=%t)",
+		a.code, a.statusCode, a.message, a.timestamp, a.IsRetryable())
 }
 
-// NewMySegmentsNotification builds a MySegments notification
-func NewMySegmentsNotification(channelName string, includesPayload bool, payload []string, changeNumber int64) MySegmentsNotification {
-	return MySegmentsNotification{
-		base: base{
-			channelName:      channelName,
-			notificationType: MySegmentsUpdate,
-		},
-		IncludesPayload: includesPayload,
-		Payload:         payload,
-		ChangeNumber:    changeNumber,
+// Message basic interface
+type Message interface {
+	Event
+	MessageType() int64
+	Channel() string
+}
+
+// BaseMessage contains the basic message-specific fields and methods
+type BaseMessage struct {
+	timestamp int64
+	channel   string
+}
+
+func NewBaseMessage(timestamp int64, channel string) BaseMessage {
+	return BaseMessage{
+		timestamp: timestamp,
+		channel:   channel,
 	}
 }
 
-// SegmentChangeNotification notification when a Segment is updated
-type SegmentChangeNotification struct {
-	base
-	ChangeNumber int64
-	SegmentName  string
+// EventType always returns SSEEventTypeMessage for BaseMessage and embedding types
+func (m *BaseMessage) EventType() string { return SSEEventTypeMessage }
+
+// Timestamp returns the timestamp of the message reception
+func (m *BaseMessage) Timestamp() int64 { return m.timestamp }
+
+// Channel returns which channel the message was received in
+func (m *BaseMessage) Channel() string { return m.channel }
+
+// OccupancyMessage contains fields & methods related to ocupancy messages
+type OccupancyMessage struct {
+	BaseMessage
+	publishers int64
 }
 
-// NewSegmentChangeNotification builds a segment change notification
-func NewSegmentChangeNotification(channelName string, changeNumber int64, segmentName string) SegmentChangeNotification {
-	return SegmentChangeNotification{
-		base: base{
-			channelName:      channelName,
-			notificationType: SegmentUpdate,
-		},
-		ChangeNumber: changeNumber,
-		SegmentName:  segmentName,
+func NewOccupancyMessage(baseMessage BaseMessage, publishers int64) *OccupancyMessage {
+	return &OccupancyMessage{
+		BaseMessage: baseMessage,
+		publishers:  publishers,
 	}
 }
 
-// SplitChangeNotification notification to send a fetch to splitChanges
-type SplitChangeNotification struct {
-	base
-	ChangeNumber int64
+// MessageType always returns MessageTypeOccupancy for Occupancy messages
+func (o *OccupancyMessage) MessageType() int64 { return MessageTypeOccupancy }
+
+// ChannelWithoutPrefix returns the original channel namem without the metadata prefix
+func (o *OccupancyMessage) ChannelWithoutPrefix() string {
+	return strings.Replace(o.Channel(), occupancyPrefix, "", 1)
 }
 
-// NewSplitChangeNotification builds a split change notification
-func NewSplitChangeNotification(channelName string, changeNumber int64) SplitChangeNotification {
-	return SplitChangeNotification{
-		base: base{
-			channelName:      channelName,
-			notificationType: SplitUpdate,
-		},
-		ChangeNumber: changeNumber,
+// Publishers returbs the amount of publishers in the current channel
+func (o *OccupancyMessage) Publishers() int64 {
+	return o.publishers
+}
+
+// Strings returns the string representation of an occupancy message
+func (o *OccupancyMessage) String() string {
+	return fmt.Sprintf("Occupancy(channel=%s,publishers=%d,timestamp=%d)",
+		o.Channel(), o.publishers, o.Timestamp())
+}
+
+// Update basic interface
+type Update interface {
+	Message
+	UpdateType() string
+	ChangeNumber() int64
+}
+
+// BaseUpdate contains fields & methods related to update-based messages
+type BaseUpdate struct {
+	BaseMessage
+	changeNumber int64
+}
+
+func NewBaseUpdate(baseMessage BaseMessage, changeNumber int64) BaseUpdate {
+	return BaseUpdate{
+		BaseMessage:  baseMessage,
+		changeNumber: changeNumber,
 	}
 }
 
-// SplitKillNotification notification when Split is killed
-type SplitKillNotification struct {
-	base
-	ChangeNumber     int64
-	DefaultTreatment string
-	SplitName        string
+// MessageType alwats returns MessageType for Update messages
+func (b *BaseUpdate) MessageType() int64 { return MessageTypeUpdate }
+
+// ChangeNumber returns the changeNumber of the update
+func (b *BaseUpdate) ChangeNumber() int64 { return b.changeNumber }
+
+// SplitChangeUpdate represents a SplitChange notification generated in the split servers
+type SplitChangeUpdate struct {
+	BaseUpdate
+	previousChangeNumber *int64
+	featureFlag          *SplitDTO
 }
 
-// NewSplitKillNotification builds a killed split notification
-func NewSplitKillNotification(channelName string, changeNumber int64, defaultTreatment string, splitName string) SplitKillNotification {
-	return SplitKillNotification{
-		base: base{
-			channelName:      channelName,
-			notificationType: SplitKill,
-		},
-		ChangeNumber:     changeNumber,
-		DefaultTreatment: defaultTreatment,
-		SplitName:        splitName,
+func NewSplitChangeUpdate(baseUpdate BaseUpdate, pcn *int64, featureFlag *SplitDTO) *SplitChangeUpdate {
+	return &SplitChangeUpdate{
+		BaseUpdate:           baseUpdate,
+		previousChangeNumber: pcn,
+		featureFlag:          featureFlag,
 	}
 }
-*/
+
+// UpdateType always returns UpdateTypeSplitChange for SplitUpdate messages
+func (u *SplitChangeUpdate) UpdateType() string { return UpdateTypeSplitChange }
+
+// String returns the String representation of a split change notification
+func (u *SplitChangeUpdate) String() string {
+	return fmt.Sprintf("SplitChange(channel=%s,changeNumber=%d,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), u.Timestamp())
+}
+
+// PreviousChangeNumber returns previous change number
+func (u *SplitChangeUpdate) PreviousChangeNumber() *int64 { return u.previousChangeNumber }
+
+// FeatureFlag returns feature flag definiiton or nil
+func (u *SplitChangeUpdate) FeatureFlag() *SplitDTO { return u.featureFlag }
+
+// SplitKillUpdate represents a SplitKill notification generated in the split servers
+type SplitKillUpdate struct {
+	BaseUpdate
+	splitName        string
+	defaultTreatment string
+}
+
+func NewSplitKillUpdate(baseUpdate BaseUpdate, splitName string, defaultTreatment string) *SplitKillUpdate {
+	return &SplitKillUpdate{
+		BaseUpdate:       baseUpdate,
+		splitName:        splitName,
+		defaultTreatment: defaultTreatment,
+	}
+}
+
+// UpdateType always returns UpdateTypeSplitKill for SplitKillUpdate messages
+func (u *SplitKillUpdate) UpdateType() string { return UpdateTypeSplitKill }
+
+// SplitName returns the name of the killed split
+func (u *SplitKillUpdate) SplitName() string { return u.splitName }
+
+// DefaultTreatment returns the last default treatment seen in the split servers for this split
+func (u *SplitKillUpdate) DefaultTreatment() string { return u.defaultTreatment }
+
+// ToSplitChangeUpdate Maps this kill notification to a split change one
+func (u *SplitKillUpdate) ToSplitChangeUpdate() *SplitChangeUpdate {
+	return &SplitChangeUpdate{BaseUpdate: u.BaseUpdate}
+}
+
+// String returns the string representation of this update
+func (u *SplitKillUpdate) String() string {
+	return fmt.Sprintf("SplitKill(channel=%s,changeNumber=%d,splitName=%s,defaultTreatment=%s,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), u.SplitName(), u.DefaultTreatment(), u.Timestamp())
+}
+
+// SegmentChangeUpdate represents a segment change notification generated in the split servers.
+type SegmentChangeUpdate struct {
+	BaseUpdate
+	segmentName string
+}
+
+func NewSegmentChangeUpdate(baseUpdate BaseUpdate, segmentName string) *SegmentChangeUpdate {
+	return &SegmentChangeUpdate{
+		BaseUpdate:  baseUpdate,
+		segmentName: segmentName,
+	}
+}
+
+// UpdateType is always UpdateTypeSegmentChange for Segmet Updates
+func (u *SegmentChangeUpdate) UpdateType() string { return UpdateTypeSegmentChange }
+
+// SegmentName returns the name of the updated segment
+func (u *SegmentChangeUpdate) SegmentName() string { return u.segmentName }
+
+// String returns the string representation of a segment update notification
+func (u *SegmentChangeUpdate) String() string {
+	return fmt.Sprintf("SegmentChange(channel=%s,changeNumber=%d,segmentName=%s,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), u.segmentName, u.Timestamp())
+}
+
+// ControlUpdate represents a control notification generated by the split push subsystem
+type ControlUpdate struct {
+	BaseMessage
+	controlType string
+}
+
+func NewControlUpdate(baseMessage BaseMessage, controlType string) *ControlUpdate {
+	return &ControlUpdate{
+		BaseMessage: baseMessage,
+		controlType: controlType,
+	}
+}
+
+// MessageType always returns MessageTypeControl for Control messages
+func (u *ControlUpdate) MessageType() int64 { return MessageTypeControl }
+
+// ControlType returns the type of control notification received
+func (u *ControlUpdate) ControlType() string { return u.controlType }
+
+// String returns a string representation of this notification
+func (u *ControlUpdate) String() string {
+	return fmt.Sprintf("Control(channel=%s,type=%s,timestamp=%d)",
+		u.Channel(), u.controlType, u.Timestamp())
+}
+
+// Compile-type assertions of interface requirements
+var _ Event = &AblyError{}
+var _ Message = &OccupancyMessage{}
+var _ Message = &SplitChangeUpdate{}
+var _ Message = &SplitKillUpdate{}
+var _ Message = &SegmentChangeUpdate{}
+var _ Message = &ControlUpdate{}
+var _ Update = &SplitChangeUpdate{}
+var _ Update = &SplitKillUpdate{}
+var _ Update = &SegmentChangeUpdate{}
