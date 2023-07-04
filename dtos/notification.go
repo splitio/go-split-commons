@@ -281,7 +281,7 @@ func (u *SegmentChangeUpdate) SegmentName() string { return u.segmentName }
 
 // String returns the string representation of a segment update notification
 func (u *SegmentChangeUpdate) String() string {
-	return fmt.Sprintf("SegmentChange(channel=%s,changeNumber=%d,segmentName=%s,timestamp=%d",
+	return fmt.Sprintf("SegmentChange(channel=%s,changeNumber=%d,segmentName=%s,timestamp=%d)",
 		u.Channel(), u.ChangeNumber(), u.segmentName, u.Timestamp())
 }
 
