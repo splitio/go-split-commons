@@ -225,6 +225,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
 		activeFFs, inactiveFFs := processFeatureFlagChanges(&featureFlagChange)
 		s.splitStorage.Update(activeFFs, inactiveFFs, ffChange.BaseUpdate.ChangeNumber())
+		s.runtimeTelemetry.RecordUpdatesFromSSE(telemetry.SplitUpdate)
 		updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
 		segmentReferences = appendSegmentNames(segmentReferences, &featureFlagChange)
 		return &UpdateResult{

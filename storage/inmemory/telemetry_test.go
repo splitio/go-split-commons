@@ -196,4 +196,19 @@ func TestTelemetryStorage(t *testing.T) {
 	if telemetryStorage.GetNonReadyUsages() != 5 {
 		t.Error("Wrong result")
 	}
+
+	telemetryStorage.RecordUpdatesFromSSE(telemetry.SplitUpdate)
+	telemetryStorage.RecordUpdatesFromSSE(telemetry.SplitUpdate)
+	telemetryStorage.RecordUpdatesFromSSE(telemetry.SplitUpdate)
+	updatesFromSSE := telemetryStorage.PopUpdatesFromSSE()
+	if updatesFromSSE.Splits != 3 {
+		t.Error("It should track 3")
+	}
+	if telemetryStorage.counters.splitUpdates != 0 {
+		t.Error("It should be reset")
+	}
+	updatesFromSSE = telemetryStorage.PopUpdatesFromSSE()
+	if updatesFromSSE.Splits != 0 {
+		t.Error("It should track 0")
+	}
 }
