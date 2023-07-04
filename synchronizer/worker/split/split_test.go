@@ -54,9 +54,9 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	_, err := splitSync.SynchronizeSplits(nil)
+	_, err := splitUpdater.SynchronizeSplits(nil)
 	if err == nil {
 		t.Error("It should return err")
 	}
@@ -139,9 +139,9 @@ func TestSplitSynchronizer(t *testing.T) {
 		},
 	}
 
-	splitSync := NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
-	_, err := splitSync.SynchronizeSplits(nil)
+	_, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -203,9 +203,9 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
+	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
 
-	res, err := splitSync.SynchronizeSplits(nil)
+	res, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -222,7 +222,7 @@ func TestSplitSyncProcess(t *testing.T) {
 		t.Error("It should exists")
 	}
 
-	res, err = splitSync.SynchronizeSplits(nil)
+	res, err = splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -292,14 +292,14 @@ func TestSplitTill(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
+	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
 
 	var till int64 = 1
-	_, err := splitSync.SynchronizeSplits(&till)
+	_, err := splitUpdater.SynchronizeSplits(&till)
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	_, err = splitSync.SynchronizeSplits(&till)
+	_, err = splitUpdater.SynchronizeSplits(&till)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -367,12 +367,12 @@ func TestByPassingCDN(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
-	splitSync.onDemandFetchBackoffBase = 1
-	splitSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
+	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
+	splitUpdater.onDemandFetchBackoffBase = 1
+	splitUpdater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
-	_, err := splitSync.SynchronizeSplits(&till)
+	_, err := splitUpdater.SynchronizeSplits(&till)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -440,12 +440,12 @@ func TestByPassingCDNLimit(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitSync := NewSplitFetcher(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
-	splitSync.onDemandFetchBackoffBase = 1
-	splitSync.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
+	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock)
+	splitUpdater.onDemandFetchBackoffBase = 1
+	splitUpdater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
-	_, err := splitSync.SynchronizeSplits(&till)
+	_, err := splitUpdater.SynchronizeSplits(&till)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -474,9 +474,9 @@ func TestProcessFFChange(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
 
-	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
+	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
-	result, _ := fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	result, _ := fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 12), nil, nil,
 	))
 	if result.RequiresFetch {
@@ -511,9 +511,9 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
-	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
+	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
-	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
 	))
 	if atomic.LoadInt64(&fetchCallCalled) != 1 {
@@ -550,11 +550,11 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 	}
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
-	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
+	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Active}
 
-	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4), common.Int64Ref(2), &featureFlag,
 	))
 	if atomic.LoadInt64(&fetchCallCalled) != 0 {
@@ -594,10 +594,10 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 	}
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
-	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
+	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Archived}
-	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 4), common.Int64Ref(2), &featureFlag,
 	))
 	if atomic.LoadInt64(&fetchCallCalled) != 0 {
@@ -637,9 +637,9 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	appMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {},
 	}
-	fetcher := NewSplitFetcher(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
+	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock)
 
-	fetcher.SynchronizeFeatureFlagWithPayload(*dtos.NewSplitChangeUpdate(
+	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
 	))
 	if atomic.LoadInt64(&fetchCallCalled) != 1 {

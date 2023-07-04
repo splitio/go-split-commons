@@ -87,7 +87,7 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitFetcher(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
+		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)

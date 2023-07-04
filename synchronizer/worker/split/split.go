@@ -29,7 +29,7 @@ const (
 // Updater interface
 type Updater interface {
 	SynchronizeSplits(till *int64) (*UpdateResult, error)
-	SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) (*UpdateResult, error)
+	SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error)
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 }
 
@@ -58,8 +58,8 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffMaxWait time.Duration
 }
 
-// NewSplitFetcher creates new split synchronizer for processing split updates
-func NewSplitFetcher(
+// NewSplitUpdater creates new split synchronizer for processing split updates
+func NewSplitUpdater(
 	splitStorage storage.SplitStorage,
 	splitFetcher service.SplitFetcher,
 	logger logging.LoggerInterface,
@@ -237,8 +237,8 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
 	return &UpdateResult{RequiresFetch: true}
 }
-func (s *UpdaterImpl) SynchronizeFeatureFlagWithPayload(ffChange dtos.SplitChangeUpdate) (*UpdateResult, error) {
-	result := s.processFFChange(ffChange)
+func (s *UpdaterImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error) {
+	result := s.processFFChange(*ffChange)
 	if result.RequiresFetch {
 		return s.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
 	}
