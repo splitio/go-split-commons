@@ -209,7 +209,7 @@ func (s *UpdaterImpl) LocalKill(splitName string, defaultTreatment string, chang
 func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateResult {
 	changeNumber, err := s.splitStorage.ChangeNumber()
 	if err != nil {
-		s.logger.Debug("problem getting change number from feature flag storage: %s", err.Error())
+		s.logger.Debug(fmt.Sprintf("problem getting change number from feature flag storage: %s", err.Error()))
 		return &UpdateResult{RequiresFetch: true}
 	}
 	if changeNumber >= ffChange.BaseUpdate.ChangeNumber() {
@@ -219,7 +219,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	if ffChange.FeatureFlag() != nil && *ffChange.PreviousChangeNumber() == changeNumber {
 		segmentReferences := make([]string, 0, 10)
 		updatedSplitNames := make([]string, 0, 1)
-		s.logger.Debug("updating feature flag %s", ffChange.FeatureFlag().Name)
+		s.logger.Debug(fmt.Sprintf("updating feature flag %s", ffChange.FeatureFlag().Name))
 		featureFlags := make([]dtos.SplitDTO, 0, 1)
 		featureFlags = append(featureFlags, *ffChange.FeatureFlag())
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
@@ -238,9 +238,11 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	return &UpdateResult{RequiresFetch: true}
 }
 func (s *UpdaterImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error) {
+	s.logger.Debug("in SynchronizeFeatureFlags")
 	result := s.processFFChange(*ffChange)
 	if result.RequiresFetch {
 		return s.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
 	}
+	s.logger.Debug("no requiere split fetch")
 	return result, nil
 }
