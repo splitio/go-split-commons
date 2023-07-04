@@ -239,11 +239,9 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	return &UpdateResult{RequiresFetch: true}
 }
 func (s *UpdaterImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error) {
-	s.logger.Debug("in SynchronizeFeatureFlags")
 	result := s.processFFChange(*ffChange)
 	if result.RequiresFetch {
 		return s.SynchronizeSplits(common.Int64Ref(ffChange.ChangeNumber()))
 	}
-	s.logger.Debug("no requiere split fetch")
 	return result, nil
 }
