@@ -92,7 +92,7 @@ func NewSynchronizerManager(
 		if clientKey != nil && len(*clientKey) != 4 {
 			return nil, errors.New("invalid ClientKey")
 		}
-		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey, hcMonitor, ffStorage)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey)
 		if err != nil {
 			return nil, err
 		}
