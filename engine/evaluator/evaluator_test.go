@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -354,5 +355,29 @@ func TestMultipleEvaluations(t *testing.T) {
 
 	if result.EvaluationTime <= 0 {
 		t.Error("It should be greater than 0")
+	}
+}
+
+func TestNoConditionMatched(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage.Update([]dtos.SplitDTO{{Name: "some", ChangeNumber: 123456789, DefaultTreatment: "off"}}, []dtos.SplitDTO{}, 123456789)
+
+	evaluator := NewEvaluator(
+		splitStorage,
+		nil,
+		nil,
+		logger)
+
+	key := "test"
+	result := evaluator.EvaluateFeature(key, &key, "some", nil)
+	if result == nil {
+		t.Error("It shouldn't be nil")
+	}
+	if result != nil && result.Label != "default rule" {
+		t.Error("It should return default rule")
+	}
+	if result != nil && result.Treatment != "off" {
+		t.Error("It should return off")
 	}
 }

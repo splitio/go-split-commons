@@ -915,6 +915,32 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	}
 }
 
+func TestLocalKill(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{}
+	splitMockStorage := storageMock.MockSplitStorage{
+		KillLocallyCall: func(splitName, defaultTreatment string, changeNumber int64) {
+			if splitName != "split" {
+				t.Error("Wrong splitName")
+			}
+			if defaultTreatment != "default_treatment" {
+				t.Error("Wrong defaultTreatment")
+			}
+			if changeNumber != 123456789 {
+				t.Error("Wrong changeNumber")
+			}
+		},
+	}
+	workers := Workers{
+		SplitUpdater: split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, storageMock.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}),
+	}
+	splitTasks := SplitTasks{
+		SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
+	syncForTest.LocalKill("split", "default_treatment", 123456789)
+}
+
 func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	//TODO
 }

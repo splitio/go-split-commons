@@ -249,3 +249,35 @@ func TestEvaluations(t *testing.T) {
 		}
 	}
 }
+
+func TestNoConditionMatched(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitDTO := dtos.SplitDTO{
+		Algo:                  2,
+		ChangeNumber:          1550099287313,
+		DefaultTreatment:      "on",
+		Killed:                false,
+		Name:                  "real_split",
+		Seed:                  764645059,
+		Status:                "ACTIVE",
+		TrafficAllocation:     100,
+		TrafficAllocationSeed: -1757484928,
+		TrafficTypeName:       "user",
+		Conditions:            []dtos.ConditionDTO{},
+	}
+
+	split := grammar.NewSplit(&splitDTO, nil, logger)
+
+	eng := Engine{}
+	eng.logger = logger
+
+	treatment, err := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil)
+
+	if treatment != nil {
+		t.Error("It should be nil.")
+	}
+
+	if err != "default rule" {
+		t.Error("It should return err")
+	}
+}

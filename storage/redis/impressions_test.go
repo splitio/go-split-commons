@@ -160,12 +160,6 @@ func TestPopNImpressionsWithMetadata(t *testing.T) {
 					if key != expectedKey {
 						t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 					}
-					/*
-						return &mocks.MockResultOutput{
-							ErrCall:    func() error { return nil },
-							ResultCall: func() (int64, error) { return 3, nil },
-						}
-					*/
 				},
 				ExecCall: func() ([]redis.Result, error) {
 					return []redis.Result{

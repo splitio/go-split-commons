@@ -92,7 +92,6 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	}
 
 	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes)
-
 	if treatment == nil {
 		e.logger.Warning(fmt.Sprintf(
 			"No condition matched, returning default treatment: %s",

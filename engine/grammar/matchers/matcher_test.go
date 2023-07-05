@@ -94,4 +94,24 @@ func TestMatcherConstruction(t *testing.T) {
 	if asString != "sampleString" {
 		t.Error("Recovered string doesn't match stored one")
 	}
+
+	attrName := "value"
+	dto4 := &dtos.MatcherDTO{
+		MatcherType: "IN_SPLIT_TREATMENT",
+		Dependency: &dtos.DependencyMatcherDataDTO{
+			Split:      "feature1",
+			Treatments: []string{"on"},
+		},
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+	}
+	matcher4, err := BuildMatcher(dto4, nil, logger)
+	if err != nil {
+		t.Error("There shouldn't have been any errors constructing the matcher")
+	}
+
+	if matcher4.Negate() {
+		t.Error("Matcher shouldn't be negated.")
+	}
 }
