@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/push/mocks"
-	storageMocks "github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -29,8 +28,7 @@ func TestProcessor(t *testing.T) {
 			}
 		},
 	}
-	ffStorageMock := storageMocks.MockSplitStorage{}
-	processor, err := NewProcessor(5000, 5000, syncMock, logger, ffStorageMock)
+	processor, err := NewProcessor(5000, 5000, syncMock, logger)
 	if err != nil {
 		t.Error("It should not return err")
 	}
