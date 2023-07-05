@@ -9,7 +9,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
 	"github.com/splitio/go-split-commons/v5/service/api/sse"
 	"github.com/splitio/go-split-commons/v5/storage"
@@ -71,11 +70,9 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
-	ffStorage storage.SplitStorage,
 ) (*ManagerImpl, error) {
 
-	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, ffStorage)
+	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
 )
@@ -23,7 +22,6 @@ func NewSplitUpdateWorker(
 	splitQueue chan dtos.SplitChangeUpdate,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
-	storage storage.SplitStorage,
 ) (*SplitUpdateWorker, error) {
 	if cap(splitQueue) < 5000 {
 		return nil, errors.New("")
