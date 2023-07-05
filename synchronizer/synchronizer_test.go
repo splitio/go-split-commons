@@ -563,7 +563,7 @@ func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	// Testing Storage With Changenumber Greater Than FF
@@ -615,7 +615,7 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 2, Status: split.Active}
@@ -674,7 +674,7 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}
@@ -756,7 +756,7 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}
@@ -825,7 +825,7 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	splitQueue <- *dtos.NewSplitChangeUpdate(
@@ -893,7 +893,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: split.Active}

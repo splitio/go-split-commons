@@ -15,7 +15,6 @@ import (
 	"github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-split-commons/v5/telemetry"
 
-	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	rawSseMocks "github.com/splitio/go-toolkit/v5/sse/mocks"
@@ -45,11 +44,8 @@ func TestAuth500(t *testing.T) {
 			}
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{}
 
-	ffMockStorage := mocks.MockSplitStorage{}
-
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -92,10 +88,8 @@ func TestAuth401(t *testing.T) {
 		},
 		RecordAuthRejectionsCall: func() { called++ },
 	}
-	appMonitor := hcMock.MockApplicationMonitor{}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -137,10 +131,8 @@ func TestAuthPushDisabled(t *testing.T) {
 			}
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryMockStorage, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -189,10 +181,8 @@ func TestStreamingConnectionFails(t *testing.T) {
 		},
 		RecordTokenRefreshesCall: func() {},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -260,13 +250,9 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
 	feedback := make(chan int64, 100)
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -343,13 +329,9 @@ func TestExpectedDisconnection(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
 	feedback := make(chan int64, 100)
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -429,12 +411,8 @@ func TestMultipleCallsToStartAndStop(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -528,12 +506,8 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -619,12 +593,8 @@ func TestEventForwarding(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -728,12 +698,8 @@ func TestEventForwardingReturnsError(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return
@@ -836,12 +802,8 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 			called++
 		},
 	}
-	appMonitor := hcMock.MockApplicationMonitor{
-		ResetCall: func(counterType, value int) {},
-	}
-	ffMockStorage := mocks.MockSplitStorage{}
 
-	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil, appMonitor, ffMockStorage)
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
 	if err != nil {
 		t.Error("no error should be returned upon manager instantiation", err)
 		return

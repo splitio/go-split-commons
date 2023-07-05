@@ -106,7 +106,8 @@ func (s *Local) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }
 
-// LocalKill does nothing
+// LocalKill local kill without any logic for localhost mode
 func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {}
 
+// SynchronizeFeatureFlags no logic attached for localhost mode
 func (s *Local) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error { return nil }

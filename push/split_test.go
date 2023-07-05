@@ -7,7 +7,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/push/mocks"
-	storageMocks "github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -35,13 +34,8 @@ func TestSplitUpdateWorker(t *testing.T) {
 			return nil
 		},
 	}
-	ffStorageMock := storageMocks.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) {
-			return -1, nil
-		},
-	}
 
-	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger, ffStorageMock)
+	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger)
 	splitWorker.Start()
 	splitQueue <- *dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 123456789), nil, nil,
