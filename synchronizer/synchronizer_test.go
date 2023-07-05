@@ -994,7 +994,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
-	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger)
 	splitWorker.Start()
 
 	featureFlag := dtos.SplitDTO{Name: "ff1", ChangeNumber: 2, Status: split.Active, Conditions: []dtos.ConditionDTO{{MatcherGroup: dtos.MatcherGroupDTO{Matchers: []dtos.MatcherDTO{
