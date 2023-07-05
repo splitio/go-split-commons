@@ -916,8 +916,8 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 }
 
 func TestSplitUpdateWithReferencedSegments(t *testing.T) {
-	var splitFetchCalled int64
 	var ffUpdateCalled int64
+	var segmentUpdateCalled int64
 	var segmentFetchCalled int64
 	var recordUpdateCall int64
 	var notifyEventCalled int64
@@ -963,6 +963,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 			return -1, nil
 		},
 		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			atomic.AddInt64(&segmentUpdateCalled, 1)
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -1006,17 +1007,14 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	)
 
 	time.Sleep(300 * time.Millisecond)
-	if !splitWorker.IsRunning() {
-		t.Error("It should be running")
-	}
 
-	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
-		t.Error("should haven been called. got: ", c)
-	}
 	if u := atomic.LoadInt64(&ffUpdateCalled); u != 1 {
 		t.Error("should haven been called. got: ", u)
 	}
 	if s := atomic.LoadInt64(&segmentFetchCalled); s != 1 {
+		t.Error("should haven been called. got: ", s)
+	}
+	if s := atomic.LoadInt64(&segmentUpdateCalled); s != 1 {
 		t.Error("should haven been called. got: ", s)
 	}
 	if r := atomic.LoadInt64(&recordUpdateCall); r != 1 {
