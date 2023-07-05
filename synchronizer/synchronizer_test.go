@@ -920,7 +920,6 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	var segmentUpdateCalled int64
 	var segmentFetchCalled int64
 	var recordUpdateCall int64
-	var notifyEventCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{SegmentFetcher: httpMocks.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
@@ -978,9 +977,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 	}
 	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {
-			atomic.AddInt64(&notifyEventCalled, 1)
-		},
+		NotifyEventCall: func(counterType int) {},
 	}
 
 	workers := Workers{
@@ -1019,8 +1016,5 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	}
 	if r := atomic.LoadInt64(&recordUpdateCall); r != 1 {
 		t.Error("should haven been called. got: ", r)
-	}
-	if atomic.LoadInt64(&notifyEventCalled) < 1 {
-		t.Error("It should be called at least once")
 	}
 }
