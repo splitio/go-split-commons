@@ -916,5 +916,113 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 }
 
 func TestSplitUpdateWithReferencedSegments(t *testing.T) {
-	//TODO
+	var splitFetchCalled int64
+	var ffUpdateCalled int64
+	var segmentFetchCalled int64
+	var recordUpdateCall int64
+	var notifyEventCalled int64
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	splitAPI := api.SplitAPI{SegmentFetcher: httpMocks.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
+				t.Error("noCache should be true")
+			}
+			atomic.AddInt64(&segmentFetchCalled, 1)
+			if name != "segment1" {
+				t.Error("Wrong name")
+			}
+			return &dtos.SegmentChangesDTO{
+				Name:    name,
+				Added:   []string{"some"},
+				Removed: []string{},
+				Since:   123,
+				Till:    123,
+			}, nil
+		},
+	}}
+	splitMockStorage := storageMock.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) {
+			return 1, nil
+		},
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
+			if len(toAdd) != 1 {
+				t.Error("toAdd should have one feature flag")
+			}
+			if len(toRemove) != 0 {
+				t.Error("toRemove should be empty")
+			}
+			atomic.AddInt64(&ffUpdateCalled, 1)
+		},
+		SegmentNamesCall: func() *set.ThreadUnsafeSet { return set.NewSet("segment1") },
+	}
+	segmentMockStorage := storageMock.MockSegmentStorage{
+		ChangeNumberCall: func(segmentName string) (int64, error) {
+			if segmentName != "segment1" {
+				t.Error("the segment name should be segment1")
+			}
+			return -1, nil
+		},
+		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
+			if name != "segment1" {
+				t.Error("Wrong name")
+			}
+			return nil
+		},
+	}
+	telemetryMockStorage := storageMock.MockTelemetryStorage{
+		RecordUpdatesFromSSECall: func(updateType int) {
+			atomic.AddInt64(&recordUpdateCall, 1)
+		},
+		RecordSuccessfulSyncCall: func(resource int, time time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	workers := Workers{
+		SplitUpdater:      split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock),
+		SegmentUpdater:    segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
+		EventRecorder:     event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		TelemetryRecorder: telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, 5, 50, logger),
+	}
+	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
+
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
+	splitWorker, _ := push.NewSplitUpdateWorker(splitQueue, syncForTest, logger, splitMockStorage)
+	splitWorker.Start()
+
+	featureFlag := dtos.SplitDTO{Name: "ff1", ChangeNumber: 2, Status: split.Active, Conditions: []dtos.ConditionDTO{{MatcherGroup: dtos.MatcherGroupDTO{Matchers: []dtos.MatcherDTO{
+		{MatcherType: "IN_SEGMENT", UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{SegmentName: "segment1"}}}}}}}
+
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2),
+		common.Int64Ref(1), &featureFlag,
+	)
+
+	time.Sleep(300 * time.Millisecond)
+	if !splitWorker.IsRunning() {
+		t.Error("It should be running")
+	}
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
+		t.Error("should haven been called. got: ", c)
+	}
+	if u := atomic.LoadInt64(&ffUpdateCalled); u != 1 {
+		t.Error("should haven been called. got: ", u)
+	}
+	if s := atomic.LoadInt64(&segmentFetchCalled); s != 1 {
+		t.Error("should haven been called. got: ", s)
+	}
+	if r := atomic.LoadInt64(&recordUpdateCall); r != 1 {
+		t.Error("should haven been called. got: ", r)
+	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
+	}
 }
