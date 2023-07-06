@@ -639,7 +639,7 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 				t.Errorf("throguhput exceeded max expected concurrency of %d. Is: %d", maxConcurrency, current)
 			}
 
-            // hold the semaphore for a while
+			// hold the semaphore for a while
 			time.Sleep(100 * time.Millisecond)
 			done.Store(name, emptyVal)
 			atomic.AddInt32(&inProgress, -1)
