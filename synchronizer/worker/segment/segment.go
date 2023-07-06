@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -14,12 +15,16 @@ import (
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
+
+    maxConcurrency = 10
 )
 
 // Updater interface
@@ -195,6 +200,8 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	var mtx sync.Mutex
 	results := make(map[string]UpdateResult, len(segmentNames))
 	errorsToPrint := NewErrors()
+
+    sem := semaphore.NewWeighted(maxConcurrency)
 	for _, name := range segmentNames {
 		conv, ok := name.(string)
 		if !ok {
@@ -202,6 +209,8 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			continue
 		}
 		go func(segmentName string) {
+            sem.Acquire(context.Background(), 1)
+            defer sem.Release(1)
 			defer wg.Done() // Make sure the "finished" signal is always sent
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {

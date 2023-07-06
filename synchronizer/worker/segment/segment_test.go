@@ -1,11 +1,14 @@
 package segment
 
 import (
+	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v4/healthcheck/application"
 	hcMock "github.com/splitio/go-split-commons/v4/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v4/service"
 	fetcherMock "github.com/splitio/go-split-commons/v4/service/mocks"
@@ -16,6 +19,8 @@ import (
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/testhelpers"
+
+	storageMocks "github.com/splitio/go-split-commons/v4/storage/mocks"
 )
 
 func TestSegmentsSynchronizerError(t *testing.T) {
@@ -610,4 +615,53 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called once")
 	}
+}
+
+func TestSegmentSyncConcurrencyLimit(t *testing.T) {
+
+	splitStorage := &storageMocks.MockSplitStorage{
+		SegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			for idx := 0; idx < 100; idx++ {
+				ss.Add(fmt.Sprintf("s%d", idx))
+			}
+			return ss
+		},
+	}
+
+	// this will fail if at any time there are more than `maxConcurrency` fetches running
+	emptyVal := struct{}{}
+	var done sync.Map
+	var inProgress int32
+	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
+		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+			if current := atomic.AddInt32(&inProgress, 1); current > 5 {
+				t.Errorf("throguhput exceeded max expected concurrency of %d. Is: %d", maxConcurrency, current)
+			}
+
+            // hold the semaphore for a while
+			time.Sleep(100 * time.Millisecond)
+			done.Store(name, emptyVal)
+			atomic.AddInt32(&inProgress, -1)
+			return &dtos.SegmentChangesDTO{}, nil
+		},
+	}
+
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	segmentSync := NewSegmentFetcher(splitStorage, segmentStorage, segmentMockFetcher, logging.NewLogger(nil), runtimeTelemetry, &application.Dummy{})
+	_, err := segmentSync.SynchronizeSegments()
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	// assert that all segments have been "fetched"
+	for idx := 0; idx < 100; idx++ {
+		key := fmt.Sprintf("s%d", idx)
+		if _, ok := done.Load(key); !ok {
+			t.Errorf("segment '%s' not fetched", key)
+		}
+	}
+
+	t.Fail()
 }
