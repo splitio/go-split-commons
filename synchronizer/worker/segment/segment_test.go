@@ -635,7 +635,7 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 	var inProgress int32
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-			if current := atomic.AddInt32(&inProgress, 1); current > 5 {
+			if current := atomic.AddInt32(&inProgress, 1); current > maxConcurrency {
 				t.Errorf("throguhput exceeded max expected concurrency of %d. Is: %d", maxConcurrency, current)
 			}
 
