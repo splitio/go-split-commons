@@ -662,6 +662,4 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 			t.Errorf("segment '%s' not fetched", key)
 		}
 	}
-
-	t.Fail()
 }
