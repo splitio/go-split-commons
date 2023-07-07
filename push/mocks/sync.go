@@ -1,8 +1,12 @@
 package mocks
 
+import (
+	"github.com/splitio/go-split-commons/v5/dtos"
+)
+
 type LocalSyncMock struct {
 	SyncAllCall                    func() error
-	SynchronizeSplitsCall          func(till *int64) error
+	SynchronizeFeatureFlagsCall    func(ffChange *dtos.SplitChangeUpdate) error
 	LocalKillCall                  func(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegmentCall         func(segmentName string, till *int64) error
 	StartPeriodicFetchingCall      func()
@@ -13,10 +17,6 @@ type LocalSyncMock struct {
 
 func (l *LocalSyncMock) SyncAll() error {
 	return l.SyncAllCall()
-}
-
-func (l *LocalSyncMock) SynchronizeSplits(till *int64) error {
-	return l.SynchronizeSplitsCall(till)
 }
 
 func (l *LocalSyncMock) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
@@ -41,4 +41,8 @@ func (l *LocalSyncMock) StartPeriodicDataRecording() {
 
 func (l *LocalSyncMock) StopPeriodicDataRecording() {
 	l.StopPeriodicDataRecordingCall()
+}
+
+func (l *LocalSyncMock) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
+	return l.SynchronizeFeatureFlagsCall(ffChange)
 }

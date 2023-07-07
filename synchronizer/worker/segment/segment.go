@@ -6,11 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/healthcheck/application"
-	"github.com/splitio/go-split-commons/v4/service"
-	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/healthcheck/application"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/storage"
+	"github.com/splitio/go-split-commons/v5/telemetry"
+
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -59,8 +60,8 @@ type internalSegmentSync struct {
 	attempt        int
 }
 
-// NewSegmentFetcher creates new segment synchronizer for processing segment updates
-func NewSegmentFetcher(
+// NewSegmentUpdater creates new segment synchronizer for processing segment updates
+func NewSegmentUpdater(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
 	segmentFetcher service.SegmentFetcher,
@@ -100,7 +101,6 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 
 	s.logger.Debug(fmt.Sprintf("Segment [%s] exists, it will be updated. %d keys added, %d keys removed", segmentChanges.Name, toAdd.Size(), toRemove.Size()))
 	s.segmentStorage.Update(segmentChanges.Name, toAdd, toRemove, segmentChanges.Till)
-
 }
 
 func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service.FetchOptions) (*UpdateResult, error) {

@@ -7,13 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/healthcheck/application"
-	"github.com/splitio/go-split-commons/v4/service"
-	"github.com/splitio/go-split-commons/v4/service/api/sse"
-	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/service/api/sse"
+	"github.com/splitio/go-split-commons/v5/storage"
+	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
@@ -71,7 +70,6 @@ func NewManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
 ) (*ManagerImpl, error) {
 
 	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger)
@@ -80,15 +78,8 @@ func NewManager(
 	}
 
 	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
-	parser := &NotificationParserImpl{
-		logger:            logger,
-		onSplitUpdate:     processor.ProcessSplitChangeUpdate,
-		onSplitKill:       processor.ProcessSplitKillUpdate,
-		onSegmentUpdate:   processor.ProcessSegmentChangeUpdate,
-		onControlUpdate:   statusTracker.HandleControl,
-		onOccupancyMesage: statusTracker.HandleOccupancy,
-		onAblyError:       statusTracker.HandleAblyError,
-	}
+	parser := NewNotificationParserImpl(logger, processor.ProcessSplitChangeUpdate, processor.ProcessSplitKillUpdate, processor.ProcessSegmentChangeUpdate,
+		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError)
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,

@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/storage"
-	constants "github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/storage"
+	constants "github.com/splitio/go-split-commons/v5/telemetry"
 )
 
 type latencies struct {
@@ -44,6 +44,9 @@ type counters struct {
 	// Factory Counters
 	burTimeouts    int64
 	nonReadyUsages int64
+
+	// UpdatesFromSSE Counters
+	splitUpdates int64
 }
 
 type records struct {
@@ -326,6 +329,14 @@ func (i *TelemetryStorage) RecordStreamingEvent(event *dtos.StreamingEvent) {
 	}
 }
 
+// RecordUpdatesFromSSE records updates from sse by type
+func (i *TelemetryStorage) RecordUpdatesFromSSE(updateType int) {
+	switch updateType {
+	case constants.SplitUpdate:
+		atomic.AddInt64(&i.counters.splitUpdates, 1)
+	}
+}
+
 // AddTag adds particular tag
 func (i *TelemetryStorage) AddTag(tag string) {
 	i.mutexTags.Lock()
@@ -470,6 +481,13 @@ func (i *TelemetryStorage) PopTags() []string {
 	toReturn := i.tags
 	i.tags = make([]string, 0, constants.MaxTags)
 	return toReturn
+}
+
+// PopUpdatesFromSSE gets and clears updatesFromSSE
+func (i *TelemetryStorage) PopUpdatesFromSSE() dtos.UpdatesFromSSE {
+	return dtos.UpdatesFromSSE{
+		Splits: atomic.SwapInt64(&i.counters.splitUpdates, 0),
+	}
 }
 
 // GetSessionLength gets session duration

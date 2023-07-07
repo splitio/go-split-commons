@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -14,17 +15,17 @@ const (
 
 // Processor provides the interface for an update-message processor
 type Processor interface {
-	ProcessSplitChangeUpdate(update *SplitChangeUpdate) error
-	ProcessSplitKillUpdate(update *SplitKillUpdate) error
-	ProcessSegmentChangeUpdate(update *SegmentChangeUpdate) error
+	ProcessSplitChangeUpdate(update *dtos.SplitChangeUpdate) error
+	ProcessSplitKillUpdate(update *dtos.SplitKillUpdate) error
+	ProcessSegmentChangeUpdate(update *dtos.SegmentChangeUpdate) error
 	StartWorkers()
 	StopWorkers()
 }
 
 // ProcessorImpl struct for notification processor
 type ProcessorImpl struct {
-	segmentQueue  chan SegmentChangeUpdate
-	splitQueue    chan SplitChangeUpdate
+	segmentQueue  chan dtos.SegmentChangeUpdate
+	splitQueue    chan dtos.SplitChangeUpdate
 	splitWorker   *SplitUpdateWorker
 	segmentWorker *SegmentUpdateWorker
 	synchronizer  synchronizerInterface
@@ -45,13 +46,13 @@ func NewProcessor(
 		return nil, errors.New("Small size of splitQueue")
 	}
 
-	splitQueue := make(chan SplitChangeUpdate, splitQueueSize)
+	splitQueue := make(chan dtos.SplitChangeUpdate, splitQueueSize)
 	splitWorker, err := NewSplitUpdateWorker(splitQueue, synchronizer, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating split worker: %w", err)
 	}
 
-	segmentQueue := make(chan SegmentChangeUpdate, segmentQueueSize)
+	segmentQueue := make(chan dtos.SegmentChangeUpdate, segmentQueueSize)
 	segmentWorker, err := NewSegmentUpdateWorker(segmentQueue, synchronizer, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating split worker: %w", err)
@@ -68,7 +69,7 @@ func NewProcessor(
 }
 
 // ProcessSplitChangeUpdate accepts a split change notifications and schedules a fetch
-func (p *ProcessorImpl) ProcessSplitChangeUpdate(update *SplitChangeUpdate) error {
+func (p *ProcessorImpl) ProcessSplitChangeUpdate(update *dtos.SplitChangeUpdate) error {
 	if update == nil {
 		return errors.New("split change update cannot be nil")
 	}
@@ -77,7 +78,7 @@ func (p *ProcessorImpl) ProcessSplitChangeUpdate(update *SplitChangeUpdate) erro
 }
 
 // ProcessSplitKillUpdate accepts a split kill notification, issues a local kill and schedules a fetch
-func (p *ProcessorImpl) ProcessSplitKillUpdate(update *SplitKillUpdate) error {
+func (p *ProcessorImpl) ProcessSplitKillUpdate(update *dtos.SplitKillUpdate) error {
 	if update == nil {
 		return errors.New("split change update cannot be nil")
 	}
@@ -86,7 +87,7 @@ func (p *ProcessorImpl) ProcessSplitKillUpdate(update *SplitKillUpdate) error {
 }
 
 // ProcessSegmentChangeUpdate accepts a segment change notification and schedules a fetch
-func (p *ProcessorImpl) ProcessSegmentChangeUpdate(update *SegmentChangeUpdate) error {
+func (p *ProcessorImpl) ProcessSegmentChangeUpdate(update *dtos.SegmentChangeUpdate) error {
 	if update == nil {
 		return errors.New("split change update cannot be nil")
 	}

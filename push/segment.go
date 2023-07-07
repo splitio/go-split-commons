@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
@@ -12,7 +13,7 @@ import (
 
 // SegmentUpdateWorker struct
 type SegmentUpdateWorker struct {
-	segmentQueue chan SegmentChangeUpdate
+	segmentQueue chan dtos.SegmentChangeUpdate
 	sync         synchronizerInterface
 	logger       logging.LoggerInterface
 	lifecycle    lifecycle.Manager
@@ -20,7 +21,7 @@ type SegmentUpdateWorker struct {
 
 // NewSegmentUpdateWorker creates SegmentUpdateWorker
 func NewSegmentUpdateWorker(
-	segmentQueue chan SegmentChangeUpdate,
+	segmentQueue chan dtos.SegmentChangeUpdate,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
 ) (*SegmentUpdateWorker, error) {

@@ -6,13 +6,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/healthcheck/application"
-	"github.com/splitio/go-split-commons/v4/push"
-	"github.com/splitio/go-split-commons/v4/service"
-	"github.com/splitio/go-split-commons/v4/storage"
-	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/healthcheck/application"
+	"github.com/splitio/go-split-commons/v5/push"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/storage"
+	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
@@ -66,7 +66,7 @@ func NewSynchronizerManager(
 	logger logging.LoggerInterface,
 	config conf.AdvancedConfig,
 	authClient service.AuthClient,
-	splitStorage storage.SplitStorage,
+	ffStorage storage.SplitStorage,
 	managerStatus chan int,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
@@ -92,7 +92,7 @@ func NewSynchronizerManager(
 		if clientKey != nil && len(*clientKey) != 4 {
 			return nil, errors.New("invalid ClientKey")
 		}
-		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey, hcMonitor)
+		pushManager, err := push.NewManager(logger, synchronizer, &config, streamingStatus, authClient, runtimeTelemetry, metadata, clientKey)
 		if err != nil {
 			return nil, err
 		}

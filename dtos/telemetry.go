@@ -82,6 +82,11 @@ type URLOverrides struct {
 	Telemetry bool `json:"t,omitempty"`
 }
 
+// UpdatesFromSSE struct
+type UpdatesFromSSE struct {
+	Splits int64 `json:"sp,omitempty"`
+}
+
 // Config data for initial configs metrics
 type Config struct {
 	OperationMode              int           `json:"oM,omitempty"`
@@ -123,6 +128,7 @@ type Stats struct {
 	EventsDropped        int64                `json:"eD,omitempty"`
 	StreamingEvents      []StreamingEvent     `json:"sE,omitempty"`
 	Tags                 []string             `json:"t,omitempty"`
+	UpdatesFromSSE       UpdatesFromSSE       `json:"ufs,omitempty"`
 }
 
 // Key struct
