@@ -3,7 +3,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v5/dtos"
 )
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage
@@ -23,6 +23,7 @@ type MockTelemetryStorage struct {
 	RecordSessionLengthCall    func(session int64)
 	RecordNonReadyUsageCall    func()
 	RecordBURTimeoutCall       func()
+	RecordUpdatesFromSSECall   func(updateType int)
 	PopLatenciesCall           func() dtos.MethodLatencies
 	PopExceptionsCall          func() dtos.MethodExceptions
 	GetImpressionsStatsCall    func(dataType int) int64
@@ -34,6 +35,7 @@ type MockTelemetryStorage struct {
 	PopTokenRefreshesCall      func() int64
 	PopStreamingEventsCall     func() []dtos.StreamingEvent
 	PopTagsCall                func() []string
+	PopUpdatesFromSSECall      func() dtos.UpdatesFromSSE
 	GetSessionLengthCall       func() int64
 	GetNonReadyUsagesCall      func() int64
 	GetBURTimeoutsCall         func() int64
@@ -93,6 +95,11 @@ func (m MockTelemetryStorage) RecordStreamingEvent(streamingEvent *dtos.Streamin
 	m.RecordStreamingEventCall(streamingEvent)
 }
 
+// RecordUpdatesFromSSE mock
+func (m MockTelemetryStorage) RecordUpdatesFromSSE(updateType int) {
+	m.RecordUpdatesFromSSECall(updateType)
+}
+
 // AddTag mock
 func (m MockTelemetryStorage) AddTag(tag string) {
 	m.AddTagCall(tag)
@@ -118,7 +125,7 @@ func (m MockTelemetryStorage) PopLatencies() dtos.MethodLatencies {
 	return m.PopLatenciesCall()
 }
 
-//PopExceptions mock
+// PopExceptions mock
 func (m MockTelemetryStorage) PopExceptions() dtos.MethodExceptions {
 	return m.PopExceptionsCall()
 }
@@ -166,6 +173,11 @@ func (m MockTelemetryStorage) PopStreamingEvents() []dtos.StreamingEvent {
 // PopTags mock
 func (m MockTelemetryStorage) PopTags() []string {
 	return m.PopTagsCall()
+}
+
+// PopUpdatesFromSSE mock
+func (m MockTelemetryStorage) PopUpdatesFromSSE() dtos.UpdatesFromSSE {
+	return m.PopUpdatesFromSSECall()
 }
 
 // GetSessionLength mock

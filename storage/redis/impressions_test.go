@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
@@ -160,12 +160,6 @@ func TestPopNImpressionsWithMetadata(t *testing.T) {
 					if key != expectedKey {
 						t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 					}
-					/*
-						return &mocks.MockResultOutput{
-							ErrCall:    func() error { return nil },
-							ResultCall: func() (int64, error) { return 3, nil },
-						}
-					*/
 				},
 				ExecCall: func() ([]redis.Result, error) {
 					return []redis.Result{

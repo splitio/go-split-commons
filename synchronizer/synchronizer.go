@@ -3,15 +3,15 @@ package synchronizer
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
-	"github.com/splitio/go-split-commons/v4/healthcheck/application"
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/impressionscount"
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v4/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v4/tasks"
-	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/impressionscount"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v5/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v5/tasks"
+	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -31,8 +31,8 @@ type SplitTasks struct {
 
 // Workers struct for workers
 type Workers struct {
-	SplitFetcher             split.Updater
-	SegmentFetcher           segment.Updater
+	SplitUpdater             split.Updater
+	SegmentUpdater           segment.Updater
 	TelemetryRecorder        telemetry.TelemetrySynchronizer
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
@@ -42,7 +42,7 @@ type Workers struct {
 // Synchronizer interface for syncing data to and from splits servers
 type Synchronizer interface {
 	SyncAll() error
-	SynchronizeSplits(till *int64) error
+	SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()
@@ -72,7 +72,6 @@ func NewSynchronizer(
 	workers Workers,
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
-	hcMonitor application.MonitorProducerInterface, // Deprecated: This is no longer used, left here only to avoid a breaking change
 ) Synchronizer {
 	return &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
@@ -109,11 +108,11 @@ func (s *SynchronizerImpl) dataFlusher() {
 
 // SyncAll syncs splits and segments
 func (s *SynchronizerImpl) SyncAll() error {
-	_, err := s.workers.SplitFetcher.SynchronizeSplits(nil)
+	_, err := s.workers.SplitUpdater.SynchronizeSplits(nil)
 	if err != nil {
 		return err
 	}
-	_, err = s.workers.SegmentFetcher.SynchronizeSegments()
+	_, err = s.workers.SegmentUpdater.SynchronizeSegments()
 	return err
 }
 
@@ -191,15 +190,6 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 	}
 }
 
-// SynchronizeSplits syncs splits
-func (s *SynchronizerImpl) SynchronizeSplits(till *int64) error {
-	result, err := s.workers.SplitFetcher.SynchronizeSplits(till)
-	for _, segment := range s.filterCachedSegments(result.ReferencedSegments) {
-		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
-	}
-	return err
-}
-
 // RefreshRates returns the refresh rates of the splits & segment tasks
 func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.Duration) {
 	return time.Duration(s.splitsRefreshRate) * time.Second, time.Duration(s.segmentsRefreshRate) * time.Second
@@ -208,7 +198,7 @@ func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.D
 func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []string {
 	toRet := make([]string, 0, len(segmentsReferenced))
 	for _, name := range segmentsReferenced {
-		if !s.workers.SegmentFetcher.IsSegmentCached(name) {
+		if !s.workers.SegmentUpdater.IsSegmentCached(name) {
 			toRet = append(toRet, name)
 		}
 	}
@@ -217,12 +207,25 @@ func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []s
 
 // LocalKill locally kills a split
 func (s *SynchronizerImpl) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {
-	s.workers.SplitFetcher.LocalKill(splitName, defaultTreatment, changeNumber)
+	s.workers.SplitUpdater.LocalKill(splitName, defaultTreatment, changeNumber)
 }
 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
-	_, err := s.workers.SegmentFetcher.SynchronizeSegment(name, till)
+	_, err := s.workers.SegmentUpdater.SynchronizeSegment(name, till)
+	return err
+}
+
+func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments []string) {
+	for _, segment := range s.filterCachedSegments(referencedSegments) {
+		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
+	}
+}
+
+// SynchronizeFeatureFlags syncs featureFlags
+func (s *SynchronizerImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
+	result, err := s.workers.SplitUpdater.SynchronizeFeatureFlags(ffChange)
+	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments)
 	return err
 }
 

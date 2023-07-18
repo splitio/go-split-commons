@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/storage/inmemory"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/storage/inmemory"
 )
 
 func TestOptimizedMode(t *testing.T) {

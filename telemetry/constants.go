@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	"github.com/splitio/go-split-commons/v4/conf"
+	"github.com/splitio/go-split-commons/v5/conf"
 )
 
 const (
@@ -133,6 +133,10 @@ const (
 const (
 	Redis  = "redis"
 	Memory = "memory"
+)
+
+const (
+	SplitUpdate = iota
 )
 
 // InitConfig involves entire config for init

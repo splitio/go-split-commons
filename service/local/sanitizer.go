@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
+	"github.com/splitio/go-split-commons/v5/dtos"
 )
 
 func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {

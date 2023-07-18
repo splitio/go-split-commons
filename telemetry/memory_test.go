@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/conf"
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/service/api"
-	"github.com/splitio/go-split-commons/v4/service/mocks"
-	st "github.com/splitio/go-split-commons/v4/storage/mocks"
+	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/service/api"
+	"github.com/splitio/go-split-commons/v5/service/mocks"
+	st "github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -52,6 +52,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 				t.Error("Status should be 500")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorderMock := mocks.MockTelemetryRecorder{
@@ -111,6 +112,7 @@ func TestTelemetryRecorder(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorderMock := mocks.MockTelemetryRecorder{
@@ -196,6 +198,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 				t.Error("Resource should be telemetry")
 			}
 		},
+		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
 	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)

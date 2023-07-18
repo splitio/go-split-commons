@@ -4,14 +4,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
 )
 
 // SplitUpdateWorker struct
 type SplitUpdateWorker struct {
-	splitQueue chan SplitChangeUpdate
+	splitQueue chan dtos.SplitChangeUpdate
 	sync       synchronizerInterface
 	logger     logging.LoggerInterface
 	lifecycle  lifecycle.Manager
@@ -19,7 +19,7 @@ type SplitUpdateWorker struct {
 
 // NewSplitUpdateWorker creates SplitUpdateWorker
 func NewSplitUpdateWorker(
-	splitQueue chan SplitChangeUpdate,
+	splitQueue chan dtos.SplitChangeUpdate,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
 ) (*SplitUpdateWorker, error) {
@@ -54,7 +54,7 @@ func (s *SplitUpdateWorker) Start() {
 			case splitUpdate := <-s.splitQueue:
 				s.logger.Debug("Received Split update and proceding to perform fetch")
 				s.logger.Debug(fmt.Sprintf("ChangeNumber: %d", splitUpdate.ChangeNumber()))
-				err := s.sync.SynchronizeSplits(common.Int64Ref(splitUpdate.ChangeNumber()))
+				err := s.sync.SynchronizeFeatureFlags(&splitUpdate)
 				if err != nil {
 					s.logger.Error(err)
 				}
