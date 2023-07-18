@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/service"
-	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -68,6 +68,7 @@ func (e *RecorderSingle) buildStats() dtos.Stats {
 		StreamingEvents:      e.telemetryStorage.PopStreamingEvents(),
 		SessionLengthMs:      e.telemetryStorage.GetSessionLength(),
 		Tags:                 e.telemetryStorage.PopTags(),
+		UpdatesFromSSE:       e.telemetryStorage.PopUpdatesFromSSE(),
 	}
 }
 

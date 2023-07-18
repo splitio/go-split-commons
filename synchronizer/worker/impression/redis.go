@@ -3,7 +3,7 @@ package impression
 import (
 	"errors"
 
-	"github.com/splitio/go-split-commons/v4/storage"
+	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

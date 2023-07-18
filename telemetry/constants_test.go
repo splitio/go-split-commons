@@ -4,13 +4,6 @@ import (
 	"testing"
 )
 
-func assert(t *testing.T, b bool) {
-	t.Helper()
-	if !b {
-		t.Error("assertion failed")
-	}
-}
-
 func TestMethodMapping(t *testing.T) {
 	for _, method := range []string{"treatment", "getTreatment", "get_treatment", "Treatment"} {
 		if v, ok := ParseMethodFromRedisHash(method); !ok || v != Treatment {

@@ -3,9 +3,9 @@ package push
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v4/dtos"
-	"github.com/splitio/go-split-commons/v4/storage/mocks"
-	"github.com/splitio/go-split-commons/v4/telemetry"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/storage/mocks"
+	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -20,17 +20,17 @@ func TestStatusTrackerAblyerror(t *testing.T) {
 	}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
-	if *tracker.HandleAblyError(&AblyError{code: 40141}) != StatusRetryableError {
+	if *tracker.HandleAblyError(dtos.NewAblyError(40141, 0, "", "", 0)) != StatusRetryableError {
 		t.Error("should be a retryable error")
 	}
 
 	tracker.Reset()
-	if *tracker.HandleAblyError(&AblyError{code: 40000}) != StatusNonRetryableError {
+	if *tracker.HandleAblyError(dtos.NewAblyError(40000, 0, "", "", 0)) != StatusNonRetryableError {
 		t.Error("should be a non retryable error")
 	}
 
 	tracker.Reset()
-	if *tracker.HandleAblyError(&AblyError{code: 50000}) != StatusNonRetryableError {
+	if *tracker.HandleAblyError(dtos.NewAblyError(50000, 0, "", "", 0)) != StatusNonRetryableError {
 		t.Error("should be a non retryable error")
 	}
 }
@@ -40,15 +40,15 @@ func TestStatusTrackerControlMessages(t *testing.T) {
 	mockedTelemetryStorage := mocks.MockTelemetryStorage{}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
-	if *tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingPaused}) != StatusDown {
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingPaused)) != StatusDown {
 		t.Error("should be a push down")
 	}
 
-	if *tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingEnabled}) != StatusUp {
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingEnabled)) != StatusUp {
 		t.Error("should be a push up")
 	}
 
-	if *tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingDisabled}) != StatusNonRetryableError {
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingDisabled)) != StatusNonRetryableError {
 		t.Error("should be a non retryable error")
 	}
 }
@@ -77,15 +77,15 @@ func TestStatusTrackerOccupancyMessages(t *testing.T) {
 	}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
-	if tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 0}) != nil {
+	if tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_pri"), 0)) != nil {
 		t.Error("should have returned no message")
 	}
 
-	if *tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_sec"}, publishers: 0}) != StatusDown {
+	if *tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_sec"), 0)) != StatusDown {
 		t.Error("should have returned streaming down")
 	}
 
-	if *tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 1}) != StatusUp {
+	if *tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_pri"), 1)) != StatusUp {
 		t.Error("should have returned streaming down")
 	}
 
@@ -128,15 +128,15 @@ func TestHandlersWhenDisconnectionNotified(t *testing.T) {
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 	tracker.NotifySSEShutdownExpected()
 
-	if tracker.HandleAblyError(&AblyError{}) != nil {
+	if tracker.HandleAblyError(&dtos.AblyError{}) != nil {
 		t.Error("should be nil when a disconnection is expected")
 	}
 
-	if tracker.HandleControl(&ControlUpdate{}) != nil {
+	if tracker.HandleControl(&dtos.ControlUpdate{}) != nil {
 		t.Error("should be nil when a disconnection is expected")
 	}
 
-	if tracker.HandleOccupancy(&OccupancyMessage{}) != nil {
+	if tracker.HandleOccupancy(&dtos.OccupancyMessage{}) != nil {
 		t.Error("should be nil when a disconnection is expected")
 	}
 }
@@ -148,23 +148,23 @@ func TestStatusTrackerCombinations(t *testing.T) {
 	}
 	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
 
-	if tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 0}) != nil {
+	if tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_pri"), 0)) != nil {
 		t.Error("should have returned no message")
 	}
 
-	if *tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_sec"}, publishers: 0}) != StatusDown {
+	if *tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_sec"), 0)) != StatusDown {
 		t.Error("should have returned streaming down")
 	}
 
-	if tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingPaused}) != nil {
+	if tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingPaused)) != nil {
 		t.Error("no error should be propagated if we're already down")
 	}
 
-	if tracker.HandleOccupancy(&OccupancyMessage{BaseMessage: BaseMessage{channel: "control_pri"}, publishers: 1}) != nil {
+	if tracker.HandleOccupancy(dtos.NewOccupancyMessage(dtos.NewBaseMessage(0, "control_pri"), 1)) != nil {
 		t.Error("should not return status up since streaming is down")
 	}
 
-	if *tracker.HandleControl(&ControlUpdate{controlType: ControlTypeStreamingEnabled}) != StatusUp {
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingEnabled)) != StatusUp {
 		t.Error("should be a push up")
 	}
 }

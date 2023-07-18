@@ -5,29 +5,41 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v4/push/mocks"
+	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/push/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestSplitUpdateWorker(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	splitQueue := make(chan SplitChangeUpdate, 5000)
+	splitQueue := make(chan dtos.SplitChangeUpdate, 5000)
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
-		SynchronizeSplitsCall: func(till *int64) error {
+		SynchronizeFeatureFlagsCall: func(ffChange *dtos.SplitChangeUpdate) error {
 			atomic.AddInt32(&count, 1)
-
-			if *till != 123456789 && *till != 223456789 {
-				t.Error("Unexpected passed till")
+			switch atomic.LoadInt32(&count) {
+			case 1:
+				if ffChange.ChangeNumber() != 123456789 {
+					t.Error("Unexpected passed changeNumber")
+				}
+			case 2:
+				if ffChange.ChangeNumber() != 223456789 {
+					t.Error("Unexpected passed changeNumber")
+				}
+			default:
+				t.Error("Unexpected passed changeNumber")
 			}
+
 			return nil
 		},
 	}
 
 	splitWorker, _ := NewSplitUpdateWorker(splitQueue, mockSync, logger)
 	splitWorker.Start()
-	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 123456789}}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 123456789), nil, nil,
+	)
 
 	time.Sleep(1 * time.Second)
 	if !splitWorker.IsRunning() {
@@ -39,20 +51,13 @@ func TestSplitUpdateWorker(t *testing.T) {
 		t.Error("It should be stopped")
 	}
 
-	splitWorker.Stop()
-	splitWorker.Stop()
-	splitWorker.Stop()
-	splitWorker.Stop()
-	splitWorker.Stop()
 	splitWorker.Start()
-	splitWorker.Start()
-	splitWorker.Start()
-	splitWorker.Start()
-	splitQueue <- SplitChangeUpdate{BaseUpdate: BaseUpdate{changeNumber: 223456789}}
+	splitQueue <- *dtos.NewSplitChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 223456789), nil, nil,
+	)
 
 	time.Sleep(1 * time.Second)
 	if c := atomic.LoadInt32(&count); c != 2 {
 		t.Error("should have been called twice. got: ", c)
 	}
-
 }
