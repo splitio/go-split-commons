@@ -1,4 +1,4 @@
-5.0.0 (Jul XX, 2023)
+5.0.0 (Jul 18, 2023)
 - BREAKING CHANGE:
     Synchronizer interface changed:
         Added `SynchronizeFeatureFlags` method from `Synchronizer`.
