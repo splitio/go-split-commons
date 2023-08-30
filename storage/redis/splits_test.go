@@ -14,7 +14,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
-func createSampleSplit(name string) dtos.SplitDTO {
+func createSampleSplit(name string, sets []string) dtos.SplitDTO {
 	return dtos.SplitDTO{
 		Name: name,
 		Conditions: []dtos.ConditionDTO{
@@ -30,6 +30,8 @@ func createSampleSplit(name string) dtos.SplitDTO {
 				},
 			},
 		},
+		Sets:            sets,
+		TrafficTypeName: "user",
 	}
 }
 
@@ -60,8 +62,8 @@ func TestAll(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -100,8 +102,8 @@ func TestAllClusterMode(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -238,8 +240,8 @@ func TestFetchMany(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("someSplit")),
-						marshalSplit(createSampleSplit("someSplit2")),
+						marshalSplit(createSampleSplit("someSplit", []string{})),
+						marshalSplit(createSampleSplit("someSplit2", []string{})),
 					}, nil
 				},
 			}
@@ -285,8 +287,8 @@ func TestSegmentNames(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -336,7 +338,7 @@ func TestSplit(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			return &mocks.MockResultOutput{
-				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit")), nil },
+				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit", []string{})), nil },
 			}
 		},
 	}
@@ -513,4 +515,128 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 		t.Error("wrong error type")
 	}
 
+}
+
+func TestFlagSetsLogic(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.*"
+
+	mockedRedisClient := mocks.MockClient{
+		KeysCall: func(pattern string) redis.Result {
+			if pattern != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+			}
+			return &mocks.MockResultOutput{
+				MultiCall: func() ([]string, error) {
+					return []string{
+						"SPLITIO.split1",
+						"SPLITIO.split2",
+						"SPLITIO.split3",
+						"SPLITIO.split4",
+						"SPLITIO.split5",
+					}, nil
+				},
+			}
+		},
+		MGetCall: func(keys []string) redis.Result {
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1", []string{"set1"})),
+						marshalSplit(createSampleSplit("split2", []string{"set3"})),
+						marshalSplit(createSampleSplit("split3", []string{})),
+						marshalSplit(createSampleSplit("split4", []string{"set2"})),
+						marshalSplit(createSampleSplit("split5", []string{"set4"})),
+					}, nil
+				},
+			}
+		},
+		ClusterModeCall: func() bool { return false },
+		SetCall: func(key string, value interface{}, expiration time.Duration) redis.Result {
+			return &mocks.MockResultOutput{
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+		DecrCall: func(key string) redis.Result {
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 1, nil },
+			}
+		},
+		IncrCall: func(key string) redis.Result {
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 1, nil },
+			}
+		},
+		DelCall: func(keys ...string) redis.Result {
+			return &mocks.MockResultOutput{
+				ResultCall: func() (int64, error) { return 1, nil },
+			}
+		},
+		SAddCall: func(key string, members ...interface{}) redis.Result {
+			switch key {
+			case "someprefix.SPLITIO.set.set2":
+				splits := set.NewSet(members...)
+				if !splits.Has("split2") {
+					t.Error("split2 should be present")
+				}
+				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
+			case "someprefix.SPLITIO.set.set1":
+				splits := set.NewSet(members...)
+				if !splits.Has("split2") {
+					t.Error("split2 should be present")
+				}
+				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
+			default:
+				t.Error("Unexpected key received", key)
+			}
+			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 0, errors.New("Unexpected set to be updated") }}
+		},
+		SRemCall: func(key string, members ...interface{}) redis.Result {
+			switch key {
+			case "someprefix.SPLITIO.set.set2":
+				splits := set.NewSet(members...)
+				if !splits.Has("split4") {
+					t.Error("split4 should be present")
+				}
+				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
+			case "someprefix.SPLITIO.set.set3":
+				splits := set.NewSet(members...)
+				if !splits.Has("split2") {
+					t.Error("split2 should be present")
+				}
+				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
+			case "someprefix.SPLITIO.set.set4":
+				splits := set.NewSet(members...)
+				if !splits.Has("split5") {
+					t.Error("split5 should be present")
+				}
+				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
+			default:
+				t.Error("Unexpected key received", key)
+			}
+			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 0, errors.New("Unexpected set to be updated") }}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+
+	splits := splitStorage.All()
+	if len(splits) != 5 {
+		t.Error("Unexpected size")
+	}
+
+	err := splitStorage.UpdateWithErrors(
+		[]dtos.SplitDTO{
+			createSampleSplit("split1", []string{"set1"}),
+			createSampleSplit("split2", []string{"set1", "set2"}),
+			createSampleSplit("split3", []string{"set1"}),
+			createSampleSplit("split5", []string{}),
+		},
+		[]dtos.SplitDTO{
+			createSampleSplit("split4", []string{"set2"}),
+		}, 2)
+	if err != nil {
+		t.Error(err)
+	}
 }
