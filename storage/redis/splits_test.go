@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -446,6 +447,7 @@ func TestTrafficTypeExists(t *testing.T) {
 }
 
 func TestSplitUpdateWithErrors(t *testing.T) {
+	pipelineCall := int64(0)
 	mockClient := &mocks.MockClient{
 		MGetCall: func(keys []string) redis.Result {
 			return &mocks.MockResultOutput{
@@ -473,6 +475,25 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 			return &mocks.MockResultOutput{
 				ResultCall: func() (int64, error) {
 					return int64(len(keys)), nil
+				},
+			}
+		},
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				IncrCall: func(key string) {},
+				SetCall:  func(key string, value interface{}, expiration time.Duration) {},
+				ExecCall: func() ([]redis.Result, error) {
+					atomic.AddInt64(&pipelineCall, 1)
+					switch atomic.LoadInt64(&pipelineCall) {
+					case 1:
+						return []redis.Result{}, nil
+					case 2:
+						return []redis.Result{
+							&mocks.MockResultOutput{ErrCall: func() error { return nil }},
+							&mocks.MockResultOutput{ErrCall: func() error { return errors.New("something") }},
+						}, nil
+					}
+					return []redis.Result{}, nil
 				},
 			}
 		},
@@ -519,7 +540,7 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 
 func TestFlagSetsLogic(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.split.*"
-
+	pipelineCall := int64(0)
 	mockedRedisClient := mocks.MockClient{
 		KeysCall: func(pattern string) redis.Result {
 			if pattern != expectedKey {
@@ -558,64 +579,75 @@ func TestFlagSetsLogic(t *testing.T) {
 				},
 			}
 		},
-		DecrCall: func(key string) redis.Result {
-			return &mocks.MockResultOutput{
-				ResultCall: func() (int64, error) { return 1, nil },
-			}
-		},
-		IncrCall: func(key string) redis.Result {
-			return &mocks.MockResultOutput{
-				ResultCall: func() (int64, error) { return 1, nil },
-			}
-		},
 		DelCall: func(keys ...string) redis.Result {
 			return &mocks.MockResultOutput{
 				ResultCall: func() (int64, error) { return 1, nil },
 			}
 		},
-		SAddCall: func(key string, members ...interface{}) redis.Result {
-			switch key {
-			case "someprefix.SPLITIO.set.set2":
-				splits := set.NewSet(members...)
-				if !splits.Has("split2") {
-					t.Error("split2 should be present")
-				}
-				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
-			case "someprefix.SPLITIO.set.set1":
-				splits := set.NewSet(members...)
-				if !splits.Has("split2") {
-					t.Error("split2 should be present")
-				}
-				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
-			default:
-				t.Error("Unexpected key received", key)
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				ExecCall: func() ([]redis.Result, error) {
+					atomic.AddInt64(&pipelineCall, 1)
+					switch atomic.LoadInt64(&pipelineCall) {
+					case 1:
+						return []redis.Result{}, nil
+					case 2:
+						errCall := &mocks.MockResultOutput{
+							ErrCall: func() error { return nil },
+						}
+						return []redis.Result{errCall, errCall, errCall, errCall, errCall}, nil
+					}
+					return []redis.Result{}, nil
+				},
+				DecrCall: func(key string) {
+					if key != "someprefix.SPLITIO.trafficType.user" {
+						t.Error("Invalid key to be decremented")
+					}
+				},
+				IncrCall: func(key string) {
+					if key != "someprefix.SPLITIO.trafficType.user" {
+						t.Error("Invalid key to be incremented")
+					}
+				},
+				SetCall: func(key string, value interface{}, expiration time.Duration) {},
+				SAddCall: func(key string, members ...interface{}) {
+					switch key {
+					case "someprefix.SPLITIO.set.set2":
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+					case "someprefix.SPLITIO.set.set1":
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+				},
+				SRemCall: func(key string, members ...interface{}) {
+					switch key {
+					case "someprefix.SPLITIO.set.set2":
+						splits := set.NewSet(members...)
+						if !splits.Has("split4") {
+							t.Error("split4 should be present")
+						}
+					case "someprefix.SPLITIO.set.set3":
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+					case "someprefix.SPLITIO.set.set4":
+						splits := set.NewSet(members...)
+						if !splits.Has("split5") {
+							t.Error("split5 should be present")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+				},
 			}
-			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 0, errors.New("Unexpected set to be updated") }}
-		},
-		SRemCall: func(key string, members ...interface{}) redis.Result {
-			switch key {
-			case "someprefix.SPLITIO.set.set2":
-				splits := set.NewSet(members...)
-				if !splits.Has("split4") {
-					t.Error("split4 should be present")
-				}
-				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
-			case "someprefix.SPLITIO.set.set3":
-				splits := set.NewSet(members...)
-				if !splits.Has("split2") {
-					t.Error("split2 should be present")
-				}
-				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
-			case "someprefix.SPLITIO.set.set4":
-				splits := set.NewSet(members...)
-				if !splits.Has("split5") {
-					t.Error("split5 should be present")
-				}
-				return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 1, nil }}
-			default:
-				t.Error("Unexpected key received", key)
-			}
-			return &mocks.MockResultOutput{ResultCall: func() (int64, error) { return 0, errors.New("Unexpected set to be updated") }}
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")

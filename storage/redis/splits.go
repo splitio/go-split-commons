@@ -149,6 +149,9 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 	// map[set][]ff for tracking all the feature flags that are going to be removed from a set
 	ffToRemoveFromSet := make(map[string][]interface{})
 
+	// Instantiating pipeline for adding operations to pipe
+	pipeline := r.client.Pipeline()
+
 	if len(allKeys) > 0 {
 		toUpdateRaw, err := r.client.MGet(allKeys)
 		if err != nil {
@@ -193,7 +196,7 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 		}
 
 		for _, tt := range ttsToDecr {
-			r.client.Decr(strings.Replace(KeyTrafficType, "{trafficType}", tt, 1)) // TODO PIPELINED
+			pipeline.Decr(strings.Replace(KeyTrafficType, "{trafficType}", tt, 1))
 		}
 	}
 	// \}
@@ -202,8 +205,11 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 	// of this operation (or even a Tx for even better consistency on splits vs CN).
 	// \{
 	for _, ttKey := range toIncrKeys {
-		r.client.Incr(ttKey) // TODO PIPE
+		pipeline.Incr(ttKey)
 	}
+
+	// Execution of all Decr and Incr
+	pipeline.Exec()
 
 	failedToAdd := make(map[string]error)
 	for _, split := range toAdd {
@@ -245,9 +251,22 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 			}
 		}
 
-		err = r.client.Set(keyToStore, raw, 0) // TODO PIPE
+		// Attach each Feature Flag update into Redis Pipeline
+		pipeline.Set(keyToStore, raw, 0)
+	}
+
+	// Execution of all the updates to feature flags
+	resAdd, err := pipeline.Exec()
+	if len(resAdd) != len(toAdd) || err != nil {
+		r.logger.Error("Error updating feature flags")
 		if err != nil {
-			failedToAdd[split.Name] = fmt.Errorf("failed to store split in redis: %w", err)
+			r.logger.Error("Reason", err.Error())
+		}
+	}
+	for idx, result := range resAdd {
+		err := result.Err()
+		if err != nil {
+			failedToAdd[toAdd[idx].Name] = fmt.Errorf("failed to store split in redis: %w", err)
 		}
 	}
 
@@ -284,18 +303,16 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 		for split := range setsToAdd[set] {
 			splitsToAdd = append(splitsToAdd, split)
 		}
-		count, err := r.client.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), splitsToAdd...)
-		if err != nil {
-			r.logger.Error(fmt.Sprintf("Error adding items into set %s", set), err)
-		}
-		r.logger.Info("Items added", count)
+		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), splitsToAdd...)
 	}
 	for set, splits := range ffToRemoveFromSet {
-		count, err := r.client.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), splits...)
-		if err != nil {
-			r.logger.Error(fmt.Sprintf("Error adding items into set %s", set), err)
-		}
-		r.logger.Info("Items added", count)
+		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), splits...)
+	}
+	// Performing all the Flag Sets operations attached into pipeline, that means
+	// SAdd and SRem
+	_, err = pipeline.Exec()
+	if err != nil {
+		r.logger.Error("Error updating flag sets", err.Error())
 	}
 
 	if len(failedToAdd) == 0 && len(failedToRemove) == 0 {
