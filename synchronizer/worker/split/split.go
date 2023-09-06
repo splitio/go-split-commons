@@ -196,7 +196,7 @@ func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags *dtos.SplitChangesD
 	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	for idx := range featureFlags.Splits {
-		if featureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Match(featureFlags.Splits[idx].Sets) {
+		if featureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(featureFlags.Splits[idx].Sets) {
 			toAdd = append(toAdd, featureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, featureFlags.Splits[idx])

@@ -4,24 +4,24 @@ import "testing"
 
 func TestFlagSetFilter(t *testing.T) {
 	filter := NewFlagSetFilter([]string{})
-	if !filter.Match([]string{}) {
+	if !filter.Instersect([]string{}) {
 		t.Error("It should be true")
 	}
-	if !filter.Match([]string{"one"}) {
+	if !filter.Instersect([]string{"one"}) {
 		t.Error("It should be true")
 	}
 
 	filter = NewFlagSetFilter([]string{"one", "two"})
-	if filter.Match([]string{}) {
+	if filter.Instersect([]string{}) {
 		t.Error("It should be false")
 	}
-	if !filter.Match([]string{"one"}) {
+	if !filter.Instersect([]string{"one"}) {
 		t.Error("It should be true")
 	}
-	if !filter.Match([]string{"three", "one"}) {
+	if !filter.Instersect([]string{"three", "one"}) {
 		t.Error("It should be true")
 	}
-	if filter.Match([]string{"three", "four"}) {
+	if filter.Instersect([]string{"three", "four"}) {
 		t.Error("It should be false")
 	}
 }

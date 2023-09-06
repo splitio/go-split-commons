@@ -16,15 +16,14 @@ func NewFlagSetFilter(configFlagSets []string) FlagSetFilter {
 	}
 }
 
-func (f *FlagSetFilter) Match(flagSets []string) bool {
+func (f *FlagSetFilter) Instersect(flagSets []string) bool {
 	if !f.shouldFilter {
 		return true
 	}
-	for configFlagSet := range f.cfgFlagSets {
-		for _, flagSet := range flagSets {
-			if configFlagSet == flagSet {
-				return true
-			}
+	for _, flagSet := range flagSets {
+		_, ok := f.cfgFlagSets[flagSet]
+		if ok {
+			return true
 		}
 	}
 	return false
