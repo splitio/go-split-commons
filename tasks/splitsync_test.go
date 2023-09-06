@@ -12,6 +12,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v5/util"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -87,7 +88,7 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
+		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, util.NewFlagSetFilter([]string{})),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
