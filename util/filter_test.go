@@ -4,6 +4,9 @@ import "testing"
 
 func TestFlagSetFilter(t *testing.T) {
 	filter := NewFlagSetFilter([]string{})
+	if !filter.IsPresent("one") {
+		t.Error("It should be true")
+	}
 	if !filter.Instersect([]string{}) {
 		t.Error("It should be true")
 	}
@@ -12,6 +15,12 @@ func TestFlagSetFilter(t *testing.T) {
 	}
 
 	filter = NewFlagSetFilter([]string{"one", "two"})
+	if !filter.IsPresent("one") {
+		t.Error("It should be true")
+	}
+	if filter.IsPresent("three") {
+		t.Error("It should be false")
+	}
 	if filter.Instersect([]string{}) {
 		t.Error("It should be false")
 	}

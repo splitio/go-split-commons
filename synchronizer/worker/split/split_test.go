@@ -200,7 +200,7 @@ func TestSplitSyncProcess(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
@@ -289,7 +289,7 @@ func TestSplitTill(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
@@ -364,7 +364,7 @@ func TestByPassingCDN(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
@@ -437,7 +437,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
@@ -735,8 +735,8 @@ func TestSplitSyncWithSets(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
-	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, util.NewFlagSetFilter([]string{"set1", "set2", "set3"}))
 
@@ -760,5 +760,69 @@ func TestSplitSyncWithSets(t *testing.T) {
 	s3 := splitStorage.Split("split3")
 	if s3 == nil {
 		t.Error("split3 should be present")
+	}
+}
+
+func TestSplitSyncWithSetsInConfig(t *testing.T) {
+	var call int64
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
+	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set4"}}
+	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set2"}}
+	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			atomic.AddInt64(&call, 1)
+			switch call {
+			case 1:
+				if changeNumber != -1 {
+					t.Error("Wrong changenumber passed")
+				}
+				return &dtos.SplitChangesDTO{
+					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
+					Since:  3,
+					Till:   3,
+				}, nil
+			default:
+				t.Error("Wrong calls")
+				return nil, errors.New("some")
+			}
+		},
+	}
+
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	flagSetFilter := util.NewFlagSetFilter([]string{"set2", "set4"})
+	splitStorage := mutexmap.NewMMSplitStorage(flagSetFilter)
+	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
+	telemetryStorage, _ := inmemory.NewTelemetryStorage()
+	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagSetFilter)
+
+	res, err := splitUpdater.SynchronizeSplits(nil)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if len(res.ReferencedSegments) != 0 {
+		t.Error("invalid referenced segment names. Got: ", res.ReferencedSegments)
+	}
+
+	s1 := splitStorage.Split("split1")
+	if s1 != nil {
+		t.Error("split1 should not be present")
+	}
+	s2 := splitStorage.Split("split2")
+	if s2 == nil {
+		t.Error("split2 should be present")
+	}
+	s3 := splitStorage.Split("split3")
+	if s3 == nil {
+		t.Error("split3 should be present")
+	}
+	s4 := splitStorage.Split("split4")
+	if s4 == nil {
+		t.Error("split4 should be present")
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/engine/evaluator"
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v5/util"
 
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -61,7 +62,7 @@ func TestDependencyMatcher(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "feature1",
@@ -181,7 +182,7 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "feature1",

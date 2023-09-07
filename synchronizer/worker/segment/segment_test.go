@@ -16,6 +16,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v5/util"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -199,7 +200,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	var s1Requested int64
 	var notifyEventCalled int64
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
@@ -294,7 +295,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	var s2Requested int64
 	var notifyEventCalled int64
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
@@ -399,7 +400,7 @@ func TestSegmentTill(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
@@ -463,7 +464,7 @@ func TestSegmentCDNBypass(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
@@ -542,7 +543,7 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
 
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "split1",
