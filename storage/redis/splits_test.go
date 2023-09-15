@@ -612,12 +612,12 @@ func TestFlagSetsLogic(t *testing.T) {
 				SetCall: func(key string, value interface{}, expiration time.Duration) {},
 				SAddCall: func(key string, members ...interface{}) {
 					switch key {
-					case "someprefix.SPLITIO.set.set2":
+					case "someprefix.SPLITIO.flagSet.set2":
 						splits := set.NewSet(members...)
 						if !splits.Has("split2") {
 							t.Error("split2 should be present")
 						}
-					case "someprefix.SPLITIO.set.set1":
+					case "someprefix.SPLITIO.flagSet.set1":
 						splits := set.NewSet(members...)
 						if !splits.Has("split2") {
 							t.Error("split2 should be present")
@@ -628,17 +628,17 @@ func TestFlagSetsLogic(t *testing.T) {
 				},
 				SRemCall: func(key string, members ...interface{}) {
 					switch key {
-					case "someprefix.SPLITIO.set.set2":
+					case "someprefix.SPLITIO.flagSet.set2":
 						splits := set.NewSet(members...)
 						if !splits.Has("split4") {
 							t.Error("split4 should be present")
 						}
-					case "someprefix.SPLITIO.set.set3":
+					case "someprefix.SPLITIO.flagSet.set3":
 						splits := set.NewSet(members...)
 						if !splits.Has("split2") {
 							t.Error("split2 should be present")
 						}
-					case "someprefix.SPLITIO.set.set4":
+					case "someprefix.SPLITIO.flagSet.set4":
 						splits := set.NewSet(members...)
 						if !splits.Has("split5") {
 							t.Error("split5 should be present")
