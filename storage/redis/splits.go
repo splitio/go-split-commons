@@ -118,19 +118,10 @@ func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string, ch
 	// @TODO Implement for Sync
 }
 
-type keys struct {
-	toAddKeys    []string
-	toRemoveKeys []string
-	toIncrKeys   []string
-	allKeys      []string
-}
-
-func gatherAllKeys(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) keys {
+func (r *SplitStorage) fetchCurrentFeatureFlags(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) ([]dtos.SplitDTO, error) {
 	toAddKeys := make([]string, 0, len(toAdd))
-	toIncrKeys := make([]string, 0, len(toAdd))
 	for idx := range toAdd {
 		toAddKeys = append(toAddKeys, strings.Replace(KeySplit, "{split}", toAdd[idx].Name, 1))
-		toIncrKeys = append(toIncrKeys, strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
 	}
 
 	toRemoveKeys := make([]string, 0, len(toRemove))
@@ -138,133 +129,119 @@ func gatherAllKeys(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) keys {
 		toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
 	}
 
-	// Gather all the EXISTING traffic types (if any) of all the added and removed splits
-	// we then decrement them and, increment the new ones
-	// \{
 	allKeys := append(make([]string, 0, len(toAdd)+len(toRemove)), toAddKeys...)
 	allKeys = append(allKeys, toRemoveKeys...)
+	currentFeatureFlags := make([]dtos.SplitDTO, 0, len(allKeys))
 
-	return keys{
-		toAddKeys:    toAddKeys,
-		toRemoveKeys: toRemoveKeys,
-		toIncrKeys:   toIncrKeys,
-		allKeys:      allKeys,
+	if len(allKeys) == 0 {
+		return currentFeatureFlags, nil
 	}
-}
 
-func (r *SplitStorage) updateTrafficTypes(keys keys) (map[string]map[string]interface{}, error) {
-	// map[split]map[set] for tracking previous set version before updates
-	currentSets := make(map[string]map[string]interface{})
+	// Get all the featureFlags involved in the update in order to have the previous version
+	toUpdateRaw, err := r.client.MGet(allKeys)
+	if err != nil {
+		return currentFeatureFlags, fmt.Errorf("error fetching keys to be updated: %w", err)
+	}
 
-	// Instantiating pipeline for adding operations to pipe
-	pipeline := r.client.Pipeline()
+	for _, raw := range toUpdateRaw {
+		asStr, ok := raw.(string)
+		if !ok {
+			if raw != nil { // object missing in redis
+				r.logger.Debug(fmt.Sprintf(
+					"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
+					raw, raw,
+				))
+			}
+			continue
+		}
 
-	if len(keys.allKeys) > 0 {
-		toUpdateRaw, err := r.client.MGet(keys.allKeys)
+		var s dtos.SplitDTO
+		err = json.Unmarshal([]byte(asStr), &s)
 		if err != nil {
-			return currentSets, fmt.Errorf("error fetching keys to be updated: %w", err)
+			r.logger.Debug("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
+			continue
 		}
-
-		ttsToDecr := make([]string, 0, len(keys.allKeys))
-		for _, raw := range toUpdateRaw {
-			asStr, ok := raw.(string)
-			if !ok {
-				if raw != nil { // object missing in redis
-					r.logger.Debug(fmt.Sprintf(
-						"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
-						raw, raw,
-					))
-				}
-				continue
-			}
-
-			var s dtos.SplitDTO
-			err = json.Unmarshal([]byte(asStr), &s)
-			if err != nil {
-				r.logger.Debug("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
-				continue
-			}
-
-			ttsToDecr = append(ttsToDecr, s.TrafficTypeName)
-
-			// the idea is to build the previous version of all the linked feature flag involved to set
-			// this is required since we need to track cases where a set created on previous change
-			// is no longer linked to the feature flag to be updated
-			// map[split1][set1]{}
-			// map[split1][set2]{}
-			// map[split2][set2]{}
-			for _, set := range s.Sets {
-				_, exists := currentSets[s.Name]
-				if !exists {
-					currentSets[s.Name] = make(map[string]interface{})
-				}
-				currentSets[s.Name][set] = struct{}{}
-			}
-		}
-
-		for _, tt := range ttsToDecr {
-			pipeline.Decr(strings.Replace(KeyTrafficType, "{trafficType}", tt, 1))
-		}
-	}
-	// \}
-
-	// The next operations could be implemented in a pipeline, improving the performance
-	// of this operation (or even a Tx for even better consistency on splits vs CN).
-	// \{
-	for _, ttKey := range keys.toIncrKeys {
-		pipeline.Incr(ttKey)
+		currentFeatureFlags = append(currentFeatureFlags, s)
 	}
 
-	// Execution of all Decr and Incr
-	pipeline.Exec()
-
-	return currentSets, nil
+	return currentFeatureFlags, nil
 }
 
-func (r *SplitStorage) updateSets(toAdd map[string]map[string]interface{}, toRemove map[string][]interface{}) {
-	// Instantiating pipeline for adding operations to pipe
-	pipeline := r.client.Pipeline()
+// getCurrentSets constructs the current (previous version) before updating of
+// the flagsets for all the featureFlags involved in the update to be performed
+func getCurrentSets(featureFlags []dtos.SplitDTO) map[string]map[string]struct{} {
+	// map[set]map[split] for tracking previous set version before updates
+	currentSets := make(map[string]map[string]struct{})
 
-	for set := range toAdd {
-		splitsToAdd := make([]interface{}, 0, len(toAdd[set]))
-		for split := range toAdd[set] {
-			splitsToAdd = append(splitsToAdd, split)
+	// the idea is to build the previous version of all the linked feature flag involved to set
+	// this is required since we need to track cases where a set created on previous change
+	// is no longer linked to the feature flag to be updated
+	// map[set1][split1]{}
+	// map[set2][split1]{}
+	// map[set2][split2]{}
+	for _, featureFlag := range featureFlags {
+		for _, set := range featureFlag.Sets {
+			_, exists := currentSets[set]
+			if !exists {
+				currentSets[set] = make(map[string]struct{})
+			}
+			currentSets[set][featureFlag.Name] = struct{}{}
 		}
-		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), splitsToAdd...)
 	}
-	for set, splits := range toRemove {
-		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), splits...)
-	}
-	// Performing all the Flag Sets operations attached into pipeline, that means
-	// SAdd and SRem
-	_, err := pipeline.Exec()
-	if err != nil {
-		r.logger.Error("Error updating flag sets", err.Error())
-	}
+
+	return currentSets
 }
 
-// UpdateWithErrors updates the storage and reports errors on a per-feature basis
-// To-be-deprecated: This method should be renamed to `Update` as the current one is removed
-func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) error {
-	r.mutext.Lock()
-	defer r.mutext.Unlock()
-
-	// Gather All Keys for perform Redis operations following Redis template
-	keys := gatherAllKeys(toAdd, toRemove)
-	currentSets, err := r.updateTrafficTypes(keys)
-	if err != nil {
-		return err
-	}
-
+// calculateSets calculates the featureFlags that needs to be removed from sets and the featureFlags that needs to be
+// added into the sets
+func calculateSets(currentSets map[string]map[string]struct{}, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) map[string]map[string]struct{} {
 	// map[set]map[ff] for tracking all the sets that feature flags are going to be added
-	setsToAdd := make(map[string]map[string]interface{})
-	// map[set][]ff for tracking all the feature flags that are going to be removed from a set
-	ffToRemoveFromSet := make(map[string][]interface{})
+	setsToAdd := make(map[string]map[string]struct{})
 
+	for _, featureFlag := range toAdd {
+		// for each feature flag, get all the sets that need to be added
+		// map[set1][split1]{}
+		// map[set1][split2]{}
+		// map[set2][split1]{}
+		for _, set := range featureFlag.Sets {
+			// at this point if the previous of set is compared against the added one
+			// the sets which the feature flag needs to be added and removed can be calculated
+			// previous version stored in redis of ff1 has sets: [setA, setB]
+			// incomming sets of ff1 are: [setA, setC]
+			// e.g:
+			// currentSet map[ff1][setA], map[ff1][setB]
+			// incommingSets map[setA][ff1], map[setC][ff1]
+			// if setA is in previous version and in the incomming one the add is discarded
+			// and setA is also removed from currentSet, which means that
+			// the remaining items are going to be the ones to be removed
+			// if setC is not in previous version, then is added into setsToAdd
+			// the new version of ff1 is not linked to setB which is the only item
+			// in currentSet
+			_, isAlreadyInSet := currentSets[set][featureFlag.Name]
+			// if is present, don't perform operation of adding since is already there
+			if isAlreadyInSet {
+				// clean the featureFlag to avoid unnecesary operate over it
+				delete(currentSets[set], featureFlag.Name)
+				// if the set is empty, remove it from the dictionary
+				if len(currentSets[set]) == 0 {
+					delete(currentSets, set)
+				}
+				continue
+			}
+			_, exists := setsToAdd[set]
+			if !exists {
+				setsToAdd[set] = map[string]struct{}{}
+			}
+			setsToAdd[set][featureFlag.Name] = struct{}{}
+		}
+	}
+
+	return setsToAdd
+}
+
+func updateFeatureFlags(pipeline redis.Pipeline, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (map[string]error, []string) {
 	failedToAdd := make(map[string]error)
-
-	// Instantiating pipeline for adding operations to pipe
-	pipeline := r.client.Pipeline()
+	addedInPipe := make([]string, 0, len(toAdd))
 
 	for _, split := range toAdd {
 		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
@@ -274,86 +251,113 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 			continue
 		}
 
-		// whats happen if err?
-		// for each feature flag we want to know all the sets that needs to be added
-		// map[set1][split1]{}
-		// map[set1][split2]{}
-		// map[set2][split1]{}
-		for _, set := range split.Sets {
-			_, exists := setsToAdd[set]
-			if !exists {
-				setsToAdd[set] = map[string]interface{}{}
-			}
-			setsToAdd[set][split.Name] = struct{}{}
-		}
-		// at this point we need to compare the previous sets with the ones that are going to be added
-		// e.g:
-		// current version stored in redis of ff1 has sets: [setA, setB]
-		// updated version of ff1 has sets: [setA, setC]
-		// currentSet map[ff1][setA], map[ff1][setB]
-		// setsToAdd map[setA][ff1], map[setC][ff1]
-		// the new version of ff1 is not linked to setB
-		// for each ff, iterate over each set, check if is present on new update
-		for set := range currentSets[split.Name] {
-			_, present := setsToAdd[set][split.Name]
-			if present {
-				// if is present, don't perform operation of adding since is already there
-				delete(setsToAdd[set], split.Name)
-			} else {
-				// if not, we should track a removal since is not longer linked to the split
-				ffToRemoveFromSet[set] = append(ffToRemoveFromSet[set], split.Name)
-			}
-		}
-
 		// Attach each Feature Flag update into Redis Pipeline
 		pipeline.Set(keyToStore, raw, 0)
+		addedInPipe = append(addedInPipe, split.Name)
 	}
 
-	// Execution of all the updates to feature flags
-	resAdd, err := pipeline.Exec()
-	if len(resAdd) != len(toAdd) || err != nil {
-		r.logger.Error("Error updating feature flags")
-		if err != nil {
-			r.logger.Error("Reason", err.Error())
+	if len(toRemove) > 0 {
+		toRemoveKeys := make([]string, 0, len(toRemove))
+		for idx := range toRemove {
+			toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
 		}
-	}
-	for idx, result := range resAdd {
-		err := result.Err()
-		if err != nil {
-			failedToAdd[toAdd[idx].Name] = fmt.Errorf("failed to store split in redis: %w", err)
-		}
+		pipeline.Del(toRemoveKeys...)
 	}
 
-	// at the end we need to iterate over the feature flags that are going to be removed
-	// in order to clean the sets for those
-	for _, splitToRemove := range toRemove {
-		// for each set that has a feature flag linked
-		// add the delete operation for the set
-		for _, set := range splitToRemove.Sets {
-			_, present := currentSets[set][splitToRemove.Name]
-			if present {
-				ffToRemoveFromSet[set] = append(ffToRemoveFromSet[set], splitToRemove.Name)
+	return failedToAdd, addedInPipe
+}
+
+func updateFlagSets(pipeline redis.Pipeline, toAdd map[string]map[string]struct{}, toRemove map[string]map[string]struct{}) {
+	for set, featureFlags := range toAdd {
+		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
+		for featureFlag := range featureFlags {
+			featureFlagsNames = append(featureFlagsNames, featureFlag)
+		}
+		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
+	}
+	for set, featureFlags := range toRemove {
+		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
+		for featureFlag := range featureFlags {
+			featureFlagsNames = append(featureFlagsNames, featureFlag)
+		}
+		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
+	}
+}
+
+func updateTrafficTypes(pipeline redis.Pipeline, currentFeatureFlags []dtos.SplitDTO, toAdd []dtos.SplitDTO) {
+	for _, featureFlag := range currentFeatureFlags {
+		pipeline.Decr(strings.Replace(KeyTrafficType, "{trafficType}", featureFlag.TrafficTypeName, 1))
+	}
+
+	for idx := range toAdd {
+		pipeline.Incr(strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
+	}
+}
+
+// UpdateWithErrors updates the storage and reports errors on a per-feature basis
+// To-be-deprecated: This method should be renamed to `Update` as the current one is removed
+func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) error {
+	r.mutext.Lock()
+	defer r.mutext.Unlock()
+
+	// Gather all the feature flags involved for update operation
+	allFeatureFlags, err := r.fetchCurrentFeatureFlags(toAdd, toRemove)
+	if err != nil {
+		return err
+	}
+
+	// Get current sets
+	currentSets := getCurrentSets(allFeatureFlags)
+	// From featureFlags to be added and removed, calculate feature flags to be added
+	// and update currentSets to get only the ones that needs to be removed
+	setsToAdd := calculateSets(currentSets, toAdd, toRemove)
+
+	// Instantiating pipeline for adding operations to pipe
+	pipeline := r.client.Pipeline()
+
+	// Attach to the pipe all the operations related to featureFlags (Set, Del)
+	// addedInPipe are all the featureFlags without Marshal error
+	failedToAdd, addedInPipe := updateFeatureFlags(pipeline, toAdd, toRemove)
+	// Attach to the pipe all the operations related to flagSets (SAdd, SRem)
+	updateFlagSets(pipeline, setsToAdd, currentSets)
+	// Attach to the pipe all the operations related to trafficTypes (Incr, Decr)
+	updateTrafficTypes(pipeline, allFeatureFlags, toAdd)
+
+	// Execute all the operation attached into the pipe
+	result, err := pipeline.Exec()
+	// Check general error and logging it
+	if err != nil {
+		r.logger.Error("Error performing pipeline operation for updating feature flags", err.Error())
+	}
+	// If the result is at least equals to all the add operations
+	// iterate over them and wrap the corresponding error to the
+	// linked to the proper feature flag
+	if len(result) >= len(addedInPipe) {
+		for idx, result := range result[:len(addedInPipe)] {
+			err := result.Err()
+			if err != nil {
+				failedToAdd[addedInPipe[idx]] = fmt.Errorf("failed to store feature flag in redis: %w", err)
 			}
 		}
 	}
 
+	// If the result is at least equals to all the add operations
+	// plus the Del, wrap failed removal
 	failedToRemove := make(map[string]error)
-	if len(keys.toRemoveKeys) > 0 {
-		count, err := r.client.Del(keys.toRemoveKeys...)
+	if len(toRemove) > 0 && len(result) > len(addedInPipe)+1 {
+		count, err := result[len(addedInPipe)].Result()
 		if err != nil {
 			for idx := range toRemove {
-				failedToRemove[toRemove[idx].Name] = fmt.Errorf("failed to remove split from redis: %w", err)
+				failedToRemove[toRemove[idx].Name] = fmt.Errorf("failed to remove feature flag from redis: %w", err)
 			}
 		}
-
-		if count != int64(len(keys.toRemoveKeys)) {
-			r.logger.Warning(fmt.Sprintf("intended to archive %d splits, but only %d succeeded.", len(keys.toRemoveKeys), count))
+		if count != int64(len(toRemove)) {
+			r.logger.Warning(fmt.Sprintf("intended to archive %d splits, but only %d succeeded.", len(toRemove), count))
 		}
 	}
 
-	// At this stage we are ready to update flagSets
-	r.updateSets(setsToAdd, ffToRemoveFromSet)
-
+	// Check if no errors occurs adding and removing featureFlags
+	// Set the ChangenUmber
 	if len(failedToAdd) == 0 && len(failedToRemove) == 0 {
 		err := r.client.Set(KeySplitTill, changeNumber, 0)
 		if err != nil {
