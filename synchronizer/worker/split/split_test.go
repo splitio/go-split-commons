@@ -749,16 +749,13 @@ func TestSplitSyncWithSets(t *testing.T) {
 		t.Error("invalid referenced segment names. Got: ", res.ReferencedSegments)
 	}
 
-	s1 := splitStorage.Split("split1")
-	if s1 == nil {
+	if splitStorage.Split("split1") == nil {
 		t.Error("split1 should be present")
 	}
-	s2 := splitStorage.Split("split2")
-	if s2 != nil {
+	if splitStorage.Split("split2") != nil {
 		t.Error("split2 should not be present")
 	}
-	s3 := splitStorage.Split("split3")
-	if s3 == nil {
+	if splitStorage.Split("split3") == nil {
 		t.Error("split3 should be present")
 	}
 }
