@@ -46,20 +46,7 @@ func (f *featuresBySet) removeFlagFromSet(set string, flag string) {
 }
 
 func difference(one featuresBySet, two featuresBySet) featuresBySet {
-	result := newFeaturesBySet([]dtos.SplitDTO{})
-	for set, featureFlags := range one.data {
-		for featureFlagName := range featureFlags {
-			isInSet := two.isFlagInSet(set, featureFlagName)
-			if !isInSet {
-				result.add(set, featureFlagName)
-			}
-		}
-	}
-	return result
-}
-
-func removeDuplicates(one featuresBySet, two featuresBySet) featuresBySet {
-	result := newFeaturesBySet([]dtos.SplitDTO{})
+	result := newFeaturesBySet(nil)
 	for set, featureFlags := range one.data {
 		for featureFlagName := range featureFlags {
 			isInSet := two.isFlagInSet(set, featureFlagName)
@@ -75,7 +62,7 @@ func removeDuplicates(one featuresBySet, two featuresBySet) featuresBySet {
 // added into the sets
 func calculateSets(currentSets featuresBySet, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (featuresBySet, featuresBySet) {
 	// map[set]map[ff] for tracking all the sets that feature flags are going to be added
-	setsToAdd := newFeaturesBySet([]dtos.SplitDTO{})
+	setsToAdd := newFeaturesBySet(nil)
 
 	for _, featureFlag := range toAdd {
 		// for each feature flag, get all the sets that need to be added

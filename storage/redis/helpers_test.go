@@ -88,7 +88,7 @@ func TestDifference(t *testing.T) {
 }
 
 func TestCalculateSets(t *testing.T) {
-	currentSets := newFeaturesBySet([]dtos.SplitDTO{})
+	currentSets := newFeaturesBySet(nil)
 	currentSets.add("set1", "split1")
 	currentSets.add("set1", "split2")
 	currentSets.add("set1", "split3")
