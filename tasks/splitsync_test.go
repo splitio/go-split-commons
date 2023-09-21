@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v5/service"
 	fetcherMock "github.com/splitio/go-split-commons/v5/service/mocks"
 	"github.com/splitio/go-split-commons/v5/storage/mocks"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v5/telemetry"
-	"github.com/splitio/go-split-commons/v5/util"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -88,7 +88,7 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, util.NewFlagSetFilter([]string{})),
+		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter([]string{})),
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)

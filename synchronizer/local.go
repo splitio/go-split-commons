@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service/api"
 	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v5/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v5/tasks"
-	"github.com/splitio/go-split-commons/v5/util"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -34,7 +34,7 @@ type LocalConfig struct {
 // NewLocal creates new Local
 func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
 	workers := Workers{
-		SplitUpdater: split.NewSplitUpdater(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, util.NewFlagSetFilter(cfg.FlagSets)),
+		SplitUpdater: split.NewSplitUpdater(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets)),
 	}
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentUpdater = segment.NewSegmentUpdater(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)

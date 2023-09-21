@@ -1,4 +1,4 @@
-package util
+package flagsets
 
 type FlagSetFilter struct {
 	cfgFlagSets  map[string]struct{}

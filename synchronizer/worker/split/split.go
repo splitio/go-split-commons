@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
 	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-split-commons/v5/telemetry"
-	"github.com/splitio/go-split-commons/v5/util"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -57,7 +57,7 @@ type UpdaterImpl struct {
 	hcMonitor                   application.MonitorProducerInterface
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
-	flagSetsFilter              util.FlagSetFilter
+	flagSetsFilter              flagsets.FlagSetFilter
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -67,7 +67,7 @@ func NewSplitUpdater(
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
-	flagSetsFilter util.FlagSetFilter,
+	flagSetsFilter flagsets.FlagSetFilter,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
