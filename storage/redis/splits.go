@@ -161,61 +161,6 @@ func (r *SplitStorage) fetchCurrentFeatureFlags(toAdd []dtos.SplitDTO, toRemove 
 	return currentFeatureFlags, nil
 }
 
-func updateFeatureFlags(pipeline redis.Pipeline, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (map[string]error, []string) {
-	failedToAdd := make(map[string]error)
-	addedInPipe := make([]string, 0, len(toAdd))
-
-	for _, split := range toAdd {
-		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
-		raw, err := json.Marshal(split)
-		if err != nil {
-			failedToAdd[split.Name] = fmt.Errorf("failed to serialize split: %w", err)
-			continue
-		}
-
-		// Attach each Feature Flag update into Redis Pipeline
-		pipeline.Set(keyToStore, raw, 0)
-		addedInPipe = append(addedInPipe, split.Name)
-	}
-
-	if len(toRemove) > 0 {
-		toRemoveKeys := make([]string, 0, len(toRemove))
-		for idx := range toRemove {
-			toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
-		}
-		pipeline.Del(toRemoveKeys...)
-	}
-
-	return failedToAdd, addedInPipe
-}
-
-func updateFlagSets(pipeline redis.Pipeline, toAdd featuresBySet, toRemove featuresBySet) {
-	for set, featureFlags := range toAdd.data {
-		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
-			featureFlagsNames = append(featureFlagsNames, featureFlag)
-		}
-		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
-	}
-	for set, featureFlags := range toRemove.data {
-		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
-			featureFlagsNames = append(featureFlagsNames, featureFlag)
-		}
-		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
-	}
-}
-
-func updateTrafficTypes(pipeline redis.Pipeline, currentFeatureFlags []dtos.SplitDTO, toAdd []dtos.SplitDTO) {
-	for _, featureFlag := range currentFeatureFlags {
-		pipeline.Decr(strings.Replace(KeyTrafficType, "{trafficType}", featureFlag.TrafficTypeName, 1))
-	}
-
-	for idx := range toAdd {
-		pipeline.Incr(strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
-	}
-}
-
 func (r *SplitStorage) executePipeline(pipeline redis.Pipeline, toAdd []string, toRemove []dtos.SplitDTO) (map[string]error, map[string]error) {
 	failedToAdd := make(map[string]error)
 	failedToRemove := make(map[string]error)
