@@ -361,7 +361,7 @@ func TestMultipleEvaluations(t *testing.T) {
 
 func TestNoConditionMatched(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{Name: "some", ChangeNumber: 123456789, DefaultTreatment: "off"}}, []dtos.SplitDTO{}, 123456789)
 
 	evaluator := NewEvaluator(

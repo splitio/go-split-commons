@@ -62,7 +62,7 @@ func TestDependencyMatcher(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "feature1",
@@ -182,7 +182,7 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 		},
 	}
 
-	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{
 		{
 			Name: "feature1",

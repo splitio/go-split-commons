@@ -9,7 +9,7 @@ import (
 )
 
 func TestMMSplitStorage(t *testing.T) {
-	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	cn, _ := splitStorage.ChangeNumber()
 	if cn != -1 {
@@ -88,7 +88,7 @@ func TestMMSplitStorage(t *testing.T) {
 }
 
 func TestSplitKillLocally(t *testing.T) {
-	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	splitStorage.Update([]dtos.SplitDTO{{
 		Name:             "some",
@@ -137,7 +137,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 		TrafficTypeName: "tt1",
 	}
 
-	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{s1}, nil, 123)
 
 	if !splitStorage.TrafficTypeExists("tt1") {
@@ -160,7 +160,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 }
 
 func TestTrafficTypes(t *testing.T) {
-	ttStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	ttStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	if ttStorage.TrafficTypeExists("mytest") {
 		t.Error("It should not exist")

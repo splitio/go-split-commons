@@ -77,7 +77,7 @@ func TestMMSegmentStorage(t *testing.T) {
 }
 
 func TestMMSplitStorageObjectLivesAfterDeletion(t *testing.T) {
-	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splits := make([]dtos.SplitDTO, 10)
 	for index := 0; index < 10; index++ {
 		splits = append(splits, dtos.SplitDTO{
