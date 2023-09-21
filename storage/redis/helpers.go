@@ -101,6 +101,6 @@ func calculateSets(currentSets featuresBySet, toAdd []dtos.SplitDTO, toRemove []
 	// the new version of ff1 is not linked to setB which is the only item
 	// in currentSet
 	toRemoveSets := difference(currentSets, setsToAdd)
-	toAddSets := removeDuplicates(setsToAdd, currentSets)
+	toAddSets := difference(setsToAdd, currentSets)
 	return toAddSets, toRemoveSets
 }

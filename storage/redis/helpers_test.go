@@ -87,42 +87,6 @@ func TestDifference(t *testing.T) {
 	}
 }
 
-func TestRemoveDuplicates(t *testing.T) {
-	one := newFeaturesBySet(
-		[]dtos.SplitDTO{
-			createSampleSplit("split1", []string{"set1"}),
-			createSampleSplit("split2", []string{"set1", "set2", "set3"}),
-			createSampleSplit("split3", []string{"set1", "set4"}),
-		},
-	)
-	two := newFeaturesBySet(
-		[]dtos.SplitDTO{
-			createSampleSplit("split1", []string{"set1"}),
-			createSampleSplit("split2", []string{"set1"}),
-		},
-	)
-
-	result := removeDuplicates(one, two)
-	if result.isFlagInSet("set1", "split1") {
-		t.Error("split1 should not be present in set1")
-	}
-	if result.isFlagInSet("set1", "split2") {
-		t.Error("split2 should not be present in set1")
-	}
-	if !result.isFlagInSet("set2", "split2") {
-		t.Error("split2 should be present in set2")
-	}
-	if !result.isFlagInSet("set3", "split2") {
-		t.Error("split2 should be present in set3")
-	}
-	if !result.isFlagInSet("set1", "split3") {
-		t.Error("split3 should be present in set1")
-	}
-	if !result.isFlagInSet("set4", "split3") {
-		t.Error("split3 should be present in set4")
-	}
-}
-
 func TestCalculateSets(t *testing.T) {
 	currentSets := newFeaturesBySet([]dtos.SplitDTO{})
 	currentSets.add("set1", "split1")
