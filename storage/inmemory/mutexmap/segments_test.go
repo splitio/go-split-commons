@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/util"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -77,7 +77,7 @@ func TestMMSegmentStorage(t *testing.T) {
 }
 
 func TestMMSplitStorageObjectLivesAfterDeletion(t *testing.T) {
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 	splits := make([]dtos.SplitDTO, 10)
 	for index := 0; index < 10; index++ {
 		splits = append(splits, dtos.SplitDTO{

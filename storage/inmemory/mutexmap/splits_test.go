@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/util"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 )
 
 func TestMMSplitStorage(t *testing.T) {
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 
 	cn, _ := splitStorage.ChangeNumber()
 	if cn != -1 {
@@ -88,7 +88,7 @@ func TestMMSplitStorage(t *testing.T) {
 }
 
 func TestSplitKillLocally(t *testing.T) {
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 
 	splitStorage.Update([]dtos.SplitDTO{{
 		Name:             "some",
@@ -137,7 +137,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 		TrafficTypeName: "tt1",
 	}
 
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 	splitStorage.Update([]dtos.SplitDTO{s1}, nil, 123)
 
 	if !splitStorage.TrafficTypeExists("tt1") {
@@ -160,7 +160,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 }
 
 func TestTrafficTypes(t *testing.T) {
-	ttStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	ttStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 
 	if ttStorage.TrafficTypeExists("mytest") {
 		t.Error("It should not exist")
@@ -178,7 +178,7 @@ func TestTrafficTypes(t *testing.T) {
 }
 
 func TestMMSplitStorageWithFlagSets(t *testing.T) {
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{"set1", "set2"}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{"set1", "set2"}))
 
 	cn, _ := splitStorage.ChangeNumber()
 	if cn != -1 {

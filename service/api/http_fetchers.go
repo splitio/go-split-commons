@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
@@ -36,7 +37,7 @@ func (h *httpFetcherBase) fetchRaw(endpoint string, since int64, fetchOptions *s
 // HTTPSplitFetcher struct is responsible for fetching splits from the backend via HTTP protocol
 type HTTPSplitFetcher struct {
 	httpFetcherBase
-	flagSetsFilter []string
+	flagSetsFilter string
 }
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
@@ -46,7 +47,7 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
-		flagSetsFilter: cfg.FlagSetsFilter,
+		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
 	}
 }
 

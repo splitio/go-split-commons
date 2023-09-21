@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/storage"
-	"github.com/splitio/go-split-commons/v5/util"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -19,11 +19,11 @@ type MMSplitStorage struct {
 	mutex         *sync.RWMutex
 	ttMutex       *sync.RWMutex
 	tillMutex     *sync.RWMutex
-	flagSetFilter util.FlagSetFilter
+	flagSetFilter flagsets.FlagSetFilter
 }
 
 // NewMMSplitStorage instantiates a new MMSplitStorage
-func NewMMSplitStorage(flagSetFilter util.FlagSetFilter) *MMSplitStorage {
+func NewMMSplitStorage(flagSetFilter flagsets.FlagSetFilter) *MMSplitStorage {
 	return &MMSplitStorage{
 		data:          make(map[string]dtos.SplitDTO),
 		flagSets:      make(map[string]map[string]struct{}),

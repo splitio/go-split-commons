@@ -2,7 +2,6 @@ package service
 
 import (
 	"strconv"
-	"strings"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 type FetchOptions struct {
 	CacheControlHeaders bool
 	ChangeNumber        *int64
-	FlagSetsFilter      []string
+	FlagSetsFilter      string
 }
 
 func NewFetchOptions(cacheControlHeaders bool, changeNumber *int64) FetchOptions {
@@ -23,7 +22,7 @@ func NewFetchOptions(cacheControlHeaders bool, changeNumber *int64) FetchOptions
 	}
 }
 
-func (f *FetchOptions) SetFlagSetsFilter(flagSetsFilter []string) {
+func (f *FetchOptions) SetFlagSetsFilter(flagSetsFilter string) {
 	f.FlagSetsFilter = flagSetsFilter
 }
 
@@ -42,7 +41,7 @@ func BuildFetch(changeNumber int64, fetchOptions *FetchOptions) (map[string]stri
 		queryParams["till"] = strconv.FormatInt(*fetchOptions.ChangeNumber, 10)
 	}
 	if len(fetchOptions.FlagSetsFilter) > 0 {
-		queryParams["sets"] = strings.Join(fetchOptions.FlagSetsFilter, ",")
+		queryParams["sets"] = fetchOptions.FlagSetsFilter
 	}
 	return queryParams, headers
 }

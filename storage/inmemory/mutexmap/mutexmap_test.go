@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/util"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 )
 
 func TestSplitMutexMapConcurrency(t *testing.T) {
-	splitStorage := NewMMSplitStorage(util.NewFlagSetFilter([]string{}))
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{}))
 	splits := make([]dtos.SplitDTO, 0, 10)
 	for index := 0; index < 10; index++ {
 		splits = append(splits, dtos.SplitDTO{
