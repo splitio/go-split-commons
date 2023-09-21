@@ -12,7 +12,7 @@ import (
 // MMSplitStorage struct contains is an in-memory implementation of split storage
 type MMSplitStorage struct {
 	data          map[string]dtos.SplitDTO
-	flagSets      map[string]map[string]struct{}
+	flagSets      flagsets.FeaturesBySet
 	trafficTypes  map[string]int64
 	till          int64
 	flagSetsMutex *sync.RWMutex
@@ -26,7 +26,7 @@ type MMSplitStorage struct {
 func NewMMSplitStorage(flagSetFilter flagsets.FlagSetFilter) *MMSplitStorage {
 	return &MMSplitStorage{
 		data:          make(map[string]dtos.SplitDTO),
-		flagSets:      make(map[string]map[string]struct{}),
+		flagSets:      flagsets.NewFeaturesBySet(nil),
 		trafficTypes:  make(map[string]int64),
 		till:          -1,
 		flagSetsMutex: &sync.RWMutex{},
@@ -123,7 +123,7 @@ func (m *MMSplitStorage) removeFromFlagSets(name string, sets []string) {
 	m.flagSetsMutex.Lock()
 	defer m.flagSetsMutex.Unlock()
 	for _, flagSet := range sets {
-		delete(m.flagSets[flagSet], name)
+		m.flagSets.RemoveFlagFromSet(flagSet, name)
 	}
 }
 
@@ -135,11 +135,7 @@ func (m *MMSplitStorage) addToFlagSets(name string, sets []string) {
 		if !m.flagSetFilter.IsPresent(set) {
 			continue
 		}
-		_, exist := m.flagSets[set]
-		if !exist {
-			m.flagSets[set] = make(map[string]struct{})
-		}
-		m.flagSets[set][name] = struct{}{}
+		m.flagSets.Add(set, name)
 	}
 }
 

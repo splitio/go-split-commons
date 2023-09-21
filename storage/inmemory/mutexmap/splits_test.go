@@ -200,26 +200,25 @@ func TestMMSplitStorageWithFlagSets(t *testing.T) {
 	if splitStorage.Split("split4") == nil {
 		t.Error("split4 should exist")
 	}
-	if _, ok := splitStorage.flagSets["set4"]; ok {
+	sets := splitStorage.flagSets.Sets()
+	asMap := make(map[string]struct{})
+	for _, set := range sets {
+		asMap[set] = struct{}{}
+	}
+	if _, ok := asMap["set4"]; ok {
 		t.Error("set4 should not exist")
 	}
-	if _, ok := splitStorage.flagSets["set5"]; ok {
+	if _, ok := asMap["set5"]; ok {
 		t.Error("set5 should not exist")
 	}
-	set1, ok := splitStorage.flagSets["set1"]
-	if !ok {
-		t.Error("set1 should exist")
-	}
+	set1 := splitStorage.flagSets.FlagsFromSet("set1")
 	if len(set1) != 1 {
 		t.Error("It should have only one element")
 	}
 	if _, ok := set1["split1"]; !ok {
 		t.Error("split1 should exist")
 	}
-	set2, ok := splitStorage.flagSets["set2"]
-	if !ok {
-		t.Error("set2 should exist")
-	}
+	set2 := splitStorage.flagSets.FlagsFromSet("set2")
 	if len(set2) != 2 {
 		t.Error("It should have two elements")
 	}
@@ -243,20 +242,14 @@ func TestMMSplitStorageWithFlagSets(t *testing.T) {
 	if splitStorage.Split("split4") == nil {
 		t.Error("split4 should exist")
 	}
-	set1, ok = splitStorage.flagSets["set1"]
-	if !ok {
-		t.Error("set1 should exist")
-	}
+	set1 = splitStorage.flagSets.FlagsFromSet("set1")
 	if len(set1) != 1 {
 		t.Error("It should have only one element")
 	}
 	if _, ok := set1["split4"]; !ok {
 		t.Error("split4 should exist")
 	}
-	set2, ok = splitStorage.flagSets["set2"]
-	if !ok {
-		t.Error("set2 should exist")
-	}
+	set2 = splitStorage.flagSets.FlagsFromSet("set2")
 	if len(set2) != 1 {
 		t.Error("It should have one element")
 	}
@@ -266,10 +259,7 @@ func TestMMSplitStorageWithFlagSets(t *testing.T) {
 
 	mockedSplit7 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{}}
 	splitStorage.Update([]dtos.SplitDTO{}, []dtos.SplitDTO{mockedSplit7}, 3)
-	set2, ok = splitStorage.flagSets["set2"]
-	if !ok {
-		t.Error("set2 should exist")
-	}
+	set2 = splitStorage.flagSets.FlagsFromSet("set2")
 	if len(set2) != 0 {
 		t.Error("It should not have elements")
 	}
