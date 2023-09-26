@@ -6,68 +6,15 @@ import (
 	"strings"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
-type featuresBySet struct {
-	data map[string]map[string]struct{}
-}
-
-func newFeaturesBySet(featureFlags []dtos.SplitDTO) featuresBySet {
-	f := featuresBySet{data: make(map[string]map[string]struct{})}
-	for _, featureFlag := range featureFlags {
-		for _, set := range featureFlag.Sets {
-			f.add(set, featureFlag.Name)
-		}
-	}
-	return f
-}
-
-func (f *featuresBySet) add(set string, flag string) {
-	curr, exists := f.data[set]
-	if !exists {
-		curr = make(map[string]struct{})
-	}
-	curr[flag] = struct{}{}
-	f.data[set] = curr
-}
-
-func (f *featuresBySet) isFlagInSet(set string, flag string) bool {
-	forSet, ok := f.data[set]
-	if !ok {
-		return false
-	}
-
-	_, ok = forSet[flag]
-	return ok
-}
-
-func (f *featuresBySet) removeFlagFromSet(set string, flag string) {
-	forSet, ok := f.data[set]
-	if !ok {
-		return
-	}
-	delete(forSet, flag)
-}
-
-func difference(one featuresBySet, two featuresBySet) featuresBySet {
-	result := newFeaturesBySet(nil)
-	for set, featureFlags := range one.data {
-		for featureFlagName := range featureFlags {
-			isInSet := two.isFlagInSet(set, featureFlagName)
-			if !isInSet {
-				result.add(set, featureFlagName)
-			}
-		}
-	}
-	return result
-}
-
 // calculateSets calculates the featureFlags that needs to be removed from sets and the featureFlags that needs to be
 // added into the sets
-func calculateSets(currentSets featuresBySet, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (featuresBySet, featuresBySet) {
+func calculateSets(currentSets flagsets.FeaturesBySet, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (flagsets.FeaturesBySet, flagsets.FeaturesBySet) {
 	// map[set]map[ff] for tracking all the sets that feature flags are going to be added
-	setsToAdd := newFeaturesBySet(nil)
+	setsToAdd := flagsets.NewFeaturesBySet(nil)
 
 	for _, featureFlag := range toAdd {
 		// for each feature flag, get all the sets that need to be added
@@ -75,7 +22,7 @@ func calculateSets(currentSets featuresBySet, toAdd []dtos.SplitDTO, toRemove []
 		// map[set1][split2]{}
 		// map[set2][split1]{}
 		for _, set := range featureFlag.Sets {
-			setsToAdd.add(set, featureFlag.Name)
+			setsToAdd.Add(set, featureFlag.Name)
 		}
 	}
 
@@ -92,8 +39,8 @@ func calculateSets(currentSets featuresBySet, toAdd []dtos.SplitDTO, toRemove []
 	// if setC is not in previous version, then is added into setsToAdd
 	// the new version of ff1 is not linked to setB which is the only item
 	// in currentSet
-	toRemoveSets := difference(currentSets, setsToAdd)
-	toAddSets := difference(setsToAdd, currentSets)
+	toRemoveSets := flagsets.Difference(currentSets, setsToAdd)
+	toAddSets := flagsets.Difference(setsToAdd, currentSets)
 	return toAddSets, toRemoveSets
 }
 
@@ -125,19 +72,28 @@ func updateFeatureFlags(pipeline redis.Pipeline, toAdd []dtos.SplitDTO, toRemove
 	return failedToAdd, addedInPipe
 }
 
-func updateFlagSets(pipeline redis.Pipeline, toAdd featuresBySet, toRemove featuresBySet) {
-	for set, featureFlags := range toAdd.data {
+func updateFlagSets(pipeline redis.Pipeline, toAdd flagsets.FeaturesBySet, toRemove flagsets.FeaturesBySet) {
+	for _, set := range toAdd.Sets() {
+		featureFlags := toAdd.FlagsFromSet(set)
+		if len(featureFlags) == 0 {
+			continue
+		}
 		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
+		for _, featureFlag := range featureFlags {
 			featureFlagsNames = append(featureFlagsNames, featureFlag)
 		}
 		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
 	}
-	for set, featureFlags := range toRemove.data {
+	for _, set := range toRemove.Sets() {
+		featureFlags := toRemove.FlagsFromSet(set)
+		if len(featureFlags) == 0 {
+			continue
+		}
 		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
+		for _, featureFlag := range featureFlags {
 			featureFlagsNames = append(featureFlagsNames, featureFlag)
 		}
+
 		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
 	}
 }

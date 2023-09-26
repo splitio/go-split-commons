@@ -59,5 +59,9 @@ func TestSplitDTO(t *testing.T) {
 			splitChangesDtoFromMock.Splits[0].Configurations["on"] {
 			t.Error("Marshal struct mal formed [Configurations]")
 		}
+
+		if len(splitChangesDtoFromMarshal.Splits[0].Sets) != 0 {
+			t.Error("Marshal struct mal formed [Sets]")
+		}
 	}
 }

@@ -16,13 +16,21 @@ func NewFlagSetFilter(configFlagSets []string) FlagSetFilter {
 	}
 }
 
+func (f *FlagSetFilter) IsPresent(flagSet string) bool {
+	if !f.shouldFilter {
+		return true
+	}
+	_, ok := f.cfgFlagSets[flagSet]
+	return ok
+}
+
 func (f *FlagSetFilter) Instersect(flagSets []string) bool {
 	if !f.shouldFilter {
 		return true
 	}
 	for _, flagSet := range flagSets {
-		_, ok := f.cfgFlagSets[flagSet]
-		if ok {
+		isPresent := f.IsPresent(flagSet)
+		if isPresent {
 			return true
 		}
 	}
