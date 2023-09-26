@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/flagsets"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 func TestCalculateSets(t *testing.T) {
@@ -34,13 +35,21 @@ func TestCalculateSets(t *testing.T) {
 	if len(toAdd.FlagsFromSet("set1")) != 1 {
 		t.Error("It should have only 1 featureFlags")
 	}
-	if _, ok := toAdd.FlagsFromSet("set1")["split5"]; !ok {
+	asSet := set.NewSet()
+	for _, flag := range toAdd.FlagsFromSet("set1") {
+		asSet.Add(flag)
+	}
+	if !asSet.Has("split5") {
 		t.Error("split5 should be present in set1")
 	}
 	if len(toAdd.FlagsFromSet("set4")) != 1 {
 		t.Error("It should have only 1 featureFlags")
 	}
-	if _, ok := toAdd.FlagsFromSet("set4")["split1"]; !ok {
+	asSet = set.NewSet()
+	for _, flag := range toAdd.FlagsFromSet("set4") {
+		asSet.Add(flag)
+	}
+	if !asSet.Has("split1") {
 		t.Error("split1 should be present in set4")
 	}
 
@@ -48,35 +57,47 @@ func TestCalculateSets(t *testing.T) {
 	if len(toRemove.Sets()) != 4 {
 		t.Error("It should consider 4 sets to remove")
 	}
-	set1 := toRemove.FlagsFromSet("set1")
-	if len(set1) != 2 {
+	asSet = set.NewSet()
+	for _, flag := range toRemove.FlagsFromSet("set1") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 2 {
 		t.Error("It should have only 2 featureFlags")
 	}
-	if _, ok := set1["split2"]; !ok {
+	if !asSet.Has("split2") {
 		t.Error("split2 should be present in set1")
 	}
-	if _, ok := set1["split3"]; !ok {
+	if !asSet.Has("split3") {
 		t.Error("split3 should be present in set1")
 	}
-	set2 := toRemove.FlagsFromSet("set2")
-	if len(set2) != 1 {
+	asSet = set.NewSet()
+	for _, flag := range toRemove.FlagsFromSet("set2") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
 		t.Error("It should have only 1 featureFlags")
 	}
-	if _, ok := set2["split2"]; !ok {
+	if !asSet.Has("split2") {
 		t.Error("split2 should be present in set2")
 	}
-	set3 := toRemove.FlagsFromSet("set3")
-	if len(set3) != 1 {
+	asSet = set.NewSet()
+	for _, flag := range toRemove.FlagsFromSet("set3") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
 		t.Error("It should have only 1 featureFlags")
 	}
-	if _, ok := set3["split2"]; !ok {
+	if !asSet.Has("split2") {
 		t.Error("split2 should be present in set3")
 	}
-	set4 := toRemove.FlagsFromSet("set4")
-	if len(set4) != 1 {
+	asSet = set.NewSet()
+	for _, flag := range toRemove.FlagsFromSet("set4") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
 		t.Error("It should have only 1 featureFlags")
 	}
-	if _, ok := set4["split3"]; !ok {
+	if !asSet.Has("split3") {
 		t.Error("split3 should be present in set4")
 	}
 }

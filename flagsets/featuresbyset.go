@@ -33,14 +33,14 @@ func (f *FeaturesBySet) Sets() []string {
 	return sets
 }
 
-func (f *FeaturesBySet) FlagsFromSet(set string) map[string]struct{} {
-	flags := make(map[string]struct{})
+func (f *FeaturesBySet) FlagsFromSet(set string) []string {
+	flags := make([]string, 0)
 	forSet, ok := f.data[set]
 	if !ok {
 		return flags
 	}
 	for flag := range forSet {
-		flags[flag] = struct{}{}
+		flags = append(flags, flag)
 	}
 	return flags
 }

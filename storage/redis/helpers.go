@@ -75,18 +75,25 @@ func updateFeatureFlags(pipeline redis.Pipeline, toAdd []dtos.SplitDTO, toRemove
 func updateFlagSets(pipeline redis.Pipeline, toAdd flagsets.FeaturesBySet, toRemove flagsets.FeaturesBySet) {
 	for _, set := range toAdd.Sets() {
 		featureFlags := toAdd.FlagsFromSet(set)
+		if len(featureFlags) == 0 {
+			continue
+		}
 		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
+		for _, featureFlag := range featureFlags {
 			featureFlagsNames = append(featureFlagsNames, featureFlag)
 		}
 		pipeline.SAdd(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
 	}
 	for _, set := range toRemove.Sets() {
 		featureFlags := toRemove.FlagsFromSet(set)
+		if len(featureFlags) == 0 {
+			continue
+		}
 		featureFlagsNames := make([]interface{}, 0, len(featureFlags))
-		for featureFlag := range featureFlags {
+		for _, featureFlag := range featureFlags {
 			featureFlagsNames = append(featureFlagsNames, featureFlag)
 		}
+
 		pipeline.SRem(strings.Replace(KeyFlagSet, "{set}", set, 1), featureFlagsNames...)
 	}
 }
