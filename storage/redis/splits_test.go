@@ -3,7 +3,7 @@ package redis
 import (
 	"encoding/json"
 	"errors"
-	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
 )
 
-func createSampleSplit(name string) dtos.SplitDTO {
+func createSampleSplit(name string, sets []string) dtos.SplitDTO {
 	return dtos.SplitDTO{
 		Name: name,
 		Conditions: []dtos.ConditionDTO{
@@ -30,6 +30,8 @@ func createSampleSplit(name string) dtos.SplitDTO {
 				},
 			},
 		},
+		Sets:            sets,
+		TrafficTypeName: "user",
 	}
 }
 
@@ -60,8 +62,8 @@ func TestAll(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -100,8 +102,8 @@ func TestAllClusterMode(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -238,8 +240,8 @@ func TestFetchMany(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("someSplit")),
-						marshalSplit(createSampleSplit("someSplit2")),
+						marshalSplit(createSampleSplit("someSplit", []string{})),
+						marshalSplit(createSampleSplit("someSplit2", []string{})),
 					}, nil
 				},
 			}
@@ -285,8 +287,8 @@ func TestSegmentNames(t *testing.T) {
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
 					return []interface{}{
-						marshalSplit(createSampleSplit("split1")),
-						marshalSplit(createSampleSplit("split2")),
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
 					}, nil
 				},
 			}
@@ -336,7 +338,7 @@ func TestSplit(t *testing.T) {
 				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, key)
 			}
 			return &mocks.MockResultOutput{
-				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit")), nil },
+				ResultStringCall: func() (string, error) { return marshalSplit(createSampleSplit("someSplit", []string{})), nil },
 			}
 		},
 	}
@@ -444,6 +446,7 @@ func TestTrafficTypeExists(t *testing.T) {
 }
 
 func TestSplitUpdateWithErrors(t *testing.T) {
+	pipelineCall := int64(0)
 	mockClient := &mocks.MockClient{
 		MGetCall: func(keys []string) redis.Result {
 			return &mocks.MockResultOutput{
@@ -451,26 +454,20 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 				MultiInterfaceCall: func() ([]interface{}, error) { return []interface{}{}, nil },
 			}
 		},
-		IncrCall: func(key string) redis.Result {
-			return &mocks.MockResultOutput{
-				ErrCall:    func() error { return nil },
-				ResultCall: func() (int64, error) { return 1, nil },
-			}
-		},
-		SetCall: func(key string, v interface{}, t time.Duration) redis.Result {
-			return &mocks.MockResultOutput{
-				ErrCall: func() error {
-					if key == strings.Replace(KeySplit, "{split}", "split2", 1) {
-						return errors.New("something")
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				IncrCall: func(key string) {},
+				SetCall:  func(key string, value interface{}, expiration time.Duration) {},
+				DelCall:  func(keys ...string) {},
+				ExecCall: func() ([]redis.Result, error) {
+					atomic.AddInt64(&pipelineCall, 1)
+					if atomic.LoadInt64(&pipelineCall) == 1 {
+						return []redis.Result{
+							&mocks.MockResultOutput{ErrCall: func() error { return nil }},
+							&mocks.MockResultOutput{ErrCall: func() error { return errors.New("something") }},
+						}, nil
 					}
-					return nil
-				},
-			}
-		},
-		DelCall: func(keys ...string) redis.Result {
-			return &mocks.MockResultOutput{
-				ResultCall: func() (int64, error) {
-					return int64(len(keys)), nil
+					return []redis.Result{}, nil
 				},
 			}
 		},
@@ -513,4 +510,226 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 		t.Error("wrong error type")
 	}
 
+}
+
+func TestFetchCurrentFeatureFlags(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		MGetCall: func(keys []string) redis.Result {
+			keysToGet := set.NewSet()
+			for _, key := range keys {
+				keysToGet.Add(key)
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split1") {
+				t.Error("It should have split1")
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split2") {
+				t.Error("It should have split2")
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1", []string{"set1"})),
+						marshalSplit(createSampleSplit("split2", []string{"set3"})),
+					}, nil
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{})
+	all, err := splitStorage.fetchCurrentFeatureFlags(
+		[]dtos.SplitDTO{createSampleSplit("split1", []string{"set1"})},
+		[]dtos.SplitDTO{createSampleSplit("split2", []string{"set2"})})
+	if err != nil {
+		t.Error("It shouldn't return err")
+	}
+	if len(all) != 2 {
+		t.Error("It should return 2 featureFlags")
+	}
+}
+
+func TestFlagSetsLogic(t *testing.T) {
+	setCall := int64(0)
+	mockedRedisClient := mocks.MockClient{
+		MGetCall: func(keys []string) redis.Result {
+			keysToGet := set.NewSet()
+			for _, key := range keys {
+				keysToGet.Add(key)
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split1") {
+				t.Error("It should have split1")
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split2") {
+				t.Error("It should have split2")
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split3") {
+				t.Error("It should have split3")
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split4") {
+				t.Error("It should have split4")
+			}
+			if !keysToGet.Has("someprefix.SPLITIO.split.split5") {
+				t.Error("It should have split5")
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1", []string{"set1"})),
+						marshalSplit(createSampleSplit("split2", []string{"set3"})),
+						marshalSplit(createSampleSplit("split3", []string{})),
+						marshalSplit(createSampleSplit("split4", []string{"set2"})),
+						marshalSplit(createSampleSplit("split5", []string{"set4"})),
+					}, nil
+				},
+			}
+		},
+		SetCall: func(key string, value interface{}, expiration time.Duration) redis.Result {
+			if key != "someprefix.SPLITIO.splits.till" {
+				t.Error("It should call set changeNumber", key)
+			}
+			cn, _ := value.(int64)
+			if cn != 2 {
+				t.Error("It should be 2", cn)
+			}
+			return &mocks.MockResultOutput{
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				ExecCall: func() ([]redis.Result, error) {
+					return []redis.Result{}, nil
+				},
+				SetCall: func(key string, value interface{}, expiration time.Duration) {
+					atomic.AddInt64(&setCall, 1)
+					switch atomic.LoadInt64(&setCall) {
+					case 1:
+						if key != "someprefix.SPLITIO.split.split1" {
+							t.Error("Expected set for split1")
+						}
+					case 2:
+						if key != "someprefix.SPLITIO.split.split2" {
+							t.Error("Expected set for split2")
+						}
+					case 3:
+						if key != "someprefix.SPLITIO.split.split3" {
+							t.Error("Expected set for split3")
+						}
+					case 4:
+						if key != "someprefix.SPLITIO.split.split5" {
+							t.Error("Expected set for split5")
+						}
+					default:
+						t.Error("Unexpected key")
+					}
+				},
+				DelCall: func(keys ...string) {
+					if len(keys) != 1 {
+						t.Error("Unexpected size of keys to be removed")
+					}
+					if keys[0] != "someprefix.SPLITIO.split.split4" {
+						t.Error("split4 should be deleted")
+					}
+				},
+				SAddCall: func(key string, members ...interface{}) {
+					switch key {
+					case "someprefix.SPLITIO.flagSet.set1":
+						if len(members) != 2 {
+							t.Error("Only 2 elements should be added")
+						}
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+						if !splits.Has("split3") {
+							t.Error("split3 should be present")
+						}
+					case "someprefix.SPLITIO.flagSet.set2":
+						if len(members) != 1 {
+							t.Error("Only 1 element should be added")
+						}
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+				},
+				SRemCall: func(key string, members ...interface{}) {
+					switch key {
+					case "someprefix.SPLITIO.flagSet.set2":
+						if len(members) != 1 {
+							t.Error("Only 1 element should be removed")
+						}
+						splits := set.NewSet(members...)
+						if !splits.Has("split4") {
+							t.Error("split4 should be present")
+						}
+					case "someprefix.SPLITIO.flagSet.set3":
+						if len(members) != 1 {
+							t.Error("Only 1 element should be removed")
+						}
+						splits := set.NewSet(members...)
+						if !splits.Has("split2") {
+							t.Error("split2 should be present")
+						}
+					case "someprefix.SPLITIO.flagSet.set4":
+						if len(members) != 1 {
+							t.Error("Only 1 element should be removed")
+						}
+						splits := set.NewSet(members...)
+						if !splits.Has("split5") {
+							t.Error("split5 should be present")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+				},
+				DecrCall: func(key string) {
+					if key != "someprefix.SPLITIO.trafficType.user" {
+						t.Error("Invalid key to be decremented")
+					}
+				},
+				IncrCall: func(key string) {
+					if key != "someprefix.SPLITIO.trafficType.user" {
+						t.Error("Invalid key to be incremented")
+					}
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{})
+
+	// set1 -> split1
+	// set2 -> split4
+	// set3 -> split2
+	// set4 -> split5
+
+	// set1 -> split1, split2, split3
+	// set2 -> split2
+	// set3 ->
+	// set4 ->
+
+	// add split2 split3 into set1
+	// add split2 into set2
+	// remove split4 from set2
+	// remove split2 from set3
+	// remove split5 from set4
+	err := splitStorage.UpdateWithErrors(
+		[]dtos.SplitDTO{
+			createSampleSplit("split1", []string{"set1"}),
+			createSampleSplit("split2", []string{"set1", "set2"}),
+			createSampleSplit("split3", []string{"set1"}),
+			createSampleSplit("split5", []string{}),
+		},
+		[]dtos.SplitDTO{
+			createSampleSplit("split4", []string{"set2"}),
+		}, 2)
+	if err != nil {
+		t.Error("It shouldn't return err")
+	}
 }

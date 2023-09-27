@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 func TestMMSplitStorage(t *testing.T) {
-	splitStorage := NewMMSplitStorage()
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	cn, _ := splitStorage.ChangeNumber()
 	if cn != -1 {
@@ -87,7 +89,7 @@ func TestMMSplitStorage(t *testing.T) {
 }
 
 func TestSplitKillLocally(t *testing.T) {
-	splitStorage := NewMMSplitStorage()
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	splitStorage.Update([]dtos.SplitDTO{{
 		Name:             "some",
@@ -136,7 +138,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 		TrafficTypeName: "tt1",
 	}
 
-	splitStorage := NewMMSplitStorage()
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{s1}, nil, 123)
 
 	if !splitStorage.TrafficTypeExists("tt1") {
@@ -159,7 +161,7 @@ func TestTrafficTypeOnUpdates(t *testing.T) {
 }
 
 func TestTrafficTypes(t *testing.T) {
-	ttStorage := NewMMSplitStorage()
+	ttStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
 	if ttStorage.TrafficTypeExists("mytest") {
 		t.Error("It should not exist")
@@ -173,5 +175,108 @@ func TestTrafficTypes(t *testing.T) {
 	ttStorage.decreaseTrafficTypeCount("mytest")
 	if ttStorage.TrafficTypeExists("mytest") {
 		t.Error("It should not exist")
+	}
+}
+
+func TestMMSplitStorageWithFlagSets(t *testing.T) {
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{"set1", "set2"}))
+
+	cn, _ := splitStorage.ChangeNumber()
+	if cn != -1 {
+		t.Error("It should be -1")
+	}
+
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
+	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set4"}}
+	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set2"}}
+	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
+	splitStorage.Update([]dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4}, []dtos.SplitDTO{}, 1)
+
+	if splitStorage.Split("split1") == nil {
+		t.Error("split1 should exist")
+	}
+	if splitStorage.Split("split3") == nil {
+		t.Error("split3 should exist")
+	}
+	if splitStorage.Split("split4") == nil {
+		t.Error("split4 should exist")
+	}
+	sets := splitStorage.flagSets.Sets()
+	asMap := make(map[string]struct{})
+	for _, set := range sets {
+		asMap[set] = struct{}{}
+	}
+	if _, ok := asMap["set4"]; ok {
+		t.Error("set4 should not exist")
+	}
+	if _, ok := asMap["set5"]; ok {
+		t.Error("set5 should not exist")
+	}
+	asSet := set.NewSet()
+	for _, flag := range splitStorage.flagSets.FlagsFromSet("set1") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
+		t.Error("It should have only one element")
+	}
+	if !asSet.Has("split1") {
+		t.Error("split1 should exist")
+	}
+	asSet = set.NewSet()
+	for _, flag := range splitStorage.flagSets.FlagsFromSet("set2") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 2 {
+		t.Error("It should have two elements")
+	}
+	if !asSet.Has("split3") {
+		t.Error("split3 should exist")
+	}
+	if !asSet.Has("split4") {
+		t.Error("split4 should exist")
+	}
+
+	mockedSplit5 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
+	mockedSplit6 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
+	splitStorage.Update([]dtos.SplitDTO{mockedSplit5}, []dtos.SplitDTO{mockedSplit6}, 2)
+
+	if splitStorage.Split("split1") != nil {
+		t.Error("split1 should not exist")
+	}
+	if splitStorage.Split("split3") == nil {
+		t.Error("split3 should exist")
+	}
+	if splitStorage.Split("split4") == nil {
+		t.Error("split4 should exist")
+	}
+	asSet = set.NewSet()
+	for _, flag := range splitStorage.flagSets.FlagsFromSet("set1") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
+		t.Error("It should have only one element")
+	}
+	if !asSet.Has("split4") {
+		t.Error("split4 should exist")
+	}
+	asSet = set.NewSet()
+	for _, flag := range splitStorage.flagSets.FlagsFromSet("set2") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 1 {
+		t.Error("It should have one element")
+	}
+	if !asSet.Has("split3") {
+		t.Error("split3 should exist")
+	}
+
+	mockedSplit7 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{}}
+	splitStorage.Update([]dtos.SplitDTO{}, []dtos.SplitDTO{mockedSplit7}, 3)
+	asSet = set.NewSet()
+	for _, flag := range splitStorage.flagSets.FlagsFromSet("set2") {
+		asSet.Add(flag)
+	}
+	if asSet.Size() != 0 {
+		t.Error("It should not have elements")
 	}
 }

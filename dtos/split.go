@@ -23,6 +23,7 @@ type SplitDTO struct {
 	Algo                  int               `json:"algo"`
 	Conditions            []ConditionDTO    `json:"conditions"`
 	Configurations        map[string]string `json:"configurations"`
+	Sets                  []string          `json:"sets"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string
