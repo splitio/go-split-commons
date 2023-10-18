@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -169,11 +169,16 @@ func TestSpitChangesFetchWithFlagSetsFilter(t *testing.T) {
 	if !queryParams.Has("sets") {
 		t.Error("Expected to have sets")
 	}
-	sets := set.NewSet(queryParams.Get("set"))
-	if sets.Has("one") {
+	asString := queryParams.Get("sets")
+	asArray := strings.Split(asString, ",")
+	setsToTest := make(map[string]struct{})
+	for _, featureFlag := range asArray {
+		setsToTest[featureFlag] = struct{}{}
+	}
+	if _, ok := setsToTest["one"]; !ok {
 		t.Error("Expected one to be present")
 	}
-	if sets.Has("two") {
+	if _, ok := setsToTest["two"]; !ok {
 		t.Error("Expected two to be present")
 	}
 }

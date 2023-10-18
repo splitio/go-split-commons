@@ -4,29 +4,36 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // MMSplitStorage struct contains is an in-memory implementation of split storage
 type MMSplitStorage struct {
-	data         map[string]dtos.SplitDTO
-	trafficTypes map[string]int64
-	till         int64
-	mutex        *sync.RWMutex
-	ttMutex      *sync.RWMutex
-	tillMutex    *sync.RWMutex
+	data          map[string]dtos.SplitDTO
+	flagSets      flagsets.FeaturesBySet
+	trafficTypes  map[string]int64
+	till          int64
+	flagSetsMutex *sync.RWMutex
+	mutex         *sync.RWMutex
+	ttMutex       *sync.RWMutex
+	tillMutex     *sync.RWMutex
+	flagSetFilter flagsets.FlagSetFilter
 }
 
 // NewMMSplitStorage instantiates a new MMSplitStorage
-func NewMMSplitStorage() *MMSplitStorage {
+func NewMMSplitStorage(flagSetFilter flagsets.FlagSetFilter) *MMSplitStorage {
 	return &MMSplitStorage{
-		data:         make(map[string]dtos.SplitDTO),
-		trafficTypes: make(map[string]int64),
-		till:         -1,
-		mutex:        &sync.RWMutex{},
-		ttMutex:      &sync.RWMutex{},
-		tillMutex:    &sync.RWMutex{},
+		data:          make(map[string]dtos.SplitDTO),
+		flagSets:      flagsets.NewFeaturesBySet(nil),
+		trafficTypes:  make(map[string]int64),
+		till:          -1,
+		flagSetsMutex: &sync.RWMutex{},
+		mutex:         &sync.RWMutex{},
+		ttMutex:       &sync.RWMutex{},
+		tillMutex:     &sync.RWMutex{},
+		flagSetFilter: flagSetFilter,
 	}
 }
 
@@ -111,6 +118,27 @@ func (m *MMSplitStorage) decreaseTrafficTypeCount(trafficType string) {
 	}
 }
 
+// removeFromFlagSets removes current sets from feature flag
+func (m *MMSplitStorage) removeFromFlagSets(name string, sets []string) {
+	m.flagSetsMutex.Lock()
+	defer m.flagSetsMutex.Unlock()
+	for _, flagSet := range sets {
+		m.flagSets.RemoveFlagFromSet(flagSet, name)
+	}
+}
+
+// addToFlagSets add feature flag to flagSets
+func (m *MMSplitStorage) addToFlagSets(name string, sets []string) {
+	m.flagSetsMutex.Lock()
+	defer m.flagSetsMutex.Unlock()
+	for _, set := range sets {
+		if !m.flagSetFilter.IsPresent(set) {
+			continue
+		}
+		m.flagSets.Add(set, name)
+	}
+}
+
 // Update atomically registers new splits, removes archived ones and updates the change number
 func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, till int64) {
 	m.mutex.Lock()
@@ -121,9 +149,11 @@ func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO,
 			// If it's an update, we decrement the traffic type count of the existing split,
 			// and then add the updated one (as part of the normal flow), in case it's different.
 			m.decreaseTrafficTypeCount(existing.TrafficTypeName)
+			m.removeFromFlagSets(existing.Name, existing.Sets)
 		}
 		m.data[split.Name] = split
 		m.increaseTrafficTypeCount(split.TrafficTypeName)
+		m.addToFlagSets(split.Name, split.Sets)
 	}
 
 	for _, split := range toRemove {
@@ -131,6 +161,7 @@ func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO,
 		if exists {
 			delete(m.data, split.Name)
 			m.decreaseTrafficTypeCount(cached.TrafficTypeName)
+			m.removeFromFlagSets(cached.Name, cached.Sets)
 		}
 	}
 	m.SetChangeNumber(till)

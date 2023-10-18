@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
 	"github.com/splitio/go-split-commons/v5/storage"
@@ -56,6 +57,7 @@ type UpdaterImpl struct {
 	hcMonitor                   application.MonitorProducerInterface
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
+	flagSetsFilter              flagsets.FlagSetFilter
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -65,6 +67,7 @@ func NewSplitUpdater(
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
+	flagSetsFilter flagsets.FlagSetFilter,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -74,11 +77,12 @@ func NewSplitUpdater(
 		hcMonitor:                   hcMonitor,
 		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
+		flagSetsFilter:              flagSetsFilter,
 	}
 }
 
 func (s *UpdaterImpl) processUpdate(featureFlags *dtos.SplitChangesDTO) {
-	activeSplits, inactiveSplits := processFeatureFlagChanges(featureFlags)
+	activeSplits, inactiveSplits := s.processFeatureFlagChanges(featureFlags)
 	// Add/Update active splits
 	s.splitStorage.Update(activeSplits, inactiveSplits, featureFlags.Till)
 }
@@ -188,11 +192,11 @@ func appendSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
 	return dst
 }
 
-func processFeatureFlagChanges(featureFlags *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
+func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
 	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	for idx := range featureFlags.Splits {
-		if featureFlags.Splits[idx].Status == Active {
+		if featureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(featureFlags.Splits[idx].Sets) {
 			toAdd = append(toAdd, featureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, featureFlags.Splits[idx])
@@ -223,7 +227,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 		featureFlags := make([]dtos.SplitDTO, 0, 1)
 		featureFlags = append(featureFlags, *ffChange.FeatureFlag())
 		featureFlagChange := dtos.SplitChangesDTO{Splits: featureFlags}
-		activeFFs, inactiveFFs := processFeatureFlagChanges(&featureFlagChange)
+		activeFFs, inactiveFFs := s.processFeatureFlagChanges(&featureFlagChange)
 		s.splitStorage.Update(activeFFs, inactiveFFs, ffChange.BaseUpdate.ChangeNumber())
 		s.runtimeTelemetry.RecordUpdatesFromSSE(telemetry.SplitUpdate)
 		updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
