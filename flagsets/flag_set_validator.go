@@ -13,6 +13,7 @@ var (
 	flagSetRegex = regexp.MustCompile("^[a-z0-9][_a-z0-9]{0,49}$")
 )
 
+// SanitizeMany sanitizes flagsets provided and returns the list of errors
 func SanitizeMany(sets []string) ([]string, []error) {
 	if len(sets) == 0 {
 		return nil, nil
@@ -32,6 +33,7 @@ func SanitizeMany(sets []string) ([]string, []error) {
 	return sanitizedFlagSets, warnings
 }
 
+// Sanitize sanitizes flagset provided and returns the list of errors
 func Sanitize(flagSet string) (*string, []error) {
 	var warnings []error
 	if lowerCased := strings.ToLower(flagSet); lowerCased != flagSet {
