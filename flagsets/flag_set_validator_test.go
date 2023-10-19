@@ -7,13 +7,10 @@ import (
 func TestFlagSetCleanup(t *testing.T) {
 	sets := []string{"Set1", " set3 ", "set_2", "set+4", "set-5", "set4", " set1"}
 
-	sanitizedSets, invalidSets, warnings := SanitizeMany(sets)
+	sanitizedSets, warnings := SanitizeMany(sets)
 
 	if len(sanitizedSets) != 4 {
 		t.Error("Valid sets size should be 5, but was", len(sanitizedSets))
-	}
-	if invalidSets != 2 {
-		t.Error("Invalid sets should be 1, but was", invalidSets)
 	}
 	if sanitizedSets[0] != "set1" {
 		t.Error("The first element should be set1, but was", sanitizedSets[0])
@@ -32,26 +29,10 @@ func TestFlagSetCleanup(t *testing.T) {
 	}
 }
 
-func TestFlagSetAreValid(t *testing.T) {
-	sets := []string{"Set1", " set3 ", "set_2", "set+4", "set-5", "set4", " set1"}
-
-	sanitizedSets, valid, warnings := AreValid(sets)
-
-	if len(sanitizedSets) != 4 {
-		t.Error("Valid sets size should be 5, but was", len(sanitizedSets))
-	}
-	if !valid {
-		t.Error("Should be true, but was", valid)
-	}
-	if len(warnings) != 5 {
-		t.Error("Warning size should be 5, but was", len(warnings))
-	}
-}
-
 func TestFlagSetValid(t *testing.T) {
 	sanitizedSet, warnings := Sanitize("set1")
 
-	if sanitizedSet != "set1" {
+	if *sanitizedSet != "set1" {
 		t.Error("Clean set should be set1, but was", sanitizedSet)
 	}
 	if len(warnings) != 0 {
@@ -60,7 +41,7 @@ func TestFlagSetValid(t *testing.T) {
 
 	sanitizedSet, warnings = Sanitize("Set1")
 
-	if sanitizedSet != "set1" {
+	if *sanitizedSet != "set1" {
 		t.Error("Clean set should be set1, but was", sanitizedSet)
 	}
 	if len(warnings) != 1 {
@@ -69,7 +50,7 @@ func TestFlagSetValid(t *testing.T) {
 
 	sanitizedSet, warnings = Sanitize(" set1")
 
-	if sanitizedSet != "set1" {
+	if *sanitizedSet != "set1" {
 		t.Error("Clean set should be set1, but was", sanitizedSet)
 	}
 	if len(warnings) != 1 {
@@ -78,7 +59,7 @@ func TestFlagSetValid(t *testing.T) {
 
 	sanitizedSet, warnings = Sanitize("set-1")
 
-	if sanitizedSet != "" {
+	if sanitizedSet != nil {
 		t.Error("Clean set should be empty, but was", sanitizedSet)
 	}
 	if len(warnings) != 1 {
@@ -87,7 +68,7 @@ func TestFlagSetValid(t *testing.T) {
 
 	sanitizedSet, warnings = Sanitize("set_1")
 
-	if sanitizedSet != "set_1" {
+	if *sanitizedSet != "set_1" {
 		t.Error("Clean set should be set_1, but was", sanitizedSet)
 	}
 	if len(warnings) != 0 {
