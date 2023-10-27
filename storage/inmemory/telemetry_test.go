@@ -14,15 +14,26 @@ func TestTelemetryStorage(t *testing.T) {
 	telemetryStorage.RecordException(telemetry.Treatment)
 	telemetryStorage.RecordException(telemetry.Treatments)
 	telemetryStorage.RecordException(telemetry.Treatment)
+	telemetryStorage.RecordException(telemetry.TreatmentsByFlagSet)
+	telemetryStorage.RecordException(telemetry.TreatmentsByFlagSet)
+	telemetryStorage.RecordException(telemetry.TreatmentsByFlagSets)
+	telemetryStorage.RecordException(telemetry.TreatmentsByFlagSets)
+	telemetryStorage.RecordException(telemetry.TreatmentsByFlagSets)
+	telemetryStorage.RecordException(telemetry.TreatmentsWithConfigByFlagSet)
+	telemetryStorage.RecordException(telemetry.TreatmentsWithConfigByFlagSets)
 	telemetryStorage.RecordLatency(telemetry.Treatment, (1500 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.Treatment, (2500 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.Treatments, (18 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.Treatments, (26 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.TreatmentWithConfig, (800 * time.Millisecond))
 	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfig, (1000 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentsByFlagSet, (130 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentsByFlagSets, (2600 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfigByFlagSet, (650 * time.Millisecond))
+	telemetryStorage.RecordLatency(telemetry.TreatmentsWithConfigByFlagSets, (10 * time.Millisecond))
 
 	exceptions := telemetryStorage.PopExceptions()
-	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentsWithConfig != 0 || exceptions.Track != 0 {
+	if exceptions.Treatment != 2 || exceptions.Treatments != 1 || exceptions.TreatmentWithConfig != 0 || exceptions.TreatmentsWithConfig != 0 || exceptions.TreatmentsByFlagSet != 2 || exceptions.TreatmentsByFlagSets != 3 || exceptions.TreatmentsWithConfigByFlagSet != 1 || exceptions.TreatmentsWithConfigByFlagSets != 1 || exceptions.Track != 0 {
 		t.Error("Wrong result")
 	}
 	exceptions = telemetryStorage.PopExceptions()
@@ -42,8 +53,32 @@ func TestTelemetryStorage(t *testing.T) {
 	if latencies.TreatmentsWithConfig[18] != 1 {
 		t.Error("Wrong result")
 	}
+	if latencies.TreatmentsByFlagSet[13] != 1 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsByFlagSets[20] != 1 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsWithConfigByFlagSet[16] != 1 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsWithConfigByFlagSets[6] != 1 {
+		t.Error("Wrong result")
+	}
 	latencies = telemetryStorage.PopLatencies()
 	if latencies.Treatment[1] != 0 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsByFlagSet[13] != 0 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsByFlagSets[20] != 0 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsWithConfigByFlagSet[16] != 0 {
+		t.Error("Wrong result")
+	}
+	if latencies.TreatmentsWithConfigByFlagSets[6] != 0 {
 		t.Error("Wrong result")
 	}
 

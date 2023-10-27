@@ -35,20 +35,28 @@ type HTTPLatencies struct {
 
 // MethodLatencies struct
 type MethodLatencies struct {
-	Treatment            []int64 `json:"t,omitempty"`
-	Treatments           []int64 `json:"ts,omitempty"`
-	TreatmentWithConfig  []int64 `json:"tc,omitempty"`
-	TreatmentsWithConfig []int64 `json:"tcs,omitempty"`
-	Track                []int64 `json:"tr,omitempty"`
+	Treatment                      []int64 `json:"t,omitempty"`
+	Treatments                     []int64 `json:"ts,omitempty"`
+	TreatmentWithConfig            []int64 `json:"tc,omitempty"`
+	TreatmentsWithConfig           []int64 `json:"tcs,omitempty"`
+	TreatmentsByFlagSet            []int64 `json:"tf,omitempty"`
+	TreatmentsByFlagSets           []int64 `json:"tfs,omitempty"`
+	TreatmentsWithConfigByFlagSet  []int64 `json:"tcf,omitempty"`
+	TreatmentsWithConfigByFlagSets []int64 `json:"tcfs,omitempty"`
+	Track                          []int64 `json:"tr,omitempty"`
 }
 
 // MethodExceptions struct
 type MethodExceptions struct {
-	Treatment            int64 `json:"t,omitempty"`
-	Treatments           int64 `json:"ts,omitempty"`
-	TreatmentWithConfig  int64 `json:"tc,omitempty"`
-	TreatmentsWithConfig int64 `json:"tcs,omitempty"`
-	Track                int64 `json:"tr,omitempty"`
+	Treatment                      int64 `json:"t,omitempty"`
+	Treatments                     int64 `json:"ts,omitempty"`
+	TreatmentWithConfig            int64 `json:"tc,omitempty"`
+	TreatmentsWithConfig           int64 `json:"tcs,omitempty"`
+	TreatmentsByFlagSet            int64 `json:"tf,omitempty"`
+	TreatmentsByFlagSets           int64 `json:"tfs,omitempty"`
+	TreatmentsWithConfigByFlagSet  int64 `json:"tcf,omitempty"`
+	TreatmentsWithConfigByFlagSets int64 `json:"tcfs,omitempty"`
+	Track                          int64 `json:"tr,omitempty"`
 }
 
 // StreamingEvent struct

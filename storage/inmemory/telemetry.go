@@ -13,11 +13,15 @@ import (
 
 type latencies struct {
 	// MethodLatencies
-	treatment            AtomicInt64Slice
-	treatments           AtomicInt64Slice
-	treatmentWithConfig  AtomicInt64Slice
-	treatmentsWithConfig AtomicInt64Slice
-	track                AtomicInt64Slice
+	treatment                      AtomicInt64Slice
+	treatments                     AtomicInt64Slice
+	treatmentWithConfig            AtomicInt64Slice
+	treatmentsWithConfig           AtomicInt64Slice
+	treatmentsByFlagSet            AtomicInt64Slice
+	treatmentsByFlagSets           AtomicInt64Slice
+	treatmentsWithConfigByFlagSet  AtomicInt64Slice
+	treatmentsWithConfigByFlagSets AtomicInt64Slice
+	track                          AtomicInt64Slice
 
 	// HTTPLatencies
 	splits           AtomicInt64Slice
@@ -31,11 +35,15 @@ type latencies struct {
 
 type counters struct {
 	// Evaluation Counters
-	treatment            int64
-	treatments           int64
-	treatmentWithConfig  int64
-	treatmentsWithConfig int64
-	track                int64
+	treatment                      int64
+	treatments                     int64
+	treatmentWithConfig            int64
+	treatmentsWithConfig           int64
+	treatmentsByFlagSet            int64
+	treatmentsByFlagSets           int64
+	treatmentsWithConfigByFlagSet  int64
+	treatmentsWithConfigByFlagSets int64
+	track                          int64
 
 	// Push Counters
 	authRejections int64
@@ -103,6 +111,22 @@ func NewTelemetryStorage() (*TelemetryStorage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
 	}
+	treatmentsByFlagSetLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	if err != nil {
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
+	}
+	treatmentsByFlagSetsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	if err != nil {
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
+	}
+	treatmentsWithConfigByFlagSetLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	if err != nil {
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
+	}
+	treatmentsWithConfigByFlagSetsLatencies, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
+	if err != nil {
+		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
+	}
 	track, err := NewAtomicInt64Slice(constants.LatencyBucketCount)
 	if err != nil {
 		return nil, fmt.Errorf("could not create InMemory Storage, %w", err)
@@ -150,11 +174,16 @@ func NewTelemetryStorage() (*TelemetryStorage, error) {
 		},
 		mutexHTTPErrors: sync.RWMutex{},
 		latencies: latencies{
-			treatment:            treatmentLatencies,
-			treatmentWithConfig:  treatmentWithConfigLatencies,
-			treatments:           treatmentsLatencies,
-			treatmentsWithConfig: treatmentsWithConfigLatencies,
-			track:                track,
+			treatment:                      treatmentLatencies,
+			treatmentWithConfig:            treatmentWithConfigLatencies,
+			treatments:                     treatmentsLatencies,
+			treatmentsWithConfig:           treatmentsWithConfigLatencies,
+			treatmentsByFlagSet:            treatmentsByFlagSetLatencies,
+			treatmentsByFlagSets:           treatmentsByFlagSetsLatencies,
+			treatmentsWithConfigByFlagSet:  treatmentsWithConfigByFlagSetLatencies,
+			treatmentsWithConfigByFlagSets: treatmentsWithConfigByFlagSetsLatencies,
+
+			track: track,
 
 			splits:           splits,
 			segments:         segments,
@@ -192,6 +221,14 @@ func (i *TelemetryStorage) RecordLatency(method string, latency time.Duration) {
 		i.latencies.treatmentWithConfig.Incr(bucket)
 	case constants.TreatmentsWithConfig:
 		i.latencies.treatmentsWithConfig.Incr(bucket)
+	case constants.TreatmentsByFlagSet:
+		i.latencies.treatmentsByFlagSet.Incr(bucket)
+	case constants.TreatmentsByFlagSets:
+		i.latencies.treatmentsByFlagSets.Incr(bucket)
+	case constants.TreatmentsWithConfigByFlagSet:
+		i.latencies.treatmentsWithConfigByFlagSet.Incr(bucket)
+	case constants.TreatmentsWithConfigByFlagSets:
+		i.latencies.treatmentsWithConfigByFlagSets.Incr(bucket)
 	case constants.Track:
 		i.latencies.track.Incr(bucket)
 	}
@@ -208,6 +245,14 @@ func (i *TelemetryStorage) RecordException(method string) {
 		atomic.AddInt64(&i.counters.treatmentWithConfig, 1)
 	case constants.TreatmentsWithConfig:
 		atomic.AddInt64(&i.counters.treatmentsWithConfig, 1)
+	case constants.TreatmentsByFlagSet:
+		atomic.AddInt64(&i.counters.treatmentsByFlagSet, 1)
+	case constants.TreatmentsByFlagSets:
+		atomic.AddInt64(&i.counters.treatmentsByFlagSets, 1)
+	case constants.TreatmentsWithConfigByFlagSet:
+		atomic.AddInt64(&i.counters.treatmentsWithConfigByFlagSet, 1)
+	case constants.TreatmentsWithConfigByFlagSets:
+		atomic.AddInt64(&i.counters.treatmentsWithConfigByFlagSets, 1)
 	case constants.Track:
 		atomic.AddInt64(&i.counters.track, 1)
 	}
@@ -371,22 +416,30 @@ func (i *TelemetryStorage) RecordUniqueKeys(uniques dtos.Uniques) error {
 // PopLatencies gets and clears method latencies
 func (i *TelemetryStorage) PopLatencies() dtos.MethodLatencies {
 	return dtos.MethodLatencies{
-		Treatment:            i.latencies.treatment.FetchAndClearAll(),
-		Treatments:           i.latencies.treatments.FetchAndClearAll(),
-		TreatmentWithConfig:  i.latencies.treatmentWithConfig.FetchAndClearAll(),
-		TreatmentsWithConfig: i.latencies.treatmentsWithConfig.FetchAndClearAll(),
-		Track:                i.latencies.track.FetchAndClearAll(),
+		Treatment:                      i.latencies.treatment.FetchAndClearAll(),
+		Treatments:                     i.latencies.treatments.FetchAndClearAll(),
+		TreatmentWithConfig:            i.latencies.treatmentWithConfig.FetchAndClearAll(),
+		TreatmentsWithConfig:           i.latencies.treatmentsWithConfig.FetchAndClearAll(),
+		TreatmentsByFlagSet:            i.latencies.treatmentsByFlagSet.FetchAndClearAll(),
+		TreatmentsByFlagSets:           i.latencies.treatmentsByFlagSets.FetchAndClearAll(),
+		TreatmentsWithConfigByFlagSet:  i.latencies.treatmentsWithConfigByFlagSet.FetchAndClearAll(),
+		TreatmentsWithConfigByFlagSets: i.latencies.treatmentsWithConfigByFlagSets.FetchAndClearAll(),
+		Track:                          i.latencies.track.FetchAndClearAll(),
 	}
 }
 
 // PopExceptions gets and clears method exceptions
 func (i *TelemetryStorage) PopExceptions() dtos.MethodExceptions {
 	return dtos.MethodExceptions{
-		Treatment:            atomic.SwapInt64(&i.counters.treatment, 0),
-		Treatments:           atomic.SwapInt64(&i.counters.treatments, 0),
-		TreatmentWithConfig:  atomic.SwapInt64(&i.counters.treatmentWithConfig, 0),
-		TreatmentsWithConfig: atomic.SwapInt64(&i.counters.treatmentsWithConfig, 0),
-		Track:                atomic.SwapInt64(&i.counters.track, 0),
+		Treatment:                      atomic.SwapInt64(&i.counters.treatment, 0),
+		Treatments:                     atomic.SwapInt64(&i.counters.treatments, 0),
+		TreatmentWithConfig:            atomic.SwapInt64(&i.counters.treatmentWithConfig, 0),
+		TreatmentsWithConfig:           atomic.SwapInt64(&i.counters.treatmentsWithConfig, 0),
+		TreatmentsByFlagSet:            atomic.SwapInt64(&i.counters.treatmentsByFlagSet, 0),
+		TreatmentsByFlagSets:           atomic.SwapInt64(&i.counters.treatmentsByFlagSets, 0),
+		TreatmentsWithConfigByFlagSet:  atomic.SwapInt64(&i.counters.treatmentsWithConfigByFlagSet, 0),
+		TreatmentsWithConfigByFlagSets: atomic.SwapInt64(&i.counters.treatmentsWithConfigByFlagSets, 0),
+		Track:                          atomic.SwapInt64(&i.counters.track, 0),
 	}
 }
 
