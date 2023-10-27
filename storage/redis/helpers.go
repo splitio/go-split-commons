@@ -10,40 +10,6 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
-// calculateSets calculates the featureFlags that needs to be removed from sets and the featureFlags that needs to be
-// added into the sets
-func calculateSets(currentSets flagsets.FeaturesBySet, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (flagsets.FeaturesBySet, flagsets.FeaturesBySet) {
-	// map[set]map[ff] for tracking all the sets that feature flags are going to be added
-	setsToAdd := flagsets.NewFeaturesBySet(nil)
-
-	for _, featureFlag := range toAdd {
-		// for each feature flag, get all the sets that need to be added
-		// map[set1][split1]{}
-		// map[set1][split2]{}
-		// map[set2][split1]{}
-		for _, set := range featureFlag.Sets {
-			setsToAdd.Add(set, featureFlag.Name)
-		}
-	}
-
-	// at this point if the previous of set is compared against the added one
-	// the sets which the feature flag needs to be added and removed can be calculated
-	// previous version stored in redis of ff1 has sets: [setA, setB]
-	// incomming sets of ff1 are: [setA, setC]
-	// e.g:
-	// currentSet map[ff1][setA], map[ff1][setB]
-	// incommingSets map[setA][ff1], map[setC][ff1]
-	// if setA is in previous version and in the incomming one the add is discarded
-	// and setA is also removed from currentSet, which means that
-	// the remaining items are going to be the ones to be removed
-	// if setC is not in previous version, then is added into setsToAdd
-	// the new version of ff1 is not linked to setB which is the only item
-	// in currentSet
-	toRemoveSets := flagsets.Difference(currentSets, setsToAdd)
-	toAddSets := flagsets.Difference(setsToAdd, currentSets)
-	return toAddSets, toRemoveSets
-}
-
 func updateFeatureFlags(pipeline redis.Pipeline, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (map[string]error, []string) {
 	failedToAdd := make(map[string]error)
 	addedInPipe := make([]string, 0, len(toAdd))
