@@ -20,6 +20,7 @@ const (
 	TTLImpressions      = 3600                                                       // impressions default TTL
 	TTLConfig           = 3600                                                       // config TTL
 	TTLUniquekeys       = 3600                                                       // Uniquekeys TTL
+	KeyFlagSet          = "SPLITIO.flagSet.{set}"                                    // flagSet object
 
 	// TODO(mredolatti): when doing a breking change, name this `KeyConfig`, and rename `KeyConfig` to `KeyConfigLegacy`,
 	// or even better, remove the old one, so that it only exists in the split-sync

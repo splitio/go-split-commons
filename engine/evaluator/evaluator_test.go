@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -360,7 +361,7 @@ func TestMultipleEvaluations(t *testing.T) {
 
 func TestNoConditionMatched(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	splitStorage := mutexmap.NewMMSplitStorage()
+	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{Name: "some", ChangeNumber: 123456789, DefaultTreatment: "off"}}, []dtos.SplitDTO{}, 123456789)
 
 	evaluator := NewEvaluator(
