@@ -3,6 +3,7 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+	"github.com/splitio/go-split-commons/v5/conf"
 	"strings"
 	"testing"
 	"time"
@@ -513,4 +514,85 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 		t.Error("wrong error type")
 	}
 
+}
+
+func TestAllRedis(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+
+	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}}
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+	splits := splitStorage.All()
+	if len(splits) != 2 {
+		t.Error("Unexpected size")
+	}
+	keys, _ := redisClient.Keys("*")
+	keySet := set.NewSet()
+	for _, key := range keys {
+		keySet.Add(strings.Split(key, ".")[2])
+	}
+	if !keySet.Has(splits[0].Name) || !keySet.Has(splits[1].Name) {
+		t.Error("Unexpected returned Split")
+	}
+	split1, err := redisClient.Get("SPLITIO.split.split1")
+	expectedSplit := "{\"changeNumber\":0,\"trafficTypeName\":\"tt1\",\"name\":\"split1\",\"trafficAllocation\":0,\"trafficAllocationSeed\":0,\"seed\":0,\"status\":\"\",\"killed\":false,\"defaultTreatment\":\"\",\"algo\":0,\"conditions\":null,\"configurations\":null}"
+	if split1 != expectedSplit {
+		t.Error("")
+	}
+	splitStorage.Update([]dtos.SplitDTO{}, toAdd, 1)
+}
+
+func TestAllRedisWithRemove(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+
+	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}, {Name: "split3", TrafficTypeName: "tt3"}}
+
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+	splits := splitStorage.All()
+	if len(splits) != 3 {
+		t.Error("Unexpected size")
+	}
+
+	split1, err := redisClient.Get("SPLITIO.split.split2")
+	if split1 == "" {
+		t.Error("Split should exist")
+	}
+	toRemove := []dtos.SplitDTO{{Name: "split2", TrafficTypeName: "tt2"}}
+	splitStorage.Update([]dtos.SplitDTO{}, toRemove, 1)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+	splits = splitStorage.All()
+	if len(splits) != 2 {
+		t.Error("Unexpected size")
+	}
+
+	split1, err = redisClient.Get("SPLITIO.split.split2")
+	if split1 != "" {
+		t.Error("Split should not exist")
+	}
+	splitStorage.Update([]dtos.SplitDTO{}, toAdd, 1)
 }
