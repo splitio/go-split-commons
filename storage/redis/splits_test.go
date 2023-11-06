@@ -530,7 +530,7 @@ func TestAllRedis(t *testing.T) {
 	}
 
 	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}}
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}))
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
 	splits := splitStorage.All()
 	if len(splits) != 2 {
@@ -545,7 +545,7 @@ func TestAllRedis(t *testing.T) {
 		t.Error("Unexpected returned Split")
 	}
 	split1, err := redisClient.Get("SPLITIO.split.split1")
-	expectedSplit := "{\"changeNumber\":0,\"trafficTypeName\":\"tt1\",\"name\":\"split1\",\"trafficAllocation\":0,\"trafficAllocationSeed\":0,\"seed\":0,\"status\":\"\",\"killed\":false,\"defaultTreatment\":\"\",\"algo\":0,\"conditions\":null,\"configurations\":null}"
+	expectedSplit := "{\"changeNumber\":0,\"trafficTypeName\":\"tt1\",\"name\":\"split1\",\"trafficAllocation\":0,\"trafficAllocationSeed\":0,\"seed\":0,\"status\":\"\",\"killed\":false,\"defaultTreatment\":\"\",\"algo\":0,\"conditions\":null,\"configurations\":null,\"sets\":null}"
 	if split1 != expectedSplit {
 		t.Error("")
 	}
@@ -568,7 +568,7 @@ func TestAllRedisWithRemove(t *testing.T) {
 
 	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}, {Name: "split3", TrafficTypeName: "tt3"}}
 
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}))
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
 	splits := splitStorage.All()
 	if len(splits) != 3 {
