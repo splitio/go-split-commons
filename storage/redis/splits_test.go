@@ -610,6 +610,51 @@ func TestUpdateRedis(t *testing.T) {
 	redisClient.Del(keys...)
 }
 
+func TestUpdateWithFlagSetFiltersRedis(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_update_filter_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{"set3"})}
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter([]string{"set1", "set2"}))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+	splits := splitStorage.All()
+	if len(splits) != 3 {
+		t.Error("Unexpected amount of splits")
+	}
+	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
+	if len(set1) != 2 {
+		t.Error("set size should be 2")
+	}
+	set2, err := redisClient.SMembers("SPLITIO.flagSet.set2")
+	if len(set2) != 1 {
+		t.Error("set size should be 1")
+	}
+	set3, err := redisClient.SMembers("SPLITIO.flagSet.set3")
+	if len(set3) != 0 {
+		t.Error("set size should be 0")
+	}
+	keys := []string{
+		"SPLITIO.split.split1",
+		"SPLITIO.split.split2",
+		"SPLITIO.split.split3",
+		"SPLITIO.flagSet.set1",
+		"SPLITIO.flagSet.set2",
+		"SPLITIO.splits.till",
+		"SPLITIO.trafficType.user",
+	}
+	redisClient.Del(keys...)
+}
+
 func TestFetchCurrentFeatureFlags(t *testing.T) {
 	mockedRedisClient := mocks.MockClient{
 		MGetCall: func(keys []string) redis.Result {
