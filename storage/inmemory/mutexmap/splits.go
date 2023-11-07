@@ -238,9 +238,7 @@ func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	toReturn := make(map[string][]string)
 	for _, flagSet := range sets {
 		flags := m.flagSets.FlagsFromSet(flagSet)
-		if len(flags) != 0 {
-			toReturn[flagSet] = flags
-		}
+		toReturn[flagSet] = flags
 	}
 	return toReturn
 }

@@ -1003,14 +1003,28 @@ func TestGetNamesByFlagSets(t *testing.T) {
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 
 	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
-	if len(flagsBySets["set1"]) != 0 {
-		t.Error("Flags should be 0 for set1")
+	sSet1, existSet1 := flagsBySets["set1"]
+	if !existSet1 {
+		t.Error("set1 should exist")
 	}
-	if len(flagsBySets["set2"]) != 2 {
-		t.Error("Flags should be 2 for set2")
+	if len(sSet1) != 0 {
+		t.Error("size of names by set1 should be 0, but was: ", len(sSet1))
 	}
-	if len(flagsBySets["set3"]) != 2 {
-		t.Error("Flags should be 2 for set3")
+
+	sSet2, existSet2 := flagsBySets["set2"]
+	if !existSet2 {
+		t.Error("set2 should exist")
+	}
+	if len(sSet2) != 2 {
+		t.Error("size of names by set2 should be 2, but was: ", len(sSet2))
+	}
+
+	sSet3, existSet3 := flagsBySets["set3"]
+	if !existSet3 {
+		t.Error("set3 should exist")
+	}
+	if len(sSet3) != 2 {
+		t.Error("size of names by set3 should be 2, but was: ", len(sSet3))
 	}
 }
 
