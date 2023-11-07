@@ -233,5 +233,17 @@ func (m *MMSplitStorage) TrafficTypeExists(trafficType string) bool {
 	return exists && value > 0
 }
 
+//Get flag names by sets
+func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+	toReturn := make(map[string][]string)
+	for _, flagSet := range sets {
+		flags := m.flagSets.FlagsFromSet(flagSet)
+		if len(flags) != 0 {
+			toReturn[flagSet] = flags
+		}
+	}
+	return toReturn
+}
+
 var _ storage.SplitStorageConsumer = (*MMSplitStorage)(nil)
 var _ storage.SplitStorageProducer = (*MMSplitStorage)(nil)

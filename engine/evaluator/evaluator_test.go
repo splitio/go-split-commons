@@ -221,6 +221,9 @@ func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet        { return nil }
 func (s *mockStorage) SplitNames() []string                      { return make([]string, 0) }
 func (s *mockStorage) TrafficTypeExists(trafficType string) bool { return true }
 func (s *mockStorage) ChangeNumber() (int64, error)              { return 0, nil }
+func (*mockStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+	return make(map[string][]string)
+}
 
 func TestSplitWithoutConfigurations(t *testing.T) {
 	logger := logging.NewLogger(nil)

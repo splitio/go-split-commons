@@ -7,17 +7,18 @@ import (
 
 // MockSplitStorage is a mocked implementation of Split Storage
 type MockSplitStorage struct {
-	AllCall               func() []dtos.SplitDTO
-	ChangeNumberCall      func() (int64, error)
-	FetchManyCall         func(splitNames []string) map[string]*dtos.SplitDTO
-	KillLocallyCall       func(splitName string, defaultTreatment string, changeNumber int64)
-	UpdateCall            func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
-	RemoveCall            func(splitName string)
-	SegmentNamesCall      func() *set.ThreadUnsafeSet
-	SetChangeNumberCall   func(changeNumber int64) error
-	SplitCall             func(splitName string) *dtos.SplitDTO
-	SplitNamesCall        func() []string
-	TrafficTypeExistsCall func(trafficType string) bool
+	AllCall                func() []dtos.SplitDTO
+	ChangeNumberCall       func() (int64, error)
+	FetchManyCall          func(splitNames []string) map[string]*dtos.SplitDTO
+	KillLocallyCall        func(splitName string, defaultTreatment string, changeNumber int64)
+	UpdateCall             func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
+	RemoveCall             func(splitName string)
+	SegmentNamesCall       func() *set.ThreadUnsafeSet
+	SetChangeNumberCall    func(changeNumber int64) error
+	SplitCall              func(splitName string) *dtos.SplitDTO
+	SplitNamesCall         func() []string
+	TrafficTypeExistsCall  func(trafficType string) bool
+	GetNamesByFlagSetsCall func(sets []string) map[string][]string
 }
 
 // All mock
@@ -73,4 +74,9 @@ func (m MockSplitStorage) SplitNames() []string {
 // TrafficTypeExists mock
 func (m MockSplitStorage) TrafficTypeExists(trafficType string) bool {
 	return m.TrafficTypeExistsCall(trafficType)
+}
+
+// GetNamesByFLagSets mock
+func (m MockSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+	return m.GetNamesByFlagSetsCall(sets)
 }
