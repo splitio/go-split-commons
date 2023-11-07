@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/splitio/go-split-commons/v5/conf"
+	"golang.org/x/exp/slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -541,10 +542,7 @@ func TestUpdateRedis(t *testing.T) {
 	if len(set1) != 2 {
 		t.Error("set size should be 2")
 	}
-	keySet1 := set.NewSet()
-	keySet1.Add("split1")
-	keySet1.Add("split2")
-	if !keySet1.Has(set1[0]) || !keySet1.Has(set1[1]) {
+	if !slices.Contains(set1, "split1") || !slices.Contains(set1, "split2") {
 		t.Error("Split missing in set")
 	}
 	tt, err := redisClient.Get("SPLITIO.trafficType.user")
@@ -573,11 +571,7 @@ func TestUpdateRedis(t *testing.T) {
 	if len(set3) != 3 {
 		t.Error("set size should be 3")
 	}
-	keySet3 := set.NewSet()
-	keySet3.Add("split5")
-	keySet3.Add("split4")
-	keySet3.Add("split3")
-	if !keySet3.Has(set3[0]) || !keySet3.Has(set3[1]) || !keySet3.Has(set3[2]) {
+	if !slices.Contains(set3, "split3") || !slices.Contains(set3, "split4") || !slices.Contains(set3, "split5") {
 		t.Error("Split missing in set")
 	}
 	tt, err = redisClient.Get("SPLITIO.trafficType.user")
