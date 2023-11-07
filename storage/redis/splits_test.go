@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/splitio/go-split-commons/v5/conf"
-	"strings"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -515,9 +515,9 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 
 }
 
-func TestAllRedis(t *testing.T) {
+func TestUpdateRedis(t *testing.T) {
 	logger := logging.NewLogger(nil)
-	prefix := "commons_prefix"
+	prefix := "commons_update_prefix"
 
 	redisClient, err := NewRedisClient(&conf.RedisConfig{
 		Host:     "localhost",
@@ -528,45 +528,7 @@ func TestAllRedis(t *testing.T) {
 	if err != nil {
 		t.Error("It should be nil")
 	}
-
-	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}}
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
-	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
-	splits := splitStorage.All()
-	if len(splits) != 2 {
-		t.Error("Unexpected size")
-	}
-	keys, _ := redisClient.Keys("*")
-	keySet := set.NewSet()
-	for _, key := range keys {
-		keySet.Add(strings.Split(key, ".")[2])
-	}
-	if !keySet.Has(splits[0].Name) || !keySet.Has(splits[1].Name) {
-		t.Error("Unexpected returned Split")
-	}
-	split1, err := redisClient.Get("SPLITIO.split.split1")
-	expectedSplit := "{\"changeNumber\":0,\"trafficTypeName\":\"tt1\",\"name\":\"split1\",\"trafficAllocation\":0,\"trafficAllocationSeed\":0,\"seed\":0,\"status\":\"\",\"killed\":false,\"defaultTreatment\":\"\",\"algo\":0,\"conditions\":null,\"configurations\":null,\"sets\":null}"
-	if split1 != expectedSplit {
-		t.Error("")
-	}
-	splitStorage.Update([]dtos.SplitDTO{}, toAdd, 1)
-}
-
-func TestAllRedisWithRemove(t *testing.T) {
-	logger := logging.NewLogger(nil)
-	prefix := "commons_prefix"
-
-	redisClient, err := NewRedisClient(&conf.RedisConfig{
-		Host:     "localhost",
-		Port:     6379,
-		Prefix:   prefix,
-		Database: 1,
-	}, logger)
-	if err != nil {
-		t.Error("It should be nil")
-	}
-
-	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}, {Name: "split3", TrafficTypeName: "tt3"}}
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{})}
 
 	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
@@ -574,26 +536,106 @@ func TestAllRedisWithRemove(t *testing.T) {
 	if len(splits) != 3 {
 		t.Error("Unexpected size")
 	}
-
-	split1, err := redisClient.Get("SPLITIO.split.split2")
-	if split1 == "" {
+	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
+	if len(set1) != 2 {
+		t.Error("set size should be 2")
+	}
+	tt, err := redisClient.Get("SPLITIO.trafficType.user")
+	ttCount, _ := strconv.ParseFloat(tt, 10)
+	if ttCount != 3 {
 		t.Error("Split should exist")
 	}
-	toRemove := []dtos.SplitDTO{{Name: "split2", TrafficTypeName: "tt2"}}
-	splitStorage.Update([]dtos.SplitDTO{}, toRemove, 1)
+	till, err := redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ := strconv.ParseFloat(till, 10)
+	if tillInt != 1 {
+		t.Error("ChangeNumber should be 1")
+	}
+
+	keys := []string{
+		"SPLITIO.split.split1",
+		"SPLITIO.split.split2",
+		"SPLITIO.split.split3",
+		"SPLITIO.flagSet.set1",
+		"SPLITIO.flagSet.set2",
+		"SPLITIO.splits.till",
+		"SPLITIO.trafficType.user",
+	}
+	redisClient.Del(keys...)
+}
+
+func TestUpdateRedisWithRemove(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_update_with_remove_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
 	if err != nil {
 		t.Error("It should be nil")
 	}
+
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set2", "set3"}), createSampleSplit("split3", []string{})}
+
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+	splits := splitStorage.All()
+	if len(splits) != 3 {
+		t.Error("Unexpected size")
+	}
+	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
+	if len(set1) != 1 {
+		t.Error("set size should be 1")
+	}
+	tt, err := redisClient.Get("SPLITIO.trafficType.user")
+	ttCount, _ := strconv.ParseFloat(tt, 10)
+	if ttCount != 3 {
+		t.Error("Split should exist")
+	}
+	till, err := redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ := strconv.ParseFloat(till, 10)
+	if tillInt != 1 {
+		t.Error("ChangeNumber should be 1")
+	}
+
+	toRemove := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"})}
+	splitStorage.Update([]dtos.SplitDTO{}, toRemove, 2)
 	splits = splitStorage.All()
 	if len(splits) != 2 {
 		t.Error("Unexpected size")
 	}
+	set1, err = redisClient.SMembers("SPLITIO.flagSet.set1")
+	if len(set1) != 0 {
+		t.Error("set size should be 0")
+	}
+	tt, err = redisClient.Get("SPLITIO.trafficType.user")
+	ttCount, _ = strconv.ParseFloat(tt, 10)
+	if ttCount != 2 {
+		t.Error("Split should exist")
+	}
 
-	split1, err = redisClient.Get("SPLITIO.split.split2")
+	split1, err := redisClient.Get("SPLITIO.split.split1")
 	if split1 != "" {
 		t.Error("Split should not exist")
 	}
-	splitStorage.Update([]dtos.SplitDTO{}, toAdd, 1)
+	till, err = redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ = strconv.ParseFloat(till, 10)
+	if tillInt != 2 {
+		t.Error("ChangeNumber should be 2")
+	}
+	keys := []string{
+		"SPLITIO.split.split1",
+		"SPLITIO.split.split2",
+		"SPLITIO.split.split3",
+		"SPLITIO.flagSet.set1",
+		"SPLITIO.flagSet.set2",
+		"SPLITIO.flagSet.set3",
+		"SPLITIO.splits.till",
+		"SPLITIO.trafficType.user",
+	}
+	redisClient.Del(keys...)
 }
 
 func TestFetchCurrentFeatureFlags(t *testing.T) {
