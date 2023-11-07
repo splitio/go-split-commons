@@ -280,3 +280,50 @@ func TestMMSplitStorageWithFlagSets(t *testing.T) {
 		t.Error("It should not have elements")
 	}
 }
+
+func TestGetNamesByFlagSets(t *testing.T) {
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter([]string{"set1", "set2"}))
+
+	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
+	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set4"}}
+	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set2"}}
+	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
+	splitStorage.Update([]dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4}, []dtos.SplitDTO{}, 1)
+
+	ffBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set6"})
+	sSet1, existSet1 := ffBySets["set1"]
+	if !existSet1 {
+		t.Error("set1 should exist")
+	}
+	if len(sSet1) != 1 {
+		t.Error("size of names by set1 should be 1, but was: ", len(sSet1))
+	}
+
+	sSet6, existSet6 := ffBySets["set6"]
+	if !existSet6 {
+		t.Error("set6 should exist")
+	}
+	if len(sSet6) != 0 {
+		t.Error("size of names by set6 should be 0, but was: ", len(sSet6))
+	}
+
+	ffBySets = splitStorage.GetNamesByFlagSets([]string{"set4"})
+
+	sSet4, existSet4 := ffBySets["set4"]
+	if !existSet4 {
+		t.Error("set4 should exist")
+	}
+	if len(sSet4) != 0 {
+		t.Error("size of names by set4 should be 0, but was: ", len(sSet4))
+	}
+
+	ffBySets = splitStorage.GetNamesByFlagSets([]string{"set2"})
+	sSet2, existSet2 := ffBySets["set2"]
+
+	if !existSet2 {
+		t.Error("set2 should exist")
+	}
+	if len(sSet2) != 2 {
+		t.Error("size of names by set2 should be 2, but was: ", len(sSet2))
+	}
+}
