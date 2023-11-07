@@ -385,7 +385,7 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 	return val > 0
 }
 
-//Get flag names by sets
+// GetNamesByFlagSets grabs all the feature flags linked to the passed sets
 func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	toReturn := make(map[string][]string)
 	pipeline := r.client.Pipeline()

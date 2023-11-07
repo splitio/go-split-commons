@@ -233,12 +233,11 @@ func (m *MMSplitStorage) TrafficTypeExists(trafficType string) bool {
 	return exists && value > 0
 }
 
-//Get flag names by sets
+// GetNamesByFlagSets grabs all the feature flags linked to the passed sets
 func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	toReturn := make(map[string][]string)
 	for _, flagSet := range sets {
-		flags := m.flagSets.FlagsFromSet(flagSet)
-		toReturn[flagSet] = flags
+		toReturn[flagSet] = m.flagSets.FlagsFromSet(flagSet)
 	}
 	return toReturn
 }
