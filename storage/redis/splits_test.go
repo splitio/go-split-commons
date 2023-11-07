@@ -528,66 +528,24 @@ func TestUpdateRedis(t *testing.T) {
 	if err != nil {
 		t.Error("It should be nil")
 	}
-	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{})}
+
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{"set3"})}
 
 	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
 	splits := splitStorage.All()
 	if len(splits) != 3 {
-		t.Error("Unexpected size")
+		t.Error("Unexpected amount of splits")
 	}
 	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
 	if len(set1) != 2 {
 		t.Error("set size should be 2")
 	}
-	tt, err := redisClient.Get("SPLITIO.trafficType.user")
-	ttCount, _ := strconv.ParseFloat(tt, 10)
-	if ttCount != 3 {
-		t.Error("Split should exist")
-	}
-	till, err := redisClient.Get("SPLITIO.splits.till")
-	tillInt, _ := strconv.ParseFloat(till, 10)
-	if tillInt != 1 {
-		t.Error("ChangeNumber should be 1")
-	}
-
-	keys := []string{
-		"SPLITIO.split.split1",
-		"SPLITIO.split.split2",
-		"SPLITIO.split.split3",
-		"SPLITIO.flagSet.set1",
-		"SPLITIO.flagSet.set2",
-		"SPLITIO.splits.till",
-		"SPLITIO.trafficType.user",
-	}
-	redisClient.Del(keys...)
-}
-
-func TestUpdateRedisWithRemove(t *testing.T) {
-	logger := logging.NewLogger(nil)
-	prefix := "commons_update_with_remove_prefix"
-
-	redisClient, err := NewRedisClient(&conf.RedisConfig{
-		Host:     "localhost",
-		Port:     6379,
-		Prefix:   prefix,
-		Database: 1,
-	}, logger)
-	if err != nil {
-		t.Error("It should be nil")
-	}
-
-	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set2", "set3"}), createSampleSplit("split3", []string{})}
-
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
-	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
-	splits := splitStorage.All()
-	if len(splits) != 3 {
-		t.Error("Unexpected size")
-	}
-	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
-	if len(set1) != 1 {
-		t.Error("set size should be 1")
+	keySet1 := set.NewSet()
+	keySet1.Add("split1")
+	keySet1.Add("split2")
+	if !keySet1.Has(set1[0]) || !keySet1.Has(set1[1]) {
+		t.Error("Split missing in set")
 	}
 	tt, err := redisClient.Get("SPLITIO.trafficType.user")
 	ttCount, _ := strconv.ParseFloat(tt, 10)
@@ -600,20 +558,32 @@ func TestUpdateRedisWithRemove(t *testing.T) {
 		t.Error("ChangeNumber should be 1")
 	}
 
-	toRemove := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"})}
-	splitStorage.Update([]dtos.SplitDTO{}, toRemove, 2)
+	toRemove := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"})}
+	toAdd = []dtos.SplitDTO{createSampleSplit("split4", []string{"set3"}), createSampleSplit("split5", []string{"set3"})}
+	splitStorage.Update(toAdd, toRemove, 2)
 	splits = splitStorage.All()
-	if len(splits) != 2 {
+	if len(splits) != 3 {
 		t.Error("Unexpected size")
 	}
 	set1, err = redisClient.SMembers("SPLITIO.flagSet.set1")
 	if len(set1) != 0 {
 		t.Error("set size should be 0")
 	}
+	set3, err := redisClient.SMembers("SPLITIO.flagSet.set3")
+	if len(set3) != 3 {
+		t.Error("set size should be 3")
+	}
+	keySet3 := set.NewSet()
+	keySet3.Add("split5")
+	keySet3.Add("split4")
+	keySet3.Add("split3")
+	if !keySet3.Has(set3[0]) || !keySet3.Has(set3[1]) || !keySet3.Has(set3[2]) {
+		t.Error("Split missing in set")
+	}
 	tt, err = redisClient.Get("SPLITIO.trafficType.user")
 	ttCount, _ = strconv.ParseFloat(tt, 10)
-	if ttCount != 2 {
-		t.Error("Split should exist")
+	if ttCount != 3 {
+		t.Error("Unexpected trafficType occurrences")
 	}
 
 	split1, err := redisClient.Get("SPLITIO.split.split1")
@@ -629,6 +599,8 @@ func TestUpdateRedisWithRemove(t *testing.T) {
 		"SPLITIO.split.split1",
 		"SPLITIO.split.split2",
 		"SPLITIO.split.split3",
+		"SPLITIO.split.split4",
+		"SPLITIO.split.split5",
 		"SPLITIO.flagSet.set1",
 		"SPLITIO.flagSet.set2",
 		"SPLITIO.flagSet.set3",
