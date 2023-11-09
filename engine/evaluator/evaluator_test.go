@@ -6,6 +6,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v5/storage/mocks"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -383,5 +384,105 @@ func TestNoConditionMatched(t *testing.T) {
 	}
 	if result != nil && result.Treatment != "off" {
 		t.Error("It should return off")
+	}
+}
+
+func TestEvaluationByFlagSets(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	key := "test"
+
+	mockedStorage := mocks.MockSplitStorage{
+		GetNamesByFlagSetsCall: func(sets []string) map[string][]string {
+			if len(sets) != 3 {
+				t.Error("sets size should be 3")
+			}
+			flagsBySets := make(map[string][]string)
+			flagsBySets["set1"] = []string{"mysplittest", "mysplittest2"}
+			flagsBySets["set2"] = []string{"mysplittest2"}
+			flagsBySets["set3"] = []string{"mysplittest3", "mysplittest4", "mysplittest5"}
+			return flagsBySets
+		},
+		FetchManyCall: func(splitNames []string) map[string]*dtos.SplitDTO {
+			splits := make(map[string]*dtos.SplitDTO)
+			splits["mysplittest"] = mysplittest
+			splits["mysplittest2"] = mysplittest2
+			splits["mysplittest3"] = mysplittest3
+			splits["mysplittest4"] = mysplittest4
+			splits["mysplittest5"] = nil
+			return splits
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		logger)
+	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set1", "set2", "set3"}, nil)
+
+	if result.Evaluations["mysplittest"].Treatment != "off" {
+		t.Error("Wrong treatment result")
+	}
+	if result.Evaluations["mysplittest"].Config != nil {
+		t.Error("Unexpected configs")
+	}
+
+	if result.Evaluations["mysplittest2"].Treatment != "on" {
+		t.Error("Wrong treatment result")
+	}
+	if result.Evaluations["mysplittest2"].Config == nil && *result.Evaluations["mysplittest2"].Config != "{\"color\": \"blue\",\"size\": 13}" {
+		t.Error("Unexpected configs")
+	}
+
+	if result.Evaluations["mysplittest3"].Treatment != "killed" {
+		t.Error("Wrong treatment result")
+	}
+	if result.Evaluations["mysplittest3"].Config != nil {
+		t.Error("Unexpected configs")
+	}
+
+	if result.Evaluations["mysplittest4"].Treatment != "killed" {
+		t.Error("Wrong treatment result")
+	}
+	if result.Evaluations["mysplittest4"].Config == nil && *result.Evaluations["mysplittest4"].Config != "{\"color\": \"orange\",\"size\": 13}" {
+		t.Error("Unexpected configs")
+	}
+
+	if result.Evaluations["mysplittest5"].Treatment != "control" {
+		t.Error("Wrong treatment result")
+	}
+	if result.Evaluations["mysplittest5"].Config != nil {
+		t.Error("Unexpected configs")
+	}
+
+	if result.EvaluationTime <= 0 {
+		t.Error("It should be greater than 0")
+	}
+}
+
+func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	key := "test"
+
+	mockedStorage := mocks.MockSplitStorage{
+		GetNamesByFlagSetsCall: func(sets []string) map[string][]string {
+			if len(sets) != 1 {
+				t.Error("sets size should be 1")
+			}
+			flagsBySets := make(map[string][]string)
+			flagsBySets["set2"] = []string{}
+			return flagsBySets
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		logger)
+	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set2"}, nil)
+
+	if len(result.Evaluations) != 0 {
+		t.Error("evaluations size should be 0")
 	}
 }
