@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/engine"
 	"github.com/splitio/go-split-commons/v5/engine/evaluator/impressionlabels"
@@ -164,20 +162,22 @@ func (e *Evaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, 
 
 // GetFeatureFlagNamesByFlagSets return flags that belong to some flag set
 func (e *Evaluator) GetFeatureFlagNamesByFlagSets(flagSets []string) []string {
-	flagsResult := []string{}
+	uniqueFlags := make(map[string]struct{})
 	flagsBySets := e.splitStorage.GetNamesByFlagSets(flagSets)
 	for set, flags := range flagsBySets {
 		if len(flags) == 0 {
 			e.logger.Warning(fmt.Sprintf("you passed %s Flag Set that does not contain cached feature flag names, please double check what Flag Sets are in use in the Split user interface.", set))
 			continue
 		}
-		for i := range flags {
-			if !slices.Contains(flagsResult, flags[i]) {
-				flagsResult = append(flagsResult, flags...)
-			}
+		for _, featureFlag := range flags {
+			uniqueFlags[featureFlag] = struct{}{}
 		}
 	}
-	return flagsResult
+	flags := make([]string, len(uniqueFlags))
+	for flag := range uniqueFlags {
+		flags = append(flags, flag)
+	}
+	return flags
 }
 
 // EvaluateDependency SHOULD ONLY BE USED by DependencyMatcher.
