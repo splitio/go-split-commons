@@ -153,7 +153,7 @@ func (e *Evaluator) EvaluateFeatures(key string, bucketingKey *string, featureFl
 
 // EvaluateFeatureByFlagSets returns a struct with the resulting treatment and extra information for the impression
 func (e *Evaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, flagSets []string, attributes map[string]interface{}) Results {
-	featureFlagNamesBySets := e.GetFeatureFlagNamesByFlagSets(flagSets)
+	featureFlagNamesBySets := e.getFeatureFlagNamesByFlagSets(flagSets)
 	if len(featureFlagNamesBySets) == 0 {
 		return Results{}
 	}
@@ -161,7 +161,7 @@ func (e *Evaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, 
 }
 
 // GetFeatureFlagNamesByFlagSets return flags that belong to some flag set
-func (e *Evaluator) GetFeatureFlagNamesByFlagSets(flagSets []string) []string {
+func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
 	uniqueFlags := make(map[string]struct{})
 	flagsBySets := e.splitStorage.GetNamesByFlagSets(flagSets)
 	for set, flags := range flagsBySets {
