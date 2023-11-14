@@ -17,7 +17,7 @@ var (
 // SanitizeMany sanitizes flagsets provided and returns the list of errors
 func SanitizeMany(sets []string) ([]string, []error) {
 	if len(sets) == 0 {
-		return nil, nil
+		return []string{}, nil
 	}
 	var sanitizedFlagSets []string
 	var warnings []error
