@@ -52,7 +52,7 @@ func Sanitize(flagSet string) (*string, []error) {
 	}
 	if !flagSetRegex.MatchString(flagSet) {
 		warnings = append(warnings, dtos.FlagSetValidatonError{
-			Message: fmt.Sprintf("you passed %s, Flag Set must adhere to the regular expressions %s. This means a Flag Set must be "+
+			Message: fmt.Sprintf("you passed %s, Flag Set must adhere to the regular expressions %s. This means a Flag Set must "+
 				"start with a letter or number, be in lowercase, alphanumeric and have a max length of 50 characters. %s was discarded.",
 				flagSet, flagSetRegex, flagSet),
 		})
