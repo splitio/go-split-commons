@@ -165,4 +165,6 @@ type InitConfig struct {
 	TaskPeriods     conf.TaskPeriods
 	ImpressionsMode string
 	ListenerEnabled bool
+	FlagSetsTotal   int64
+	FlagSetsInvalid int64
 }

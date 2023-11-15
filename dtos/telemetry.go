@@ -114,6 +114,8 @@ type Config struct {
 	NonReadyUsages             int64         `json:"nR,omitempty"`
 	Integrations               []string      `json:"i,omitempty"`
 	Tags                       []string      `json:"t,omitempty"`
+	FlagSetsTotal              int64         `json:"fsT,omitempty"`
+	FlagSetsInvalid            int64         `json:"fsI,omitempty"`
 }
 
 // Stats data sent by sdks pereiodically

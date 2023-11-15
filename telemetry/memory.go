@@ -101,6 +101,8 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 		ActiveFactories:    int64(len(factoryInstances)),
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
 		Tags:               tags,
+		FlagSetsTotal:      cfg.FlagSetsTotal,
+		FlagSetsInvalid:    cfg.FlagSetsInvalid,
 		StreamingEnabled:   cfg.AdvancedConfig.StreamingEnabled,
 		Rates: &dtos.Rates{
 			Splits:      int64(cfg.TaskPeriods.SplitSync),
