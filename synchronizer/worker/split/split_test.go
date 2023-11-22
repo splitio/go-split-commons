@@ -66,6 +66,53 @@ func TestSplitSynchronizerError(t *testing.T) {
 	}
 }
 
+func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
+	var notifyEventCalled int64
+
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return -1, nil },
+	}
+
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			if !fetchOptions.CacheControlHeaders {
+				t.Error("noCache should be true")
+			}
+			if changeNumber != -1 {
+				t.Error("Wrong changenumber passed")
+			}
+			return nil, &dtos.HTTPError{Code: 414, Message: "some"}
+		},
+	}
+
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncErrorCall: func(resource, status int) {
+			if resource != telemetry.SplitSync {
+				t.Error("It should be splits")
+			}
+			if status != 414 {
+				t.Error("Status should be 414")
+			}
+		},
+	}
+
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+
+	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+
+	_, err := splitUpdater.SynchronizeSplits(nil)
+	if err == nil {
+		t.Error("It should return err")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Error("It should be called once")
+	}
+}
+
 func TestSplitSynchronizer(t *testing.T) {
 	before := time.Now().UTC()
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
