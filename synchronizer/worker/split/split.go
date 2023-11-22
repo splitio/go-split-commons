@@ -17,7 +17,7 @@ import (
 
 const (
 	matcherTypeInSegment           = "IN_SEGMENT"
-	scRequestURITooLong            = 214
+	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
