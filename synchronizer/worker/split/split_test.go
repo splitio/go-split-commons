@@ -68,6 +68,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 
 func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 	var notifyEventCalled int64
+	var fetchCall int64
 
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
@@ -75,6 +76,7 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			atomic.AddInt64(&fetchCall, 1)
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
@@ -110,6 +112,9 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&fetchCall) != 1 {
+		t.Error("fetchCall should be called once")
 	}
 }
 
