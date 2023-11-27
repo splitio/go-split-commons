@@ -173,11 +173,9 @@ func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
 			uniqueFlags[featureFlag] = struct{}{}
 		}
 	}
-	flags := make([]string, len(uniqueFlags))
-	i := 0
+	flags := make([]string, 0, len(uniqueFlags))
 	for flag := range uniqueFlags {
-		flags[i] = flag
-		i++
+		flags = append(flags, flag)
 	}
 	return flags
 }
