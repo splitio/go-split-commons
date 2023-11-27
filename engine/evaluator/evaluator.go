@@ -174,8 +174,10 @@ func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
 		}
 	}
 	flags := make([]string, len(uniqueFlags))
+	i := 0
 	for flag := range uniqueFlags {
-		flags = append(flags, flag)
+		flags[i] = flag
+		i++
 	}
 	return flags
 }
