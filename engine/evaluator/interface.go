@@ -4,4 +4,5 @@ package evaluator
 type Interface interface {
 	EvaluateFeature(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) *Result
 	EvaluateFeatures(key string, bucketingKey *string, featureFlags []string, attributes map[string]interface{}) Results
+	EvaluateFeatureByFlagSets(key string, bucketingKey *string, flagSets []string, attributes map[string]interface{}) Results
 }

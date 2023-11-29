@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
@@ -36,6 +37,7 @@ func (h *httpFetcherBase) fetchRaw(endpoint string, since int64, fetchOptions *s
 // HTTPSplitFetcher struct is responsible for fetching splits from the backend via HTTP protocol
 type HTTPSplitFetcher struct {
 	httpFetcherBase
+	flagSetsFilter string
 }
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
@@ -45,11 +47,13 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
+		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
 	}
 }
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
 func (f *HTTPSplitFetcher) Fetch(since int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+	fetchOptions.SetFlagSetsFilter(f.flagSetsFilter)
 	data, err := f.fetchRaw("/splitChanges", since, fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)

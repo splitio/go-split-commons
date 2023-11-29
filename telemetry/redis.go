@@ -36,6 +36,8 @@ func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady in
 		RedundantFactories: getRedudantActiveFactories(factoryInstances),
 		Tags:               tags,
 		ImpressionsMode:    impressionsMode,
+		FlagSetsTotal:      cfg.FlagSetsTotal,
+		FlagSetsInvalid:    cfg.FlagSetsInvalid,
 	})
 	if err != nil {
 		r.logger.Error("Could not log config data", err.Error())

@@ -24,6 +24,7 @@ type SplitStorageConsumer interface {
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
+	GetNamesByFlagSets(sets []string) map[string][]string
 }
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
@@ -205,6 +206,7 @@ type SplitStorage interface {
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
+	GetNamesByFlagSets(sets []string) map[string][]string
 }
 
 // SegmentStorage wraps consumer and producer interfaces

@@ -13,6 +13,14 @@ const (
 	TreatmentWithConfig = "treatmentWithConfig"
 	// TreatmentsWithConfig getTreatmentsWithConfig
 	TreatmentsWithConfig = "treatmentsWithConfig"
+	// TreatmentsByFlagSet getTreatmentsByFlagSet
+	TreatmentsByFlagSet = "treatmentsByFlagSet"
+	// TreatmentsByFlagSets getTreatmentsByFlagSets
+	TreatmentsByFlagSets = "treatmentsByFlagSets"
+	// TreatmentsWithConfigByFlagSet getTreatmentsWithConfigByFlagSet
+	TreatmentsWithConfigByFlagSet = "treatmentsWithConfigByFlagSet"
+	// TreatmentsWithConfigByFlagSets getTreatmentsWithConfigByFlagSets
+	TreatmentsWithConfigByFlagSets = "treatmentsWithConfigByFlagSets"
 	// Track track
 	Track = "track"
 )
@@ -28,6 +36,14 @@ func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 		return TreatmentWithConfig, true
 	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatments_with_config", "treatmentsWithConfig", "TreatmentsWithConfig":
 		return TreatmentsWithConfig, true
+	case "getTreatmentsByFlagSet", "get_treatments_by_flag_set", "treatmentsByFlagSet", "TreatmentsByFlagSet":
+		return TreatmentsByFlagSet, true
+	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
+		return TreatmentsByFlagSets, true
+	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
+		return TreatmentsWithConfigByFlagSet, true
+	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
+		return TreatmentsWithConfigByFlagSets, true
 	case "track", "Track":
 		return Track, true
 	default:
@@ -42,6 +58,10 @@ func IsMethodValid(method *string) bool {
 	case "getTreatments", "get_treatments", "treatments", "Treatments":
 	case "getTreatmentWithConfig", "get_treatment_with_config", "treatmentWithConfig", "TreatmentWithWconfig":
 	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatmentsWithConfig", "TreatmentsWithWconfig":
+	case "getTreatmentsByFlagSet", "get_treatments_by_flag_set", "treatmentsByFlagSet", "TreatmentsByFlagSet":
+	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
+	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
+	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
 	case "track", "Track":
 	default:
 		return false
@@ -145,4 +165,6 @@ type InitConfig struct {
 	TaskPeriods     conf.TaskPeriods
 	ImpressionsMode string
 	ListenerEnabled bool
+	FlagSetsTotal   int64
+	FlagSetsInvalid int64
 }

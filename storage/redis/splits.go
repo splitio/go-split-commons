@@ -2,7 +2,6 @@ package redis
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -18,17 +18,19 @@ import (
 
 // SplitStorage is a redis-based implementation of split storage
 type SplitStorage struct {
-	client *redis.PrefixedRedisClient
-	logger logging.LoggerInterface
-	mutext *sync.RWMutex
+	client        *redis.PrefixedRedisClient
+	logger        logging.LoggerInterface
+	mutext        *sync.RWMutex
+	flagSetFilter flagsets.FlagSetFilter
 }
 
 // NewSplitStorage creates a new RedisSplitStorage and returns a reference to it
-func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface) *SplitStorage {
+func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, flagSetFilter flagsets.FlagSetFilter) *SplitStorage {
 	return &SplitStorage{
-		client: redisClient,
-		logger: logger,
-		mutext: &sync.RWMutex{},
+		client:        redisClient,
+		logger:        logger,
+		mutext:        &sync.RWMutex{},
+		flagSetFilter: flagSetFilter,
 	}
 }
 
@@ -119,31 +121,120 @@ func (r *SplitStorage) KillLocally(splitName string, defaultTreatment string, ch
 	// @TODO Implement for Sync
 }
 
-// incr stores/increments trafficType in Redis
-func (r *SplitStorage) incr(trafficType string) error {
-	key := strings.Replace(KeyTrafficType, "{trafficType}", trafficType, 1)
-
-	_, err := r.client.Incr(key)
-	if err != nil {
-		r.logger.Error(fmt.Sprintf("Error storing trafficType %s in redis", trafficType))
-		r.logger.Error(err)
-		return errors.New("Error incrementing trafficType")
+func (r *SplitStorage) fetchCurrentFeatureFlags(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) ([]dtos.SplitDTO, error) {
+	if len(toAdd)+len(toRemove) == 0 {
+		return nil, nil
 	}
-	return nil
-}
 
-// decr decrements trafficType count in Redis
-func (r *SplitStorage) decr(trafficType string) error {
-	key := strings.Replace(KeyTrafficType, "{trafficType}", trafficType, 1)
-
-	val, _ := r.client.Decr(key)
-	if val <= 0 {
-		_, err := r.client.Del(key)
-		if err != nil {
-			r.logger.Verbose(fmt.Sprintf("Error removing trafficType %s in redis", trafficType))
+	keys := make([]string, 0, len(toAdd)+len(toRemove))
+	for _, source := range [][]dtos.SplitDTO{toAdd, toRemove} {
+		for idx := range source {
+			keys = append(keys, strings.Replace(KeySplit, "{split}", source[idx].Name, 1))
 		}
 	}
-	return nil
+
+	currentFeatureFlags := make([]dtos.SplitDTO, 0, len(keys))
+	// Get all the featureFlags involved in the update in order to have the previous version
+	toUpdateRaw, err := r.client.MGet(keys)
+	if err != nil {
+		return currentFeatureFlags, fmt.Errorf("error fetching keys to be updated: %w", err)
+	}
+
+	for _, raw := range toUpdateRaw {
+		asStr, ok := raw.(string)
+		if !ok {
+			if raw != nil { // object missing in redis
+				r.logger.Debug(fmt.Sprintf(
+					"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
+					raw, raw,
+				))
+			}
+			continue
+		}
+
+		var s dtos.SplitDTO
+		err = json.Unmarshal([]byte(asStr), &s)
+		if err != nil {
+			r.logger.Debug("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
+			continue
+		}
+		currentFeatureFlags = append(currentFeatureFlags, s)
+	}
+
+	return currentFeatureFlags, nil
+}
+
+// calculateSets calculates the featureFlags that needs to be removed from sets and the featureFlags that needs to be
+// added into the sets
+func (r *SplitStorage) calculateSets(currentSets flagsets.FeaturesBySet, toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO) (flagsets.FeaturesBySet, flagsets.FeaturesBySet) {
+	// map[set]map[ff] for tracking all the sets that feature flags are going to be added
+	setsToAdd := flagsets.NewFeaturesBySet(nil)
+
+	for _, featureFlag := range toAdd {
+		// for each feature flag, get all the sets that need to be added
+		// map[set1][split1]{}
+		// map[set1][split2]{}
+		// map[set2][split1]{}
+		for _, set := range featureFlag.Sets {
+			if r.flagSetFilter.IsPresent(set) {
+				setsToAdd.Add(set, featureFlag.Name)
+			}
+		}
+	}
+
+	// at this point if the previous of set is compared against the added one
+	// the sets which the feature flag needs to be added and removed can be calculated
+	// previous version stored in redis of ff1 has sets: [setA, setB]
+	// incomming sets of ff1 are: [setA, setC]
+	// e.g:
+	// currentSet map[ff1][setA], map[ff1][setB]
+	// incommingSets map[setA][ff1], map[setC][ff1]
+	// if setA is in previous version and in the incomming one the add is discarded
+	// and setA is also removed from currentSet, which means that
+	// the remaining items are going to be the ones to be removed
+	// if setC is not in previous version, then is added into setsToAdd
+	// the new version of ff1 is not linked to setB which is the only item
+	// in currentSet
+	toRemoveSets := flagsets.Difference(currentSets, setsToAdd)
+	toAddSets := flagsets.Difference(setsToAdd, currentSets)
+	return toAddSets, toRemoveSets
+}
+
+func (r *SplitStorage) executePipeline(pipeline redis.Pipeline, toAdd []string, toRemove []dtos.SplitDTO) (map[string]error, map[string]error) {
+	failedToAdd := make(map[string]error)
+	failedToRemove := make(map[string]error)
+
+	result, err := pipeline.Exec()
+	// Check general error and logging it
+	if err != nil {
+		r.logger.Error("Error performing pipeline operation for updating feature flags", err.Error())
+	}
+	// If the result is at least equals to all the add operations
+	// iterate over them and wrap the corresponding error to the
+	// linked to the proper feature flag
+	if len(result) >= len(toAdd) {
+		for idx, result := range result[:len(toAdd)] {
+			err := result.Err()
+			if err != nil {
+				failedToAdd[toAdd[idx]] = fmt.Errorf("failed to store feature flag in redis: %w", err)
+			}
+		}
+	}
+
+	// If the result is at least equals to all the add operations
+	// plus the Del, wrap failed removal
+	if len(toRemove) > 0 && len(result) > len(toAdd)+1 {
+		count, err := result[len(toAdd)].Result()
+		if err != nil {
+			for idx := range toRemove {
+				failedToRemove[toRemove[idx].Name] = fmt.Errorf("failed to remove feature flag from redis: %w", err)
+			}
+		}
+		if count != int64(len(toRemove)) {
+			r.logger.Warning(fmt.Sprintf("intended to archive %d splits, but only %d succeeded.", len(toRemove), count))
+		}
+	}
+	return failedToAdd, failedToRemove
 }
 
 // UpdateWithErrors updates the storage and reports errors on a per-feature basis
@@ -152,95 +243,41 @@ func (r *SplitStorage) UpdateWithErrors(toAdd []dtos.SplitDTO, toRemove []dtos.S
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
 
-	toAddKeys := make([]string, 0, len(toAdd))
-	toIncrKeys := make([]string, 0, len(toAdd))
-	for idx := range toAdd {
-		toAddKeys = append(toAddKeys, strings.Replace(KeySplit, "{split}", toAdd[idx].Name, 1))
-		toIncrKeys = append(toIncrKeys, strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
+	// Gather all the feature flags involved for update operation
+	allFeatureFlags, err := r.fetchCurrentFeatureFlags(toAdd, toRemove)
+	if err != nil {
+		return err
+	}
+	if allFeatureFlags == nil {
+		return nil
 	}
 
-	toRemoveKeys := make([]string, 0, len(toRemove))
-	for idx := range toRemove {
-		toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
+	// Get current sets
+	currentSets := flagsets.NewFeaturesBySet(allFeatureFlags)
+	// From featureFlags to be added and removed, calculate feature flags to be added
+	// and update currentSets to get only the ones that needs to be removed
+	setsToAdd, setsToRemove := r.calculateSets(currentSets, toAdd, toRemove)
+
+	// Instantiating pipeline for adding operations to pipe
+	pipeline := r.client.Pipeline()
+
+	// Attach to the pipe all the operations related to featureFlags (Set, Del)
+	// addedInPipe are all the featureFlags without Marshal error
+	failedToMarshal, addedInPipe := updateFeatureFlags(pipeline, toAdd, toRemove)
+	// Attach to the pipe all the operations related to flagSets (SAdd, SRem)
+	updateFlagSets(pipeline, setsToAdd, setsToRemove)
+	// Attach to the pipe all the operations related to trafficTypes (Incr, Decr)
+	updateTrafficTypes(pipeline, allFeatureFlags, toAdd)
+
+	// Execute all the operation attached into the pipe
+	failedToAdd, failedToRemove := r.executePipeline(pipeline, addedInPipe, toRemove)
+
+	for name, err := range failedToMarshal {
+		failedToAdd[name] = err
 	}
 
-	// Gather all the EXISTING traffic types (if any) of all the added and removed splits
-	// we then decrement them and, increment the new ones
-	// \{
-	allKeys := append(make([]string, 0, len(toAdd)+len(toRemove)), toAddKeys...)
-	allKeys = append(allKeys, toRemoveKeys...)
-
-	if len(allKeys) > 0 {
-		toUpdateRaw, err := r.client.MGet(allKeys)
-		if err != nil {
-			return fmt.Errorf("error fetching keys to be updated: %w", err)
-		}
-
-		ttsToDecr := make([]string, 0, len(allKeys))
-		for _, raw := range toUpdateRaw {
-			asStr, ok := raw.(string)
-			if !ok {
-				if raw != nil { // object missing in redis
-					r.logger.Debug(fmt.Sprintf(
-						"Update: ignoring split stored in redis that cannot be parsed for traffic-type updating purposes: [%T] %+v",
-						raw, raw,
-					))
-				}
-				continue
-			}
-
-			var s dtos.SplitDTO
-			err = json.Unmarshal([]byte(asStr), &s)
-			if err != nil {
-				r.logger.Debug("Update: ignoring split stored in redis that cannot be deserialized for traffic-type updating purposes: ", asStr)
-				continue
-			}
-
-			ttsToDecr = append(ttsToDecr, s.TrafficTypeName)
-		}
-
-		for _, tt := range ttsToDecr {
-			r.client.Decr(strings.Replace(KeyTrafficType, "{trafficType}", tt, 1))
-		}
-	}
-	// \}
-
-	// The next operations could be implemented in a pipeline, improving the performance
-	// of this operation (or even a Tx for even better consistency on splits vs CN).
-	// \{
-	for _, ttKey := range toIncrKeys {
-		r.client.Incr(ttKey)
-	}
-
-	failedToAdd := make(map[string]error)
-	for _, split := range toAdd {
-		keyToStore := strings.Replace(KeySplit, "{split}", split.Name, 1)
-		raw, err := json.Marshal(split)
-		if err != nil {
-			failedToAdd[split.Name] = fmt.Errorf("failed to serialize split: %w", err)
-			continue
-		}
-
-		err = r.client.Set(keyToStore, raw, 0)
-		if err != nil {
-			failedToAdd[split.Name] = fmt.Errorf("failed to store split in redis: %w", err)
-		}
-	}
-
-	failedToRemove := make(map[string]error)
-	if len(toRemoveKeys) > 0 {
-		count, err := r.client.Del(toRemoveKeys...)
-		if err != nil {
-			for idx := range toRemove {
-				failedToRemove[toRemove[idx].Name] = fmt.Errorf("failed to remove split from redis: %w", err)
-			}
-		}
-
-		if count != int64(len(toRemoveKeys)) {
-			r.logger.Warning(fmt.Sprintf("intended to archive %d splits, but only %d succeeded.", len(toRemoveKeys), count))
-		}
-	}
-
+	// Check if no errors occurs adding and removing featureFlags
+	// Set the ChangenUmber
 	if len(failedToAdd) == 0 && len(failedToRemove) == 0 {
 		err := r.client.Set(KeySplitTill, changeNumber, 0)
 		if err != nil {
@@ -346,6 +383,31 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 		return false
 	}
 	return val > 0
+}
+
+// GetNamesByFlagSets grabs all the feature flags linked to the passed sets
+func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+	toReturn := make(map[string][]string)
+	pipeline := r.client.Pipeline()
+	for _, flagSet := range sets {
+		key := strings.Replace(KeyFlagSet, "{set}", flagSet, 1)
+		pipeline.SMembers(key)
+	}
+	results, err := pipeline.Exec()
+	if err != nil {
+		r.logger.Error(fmt.Sprintf("Could not fetch members from redis: %s", err.Error()))
+	}
+	if len(results) == 0 {
+		return toReturn
+	}
+	for i, result := range results {
+		flags, err := result.Multi()
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Could not read result from get members of flag set %s from redis: %s", sets[i], err.Error()))
+		}
+		toReturn[sets[i]] = flags
+	}
+	return toReturn
 }
 
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {

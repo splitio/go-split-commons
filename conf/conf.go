@@ -84,4 +84,5 @@ type AdvancedConfig struct {
 	SegmentUpdateQueueSize int64
 	SplitsRefreshRate      int
 	SegmentsRefreshRate    int
+	FlagSetsFilter         []string
 }
