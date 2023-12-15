@@ -1075,3 +1075,143 @@ func TestCalculateSets(t *testing.T) {
 		t.Error("It should not add sets")
 	}
 }
+
+func TestGetNamesByFlagSets(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		SMembersCall: func(key string) redis.Result {
+			if key != "someprefix.SPLITIO.split.split1" {
+				t.Error("Expected set for split1")
+			}
+			return &mocks.MockResultOutput{
+				MultiCall: func() ([]string, error) {
+					flags := [1]string{"split1"}
+					return flags[:], nil
+				},
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				ExecCall: func() ([]redis.Result, error) {
+					return []redis.Result{
+						&mocks.MockResultOutput{
+							MultiCall: func() ([]string, error) {
+								return []string{}, errors.New("Simulating error")
+							},
+						},
+						&mocks.MockResultOutput{
+							MultiCall: func() ([]string, error) {
+								return []string{"flag1", "flag2"}, nil
+							},
+						},
+						&mocks.MockResultOutput{
+							MultiCall: func() ([]string, error) {
+								return []string{"flag2", "flag3"}, nil
+							},
+						},
+					}, nil
+				},
+				SMembersCall: func(key string) {
+					switch key {
+					case "someprefix.SPLITIO.flagSet.set1":
+						if key != "someprefix.SPLITIO.flagSet.set1" {
+							t.Error("Expected set for split1")
+						}
+					case "someprefix.SPLITIO.flagSet.set2":
+						if key != "someprefix.SPLITIO.flagSet.set2" {
+							t.Error("Expected set for split2")
+						}
+					case "someprefix.SPLITIO.flagSet.set3":
+						if key != "someprefix.SPLITIO.flagSet.set3" {
+							t.Error("Expected set for split3")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+
+	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
+	sSet1, existSet1 := flagsBySets["set1"]
+	if !existSet1 {
+		t.Error("set1 should exist")
+	}
+	if len(sSet1) != 0 {
+		t.Error("size of names by set1 should be 0, but was: ", len(sSet1))
+	}
+
+	sSet2, existSet2 := flagsBySets["set2"]
+	if !existSet2 {
+		t.Error("set2 should exist")
+	}
+	if len(sSet2) != 2 {
+		t.Error("size of names by set2 should be 2, but was: ", len(sSet2))
+	}
+
+	sSet3, existSet3 := flagsBySets["set3"]
+	if !existSet3 {
+		t.Error("set3 should exist")
+	}
+	if len(sSet3) != 2 {
+		t.Error("size of names by set3 should be 2, but was: ", len(sSet3))
+	}
+}
+
+func TestGetNamesByFlagSetsPipelineExecError(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		SMembersCall: func(key string) redis.Result {
+			if key != "someprefix.SPLITIO.split.split1" {
+				t.Error("Expected set for split1")
+			}
+			return &mocks.MockResultOutput{
+				MultiCall: func() ([]string, error) {
+					flags := [1]string{"split1"}
+					return flags[:], nil
+				},
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+		PipelineCall: func() redis.Pipeline {
+			return &mocks.MockPipeline{
+				ExecCall: func() ([]redis.Result, error) {
+					return nil, errors.New("Exec error")
+				},
+				SMembersCall: func(key string) {
+					switch key {
+					case "someprefix.SPLITIO.flagSet.set1":
+						if key != "someprefix.SPLITIO.flagSet.set1" {
+							t.Error("Expected set for split1")
+						}
+					case "someprefix.SPLITIO.flagSet.set2":
+						if key != "someprefix.SPLITIO.flagSet.set2" {
+							t.Error("Expected set for split2")
+						}
+					case "someprefix.SPLITIO.flagSet.set3":
+						if key != "someprefix.SPLITIO.flagSet.set3" {
+							t.Error("Expected set for split3")
+						}
+					default:
+						t.Error("Unexpected key received", key)
+					}
+
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+
+	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
+	if len(flagsBySets) != 0 {
+		t.Error("Flags should be 0")
+	}
+}

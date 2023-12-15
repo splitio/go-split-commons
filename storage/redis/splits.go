@@ -385,6 +385,31 @@ func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
 	return val > 0
 }
 
+// GetNamesByFlagSets grabs all the feature flags linked to the passed sets
+func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+	toReturn := make(map[string][]string)
+	pipeline := r.client.Pipeline()
+	for _, flagSet := range sets {
+		key := strings.Replace(KeyFlagSet, "{set}", flagSet, 1)
+		pipeline.SMembers(key)
+	}
+	results, err := pipeline.Exec()
+	if err != nil {
+		r.logger.Error(fmt.Sprintf("Could not fetch members from redis: %s", err.Error()))
+	}
+	if len(results) == 0 {
+		return toReturn
+	}
+	for i, result := range results {
+		flags, err := result.Multi()
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("Could not read result from get members of flag set %s from redis: %s", sets[i], err.Error()))
+		}
+		toReturn[sets[i]] = flags
+	}
+	return toReturn
+}
+
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 	if !r.client.ClusterMode() {
 		return r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))

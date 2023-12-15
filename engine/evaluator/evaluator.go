@@ -151,6 +151,35 @@ func (e *Evaluator) EvaluateFeatures(key string, bucketingKey *string, featureFl
 	return results
 }
 
+// EvaluateFeatureByFlagSets returns a struct with the resulting treatment and extra information for the impression
+func (e *Evaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, flagSets []string, attributes map[string]interface{}) Results {
+	featureFlagNamesBySets := e.getFeatureFlagNamesByFlagSets(flagSets)
+	if len(featureFlagNamesBySets) == 0 {
+		return Results{}
+	}
+	return e.EvaluateFeatures(key, bucketingKey, featureFlagNamesBySets, attributes)
+}
+
+// GetFeatureFlagNamesByFlagSets return flags that belong to some flag set
+func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
+	uniqueFlags := make(map[string]struct{})
+	flagsBySets := e.splitStorage.GetNamesByFlagSets(flagSets)
+	for set, flags := range flagsBySets {
+		if len(flags) == 0 {
+			e.logger.Warning(fmt.Sprintf("you passed %s Flag Set that does not contain cached feature flag names, please double check what Flag Sets are in use in the Split user interface.", set))
+			continue
+		}
+		for _, featureFlag := range flags {
+			uniqueFlags[featureFlag] = struct{}{}
+		}
+	}
+	flags := make([]string, 0, len(uniqueFlags))
+	for flag := range uniqueFlags {
+		flags = append(flags, flag)
+	}
+	return flags
+}
+
 // EvaluateDependency SHOULD ONLY BE USED by DependencyMatcher.
 // It's used to break the dependency cycle between matchers and evaluators.
 func (e *Evaluator) EvaluateDependency(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) string {

@@ -17,6 +17,7 @@ import (
 
 const (
 	matcherTypeInSegment           = "IN_SEGMENT"
+	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
@@ -102,6 +103,9 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FetchOptions, till *int64
 		splits, err = s.splitFetcher.Fetch(currentSince, fetchOptions)
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
+				if httpError.Code == scRequestURITooLong {
+					s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+				}
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 			}
 			break
