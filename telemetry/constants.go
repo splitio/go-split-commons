@@ -36,13 +36,13 @@ func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 		return TreatmentWithConfig, true
 	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatments_with_config", "treatmentsWithConfig", "TreatmentsWithConfig":
 		return TreatmentsWithConfig, true
-	case "getTreatmentsByFlagSet", "get_treatments_by_flag_set", "treatmentsByFlagSet", "TreatmentsByFlagSet":
+	case "getTreatmentsByFlagSet", "get_treatments_by_flag_set", "treatments_by_flag_set", "treatmentsByFlagSet", "TreatmentsByFlagSet":
 		return TreatmentsByFlagSet, true
-	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
+	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
 		return TreatmentsByFlagSets, true
-	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
+	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
 		return TreatmentsWithConfigByFlagSet, true
-	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
+	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
 		return TreatmentsWithConfigByFlagSets, true
 	case "track", "Track":
 		return Track, true
