@@ -225,7 +225,7 @@ func (s *mockStorage) ChangeNumber() (int64, error)              { return 0, nil
 func (s *mockStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return make(map[string][]string)
 }
-func (s *mockStorage) GetAllFlagSetNames() ([]string, error) { return make([]string, 0), nil }
+func (s *mockStorage) GetAllFlagSetNames() []string { return make([]string, 0) }
 
 func TestSplitWithoutConfigurations(t *testing.T) {
 	logger := logging.NewLogger(nil)

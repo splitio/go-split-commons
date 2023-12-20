@@ -49,11 +49,11 @@ func (m *MMSplitStorage) All() []dtos.SplitDTO {
 	return splitList
 }
 
-func (m *MMSplitStorage) GetAllFlagSetNames() ([]string, error) {
+func (m *MMSplitStorage) GetAllFlagSetNames() []string {
 	m.flagSetsMutex.RLock()
 	defer m.flagSetsMutex.RUnlock()
 
-	return m.flagSets.Sets(), nil
+	return m.flagSets.Sets()
 }
 
 // ChangeNumber returns the last timestamp the split was fetched

@@ -366,6 +366,22 @@ func (r *SplitStorage) SplitNames() []string {
 	return splitNames
 }
 
+// GetAllFlagSetNames returns all flag set names
+func (r *SplitStorage) GetAllFlagSetNames() []string {
+	keys, err := r.client.Scan(strings.Replace(KeyFlagSet, "{set}", "*", 1), 10)
+	if err != nil {
+		r.logger.Error("error fetching flag set names form redis: ", err)
+		return nil
+	}
+
+	names := make([]string, 0, len(keys))
+	toRemove := strings.Replace(KeyFlagSet, "{set}", "", 1) // Create a string with all the prefix to remove
+	for _, key := range keys {
+		names = append(names, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
+	}
+	return names
+}
+
 // TrafficTypeExists returns true or false depending on existence and counter
 // of trafficType
 func (r *SplitStorage) TrafficTypeExists(trafficType string) bool {
@@ -408,10 +424,6 @@ func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 		toReturn[sets[i]] = flags
 	}
 	return toReturn
-}
-
-func (r *SplitStorage) GetAllFlagSetNames() ([]string, error) {
-	return r.client.Scan(strings.Replace(KeyFlagSet, "{set}", "*", 1), 10)
 }
 
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {

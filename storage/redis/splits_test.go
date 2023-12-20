@@ -1254,11 +1254,7 @@ func TestGetAllFlagSetNames(t *testing.T) {
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
 
-	names, err := splitStorage.GetAllFlagSetNames()
-	if err != nil {
-		t.Error("there should not be any error. Got: ", err)
-	}
-
+	names := splitStorage.GetAllFlagSetNames()
 	if len(names) != 10 {
 		t.Error("should be 10 keys. Got: ", len(names))
 	}

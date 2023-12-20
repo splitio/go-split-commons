@@ -25,7 +25,7 @@ type SplitStorageConsumer interface {
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
 	GetNamesByFlagSets(sets []string) map[string][]string
-	GetAllFlagSetNames() ([]string, error)
+	GetAllFlagSetNames() []string
 }
 
 // SegmentStorageProducer interface should be implemented by all structs that offer writing segments
@@ -208,7 +208,7 @@ type SplitStorage interface {
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
 	GetNamesByFlagSets(sets []string) map[string][]string
-	GetAllFlagSetNames() ([]string, error)
+	GetAllFlagSetNames() []string
 }
 
 // SegmentStorage wraps consumer and producer interfaces

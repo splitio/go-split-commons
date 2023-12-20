@@ -19,7 +19,7 @@ type MockSplitStorage struct {
 	SplitNamesCall         func() []string
 	TrafficTypeExistsCall  func(trafficType string) bool
 	GetNamesByFlagSetsCall func(sets []string) map[string][]string
-	GetAllFlagSetNamesCall func() ([]string, error)
+	GetAllFlagSetNamesCall func() []string
 }
 
 // All mock
@@ -82,6 +82,6 @@ func (m MockSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string 
 	return m.GetNamesByFlagSetsCall(sets)
 }
 
-func (m MockSplitStorage) GetAllFlagSetNames() ([]string, error) {
+func (m MockSplitStorage) GetAllFlagSetNames() []string {
 	return m.GetAllFlagSetNamesCall()
 }
