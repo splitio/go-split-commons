@@ -3,12 +3,13 @@ package redis
 import (
 	"encoding/json"
 	"errors"
-	"github.com/splitio/go-split-commons/v5/conf"
-	"golang.org/x/exp/slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/splitio/go-split-commons/v5/conf"
+	"golang.org/x/exp/slices"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/flagsets"
@@ -1213,5 +1214,52 @@ func TestGetNamesByFlagSetsPipelineExecError(t *testing.T) {
 	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
 	if len(flagsBySets) != 0 {
 		t.Error("Flags should be 0")
+	}
+}
+
+func TestGetAllFlagSetNames(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != "someprefix.SPLITIO.flagSet.*" {
+				t.Error("Unexpected key received", match)
+			}
+
+			if cursor == 0 {
+				return &mocks.MockResultOutput{
+					IntCall: func() int64 {
+						return 10
+					},
+					MultiCall: func() ([]string, error) {
+						return []string{"set_1", "set_2", "set_3", "set_4", "set_5"}, nil
+					},
+					ErrCall: func() error {
+						return nil
+					},
+				}
+			}
+
+			return &mocks.MockResultOutput{
+				IntCall: func() int64 {
+					return 0
+				},
+				MultiCall: func() ([]string, error) {
+					return []string{"set_1", "set_2", "set_3", "set_4", "set_5"}, nil
+				},
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+
+	names, err := splitStorage.GetAllFlagSetNames()
+	if err != nil {
+		t.Error("there should not be any error. Got: ", err)
+	}
+
+	if len(names) != 10 {
+		t.Error("should be 10 keys. Got: ", len(names))
 	}
 }

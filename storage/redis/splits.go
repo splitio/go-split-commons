@@ -410,6 +410,10 @@ func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return toReturn
 }
 
+func (r *SplitStorage) GetAllFlagSetNames() ([]string, error) {
+	return r.client.Scan(strings.Replace(KeyFlagSet, "{set}", "*", 1), 10)
+}
+
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 	if !r.client.ClusterMode() {
 		return r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
