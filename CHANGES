@@ -1,3 +1,11 @@
+5.1.1 (Dec 21, 2023)
+- Added new telemetry name methods for flagSets.
+
+5.1.0 (Nov 29, 2023)
+- Flag Sets:
+    Added logic to support flag sets when starting the sdk and to evaluate treatments.
+    Added new telemetry to track the flag sets config and evaluations.
+
 5.0.0 (Jul 18, 2023)
 - BREAKING CHANGE:
     Synchronizer interface changed:

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/conf"
@@ -125,6 +126,60 @@ func TestSpitChangesFetchWithFlagOptions(t *testing.T) {
 	}
 	if queryParams.Get("till") != "10000" {
 		t.Error("Expected to have till")
+	}
+}
+
+func TestSpitChangesFetchWithFlagSetsFilter(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	var cacheControl string
+	var queryParams url.Values
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cacheControl = r.Header.Get("Cache-Control")
+		queryParams = r.URL.Query()
+		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
+	}))
+	defer ts.Close()
+
+	splitFetcher := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL:      ts.URL,
+			SdkURL:         ts.URL,
+			FlagSetsFilter: []string{"one", "two"},
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
+	if err != nil {
+		t.Error(err)
+	}
+	if cacheControl != "no-cache" {
+		t.Error("Wrong header sent")
+	}
+	if !queryParams.Has("since") {
+		t.Error("Expected to have since")
+	}
+	if queryParams.Has("till") {
+		t.Error("Expected to not have till")
+	}
+	if !queryParams.Has("sets") {
+		t.Error("Expected to have sets")
+	}
+	asString := queryParams.Get("sets")
+	asArray := strings.Split(asString, ",")
+	setsToTest := make(map[string]struct{})
+	for _, featureFlag := range asArray {
+		setsToTest[featureFlag] = struct{}{}
+	}
+	if _, ok := setsToTest["one"]; !ok {
+		t.Error("Expected one to be present")
+	}
+	if _, ok := setsToTest["two"]; !ok {
+		t.Error("Expected two to be present")
 	}
 }
 
