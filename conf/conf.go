@@ -48,6 +48,9 @@ type RedisConfig struct {
 	ClusterKeyHashTag string
 
 	TLSConfig *tls.Config
+
+	// It is the number of keys to search through at a time per cursor iteration.
+	ScanCount int
 }
 
 // TaskPeriods struct is used to configure the period for each synchronization task
