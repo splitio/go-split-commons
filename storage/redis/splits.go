@@ -353,19 +353,13 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 
 // SplitNames returns a slice of strings with all the split names
 func (r *SplitStorage) SplitNames() []string {
-	//keys, err := r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
 	keys, err := r.getAllSplitKeys()
 	if err != nil {
 		r.logger.Error("error fetching split names form redis: ", err)
 		return nil
 	}
 
-	splitNames := make([]string, 0, len(keys))
-	toRemove := strings.Replace(KeySplit, "{split}", "", 1) // Create a string with all the prefix to remove
-	for _, key := range keys {
-		splitNames = append(splitNames, strings.Replace(key, toRemove, "", 1)) // Extract split name from key
-	}
-	return splitNames
+	return cleanPrefixedKeys(keys, strings.Replace(KeySplit, "{split}", "", 1))
 }
 
 // GetAllFlagSetNames returns all flag set names
@@ -373,7 +367,6 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 	var cursor uint64
 	names := make([]string, 0)
 	scanKey := strings.Replace(KeyFlagSet, "{set}", "*", 1)
-	toRemove := strings.Replace(KeyFlagSet, "{set}", "", 1) // Create a string with all the prefix to remove
 	for {
 		keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
 		if err != nil {
@@ -383,16 +376,18 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 
 		cursor = rCursor
 
-		for _, key := range keys {
-			names = append(names, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
-		}
+		// for _, key := range keys {
+		// 	names = append(names, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
+		// }
+
+		names = append(names, keys...)
 
 		if cursor == 0 {
 			break
 		}
 	}
 
-	return names
+	return cleanPrefixedKeys(names, strings.Replace(KeyFlagSet, "{set}", "", 1))
 }
 
 // TrafficTypeExists returns true or false depending on existence and counter
@@ -440,31 +435,28 @@ func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 }
 
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
-	if r.client.ClusterMode() {
-		return r.splitKeysClusterMode()
+	if !r.client.ClusterMode() {
+		var cursor uint64
+		featureFlagNames := make([]string, 0)
+		scanKey := strings.Replace(KeySplit, "{split}", "*", 1)
+		for {
+			keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
+			if err != nil {
+				return nil, err
+			}
+
+			cursor = rCursor
+			featureFlagNames = append(featureFlagNames, keys...)
+
+			if cursor == 0 {
+				break
+			}
+		}
+
+		return cleanPrefixedKeys(featureFlagNames, strings.Replace(KeySplit, "{split}", "", 1)), nil
 	}
 
-	var cursor uint64
-	featureFlagNames := make([]string, 0)
-	scanKey := strings.Replace(KeySplit, "{split}", "*", 1)
-	toRemove := strings.Replace(KeySplit, "{split}", "*", 1) // Create a string with all the prefix to remove
-	for {
-		keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
-		if err != nil {
-			return nil, err
-		}
-
-		cursor = rCursor
-		for _, key := range keys {
-			featureFlagNames = append(featureFlagNames, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
-		}
-
-		if cursor == 0 {
-			break
-		}
-	}
-
-	return featureFlagNames, nil
+	return r.splitKeysClusterMode()
 }
 
 func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
