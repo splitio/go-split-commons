@@ -22,15 +22,17 @@ type SplitStorage struct {
 	logger        logging.LoggerInterface
 	mutext        *sync.RWMutex
 	flagSetFilter flagsets.FlagSetFilter
+	scanCount     int64
 }
 
 // NewSplitStorage creates a new RedisSplitStorage and returns a reference to it
-func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, flagSetFilter flagsets.FlagSetFilter) *SplitStorage {
+func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, flagSetFilter flagsets.FlagSetFilter, scanCount int64) *SplitStorage {
 	return &SplitStorage{
 		client:        redisClient,
 		logger:        logger,
 		mutext:        &sync.RWMutex{},
 		flagSetFilter: flagSetFilter,
+		scanCount:     scanCount,
 	}
 }
 
@@ -373,7 +375,7 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 	scanKey := strings.Replace(KeyFlagSet, "{set}", "*", 1)
 	toRemove := strings.Replace(KeyFlagSet, "{set}", "", 1) // Create a string with all the prefix to remove
 	for {
-		keys, rCursor, err := r.client.Scan(cursor, scanKey, 10)
+		keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
 		if err != nil {
 			r.logger.Error("error fetching flag set names form redis: ", err)
 			return nil
@@ -438,10 +440,33 @@ func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 }
 
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
-	if !r.client.ClusterMode() {
-		return r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+	if r.client.ClusterMode() {
+		return r.splitKeysClusterMode()
 	}
 
+	var cursor uint64
+	featureFlagNames := make([]string, 0)
+	for {
+		keys, rCursor, err := r.client.Scan(cursor, strings.Replace(KeySplit, "{split}", "*", 1), r.scanCount)
+		if err != nil {
+			return nil, err
+		}
+
+		cursor = rCursor
+		toRemove := strings.Replace(KeySplit, "{split}", "*", 1) // Create a string with all the prefix to remove
+		for _, key := range keys {
+			featureFlagNames = append(featureFlagNames, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return featureFlagNames, nil
+}
+
+func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
 	// the hashtag is bundled in the prefix, so it will automatically be added,
 	// and we'll get the slot where all the redis keys are bound
 	slot, err := r.client.ClusterSlotForKey("__DUMMY__")
