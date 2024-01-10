@@ -370,8 +370,10 @@ func (r *SplitStorage) SplitNames() []string {
 func (r *SplitStorage) GetAllFlagSetNames() []string {
 	var cursor uint64
 	names := make([]string, 0)
+	scanKey := strings.Replace(KeyFlagSet, "{set}", "*", 1)
+	toRemove := strings.Replace(KeyFlagSet, "{set}", "", 1) // Create a string with all the prefix to remove
 	for {
-		keys, rCursor, err := r.client.Scan(cursor, strings.Replace(KeyFlagSet, "{set}", "*", 1), 10)
+		keys, rCursor, err := r.client.Scan(cursor, scanKey, 10)
 		if err != nil {
 			r.logger.Error("error fetching flag set names form redis: ", err)
 			return nil
@@ -379,7 +381,6 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 
 		cursor = rCursor
 
-		toRemove := strings.Replace(KeyFlagSet, "{set}", "", 1) // Create a string with all the prefix to remove
 		for _, key := range keys {
 			names = append(names, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
 		}
