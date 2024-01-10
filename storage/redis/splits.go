@@ -446,14 +446,15 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 
 	var cursor uint64
 	featureFlagNames := make([]string, 0)
+	scanKey := strings.Replace(KeySplit, "{split}", "*", 1)
+	toRemove := strings.Replace(KeySplit, "{split}", "*", 1) // Create a string with all the prefix to remove
 	for {
-		keys, rCursor, err := r.client.Scan(cursor, strings.Replace(KeySplit, "{split}", "*", 1), r.scanCount)
+		keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
 		if err != nil {
 			return nil, err
 		}
 
 		cursor = rCursor
-		toRemove := strings.Replace(KeySplit, "{split}", "*", 1) // Create a string with all the prefix to remove
 		for _, key := range keys {
 			featureFlagNames = append(featureFlagNames, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
 		}
