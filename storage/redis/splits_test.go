@@ -3,12 +3,13 @@ package redis
 import (
 	"encoding/json"
 	"errors"
-	"github.com/splitio/go-split-commons/v5/conf"
-	"golang.org/x/exp/slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/splitio/go-split-commons/v5/conf"
+	"golang.org/x/exp/slices"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/flagsets"
@@ -48,12 +49,15 @@ func TestAll(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.split.*"
 
 	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
 			}
+
 			return &mocks.MockResultOutput{
+				IntCall:   func() int64 { return 0 },
 				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+				ErrCall:   func() error { return nil },
 			}
 		},
 		MGetCall: func(keys []string) redis.Result {
@@ -76,7 +80,7 @@ func TestAll(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splits := splitStorage.All()
 	if len(splits) != 2 {
@@ -143,7 +147,7 @@ func TestAllClusterMode(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splits := splitStorage.All()
 	if len(splits) != 2 {
@@ -169,7 +173,7 @@ func TestChangeNumberError(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	till, _ := splitStorage.ChangeNumber()
 	if till != -1 {
@@ -192,7 +196,7 @@ func TestChangeNumber(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	till, _ := splitStorage.ChangeNumber()
 	if till != 123456789 {
@@ -221,7 +225,7 @@ func TestFetchManyError(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splits := splitStorage.FetchMany([]string{"someSplit", "someSplit2"})
 	if splits != nil {
@@ -253,7 +257,7 @@ func TestFetchMany(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splits := splitStorage.FetchMany([]string{"someSplit", "someSplit2"})
 	if len(splits) != 2 {
@@ -273,12 +277,15 @@ func TestSegmentNames(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.split.*"
 
 	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
 			}
+
 			return &mocks.MockResultOutput{
+				IntCall:   func() int64 { return 0 },
 				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+				ErrCall:   func() error { return nil },
 			}
 		},
 		MGetCall: func(keys []string) redis.Result {
@@ -301,7 +308,7 @@ func TestSegmentNames(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	segments := splitStorage.SegmentNames()
 	if segments == nil || !segments.IsEqual(set.NewSet("segment")) {
@@ -325,7 +332,7 @@ func TestSplitError(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	split := splitStorage.Split("someSplit")
 	if split != nil {
@@ -348,7 +355,7 @@ func TestSplit(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	split := splitStorage.Split("someSplit")
 	if split.Name != "someSplit" {
@@ -360,19 +367,24 @@ func TestSplitNamesError(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.split.*"
 
 	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
 			}
+
 			return &mocks.MockResultOutput{
-				MultiCall: func() ([]string, error) { return []string{}, errors.New("Some Error") },
+				IntCall: func() int64 { return 0 },
+				MultiCall: func() ([]string, error) {
+					return []string{"SPLITIO.split1", "SPLITIO.split2"}, errors.New("Some Error")
+				},
+				ErrCall: func() error { return nil },
 			}
 		},
 		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splitNames := splitStorage.SplitNames()
 	if len(splitNames) != 0 {
@@ -384,19 +396,24 @@ func TestSplitNames(t *testing.T) {
 	expectedKey := "someprefix.SPLITIO.split.*"
 
 	mockedRedisClient := mocks.MockClient{
-		KeysCall: func(pattern string) redis.Result {
-			if pattern != expectedKey {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, pattern)
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
 			}
+
 			return &mocks.MockResultOutput{
-				MultiCall: func() ([]string, error) { return []string{"someKey", "someKey2"}, nil },
+				IntCall: func() int64 { return 0 },
+				MultiCall: func() ([]string, error) {
+					return []string{"someKey", "someKey2"}, nil
+				},
+				ErrCall: func() error { return nil },
 			}
 		},
 		ClusterModeCall: func() bool { return false },
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	splitNames := splitStorage.SplitNames()
 	if len(splitNames) != 2 {
@@ -431,7 +448,7 @@ func TestTrafficTypeExists(t *testing.T) {
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
 
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	exists := splitStorage.TrafficTypeExists("nonExistantTT")
 	if exists {
@@ -478,7 +495,7 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 	}
 	mockRedis, _ := redis.NewPrefixedRedisClient(mockClient, "")
 	logger := logging.NewLogger(nil)
-	splitStorage := NewSplitStorage(mockRedis, logger, flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockRedis, logger, flagsets.NewFlagSetFilter(nil), 10)
 
 	toAdd := []dtos.SplitDTO{{Name: "split1", TrafficTypeName: "tt1"}, {Name: "split2", TrafficTypeName: "tt2"}}
 	toRemove := []dtos.SplitDTO{{Name: "split3", TrafficTypeName: "tt3"}}
@@ -508,7 +525,7 @@ func TestSplitUpdateWithErrors(t *testing.T) {
 		return &mocks.MockResultOutput{ErrCall: func() error { return nil }}
 	}
 	mockRedis, _ = redis.NewPrefixedRedisClient(mockClient, "")
-	splitStorage = NewSplitStorage(mockRedis, logger, flagsets.NewFlagSetFilter(nil))
+	splitStorage = NewSplitStorage(mockRedis, logger, flagsets.NewFlagSetFilter(nil), 10)
 	err = splitStorage.UpdateWithErrors(toAdd, toRemove, 0)
 	if !errors.Is(err, ErrChangeNumberUpdateFailed) {
 		t.Error("wrong error type")
@@ -532,7 +549,7 @@ func TestUpdateRedis(t *testing.T) {
 
 	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{"set3"})}
 
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
 	splits := splitStorage.All()
 	if len(splits) != 3 {
@@ -619,7 +636,7 @@ func TestUpdateWithFlagSetFiltersRedis(t *testing.T) {
 	}
 
 	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{"set1"}), createSampleSplit("split2", []string{"set1", "set2"}), createSampleSplit("split3", []string{"set3"})}
-	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter([]string{"set1", "set2"}))
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter([]string{"set1", "set2"}), 10)
 	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
 	splits := splitStorage.All()
 	if len(splits) != 3 {
@@ -673,7 +690,7 @@ func TestFetchCurrentFeatureFlags(t *testing.T) {
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
-	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil), 10)
 	all, err := splitStorage.fetchCurrentFeatureFlags(
 		[]dtos.SplitDTO{createSampleSplit("split1", []string{"set1"})},
 		[]dtos.SplitDTO{createSampleSplit("split2", []string{"set2"})})
@@ -839,7 +856,7 @@ func TestFlagSetsLogic(t *testing.T) {
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
-	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil), 10)
 
 	// set1 -> split1
 	// set2 -> split4
@@ -944,7 +961,7 @@ func TestFlagSetsLogic(t *testing.T) {
 		},
 	}
 	mockPrefixedClient2, _ := redis.NewPrefixedRedisClient(&mockedRedisClient2, "someprefix")
-	splitStorage2 := NewSplitStorage(mockPrefixedClient2, &logging.Logger{}, flagsets.NewFlagSetFilter(nil))
+	splitStorage2 := NewSplitStorage(mockPrefixedClient2, &logging.Logger{}, flagsets.NewFlagSetFilter(nil), 10)
 
 	err = splitStorage2.UpdateWithErrors(
 		[]dtos.SplitDTO{},
@@ -960,7 +977,7 @@ func TestFlagSetsLogic(t *testing.T) {
 func TestCalculateSets(t *testing.T) {
 	mockedRedisClient := mocks.MockClient{}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
-	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter(nil), 10)
 
 	currentSets := flagsets.NewFeaturesBySet(nil)
 	currentSets.Add("set1", "split1")
@@ -1061,7 +1078,7 @@ func TestCalculateSets(t *testing.T) {
 	currentSets.Add("set2", "split2")
 	currentSets.Add("set3", "split2")
 	currentSets.Add("set4", "split3")
-	splitStorage = NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter([]string{"set1", "set2", "set3", "set4"}))
+	splitStorage = NewSplitStorage(mockPrefixedClient, &logging.Logger{}, flagsets.NewFlagSetFilter([]string{"set1", "set2", "set3", "set4"}), 10)
 	toAdd, toRemove = splitStorage.calculateSets(
 		currentSets,
 		[]dtos.SplitDTO{
@@ -1136,7 +1153,7 @@ func TestGetNamesByFlagSets(t *testing.T) {
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
 	sSet1, existSet1 := flagsBySets["set1"]
@@ -1208,10 +1225,53 @@ func TestGetNamesByFlagSetsPipelineExecError(t *testing.T) {
 		},
 	}
 	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
-	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
 
 	flagsBySets := splitStorage.GetNamesByFlagSets([]string{"set1", "set2", "set3"})
 	if len(flagsBySets) != 0 {
 		t.Error("Flags should be 0")
+	}
+}
+
+func TestGetAllFlagSetNames(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != "someprefix.SPLITIO.flagSet.*" {
+				t.Error("Unexpected key received", match)
+			}
+
+			if cursor == 0 {
+				return &mocks.MockResultOutput{
+					IntCall: func() int64 {
+						return 10
+					},
+					MultiCall: func() ([]string, error) {
+						return []string{"set_1", "set_2", "set_3", "set_4", "set_5"}, nil
+					},
+					ErrCall: func() error {
+						return nil
+					},
+				}
+			}
+
+			return &mocks.MockResultOutput{
+				IntCall: func() int64 {
+					return 0
+				},
+				MultiCall: func() ([]string, error) {
+					return []string{"set_1", "set_2", "set_3", "set_4", "set_5"}, nil
+				},
+				ErrCall: func() error {
+					return nil
+				},
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
+
+	names := splitStorage.GetAllFlagSetNames()
+	if len(names) != 10 {
+		t.Error("should be 10 keys. Got: ", len(names))
 	}
 }
