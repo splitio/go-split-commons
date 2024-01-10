@@ -375,11 +375,6 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 		}
 
 		cursor = rCursor
-
-		// for _, key := range keys {
-		// 	names = append(names, strings.Replace(key, toRemove, "", 1)) // Extract flag set name from key
-		// }
-
 		names = append(names, keys...)
 
 		if cursor == 0 {
