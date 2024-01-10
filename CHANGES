@@ -1,3 +1,8 @@
+5.2.0 (Jan 10, 2024)
+- Implemented GetAllFlagSetNames method that returns all flag set names
+- Updated GetAllSplitKeys method to use scan command instead of keys.
+- Pointed to new version of go-toolkit 5.4.0.
+
 5.1.1 (Dec 21, 2023)
 - Added new telemetry name methods for flagSets.
 
