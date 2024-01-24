@@ -1275,3 +1275,49 @@ func TestGetAllFlagSetNames(t *testing.T) {
 		t.Error("should be 10 keys. Got: ", len(names))
 	}
 }
+
+func TestGetAllSplitKeys(t *testing.T) {
+	mockedRedisClient := mocks.MockClient{
+		ClusterModeCall: func() bool {
+			return false
+		},
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != "someprefix.SPLITIO.split.*" {
+				t.Error("Unexpected key received", match)
+			}
+
+			if cursor == 0 {
+				return &mocks.MockResultOutput{
+					IntCall:   func() int64 { return 10 },
+					MultiCall: func() ([]string, error) { return []string{"SPLITIO.split.split1"}, nil },
+					ErrCall:   func() error { return nil },
+				}
+			}
+
+			return &mocks.MockResultOutput{
+				IntCall:   func() int64 { return 0 },
+				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split.split2"}, nil },
+				ErrCall:   func() error { return nil },
+			}
+		},
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil), 10)
+
+	keys, err := splitStorage.getAllSplitKeys()
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	if len(keys) != 2 {
+		t.Errorf("Keys len should be 2. Actual: %v", len(keys))
+	}
+
+	if keys[0] != "SPLITIO.split.split1" {
+		t.Errorf("Key should be 'SPLITIO.split.split1'. Actual: %s", keys[0])
+	}
+
+	if keys[1] != "SPLITIO.split.split2" {
+		t.Errorf("Key should be 'SPLITIO.split.split2'. Actual: %s", keys[1])
+	}
+}
