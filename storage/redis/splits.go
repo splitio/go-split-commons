@@ -39,6 +39,8 @@ func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.Logg
 // All returns a slice of splits dtos.
 func (r *SplitStorage) All() []dtos.SplitDTO {
 	keys, err := r.getAllSplitKeys()
+	fmt.Println("###### keys")
+	fmt.Println(keys)
 	if err != nil {
 		r.logger.Error("Error fetching split keys. Returning empty split list: ", err)
 		return nil
@@ -447,6 +449,9 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 				break
 			}
 		}
+
+		fmt.Println(" #### featureFlagNames")
+		fmt.Println(featureFlagNames)
 
 		return cleanPrefixedKeys(featureFlagNames, strings.Replace(KeySplit, "{split}", "", 1)), nil
 	}
