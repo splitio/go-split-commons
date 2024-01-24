@@ -452,11 +452,11 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 				break
 			}
 		}
+		return featureFlagNames, nil
+		// fmt.Println(" #### featureFlagNames")
+		// fmt.Println(featureFlagNames)
 
-		fmt.Println(" #### featureFlagNames")
-		fmt.Println(featureFlagNames)
-
-		return cleanPrefixedKeys(featureFlagNames, strings.Replace(KeySplit, "{split}", "", 1)), nil
+		// return cleanPrefixedKeys(featureFlagNames, strings.Replace(KeySplit, "{split}", "", 1)), nil
 	}
 
 	return r.splitKeysClusterMode()
