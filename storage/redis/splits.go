@@ -448,7 +448,7 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 			}
 		}
 
-		return cleanPrefixedKeys(featureFlagNames, strings.Replace(KeySplit, "{split}", "", 1)), nil
+		return featureFlagNames, nil
 	}
 
 	return r.splitKeysClusterMode()
