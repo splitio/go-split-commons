@@ -58,7 +58,7 @@ func (r *SplitStorage) All() []dtos.SplitDTO {
 
 	splits := make([]dtos.SplitDTO, 0, len(rawSplits))
 	for idx, raw := range rawSplits {
-		fmt.Println("###### rawSplits")
+		fmt.Println("###### rawSplit")
 		fmt.Println(raw)
 
 		var split dtos.SplitDTO
