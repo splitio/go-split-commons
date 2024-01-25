@@ -16,23 +16,23 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
+const DefaultScanCount = 10
+
 // SplitStorage is a redis-based implementation of split storage
 type SplitStorage struct {
 	client        *redis.PrefixedRedisClient
 	logger        logging.LoggerInterface
 	mutext        *sync.RWMutex
 	flagSetFilter flagsets.FlagSetFilter
-	scanCount     int64
 }
 
 // NewSplitStorage creates a new RedisSplitStorage and returns a reference to it
-func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, flagSetFilter flagsets.FlagSetFilter, scanCount int64) *SplitStorage {
+func NewSplitStorage(redisClient *redis.PrefixedRedisClient, logger logging.LoggerInterface, flagSetFilter flagsets.FlagSetFilter) *SplitStorage {
 	return &SplitStorage{
 		client:        redisClient,
 		logger:        logger,
 		mutext:        &sync.RWMutex{},
 		flagSetFilter: flagSetFilter,
-		scanCount:     scanCount,
 	}
 }
 
@@ -368,7 +368,7 @@ func (r *SplitStorage) GetAllFlagSetNames() []string {
 	names := make([]string, 0)
 	scanKey := strings.Replace(KeyFlagSet, "{set}", "*", 1)
 	for {
-		keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
+		keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
 		if err != nil {
 			r.logger.Error("error fetching flag set names form redis: ", err)
 			return nil
@@ -435,7 +435,7 @@ func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 		featureFlagNames := make([]string, 0)
 		scanKey := strings.Replace(KeySplit, "{split}", "*", 1)
 		for {
-			keys, rCursor, err := r.client.Scan(cursor, scanKey, r.scanCount)
+			keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
 			if err != nil {
 				return nil, err
 			}
