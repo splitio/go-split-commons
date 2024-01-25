@@ -404,7 +404,7 @@ func TestSplitNames(t *testing.T) {
 			return &mocks.MockResultOutput{
 				IntCall: func() int64 { return 0 },
 				MultiCall: func() ([]string, error) {
-					return []string{"someKey", "someKey2"}, nil
+					return []string{"SPLITIO.split.someKey", "SPLITIO.split.someKey2"}, nil
 				},
 				ErrCall: func() error { return nil },
 			}
