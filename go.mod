@@ -2,9 +2,11 @@ module github.com/splitio/go-split-commons/v5
 
 go 1.18
 
+retract v5.2.0 // Version generates a breaking change and displays scan keys in a wrong way for adapters.
+
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.3.1
-	github.com/splitio/go-toolkit/v5 v5.3.2
+	github.com/splitio/go-toolkit/v5 v5.4.0
 	golang.org/x/sync v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 )

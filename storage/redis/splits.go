@@ -16,6 +16,8 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
+const DefaultScanCount = 10
+
 // SplitStorage is a redis-based implementation of split storage
 type SplitStorage struct {
 	client        *redis.PrefixedRedisClient
@@ -351,19 +353,36 @@ func (r *SplitStorage) Split(feature string) *dtos.SplitDTO {
 
 // SplitNames returns a slice of strings with all the split names
 func (r *SplitStorage) SplitNames() []string {
-	//keys, err := r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
 	keys, err := r.getAllSplitKeys()
 	if err != nil {
 		r.logger.Error("error fetching split names form redis: ", err)
 		return nil
 	}
 
-	splitNames := make([]string, 0, len(keys))
-	toRemove := strings.Replace(KeySplit, "{split}", "", 1) // Create a string with all the prefix to remove
-	for _, key := range keys {
-		splitNames = append(splitNames, strings.Replace(key, toRemove, "", 1)) // Extract split name from key
+	return cleanPrefixedKeys(keys, strings.Replace(KeySplit, "{split}", "", 1))
+}
+
+// GetAllFlagSetNames returns all flag set names
+func (r *SplitStorage) GetAllFlagSetNames() []string {
+	var cursor uint64
+	names := make([]string, 0)
+	scanKey := strings.Replace(KeyFlagSet, "{set}", "*", 1)
+	for {
+		keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
+		if err != nil {
+			r.logger.Error("error fetching flag set names form redis: ", err)
+			return nil
+		}
+
+		cursor = rCursor
+		names = append(names, keys...)
+
+		if cursor == 0 {
+			break
+		}
 	}
-	return splitNames
+
+	return cleanPrefixedKeys(names, strings.Replace(KeyFlagSet, "{set}", "", 1))
 }
 
 // TrafficTypeExists returns true or false depending on existence and counter
@@ -412,9 +431,30 @@ func (r *SplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 
 func (r *SplitStorage) getAllSplitKeys() ([]string, error) {
 	if !r.client.ClusterMode() {
-		return r.client.Keys(strings.Replace(KeySplit, "{split}", "*", 1))
+		var cursor uint64
+		featureFlagNames := make([]string, 0)
+		scanKey := strings.Replace(KeySplit, "{split}", "*", 1)
+		for {
+			keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
+			if err != nil {
+				return nil, err
+			}
+
+			cursor = rCursor
+			featureFlagNames = append(featureFlagNames, keys...)
+
+			if cursor == 0 {
+				break
+			}
+		}
+
+		return featureFlagNames, nil
 	}
 
+	return r.splitKeysClusterMode()
+}
+
+func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
 	// the hashtag is bundled in the prefix, so it will automatically be added,
 	// and we'll get the slot where all the redis keys are bound
 	slot, err := r.client.ClusterSlotForKey("__DUMMY__")

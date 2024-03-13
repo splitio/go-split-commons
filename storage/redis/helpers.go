@@ -73,3 +73,13 @@ func updateTrafficTypes(pipeline redis.Pipeline, currentFeatureFlags []dtos.Spli
 		pipeline.Incr(strings.Replace(KeyTrafficType, "{trafficType}", toAdd[idx].TrafficTypeName, 1))
 	}
 }
+
+func cleanPrefixedKeys(keys []string, toRemove string) []string {
+	toReturn := make([]string, 0, len(keys))
+
+	for _, key := range keys {
+		toReturn = append(toReturn, strings.Replace(key, toRemove, "", 1))
+	}
+
+	return toReturn
+}
