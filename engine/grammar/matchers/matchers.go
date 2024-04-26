@@ -45,6 +45,16 @@ const (
 	MatcherTypeEqualToBoolean = "EQUAL_TO_BOOLEAN"
 	// MatcherTypeMatchesString string value
 	MatcherTypeMatchesString = "MATCHES_STRING"
+	// MatcherEqualToSemver string value
+	MatcherEqualToSemver = "EQUAL_TO_SEMVER"
+	// MatcherTypeGreaterThanOrEqualToSemver string value
+	MatcherTypeGreaterThanOrEqualToSemver = "GREATER_THAN_OR_EQUAL_TO_SEMVER"
+	// MatcherTypeLessThanOrEqualToSemver string value
+	MatcherTypeLessThanOrEqualToSemver = "LESS_THAN_OR_EQUAL_TO_SEMVER"
+	// MatcherTypeBetweenSemver string value
+	MatcherTypeBetweenSemver = "BETWEEN_SEMVER"
+	// MatcherTypeInListSemver string value
+	MatcherTypeInListSemver = "IN_LIST_SEMVER"
 )
 
 // MatcherInterface should be implemented by all matchers

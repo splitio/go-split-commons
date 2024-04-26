@@ -1,3 +1,6 @@
+5.2.2 (Apr 26, 2024)
+- Added split version filter to be used on semver matchers logic.
+
 5.2.1 (Jan 25, 2024)
 - Implemented GetAllFlagSetNames method that returns all flag set names
 - Updated GetAllSplitKeys method to use scan command instead of keys.
