@@ -7,17 +7,17 @@ import (
 
 func Test_splitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
-	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, "1.0")
+	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, "1.0")
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, FLAG_V1_0)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, "1.1")
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_1)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
