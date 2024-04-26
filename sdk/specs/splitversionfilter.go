@@ -2,10 +2,6 @@ package specs
 
 import "github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 
-const (
-	v1 = "1.0"
-)
-
 type SplitVersionFilter struct {
 	excluded map[mkey]struct{}
 }
@@ -17,11 +13,11 @@ type mkey struct {
 
 func NewSplitVersionFilter() SplitVersionFilter {
 	matchersToExclude := map[mkey]struct{}{
-		mkey{v1, matchers.MatcherEqualToSemver}:                  {},
-		mkey{v1, matchers.MatcherTypeLessThanOrEqualToSemver}:    {},
-		mkey{v1, matchers.MatcherTypeGreaterThanOrEqualToSemver}: {},
-		mkey{v1, matchers.MatcherTypeBetweenSemver}:              {},
-		mkey{v1, matchers.MatcherTypeInListSemver}:               {},
+		mkey{V0, matchers.MatcherEqualToSemver}:                  {},
+		mkey{V0, matchers.MatcherTypeLessThanOrEqualToSemver}:    {},
+		mkey{V0, matchers.MatcherTypeGreaterThanOrEqualToSemver}: {},
+		mkey{V0, matchers.MatcherTypeBetweenSemver}:              {},
+		mkey{V0, matchers.MatcherTypeInListSemver}:               {},
 	}
 
 	return SplitVersionFilter{excluded: matchersToExclude}
