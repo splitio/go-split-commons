@@ -27,11 +27,11 @@ func TestSplitSynchronizerError(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
-			if changeNumber != -1 {
+			if fetchOptions.ChangeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
 			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
@@ -75,12 +75,12 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCall, 1)
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
-			if changeNumber != -1 {
+			if fetchOptions.ChangeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
 			return nil, &dtos.HTTPError{Code: 414, Message: "some"}
@@ -155,11 +155,11 @@ func TestSplitSynchronizer(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
-			if changeNumber != -1 {
+			if fetchOptions.ChangeNumber != -1 {
 				t.Error("Wrong changenumber passed")
 			}
 			return &dtos.SplitChangesDTO{
@@ -218,11 +218,11 @@ func TestSplitSyncProcess(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -231,7 +231,7 @@ func TestSplitSyncProcess(t *testing.T) {
 					Till:   3,
 				}, nil
 			case 2:
-				if changeNumber != 3 {
+				if fetchOptions.ChangeNumber != 3 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -325,7 +325,7 @@ func TestSplitTill(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
@@ -370,11 +370,11 @@ func TestByPassingCDN(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.ChangeNumber != nil {
+				if fetchOptions.Till != nil {
 					t.Error("It should be nil")
 				}
 				return &dtos.SplitChangesDTO{
@@ -383,7 +383,7 @@ func TestByPassingCDN(t *testing.T) {
 					Till:   2,
 				}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.ChangeNumber != nil {
+				if fetchOptions.Till != nil {
 					t.Error("It should be nil")
 				}
 				return &dtos.SplitChangesDTO{
@@ -392,7 +392,7 @@ func TestByPassingCDN(t *testing.T) {
 					Till:   2,
 				}, nil
 			case called == 12:
-				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
+				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
 					t.Error("ChangeNumber flag should be set with value 2")
 				}
 				return &dtos.SplitChangesDTO{
@@ -443,11 +443,11 @@ func TestByPassingCDNLimit(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.ChangeNumber != nil {
+				if fetchOptions.Till != nil {
 					t.Error("It should be nil")
 				}
 				return &dtos.SplitChangesDTO{
@@ -456,7 +456,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 					Till:   2,
 				}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.ChangeNumber != nil {
+				if fetchOptions.Till != nil {
 					t.Error("It should be nil")
 				}
 				return &dtos.SplitChangesDTO{
@@ -465,7 +465,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 					Till:   2,
 				}, nil
 			case called >= 12:
-				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
+				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
 					t.Error("ChangeNumber flag should be set with value 2")
 				}
 				return &dtos.SplitChangesDTO{
@@ -519,7 +519,7 @@ func TestProcessFFChange(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -550,7 +550,7 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
 				Till:   2,
@@ -596,7 +596,7 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -640,7 +640,7 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -677,7 +677,7 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
 				Till:   2,
@@ -764,11 +764,11 @@ func TestSplitSyncWithSets(t *testing.T) {
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set1"}}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -820,11 +820,11 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{

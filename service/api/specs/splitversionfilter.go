@@ -13,11 +13,11 @@ type mkey struct {
 
 func NewSplitVersionFilter() SplitVersionFilter {
 	matchersToExclude := map[mkey]struct{}{
-		mkey{FLAG_V1_0, matchers.MatcherEqualToSemver}:                  {},
-		mkey{FLAG_V1_0, matchers.MatcherTypeLessThanOrEqualToSemver}:    {},
-		mkey{FLAG_V1_0, matchers.MatcherTypeGreaterThanOrEqualToSemver}: {},
-		mkey{FLAG_V1_0, matchers.MatcherTypeBetweenSemver}:              {},
-		mkey{FLAG_V1_0, matchers.MatcherTypeInListSemver}:               {},
+		{FLAG_V1_0, matchers.MatcherEqualToSemver}:                  {},
+		{FLAG_V1_0, matchers.MatcherTypeLessThanOrEqualToSemver}:    {},
+		{FLAG_V1_0, matchers.MatcherTypeGreaterThanOrEqualToSemver}: {},
+		{FLAG_V1_0, matchers.MatcherTypeBetweenSemver}:              {},
+		{FLAG_V1_0, matchers.MatcherTypeInListSemver}:               {},
 	}
 
 	return SplitVersionFilter{excluded: matchersToExclude}

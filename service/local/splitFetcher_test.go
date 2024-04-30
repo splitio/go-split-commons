@@ -40,7 +40,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatClassic)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -55,7 +55,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// second call -- no change -- since == till
 
-	res, err = fetcher.Fetch(0, &service.FetchOptions{})
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(0))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -74,7 +74,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// third call -- change -- till > since
 
-	res, err = fetcher.Fetch(0, &service.FetchOptions{})
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(0))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -89,7 +89,7 @@ func TestLocalSplitFetcher(t *testing.T) {
 
 	// fourth call -- no change -- till != since
 
-	res, err = fetcher.Fetch(1, &service.FetchOptions{})
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(1))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -108,7 +108,7 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 
 	fetcher := NewFileSplitFetcher("../../testdata/splitChange_mock.json", logger, SplitFileFormatJSON)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -148,7 +148,7 @@ func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
 
-	_, err = fetcher.Fetch(-1, &service.FetchOptions{})
+	_, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 
 	if err != nil {
 		t.Error("fetching should not fail.")
@@ -184,7 +184,7 @@ func TestFetchSomeSplits(t *testing.T) {
 		fileFormat: SplitFileFormatJSON,
 	}
 	// 0) The CN from storage is -1, till and since are -1, and sha doesn't exist in the hash. It's going to return a split change with updates.
-	splitChange, _ := mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	splitChange, _ := mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if splitChange.Since != -1 || splitChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -194,7 +194,7 @@ func TestFetchSomeSplits(t *testing.T) {
 
 	fetches++
 	// 1) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a split change with updates.
-	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if splitChange.Since != -1 || splitChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -204,7 +204,7 @@ func TestFetchSomeSplits(t *testing.T) {
 
 	fetches++
 	// 2) The CN from storage is -1, till is 2323, and since is -1, and sha is the same as before. It's going to return a split change with the same data.
-	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if splitChange.Since != -1 || splitChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -214,7 +214,7 @@ func TestFetchSomeSplits(t *testing.T) {
 
 	fetches++
 	// 3) The CN from storage is -1, till is 2323, and since is -1, sha is different than before. It's going to return a split change with updates.
-	splitChange, _ = mockedFetchers.Fetch(-1, &service.FetchOptions{})
+	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 	if splitChange.Since != 2323 || splitChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -224,7 +224,7 @@ func TestFetchSomeSplits(t *testing.T) {
 
 	fetches++
 	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a split change with same data.
-	splitChange, _ = mockedFetchers.Fetch(2323, &service.FetchOptions{})
+	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
 	if splitChange.Since != 2323 || splitChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -234,7 +234,7 @@ func TestFetchSomeSplits(t *testing.T) {
 
 	fetches++
 	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a split change with updates.
-	splitChange, _ = mockedFetchers.Fetch(2323, &service.FetchOptions{})
+	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
 	if splitChange.Since != 2323 || splitChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
 	}
@@ -261,7 +261,7 @@ func TestSplitWithoutName(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
@@ -290,7 +290,7 @@ func TestSplitMatchersEmpty(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
@@ -328,7 +328,7 @@ func TestSplitSanitization(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
 
-	res, err := fetcher.Fetch(-1, &service.FetchOptions{})
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
 
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)

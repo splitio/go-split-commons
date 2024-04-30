@@ -85,4 +85,6 @@ type AdvancedConfig struct {
 	SplitsRefreshRate      int
 	SegmentsRefreshRate    int
 	FlagSetsFilter         []string
+	AuthSpecVersion        string
+	FlagsSpecVersion       string
 }

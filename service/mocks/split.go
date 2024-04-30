@@ -7,10 +7,10 @@ import (
 
 // MockSplitFetcher mocked implementation of split fetcher
 type MockSplitFetcher struct {
-	FetchCall func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error)
+	FetchCall func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error)
 }
 
 // Fetch mock
-func (m MockSplitFetcher) Fetch(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-	return m.FetchCall(changeNumber, fetchOptions)
+func (m MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+	return m.FetchCall(fetchOptions)
 }
