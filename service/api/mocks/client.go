@@ -1,14 +1,16 @@
 package mocks
 
+import "github.com/splitio/go-split-commons/v5/service"
+
 // ClientMock mocks client
 type ClientMock struct {
-	GetCall  func(service string, headers map[string]string) ([]byte, error)
-	PostCall func(service string, body []byte, headers map[string]string) error
+	GetCall  func(endpoint string, fetchOptions service.RequestParams) ([]byte, error)
+	PostCall func(endpoint string, body []byte, headers map[string]string) error
 }
 
 // Get mocks Get
-func (c ClientMock) Get(service string, headers map[string]string) ([]byte, error) {
-	return c.GetCall(service, headers)
+func (c ClientMock) Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error) {
+	return c.GetCall(endpoint, fetchOptions)
 }
 
 // Post mocks Post
