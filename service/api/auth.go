@@ -6,8 +6,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-split-commons/v5/service/api/spec"
-	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-split-commons/v5/service/api/specs"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -20,13 +19,9 @@ type AuthAPIClient struct {
 
 // NewAuthAPIClient instantiates and return an AuthAPIClient
 func NewAuthAPIClient(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) *AuthAPIClient {
-	var specV *string
-	if cfg.AuthSpecVersion == spec.FlagSpec { // only valid versions
-		specV = common.StringRef(spec.FlagSpec)
-	}
 	return &AuthAPIClient{
 		client:       NewHTTPClient(apikey, cfg, cfg.AuthServiceURL, logger, metadata),
-		fetchOptions: service.MakeAuthRequestParams(specV),
+		fetchOptions: service.MakeAuthRequestParams(specs.Match(cfg.AuthSpecVersion)),
 		logger:       logger,
 	}
 }

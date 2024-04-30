@@ -8,8 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-split-commons/v5/service/api/spec"
-	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-split-commons/v5/service/api/specs"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -35,17 +34,13 @@ type HTTPSplitFetcher struct {
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
 func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.SplitFetcher {
-	var specVersion *string
-	if cfg.FlagsSpecVersion == spec.FlagSpec { // only match valid versions
-		specVersion = common.StringRef(spec.FlagSpec)
-	}
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
-		specVersion:    specVersion,
+		specVersion:    specs.Match(cfg.FlagsSpecVersion),
 	}
 }
 
