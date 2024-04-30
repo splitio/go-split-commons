@@ -27,7 +27,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
@@ -75,7 +75,7 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCall, 1)
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
@@ -155,7 +155,7 @@ func TestSplitSynchronizer(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}
@@ -218,7 +218,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
@@ -325,7 +325,7 @@ func TestSplitTill(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
@@ -370,7 +370,7 @@ func TestByPassingCDN(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
@@ -443,7 +443,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
@@ -519,7 +519,7 @@ func TestProcessFFChange(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -550,7 +550,7 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		UpdateCall: func(toAdd, toRemove []dtos.SplitDTO, changeNumber int64) {},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
 				Till:   2,
@@ -596,7 +596,7 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -640,7 +640,7 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return nil, nil
 		},
@@ -677,7 +677,7 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 		},
 	}
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
 				Till:   2,
@@ -764,7 +764,7 @@ func TestSplitSyncWithSets(t *testing.T) {
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set1"}}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
@@ -820,7 +820,7 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:

@@ -78,7 +78,7 @@ func (s *FileSegmentFetcher) processSegmentJson(fileContents []byte, segmentName
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSegmentFetcher) Fetch(segmentName string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+func (s *FileSegmentFetcher) Fetch(segmentName string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 	fileContents, err := s.reader.ReadFile(fmt.Sprintf("%v/%v.json", s.segmentDirectory, segmentName))
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("could not find the segmentChange file for %s. error: %v", segmentName, err))

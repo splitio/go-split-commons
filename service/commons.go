@@ -23,47 +23,51 @@ type queryParamater struct {
 	value string
 }
 
-type FetchOptions interface {
+type RequestParams interface {
 	Apply(request *http.Request) error
 }
 
-type BaseOptions struct {
+type BaseRequestParams struct {
 	CacheControlHeaders bool
-	SpecVersion         *string
 }
 
-type SplitFetchOptions struct {
-	BaseOptions
+type FlagRequestParams struct {
+	BaseRequestParams
 	ChangeNumber   int64
 	FlagSetsFilter string
+	SpecVersion    *string
 	Till           *int64
 }
 
-func MakeSplitFetchOptions(specVersion *string) *SplitFetchOptions {
-	return &SplitFetchOptions{
-		BaseOptions: BaseOptions{
+func MakeFlagRequestParams() *FlagRequestParams {
+	return &FlagRequestParams{
+		BaseRequestParams: BaseRequestParams{
 			CacheControlHeaders: true,
-			SpecVersion:         specVersion,
 		},
 	}
 }
 
-func (s *SplitFetchOptions) WithChangeNumber(changeNumber int64) *SplitFetchOptions {
+func (s *FlagRequestParams) WithChangeNumber(changeNumber int64) *FlagRequestParams {
 	s.ChangeNumber = changeNumber
 	return s
 }
 
-func (s *SplitFetchOptions) WithFlagSetsFilter(flagSetsFilter string) *SplitFetchOptions {
+func (s *FlagRequestParams) WithFlagSetsFilter(flagSetsFilter string) *FlagRequestParams {
 	s.FlagSetsFilter = flagSetsFilter
 	return s
 }
 
-func (s *SplitFetchOptions) WithTill(till int64) *SplitFetchOptions {
+func (s *FlagRequestParams) WithSpecVersion(specVersion *string) *FlagRequestParams {
+	s.SpecVersion = specVersion
+	return s
+}
+
+func (s *FlagRequestParams) WithTill(till int64) *FlagRequestParams {
 	s.Till = common.Int64Ref(till)
 	return s
 }
 
-func (s *SplitFetchOptions) Apply(request *http.Request) error {
+func (s *FlagRequestParams) Apply(request *http.Request) error {
 	request.Header.Set(cacheControl, cacheControlNoCache)
 
 	queryParameters := []queryParamater{}
@@ -82,38 +86,34 @@ func (s *SplitFetchOptions) Apply(request *http.Request) error {
 	return nil
 }
 
-type SegmentFetchOptions struct {
-	BaseOptions
+type SegmentRequestParams struct {
+	BaseRequestParams
 	ChangeNumber int64
 	Till         *int64
 }
 
-func MakeSegmentFetchOptions(specVersion *string) *SegmentFetchOptions {
-	return &SegmentFetchOptions{
-		BaseOptions: BaseOptions{
+func MakeSegmentRequestParams() *SegmentRequestParams {
+	return &SegmentRequestParams{
+		BaseRequestParams: BaseRequestParams{
 			CacheControlHeaders: true,
-			SpecVersion:         specVersion,
 		},
 	}
 }
 
-func (s *SegmentFetchOptions) WithChangeNumber(changeNumber int64) *SegmentFetchOptions {
+func (s *SegmentRequestParams) WithChangeNumber(changeNumber int64) *SegmentRequestParams {
 	s.ChangeNumber = changeNumber
 	return s
 }
 
-func (s *SegmentFetchOptions) WithTill(till int64) *SegmentFetchOptions {
+func (s *SegmentRequestParams) WithTill(till int64) *SegmentRequestParams {
 	s.Till = common.Int64Ref(till)
 	return s
 }
 
-func (s *SegmentFetchOptions) Apply(request *http.Request) error {
+func (s *SegmentRequestParams) Apply(request *http.Request) error {
 	request.Header.Set(cacheControl, cacheControlNoCache)
 
 	queryParameters := []queryParamater{}
-	if s.SpecVersion != nil {
-		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.SpecVersion)})
-	}
 	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
 	if s.Till != nil {
 		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.Till, 10)})
@@ -123,20 +123,21 @@ func (s *SegmentFetchOptions) Apply(request *http.Request) error {
 	return nil
 }
 
-type AuthFetchOptions struct {
-	BaseOptions
+type AuthRequestParams struct {
+	BaseRequestParams
+	SpecVersion *string
 }
 
-func MakeAuthFetchOptions(specVersion *string) *AuthFetchOptions {
-	return &AuthFetchOptions{
-		BaseOptions: BaseOptions{
+func MakeAuthRequestParams(specVersion *string) *AuthRequestParams {
+	return &AuthRequestParams{
+		BaseRequestParams: BaseRequestParams{
 			CacheControlHeaders: true,
-			SpecVersion:         specVersion,
 		},
+		SpecVersion: specVersion,
 	}
 }
 
-func (s *AuthFetchOptions) Apply(request *http.Request) error {
+func (s *AuthRequestParams) Apply(request *http.Request) error {
 	request.Header.Set(cacheControl, cacheControlNoCache)
 
 	queryParams := request.URL.Query()

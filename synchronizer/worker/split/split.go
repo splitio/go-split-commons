@@ -8,7 +8,6 @@ import (
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-split-commons/v5/spec"
 	"github.com/splitio/go-split-commons/v5/storage"
 	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/backoff"
@@ -90,7 +89,7 @@ func (s *UpdaterImpl) processUpdate(featureFlags *dtos.SplitChangesDTO) {
 }
 
 // fetchUntil Hit endpoint, update storage and return when since==till.
-func (s *UpdaterImpl) fetchUntil(fetchOptions *service.SplitFetchOptions) (*UpdateResult, error) {
+func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*UpdateResult, error) {
 	// just guessing sizes so the we don't realloc immediately
 	segmentReferences := make([]string, 0, 10)
 	updatedSplitNames := make([]string, 0, 10)
@@ -129,7 +128,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.SplitFetchOptions) (*Upda
 }
 
 // attemptSplitSync Hit endpoint, update storage and return True if sync is complete.
-func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.SplitFetchOptions, till *int64) (internalSplitSync, error) {
+func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FlagRequestParams, till *int64) (internalSplitSync, error) {
 	internalBackoff := backoff.New(s.onDemandFetchBackoffBase, s.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
@@ -153,7 +152,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 		return &UpdateResult{}, nil
 	}
 
-	fetchOptions := service.MakeSplitFetchOptions(common.StringRefOrNil(spec.FlagSpec))
+	fetchOptions := service.MakeFlagRequestParams()
 	internalSyncResult, err := s.attemptSplitSync(fetchOptions, till)
 	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
@@ -163,7 +162,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
 		return internalSyncResult.updateResult, nil
 	}
-	withCDNBypass := service.MakeSplitFetchOptions(common.StringRefOrNil(spec.FlagSpec)).WithTill(internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	withCDNBypass := service.MakeFlagRequestParams().WithTill(internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
 	internalSyncResultCDNBypass, err := s.attemptSplitSync(withCDNBypass, till)
 	withoutCDNattempts := onDemandFetchBackoffMaxRetries - internalSyncResultCDNBypass.attempt
 	if err != nil {

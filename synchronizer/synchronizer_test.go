@@ -33,7 +33,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("no cache should be true")
 				}
@@ -93,7 +93,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -109,7 +109,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -185,7 +185,7 @@ func TestSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -201,7 +201,7 @@ func TestSyncAllOk(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -295,7 +295,7 @@ func TestPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -311,7 +311,7 @@ func TestPeriodicFetching(t *testing.T) {
 			},
 		},
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
-			FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+			FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 				if !fetchOptions.CacheControlHeaders {
 					t.Error("noCache should be true")
 				}
@@ -539,7 +539,7 @@ func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return nil, nil
 			},
@@ -588,7 +588,7 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return nil, nil
 			},
@@ -644,7 +644,7 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return nil, nil
 			},
@@ -707,7 +707,7 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if fetchOptions.ChangeNumber != 0 {
 					t.Error("Wrong changenumber passed")
@@ -785,7 +785,7 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return &dtos.SplitChangesDTO{
 					Till:   4,
@@ -853,7 +853,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return &dtos.SplitChangesDTO{
 					Till:   2,
@@ -949,7 +949,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	var recordUpdateCall int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{SegmentFetcher: httpMocks.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true")
 			}

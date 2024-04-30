@@ -103,7 +103,7 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 	s.segmentStorage.Update(segmentChanges.Name, toAdd, toRemove, segmentChanges.Till)
 }
 
-func (s *UpdaterImpl) fetchUntil(name string, fetchOptions *service.SegmentFetchOptions) (*UpdateResult, error) {
+func (s *UpdaterImpl) fetchUntil(name string, fetchOptions *service.SegmentRequestParams) (*UpdateResult, error) {
 	var updatedKeys []string
 	var err error
 	var currentSince int64
@@ -139,7 +139,7 @@ func (s *UpdaterImpl) fetchUntil(name string, fetchOptions *service.SegmentFetch
 	}, err
 }
 
-func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.SegmentFetchOptions) (internalSegmentSync, error) {
+func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.SegmentRequestParams) (internalSegmentSync, error) {
 	internalBackoff := backoff.New(s.onDemandFetchBackoffBase, s.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
@@ -158,7 +158,7 @@ func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions 
 
 // SynchronizeSegment syncs segment
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResult, error) {
-	fetchOptions := service.MakeSegmentFetchOptions(nil)
+	fetchOptions := service.MakeSegmentRequestParams()
 	s.hcMonitor.NotifyEvent(application.Segments)
 
 	currentSince, _ := s.segmentStorage.ChangeNumber(name)
@@ -175,7 +175,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
 		return internalSyncResult.updateResult, nil
 	}
-	withCDNBypass := service.MakeSegmentFetchOptions(nil).WithTill(internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	withCDNBypass := service.MakeSegmentRequestParams().WithTill(internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
 	internalSyncResultCDNBypass, err := s.attemptSegmentSync(name, till, withCDNBypass)
 	withoutCDNattempts := onDemandFetchBackoffMaxRetries - internalSyncResultCDNBypass.attempt
 	if err != nil {

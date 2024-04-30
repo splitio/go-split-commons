@@ -23,7 +23,7 @@ const (
 
 // Client interface for HTTPClient
 type Client interface {
-	Get(endpoint string, fetchOptions service.FetchOptions) ([]byte, error)
+	Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error)
 	Post(endpoint string, body []byte, headers map[string]string) error
 }
 
@@ -56,7 +56,7 @@ func NewHTTPClient(
 }
 
 // Get method is a get call to an url
-func (c *HTTPClient) Get(endpoint string, fetchOptions service.FetchOptions) ([]byte, error) {
+func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error) {
 	serviceURL := c.url + endpoint
 	c.logger.Debug("[GET] ", serviceURL)
 	req, _ := http.NewRequest("GET", serviceURL, nil)

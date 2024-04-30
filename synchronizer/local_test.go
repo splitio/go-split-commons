@@ -20,7 +20,7 @@ func TestLocalSyncAllError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -54,7 +54,7 @@ func TestLocalSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")
@@ -103,7 +103,7 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				if fetchOptions.ChangeNumber != -1 {
 					t.Error("Wrong changenumber passed")

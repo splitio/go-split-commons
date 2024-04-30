@@ -256,7 +256,7 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSplitFetcher) Fetch(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err

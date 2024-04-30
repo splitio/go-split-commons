@@ -52,7 +52,7 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("noCache should be true.")
 			}

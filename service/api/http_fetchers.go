@@ -8,6 +8,8 @@ import (
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/service/api/spec"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -16,7 +18,7 @@ type httpFetcherBase struct {
 	logger logging.LoggerInterface
 }
 
-func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.FetchOptions) ([]byte, error) {
+func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.RequestParams) ([]byte, error) {
 	data, err := h.client.Get(endpoint, fetchOptions)
 	if err != nil {
 		return nil, err
@@ -28,22 +30,28 @@ func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.FetchOp
 type HTTPSplitFetcher struct {
 	httpFetcherBase
 	flagSetsFilter string
+	specVersion    *string
 }
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
 func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.SplitFetcher {
+	var specVersion *string
+	if cfg.FlagsSpecVersion == spec.FlagSpec { // only match valid versions
+		specVersion = common.StringRef(spec.FlagSpec)
+	}
 	return &HTTPSplitFetcher{
 		httpFetcherBase: httpFetcherBase{
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
 		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
+		specVersion:    specVersion,
 	}
 }
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
-func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
-	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter)
+func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter).WithSpecVersion(f.specVersion)
 	data, err := f.fetchRaw("/splitChanges", fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)
@@ -76,7 +84,7 @@ func NewHTTPSegmentFetcher(apikey string, cfg conf.AdvancedConfig, logger loggin
 }
 
 // Fetch issues a GET request to the split backend and returns the contents of a particular segment
-func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/segmentChanges/")
 	bufferQuery.WriteString(segmentName)

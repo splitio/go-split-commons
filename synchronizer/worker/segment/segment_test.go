@@ -45,7 +45,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("should have requested no cache")
 			}
@@ -149,7 +149,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if !fetchOptions.CacheControlHeaders {
 				t.Error("should have requested no cache")
 			}
@@ -226,7 +226,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -340,7 +340,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -425,7 +425,7 @@ func TestSegmentTill(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 		},
@@ -489,7 +489,7 @@ func TestSegmentCDNBypass(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
@@ -568,7 +568,7 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
@@ -633,7 +633,7 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 	var done sync.Map
 	var inProgress int32
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if current := atomic.AddInt32(&inProgress, 1); current > maxConcurrency {
 				t.Errorf("throguhput exceeded max expected concurrency of %d. Is: %d", maxConcurrency, current)
 			}

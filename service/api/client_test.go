@@ -26,7 +26,7 @@ func TestGet(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/", service.MakeSplitFetchOptions(nil))
+	txt, errg := httpClient.Get("/", service.MakeFlagRequestParams())
 	if errg != nil {
 		t.Error(errg)
 	}
@@ -51,7 +51,7 @@ func TestGetSplitFetchOptions(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/test", service.MakeSplitFetchOptions(common.StringRef("v1.1")).WithChangeNumber(123456).WithTill(2345).WithFlagSetsFilter("filter"))
+	txt, errg := httpClient.Get("/test", service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(2345).WithFlagSetsFilter("filter").WithSpecVersion(common.StringRef("v1.1")))
 	if errg != nil {
 		t.Error(errg)
 	}
@@ -61,13 +61,13 @@ func TestGetSplitFetchOptions(t *testing.T) {
 	}
 }
 
-func TestGetSegmentFetchOptions(t *testing.T) {
+func TestGetSegmentRequestParams(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello, client")
 		if r.Header.Get(CacheControlHeader) != CacheControlNoCache {
 			t.Error("wrong header")
 		}
-		expected := "/test?s=v1.1&since=123456&till=2345"
+		expected := "/test?since=123456&till=2345"
 		if r.URL.String() != expected {
 			t.Error("wrong query params, expected ", expected, "got", r.URL.String())
 		}
@@ -76,7 +76,7 @@ func TestGetSegmentFetchOptions(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/test", service.MakeSegmentFetchOptions(common.StringRef("v1.1")).WithChangeNumber(123456).WithTill(2345))
+	txt, errg := httpClient.Get("/test", service.MakeSegmentRequestParams().WithChangeNumber(123456).WithTill(2345))
 	if errg != nil {
 		t.Error(errg)
 	}
@@ -101,7 +101,7 @@ func TestGetAuthOptions(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/test", service.MakeAuthFetchOptions(common.StringRef("v1.1")))
+	txt, errg := httpClient.Get("/test", service.MakeAuthRequestParams(common.StringRef("v1.1")))
 	if errg != nil {
 		t.Error(errg)
 	}
