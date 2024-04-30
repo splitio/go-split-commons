@@ -13,6 +13,7 @@ import (
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -26,6 +27,9 @@ func TestSpitChangesFetch(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Cache-Control") != "no-cache" {
 			t.Error("wrong cache control header")
+		}
+		if r.URL.Query().Get("since") != "123456" {
+			t.Error("wrong since")
 		}
 		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
 	}))
@@ -41,7 +45,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeSplitFetchOptions(common.AsStringOrNil("v1.1")).WithChangeNumber(123456))
 	if err != nil {
 		t.Error(err)
 	}
@@ -71,7 +75,7 @@ func TestSpitChangesFetchWithFlagOptions(t *testing.T) {
 	var queryParams url.Values
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cacheControl = r.Header.Get("Cache-Control")
+		cacheControl = r.Header.Get(CacheControlHeader)
 		queryParams = r.URL.Query()
 		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
 	}))
@@ -87,41 +91,28 @@ func TestSpitChangesFetchWithFlagOptions(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
+	_, err := splitFetcher.Fetch(service.MakeSplitFetchOptions(common.AsStringOrNil("v1.1")).WithChangeNumber(123456))
 	if err != nil {
 		t.Error(err)
 	}
-	if cacheControl != "no-cache" {
+	if cacheControl != CacheControlNoCache {
 		t.Error("Wrong header sent")
 	}
-	if !queryParams.Has("since") {
-		t.Error("Expected to have since")
-	}
-	if queryParams.Has("till") {
-		t.Error("Expected to not have till")
-	}
-	_, err = splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: false})
-	if err != nil {
-		t.Error(err)
-	}
-	if cacheControl != "" {
-		t.Error("Cache control should not be present")
-	}
-	if !queryParams.Has("since") {
+	if queryParams.Get("since") != "123456" {
 		t.Error("Expected to have since")
 	}
 	if queryParams.Has("till") {
 		t.Error("Expected to not have till")
 	}
 	expectedTill := int64(10000)
-	_, err = splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true, ChangeNumber: &expectedTill})
+	_, err = splitFetcher.Fetch(service.MakeSplitFetchOptions(common.AsStringOrNil("v1.1")).WithChangeNumber(123456).WithTill(expectedTill))
 	if err != nil {
 		t.Error(err)
 	}
-	if cacheControl != "no-cache" {
+	if cacheControl != CacheControlNoCache {
 		t.Error("Wrong header sent")
 	}
-	if !queryParams.Has("since") {
+	if queryParams.Get("since") != "123456" {
 		t.Error("Expected to have since")
 	}
 	if queryParams.Get("till") != "10000" {
@@ -136,7 +127,7 @@ func TestSpitChangesFetchWithFlagSetsFilter(t *testing.T) {
 	var queryParams url.Values
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cacheControl = r.Header.Get("Cache-Control")
+		cacheControl = r.Header.Get(CacheControlHeader)
 		queryParams = r.URL.Query()
 		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
 	}))
@@ -153,14 +144,14 @@ func TestSpitChangesFetchWithFlagSetsFilter(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: true})
+	_, err := splitFetcher.Fetch(service.MakeSplitFetchOptions(common.AsStringOrNil("v1.1")).WithChangeNumber(123456))
 	if err != nil {
 		t.Error(err)
 	}
-	if cacheControl != "no-cache" {
+	if cacheControl != CacheControlNoCache {
 		t.Error("Wrong header sent")
 	}
-	if !queryParams.Has("since") {
+	if queryParams.Get("since") != "123456" {
 		t.Error("Expected to have since")
 	}
 	if queryParams.Has("till") {
@@ -202,7 +193,7 @@ func TestSpitChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(-1, &service.FetchOptions{CacheControlHeaders: false})
+	_, err := splitFetcher.Fetch(service.MakeSplitFetchOptions(common.AsStringOrNil("v1.1")))
 	if err == nil {
 		t.Error("Error expected but not found")
 	}
@@ -226,7 +217,7 @@ func TestSegmentChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	segmentFetched, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
+	segmentFetched, err := segmentFetcher.Fetch("employees", service.MakeSegmentFetchOptions(common.AsStringOrNil("v1.1")))
 	if err != nil {
 		t.Error("Error fetching segment", err)
 		return
@@ -255,7 +246,7 @@ func TestSegmentChangesFetchHTTPError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
+	_, err := segmentFetcher.Fetch("employees", service.MakeSegmentFetchOptions(common.AsStringOrNil("v1.1")))
 	if err == nil {
 		t.Error("Error expected but not found")
 	}
@@ -268,7 +259,7 @@ func TestSegmentChangesFetchWithFlagOptions(t *testing.T) {
 	var queryParams url.Values
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cacheControl = r.Header.Get("Cache-Control")
+		cacheControl = r.Header.Get(CacheControlHeader)
 		queryParams = r.URL.Query()
 		fmt.Fprintln(w, string(segmentMock))
 	}))
@@ -284,41 +275,28 @@ func TestSegmentChangesFetchWithFlagOptions(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: true})
+	_, err := segmentFetcher.Fetch("employees", service.MakeSegmentFetchOptions(common.AsStringOrNil("v1.1")).WithChangeNumber(123456))
 	if err != nil {
 		t.Error(err)
 	}
-	if cacheControl != "no-cache" {
+	if cacheControl != CacheControlNoCache {
 		t.Error("Wrong header sent")
 	}
-	if !queryParams.Has("since") {
-		t.Error("Expected to have since")
-	}
-	if queryParams.Has("till") {
-		t.Error("Expected to not have till")
-	}
-	_, err = segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: false})
-	if err != nil {
-		t.Error(err)
-	}
-	if cacheControl != "" {
-		t.Error("Cache control should not be present")
-	}
-	if !queryParams.Has("since") {
+	if queryParams.Get("since") != "123456" {
 		t.Error("Expected to have since")
 	}
 	if queryParams.Has("till") {
 		t.Error("Expected to not have till")
 	}
 	expectedTill := int64(10000)
-	_, err = segmentFetcher.Fetch("employees", -1, &service.FetchOptions{CacheControlHeaders: true, ChangeNumber: &expectedTill})
+	_, err = segmentFetcher.Fetch("employees", service.MakeSegmentFetchOptions(common.AsStringOrNil("v1.1")).WithTill(expectedTill).WithChangeNumber(123456))
 	if err != nil {
 		t.Error(err)
 	}
-	if cacheControl != "no-cache" {
+	if cacheControl != CacheControlNoCache {
 		t.Error("Wrong header sent")
 	}
-	if !queryParams.Has("since") {
+	if queryParams.Get("since") != "123456" {
 		t.Error("Expected to have since")
 	}
 	if queryParams.Get("till") != "10000" {

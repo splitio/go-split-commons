@@ -1,47 +1,166 @@
 package service
 
 import (
+	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/splitio/go-toolkit/v5/common"
 )
 
 const (
 	cacheControl        = "Cache-Control"
 	cacheControlNoCache = "no-cache"
+	sets                = "sets"
+	since               = "since"
+	spec                = "s"
+	till                = "till"
 )
 
-type FetchOptions struct {
+type queryParamater struct {
+	key   string
+	value string
+}
+
+type FetchOptions interface {
+	Apply(request *http.Request) error
+}
+
+type BaseOptions struct {
 	CacheControlHeaders bool
-	ChangeNumber        *int64
-	FlagSetsFilter      string
+	SpecVersion         *string
 }
 
-func NewFetchOptions(cacheControlHeaders bool, changeNumber *int64) FetchOptions {
-	return FetchOptions{
-		CacheControlHeaders: cacheControlHeaders,
-		ChangeNumber:        changeNumber,
+type SplitFetchOptions struct {
+	BaseOptions
+	ChangeNumber   int64
+	FlagSetsFilter string
+	Till           *int64
+}
+
+func MakeSplitFetchOptions(specVersion *string) *SplitFetchOptions {
+	return &SplitFetchOptions{
+		BaseOptions: BaseOptions{
+			CacheControlHeaders: true,
+			SpecVersion:         specVersion,
+		},
 	}
 }
 
-func (f *FetchOptions) SetFlagSetsFilter(flagSetsFilter string) {
-	f.FlagSetsFilter = flagSetsFilter
+func (s *SplitFetchOptions) WithChangeNumber(changeNumber int64) *SplitFetchOptions {
+	s.ChangeNumber = changeNumber
+	return s
 }
 
-func BuildFetch(changeNumber int64, fetchOptions *FetchOptions) (map[string]string, map[string]string) {
-	queryParams := make(map[string]string)
-	headers := make(map[string]string)
-	queryParams["since"] = strconv.FormatInt(changeNumber, 10)
+func (s *SplitFetchOptions) WithFlagSetsFilter(flagSetsFilter string) *SplitFetchOptions {
+	s.FlagSetsFilter = flagSetsFilter
+	return s
+}
 
-	if fetchOptions == nil {
-		return queryParams, headers
+func (s *SplitFetchOptions) WithTill(till int64) *SplitFetchOptions {
+	s.Till = common.Int64Ref(till)
+	return s
+}
+
+func (s *SplitFetchOptions) Apply(request *http.Request) error {
+	request.Header.Set(cacheControl, cacheControlNoCache)
+
+	queryParameters := []queryParamater{}
+	if s.SpecVersion != nil {
+		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.SpecVersion)})
 	}
-	if fetchOptions.CacheControlHeaders {
-		headers[cacheControl] = cacheControlNoCache
+	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
+	if len(s.FlagSetsFilter) > 0 {
+		queryParameters = append(queryParameters, queryParamater{key: sets, value: s.FlagSetsFilter})
 	}
-	if fetchOptions.ChangeNumber != nil {
-		queryParams["till"] = strconv.FormatInt(*fetchOptions.ChangeNumber, 10)
+	if s.Till != nil {
+		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.Till, 10)})
 	}
-	if len(fetchOptions.FlagSetsFilter) > 0 {
-		queryParams["sets"] = fetchOptions.FlagSetsFilter
+
+	request.URL.RawQuery = encode(queryParameters)
+	return nil
+}
+
+type SegmentFetchOptions struct {
+	BaseOptions
+	ChangeNumber int64
+	Till         *int64
+}
+
+func MakeSegmentFetchOptions(specVersion *string) *SegmentFetchOptions {
+	return &SegmentFetchOptions{
+		BaseOptions: BaseOptions{
+			CacheControlHeaders: true,
+			SpecVersion:         specVersion,
+		},
 	}
-	return queryParams, headers
+}
+
+func (s *SegmentFetchOptions) WithChangeNumber(changeNumber int64) *SegmentFetchOptions {
+	s.ChangeNumber = changeNumber
+	return s
+}
+
+func (s *SegmentFetchOptions) WithTill(till int64) *SegmentFetchOptions {
+	s.Till = common.Int64Ref(till)
+	return s
+}
+
+func (s *SegmentFetchOptions) Apply(request *http.Request) error {
+	request.Header.Set(cacheControl, cacheControlNoCache)
+
+	queryParameters := []queryParamater{}
+	if s.SpecVersion != nil {
+		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.SpecVersion)})
+	}
+	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
+	if s.Till != nil {
+		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.Till, 10)})
+	}
+
+	request.URL.RawQuery = encode(queryParameters)
+	return nil
+}
+
+type AuthFetchOptions struct {
+	BaseOptions
+}
+
+func MakeAuthFetchOptions(specVersion *string) *AuthFetchOptions {
+	return &AuthFetchOptions{
+		BaseOptions: BaseOptions{
+			CacheControlHeaders: true,
+			SpecVersion:         specVersion,
+		},
+	}
+}
+
+func (s *AuthFetchOptions) Apply(request *http.Request) error {
+	request.Header.Set(cacheControl, cacheControlNoCache)
+
+	queryParams := request.URL.Query()
+	if s.SpecVersion != nil {
+		queryParams.Add(spec, common.StringFromRef(s.SpecVersion))
+	}
+
+	request.URL.RawQuery = queryParams.Encode()
+	return nil
+}
+
+func encode(v []queryParamater) string {
+	if v == nil {
+		return ""
+	}
+	var buf strings.Builder
+	for _, k := range v {
+		keyEscaped := url.QueryEscape(k.key)
+		if buf.Len() > 0 {
+			buf.WriteByte('&')
+		}
+		buf.WriteString(keyEscaped)
+		buf.WriteByte('=')
+		buf.WriteString(url.QueryEscape(k.value))
+	}
+	return buf.String()
 }

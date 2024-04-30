@@ -5,6 +5,9 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/conf"
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v5/spec"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -24,7 +27,7 @@ func NewAuthAPIClient(apikey string, cfg conf.AdvancedConfig, logger logging.Log
 
 // Authenticate performs authentication for push services
 func (a *AuthAPIClient) Authenticate() (*dtos.Token, error) {
-	raw, err := a.client.Get("/api/v2/auth", map[string]string{CacheControlHeader: CacheControlNoCache})
+	raw, err := a.client.Get("/api/v2/auth", service.MakeAuthFetchOptions(common.StringRef(spec.FlagSpec)))
 	if err != nil {
 		a.logger.Error("Error while authenticating for streaming", err)
 		return nil, err

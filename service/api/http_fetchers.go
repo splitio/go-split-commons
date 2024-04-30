@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"net/url"
 	"strings"
 
 	"github.com/splitio/go-split-commons/v5/conf"
@@ -17,17 +16,8 @@ type httpFetcherBase struct {
 	logger logging.LoggerInterface
 }
 
-func (h *httpFetcherBase) fetchRaw(endpoint string, since int64, fetchOptions *service.FetchOptions) ([]byte, error) {
-	queryParams, headers := service.BuildFetch(since, fetchOptions)
-	if len(queryParams) > 0 {
-		params := url.Values{}
-		for key, value := range queryParams {
-			params.Add(key, value)
-		}
-		endpoint = endpoint + "?" + params.Encode()
-	}
-
-	data, err := h.client.Get(endpoint, headers)
+func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.FetchOptions) ([]byte, error) {
+	data, err := h.client.Get(endpoint, fetchOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +42,9 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 }
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
-func (f *HTTPSplitFetcher) Fetch(since int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-	fetchOptions.SetFlagSetsFilter(f.flagSetsFilter)
-	data, err := f.fetchRaw("/splitChanges", since, fetchOptions)
+func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.SplitFetchOptions) (*dtos.SplitChangesDTO, error) {
+	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter)
+	data, err := f.fetchRaw("/splitChanges", fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)
 		return nil, err
@@ -86,12 +76,12 @@ func NewHTTPSegmentFetcher(apikey string, cfg conf.AdvancedConfig, logger loggin
 }
 
 // Fetch issues a GET request to the split backend and returns the contents of a particular segment
-func (f *HTTPSegmentFetcher) Fetch(segmentName string, since int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.SegmentFetchOptions) (*dtos.SegmentChangesDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/segmentChanges/")
 	bufferQuery.WriteString(segmentName)
 
-	data, err := f.fetchRaw(bufferQuery.String(), since, fetchOptions)
+	data, err := f.fetchRaw(bufferQuery.String(), fetchOptions)
 	if err != nil {
 		f.logger.Error(err.Error())
 		return nil, err

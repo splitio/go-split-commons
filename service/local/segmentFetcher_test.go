@@ -17,7 +17,7 @@ func TestLocalSegmentFetcherJson(t *testing.T) {
 
 	fetcher := NewFileSegmentFetcher("../../testdata", logger)
 
-	res, err := fetcher.Fetch("segment_mock", -1, &service.FetchOptions{})
+	res, err := fetcher.Fetch("segment_mock", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
@@ -44,7 +44,7 @@ func TestInvalidTill(t *testing.T) {
 
 	fetcher := NewFileSegmentFetcher("../../testdata", logger)
 
-	res, err := fetcher.Fetch("segmentTillInvalid", -1, &service.FetchOptions{})
+	res, err := fetcher.Fetch("segmentTillInvalid", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if err != nil {
 		t.Error("should not fail.")
 	}
@@ -138,7 +138,7 @@ func TestFetchSomeSegments(t *testing.T) {
 	}
 
 	// 0) The CN from storage is -1, till and since are -1, and sha doesn't exist in the hash. It's going to return a segment change with updates.
-	segmentChange, _ := mockedFetchers.Fetch("test_1", -1, nil)
+	segmentChange, _ := mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -151,7 +151,7 @@ func TestFetchSomeSegments(t *testing.T) {
 
 	fetches++
 	// 1) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a segment change with updates.
-	segmentChange, _ = mockedFetchers.Fetch("test_1", -1, nil)
+	segmentChange, _ = mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -164,7 +164,7 @@ func TestFetchSomeSegments(t *testing.T) {
 
 	fetches++
 	// 2) The CN from storage is -1, till is 2323, and since is -1, and sha is the same as before. It's going to return a segment change with the same data.
-	segmentChange, _ = mockedFetchers.Fetch("test_1", -1, nil)
+	segmentChange, _ = mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if segmentChange.Since != -1 || segmentChange.Till != -1 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -177,7 +177,7 @@ func TestFetchSomeSegments(t *testing.T) {
 
 	fetches++
 	// 3) The CN from storage is -1, till is 2323, and since is -1, sha is different than before. It's going to return a segment change with updates.
-	segmentChange, _ = mockedFetchers.Fetch("test_1", -1, nil)
+	segmentChange, _ = mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -190,7 +190,7 @@ func TestFetchSomeSegments(t *testing.T) {
 
 	fetches++
 	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a segment change with same data.
-	segmentChange, _ = mockedFetchers.Fetch("test_1", 2323, nil)
+	segmentChange, _ = mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(2323))
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -203,7 +203,7 @@ func TestFetchSomeSegments(t *testing.T) {
 
 	fetches++
 	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a segment change with updates.
-	segmentChange, _ = mockedFetchers.Fetch("test_1", 2323, nil)
+	segmentChange, _ = mockedFetchers.Fetch("test_1", service.MakeSegmentFetchOptions(nil).WithChangeNumber(2323))
 	if segmentChange.Since != 2323 || segmentChange.Till != 2323 {
 		t.Error("Wrong since/till. Got: ", segmentChange.Since, segmentChange.Till)
 	}
@@ -221,7 +221,7 @@ func TestSegmentWithoutName(t *testing.T) {
 
 	fetcher := NewFileSegmentFetcher("../../testdata", logger)
 
-	_, err := fetcher.Fetch("segmentWithoutName", -1, &service.FetchOptions{})
+	_, err := fetcher.Fetch("segmentWithoutName", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if err == nil {
 		t.Error("fetching should fail.")
 	}
@@ -232,7 +232,7 @@ func TestSegmentSanitization(t *testing.T) {
 
 	fetcher := NewFileSegmentFetcher("../../testdata", logger)
 
-	res, err := fetcher.Fetch("segmentSanitization", -1, &service.FetchOptions{})
+	res, err := fetcher.Fetch("segmentSanitization", service.MakeSegmentFetchOptions(nil).WithChangeNumber(-1))
 	if err != nil {
 		t.Error("fetching should not fail. Got: ", err)
 	}
