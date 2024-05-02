@@ -77,7 +77,7 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 		fetchOptions.Apply(req)
 	}
 
-	c.logger.Debug("[GET] ", req.URL.RawQuery)
+	c.logger.Debug("[GET] ", req.URL.String())
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Error("Error requesting data to API: ", req.URL.String(), err.Error())
