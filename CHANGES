@@ -1,3 +1,6 @@
+6.X.X ( XX, 2024)
+- Changed FetchOptions and Fetch API.
+
 5.2.2 (Apr 26, 2024)
 - Added split version filter to be used on semver matchers logic.
 

@@ -27,66 +27,70 @@ type RequestParams interface {
 	Apply(request *http.Request) error
 }
 
-type BaseRequestParams struct {
-	CacheControlHeaders bool
+type baseRequestParams struct {
+	cacheControlHeaders bool
 }
 
 type FlagRequestParams struct {
-	BaseRequestParams
-	ChangeNumber   int64
-	FlagSetsFilter string
-	SpecVersion    *string
-	Till           *int64
+	baseRequestParams
+	changeNumber   int64
+	flagSetsFilter string
+	specVersion    *string
+	till           *int64
 }
 
 func MakeFlagRequestParams() *FlagRequestParams {
 	return &FlagRequestParams{
-		BaseRequestParams: BaseRequestParams{
-			CacheControlHeaders: true,
+		baseRequestParams: baseRequestParams{
+			cacheControlHeaders: true,
 		},
 	}
 }
 
 func (s *FlagRequestParams) WithCacheControl(cacheControl bool) *FlagRequestParams {
-	s.CacheControlHeaders = cacheControl
+	s.cacheControlHeaders = cacheControl
 	return s
 }
 
 func (s *FlagRequestParams) WithChangeNumber(changeNumber int64) *FlagRequestParams {
-	s.ChangeNumber = changeNumber
+	s.changeNumber = changeNumber
 	return s
 }
 
 func (s *FlagRequestParams) WithFlagSetsFilter(flagSetsFilter string) *FlagRequestParams {
-	s.FlagSetsFilter = flagSetsFilter
+	s.flagSetsFilter = flagSetsFilter
 	return s
 }
 
 func (s *FlagRequestParams) WithSpecVersion(specVersion *string) *FlagRequestParams {
-	s.SpecVersion = specVersion
+	s.specVersion = specVersion
 	return s
 }
 
 func (s *FlagRequestParams) WithTill(till int64) *FlagRequestParams {
-	s.Till = common.Int64Ref(till)
+	s.till = common.Int64Ref(till)
 	return s
 }
 
+func (s *FlagRequestParams) ChangeNumber() int64 {
+	return s.changeNumber
+}
+
 func (s *FlagRequestParams) Apply(request *http.Request) error {
-	if s.CacheControlHeaders {
+	if s.cacheControlHeaders {
 		request.Header.Set(cacheControl, cacheControlNoCache)
 	}
 
 	queryParameters := []queryParamater{}
-	if s.SpecVersion != nil {
-		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.SpecVersion)})
+	if s.specVersion != nil {
+		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.specVersion)})
 	}
-	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
-	if len(s.FlagSetsFilter) > 0 {
-		queryParameters = append(queryParameters, queryParamater{key: sets, value: s.FlagSetsFilter})
+	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.changeNumber, 10)})
+	if len(s.flagSetsFilter) > 0 {
+		queryParameters = append(queryParameters, queryParamater{key: sets, value: s.flagSetsFilter})
 	}
-	if s.Till != nil {
-		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.Till, 10)})
+	if s.till != nil {
+		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.till, 10)})
 	}
 
 	request.URL.RawQuery = encode(queryParameters)
@@ -94,43 +98,47 @@ func (s *FlagRequestParams) Apply(request *http.Request) error {
 }
 
 type SegmentRequestParams struct {
-	BaseRequestParams
-	ChangeNumber int64
-	Till         *int64
+	baseRequestParams
+	changeNumber int64
+	till         *int64
 }
 
 func MakeSegmentRequestParams() *SegmentRequestParams {
 	return &SegmentRequestParams{
-		BaseRequestParams: BaseRequestParams{
-			CacheControlHeaders: true,
+		baseRequestParams: baseRequestParams{
+			cacheControlHeaders: true,
 		},
 	}
 }
 
 func (s *SegmentRequestParams) WithCacheControl(cacheControl bool) *SegmentRequestParams {
-	s.CacheControlHeaders = cacheControl
+	s.cacheControlHeaders = cacheControl
 	return s
 }
 
 func (s *SegmentRequestParams) WithChangeNumber(changeNumber int64) *SegmentRequestParams {
-	s.ChangeNumber = changeNumber
+	s.changeNumber = changeNumber
 	return s
 }
 
 func (s *SegmentRequestParams) WithTill(till int64) *SegmentRequestParams {
-	s.Till = common.Int64Ref(till)
+	s.till = common.Int64Ref(till)
 	return s
 }
 
+func (s *SegmentRequestParams) ChangeNumber() int64 {
+	return s.changeNumber
+}
+
 func (s *SegmentRequestParams) Apply(request *http.Request) error {
-	if s.CacheControlHeaders {
+	if s.cacheControlHeaders {
 		request.Header.Set(cacheControl, cacheControlNoCache)
 	}
 
 	queryParameters := []queryParamater{}
-	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
-	if s.Till != nil {
-		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.Till, 10)})
+	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.changeNumber, 10)})
+	if s.till != nil {
+		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.till, 10)})
 	}
 
 	request.URL.RawQuery = encode(queryParameters)
@@ -138,32 +146,32 @@ func (s *SegmentRequestParams) Apply(request *http.Request) error {
 }
 
 type AuthRequestParams struct {
-	BaseRequestParams
-	SpecVersion *string
+	baseRequestParams
+	specVersion *string
 }
 
 func MakeAuthRequestParams(specVersion *string) *AuthRequestParams {
 	return &AuthRequestParams{
-		BaseRequestParams: BaseRequestParams{
-			CacheControlHeaders: true,
+		baseRequestParams: baseRequestParams{
+			cacheControlHeaders: true,
 		},
-		SpecVersion: specVersion,
+		specVersion: specVersion,
 	}
 }
 
 func (s *AuthRequestParams) WithCacheControl(cacheControl bool) *AuthRequestParams {
-	s.CacheControlHeaders = cacheControl
+	s.cacheControlHeaders = cacheControl
 	return s
 }
 
 func (s *AuthRequestParams) Apply(request *http.Request) error {
-	if s.CacheControlHeaders {
+	if s.cacheControlHeaders {
 		request.Header.Set(cacheControl, cacheControlNoCache)
 	}
 
 	queryParams := request.URL.Query()
-	if s.SpecVersion != nil {
-		queryParams.Add(spec, common.StringFromRef(s.SpecVersion))
+	if s.specVersion != nil {
+		queryParams.Add(spec, common.StringFromRef(s.specVersion))
 	}
 
 	request.URL.RawQuery = queryParams.Encode()
