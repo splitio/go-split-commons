@@ -11,7 +11,7 @@ import (
 )
 
 // ProcessMatchers processes the matchers of a split and validates them
-func ProcessMatchers(split dtos.SplitDTO, logger logging.LoggerInterface) {
+func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
 	for idx := range split.Conditions {
 		for jdx := range split.Conditions[idx].MatcherGroup.Matchers {
 			_, err := matchers.BuildMatcher(&split.Conditions[idx].MatcherGroup.Matchers[jdx], &injection.Context{}, logger)
