@@ -69,3 +69,29 @@ func TestAuthRequestParams(t *testing.T) {
 		t.Error("Query params not set correctly, expected: test?s=v1, got:", req.URL.String())
 	}
 }
+
+func TestOverrideCacheControl(t *testing.T) {
+	flagParams := MakeFlagRequestParams().WithCacheControl(false)
+	req, _ := http.NewRequest("GET", "test", nil)
+	flagParams.Apply(req)
+
+	if req.Header.Get(cacheControl) != "" {
+		t.Error("Cache control header should not be set")
+	}
+
+	segmentParams := MakeSegmentRequestParams().WithCacheControl(false)
+	req, _ = http.NewRequest("GET", "test", nil)
+	segmentParams.Apply(req)
+
+	if req.Header.Get(cacheControl) != "" {
+		t.Error("Cache control header should not be set")
+	}
+
+	authParams := MakeAuthRequestParams(nil).WithCacheControl(false)
+	req, _ = http.NewRequest("GET", "test", nil)
+	authParams.Apply(req)
+
+	if req.Header.Get(cacheControl) != "" {
+		t.Error("Cache control header should not be set")
+	}
+}

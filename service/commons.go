@@ -47,6 +47,11 @@ func MakeFlagRequestParams() *FlagRequestParams {
 	}
 }
 
+func (s *FlagRequestParams) WithCacheControl(cacheControl bool) *FlagRequestParams {
+	s.CacheControlHeaders = cacheControl
+	return s
+}
+
 func (s *FlagRequestParams) WithChangeNumber(changeNumber int64) *FlagRequestParams {
 	s.ChangeNumber = changeNumber
 	return s
@@ -68,7 +73,9 @@ func (s *FlagRequestParams) WithTill(till int64) *FlagRequestParams {
 }
 
 func (s *FlagRequestParams) Apply(request *http.Request) error {
-	request.Header.Set(cacheControl, cacheControlNoCache)
+	if s.CacheControlHeaders {
+		request.Header.Set(cacheControl, cacheControlNoCache)
+	}
 
 	queryParameters := []queryParamater{}
 	if s.SpecVersion != nil {
@@ -100,6 +107,11 @@ func MakeSegmentRequestParams() *SegmentRequestParams {
 	}
 }
 
+func (s *SegmentRequestParams) WithCacheControl(cacheControl bool) *SegmentRequestParams {
+	s.CacheControlHeaders = cacheControl
+	return s
+}
+
 func (s *SegmentRequestParams) WithChangeNumber(changeNumber int64) *SegmentRequestParams {
 	s.ChangeNumber = changeNumber
 	return s
@@ -111,7 +123,9 @@ func (s *SegmentRequestParams) WithTill(till int64) *SegmentRequestParams {
 }
 
 func (s *SegmentRequestParams) Apply(request *http.Request) error {
-	request.Header.Set(cacheControl, cacheControlNoCache)
+	if s.CacheControlHeaders {
+		request.Header.Set(cacheControl, cacheControlNoCache)
+	}
 
 	queryParameters := []queryParamater{}
 	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.ChangeNumber, 10)})
@@ -137,8 +151,15 @@ func MakeAuthRequestParams(specVersion *string) *AuthRequestParams {
 	}
 }
 
+func (s *AuthRequestParams) WithCacheControl(cacheControl bool) *AuthRequestParams {
+	s.CacheControlHeaders = cacheControl
+	return s
+}
+
 func (s *AuthRequestParams) Apply(request *http.Request) error {
-	request.Header.Set(cacheControl, cacheControlNoCache)
+	if s.CacheControlHeaders {
+		request.Header.Set(cacheControl, cacheControlNoCache)
+	}
 
 	queryParams := request.URL.Query()
 	if s.SpecVersion != nil {
