@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/grammar"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v5/service"
@@ -873,5 +875,56 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	s4 := splitStorage.Split("split4")
 	if s4 == nil {
 		t.Error("split4 should be present")
+	}
+}
+
+func TestProcessMatchers(t *testing.T) {
+	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
+	splitChange := &dtos.SplitChangesDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
+		{
+			Name:   "split1",
+			Status: Active,
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "NEW_MATCHER",
+					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Matchers: []dtos.MatcherDTO{
+							{MatcherType: "NEW_MATCHER", KeySelector: nil},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "split2",
+			Status: Active,
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: grammar.ConditionTypeRollout,
+					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Matchers: []dtos.MatcherDTO{
+							{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+						},
+					},
+				},
+			},
+		},
+	}}
+	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
+
+	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
+		t.Error("ConditionType should be WHITELIST")
+	}
+	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+		t.Error("MatcherType should be ALL_KEYS")
+	}
+
+	if toAdd[1].Conditions[0].ConditionType != grammar.ConditionTypeRollout {
+		t.Error("ConditionType should be ROLLOUT")
+	}
+	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+		t.Error("MatcherType should be ALL_KEYS")
 	}
 }
