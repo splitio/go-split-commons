@@ -5,10 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/engine/evaluator"
-	"github.com/splitio/go-split-commons/v5/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v5/engine/grammar"
-	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v5/engine/validator"
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
@@ -16,7 +13,6 @@ import (
 	"github.com/splitio/go-split-commons/v5/telemetry"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -201,28 +197,13 @@ func appendSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
 	return dst
 }
 
-func (s *UpdaterImpl) processMatchers(split dtos.SplitDTO) dtos.SplitDTO {
-	for idx := range split.Conditions {
-		for jdx := range split.Conditions[idx].MatcherGroup.Matchers {
-			_, err := matchers.BuildMatcher(&split.Conditions[idx].MatcherGroup.Matchers[jdx], &injection.Context{}, s.logger)
-			if err != nil {
-				split.Conditions[idx].ConditionType = grammar.ConditionTypeWhitelist
-				split.Conditions[idx].MatcherGroup.Matchers[jdx].MatcherType = matchers.MatcherTypeAllKeys
-				split.Conditions[idx].MatcherGroup.Matchers[jdx].String = nil
-				split.Conditions[idx].Label = impressionlabels.UnsupportedMatcherType
-				split.Conditions[idx].Partitions = []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}}
-			}
-		}
-	}
-	return split
-}
-
 func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
 	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	for idx := range featureFlags.Splits {
 		if featureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(featureFlags.Splits[idx].Sets) {
-			toAdd = append(toAdd, s.processMatchers(featureFlags.Splits[idx]))
+			validator.ProcessMatchers(featureFlags.Splits[idx], s.logger)
+			toAdd = append(toAdd, featureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, featureFlags.Splits[idx])
 		}
