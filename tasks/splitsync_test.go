@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -53,12 +54,14 @@ func TestSplitSyncTask(t *testing.T) {
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("noCache should be true.")
-			}
 			atomic.AddInt64(&call, 1)
-			if fetchOptions.ChangeNumber != -1 {
-				t.Error("Wrong changenumber passed")
+			req, _ := http.NewRequest("GET", "test", nil)
+			fetchOptions.Apply(req)
+			if req.Header.Get("Cache-Control") != "no-cache" {
+				t.Error("Wrong header")
+			}
+			if req.URL.Query().Get("since") != "-1" {
+				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},

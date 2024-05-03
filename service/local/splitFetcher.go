@@ -270,13 +270,13 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos
 	case SplitFileFormatYAML:
 		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return s.processSplitJson(data, fetchOptions.ChangeNumber)
+		return s.processSplitJson(data, fetchOptions.ChangeNumber())
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 
 	}
 
-	till := fetchOptions.ChangeNumber
+	till := fetchOptions.ChangeNumber()
 
 	// Get the SHA1 sum of the raw contents of the file, and compare it to the last one seen
 	// if it's equal, nothing has changed, return since == till
@@ -291,7 +291,7 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos
 	s.lastHash = currSum
 	return &dtos.SplitChangesDTO{
 		Splits: splits,
-		Since:  fetchOptions.ChangeNumber,
+		Since:  fetchOptions.ChangeNumber(),
 		Till:   till,
 	}, nil
 }

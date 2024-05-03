@@ -10,7 +10,7 @@ import (
 )
 
 func TestProcessMatchers(t *testing.T) {
-	split := dtos.SplitDTO{
+	split := &dtos.SplitDTO{
 		Conditions: []dtos.ConditionDTO{
 			{
 				ConditionType: "NEW_MATCHER",
@@ -31,7 +31,7 @@ func TestProcessMatchers(t *testing.T) {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
-	split = dtos.SplitDTO{
+	split = &dtos.SplitDTO{
 		Conditions: []dtos.ConditionDTO{
 			{
 				ConditionType: grammar.ConditionTypeRollout,
