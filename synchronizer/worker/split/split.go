@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/validator"
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	"github.com/splitio/go-split-commons/v5/healthcheck/application"
 	"github.com/splitio/go-split-commons/v5/service"
@@ -201,6 +202,7 @@ func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags *dtos.SplitChangesD
 	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	for idx := range featureFlags.Splits {
 		if featureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(featureFlags.Splits[idx].Sets) {
+			validator.ProcessMatchers(&featureFlags.Splits[idx], s.logger)
 			toAdd = append(toAdd, featureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, featureFlags.Splits[idx])

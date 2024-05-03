@@ -20,3 +20,6 @@ const Exception = "exception"
 
 // ClientNotReady label will be returned when the client is not ready
 const ClientNotReady = "not ready"
+
+// UnsupportedMatcherType label will be returned when a matcher is not supported
+const UnsupportedMatcherType = "targeting rule type unsupported by sdk"

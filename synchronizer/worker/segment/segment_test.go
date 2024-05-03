@@ -2,6 +2,7 @@ package segment
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -22,6 +23,17 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/testhelpers"
 )
+
+func validReqParams(t *testing.T, fetchOptions service.RequestParams, till string) {
+	req, _ := http.NewRequest("GET", "test", nil)
+	fetchOptions.Apply(req)
+	if req.Header.Get("Cache-Control") != "no-cache" {
+		t.Error("Wrong header")
+	}
+	if req.URL.Query().Get("till") != till {
+		t.Error("Wrong till")
+	}
+}
 
 func TestSegmentsSynchronizerError(t *testing.T) {
 	var notifyEventCalled int64
@@ -46,9 +58,6 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("should have requested no cache")
-			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -150,9 +159,6 @@ func TestSegmentSynchronizer(t *testing.T) {
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("should have requested no cache")
-			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -493,19 +499,13 @@ func TestSegmentCDNBypass(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			case called == 12:
-				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
-					t.Error("Till flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 3, Till: 3}, nil
 			}
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
@@ -572,19 +572,13 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
 			case called > 1 && called <= 11:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			case called >= 12:
-				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
-					t.Error("Till flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			}
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil

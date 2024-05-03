@@ -70,9 +70,6 @@ func TestSegmentSyncTask(t *testing.T) {
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("no cache shold be true")
-			}
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}

@@ -58,7 +58,6 @@ func NewHTTPClient(
 // Get method is a get call to an url
 func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error) {
 	serviceURL := c.url + endpoint
-	c.logger.Debug("[GET] ", serviceURL)
 	req, _ := http.NewRequest("GET", serviceURL, nil)
 	authorization := c.apikey
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
@@ -78,6 +77,7 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 		fetchOptions.Apply(req)
 	}
 
+	c.logger.Debug("[GET] ", req.URL.String())
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Error("Error requesting data to API: ", req.URL.String(), err.Error())

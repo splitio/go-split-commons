@@ -84,5 +84,5 @@ func (s *FileSegmentFetcher) Fetch(segmentName string, fetchOptions *service.Seg
 		s.logger.Error(fmt.Sprintf("could not find the segmentChange file for %s. error: %v", segmentName, err))
 		return nil, err
 	}
-	return s.processSegmentJson(fileContents, segmentName, fetchOptions.ChangeNumber)
+	return s.processSegmentJson(fileContents, segmentName, fetchOptions.ChangeNumber())
 }

@@ -2,11 +2,14 @@ package split
 
 import (
 	"errors"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/grammar"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v5/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v5/service"
@@ -19,6 +22,17 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+func validReqParams(t *testing.T, fetchOptions service.RequestParams, till string) {
+	req, _ := http.NewRequest("GET", "test", nil)
+	fetchOptions.Apply(req)
+	if req.Header.Get("Cache-Control") != "no-cache" {
+		t.Error("Wrong header")
+	}
+	if req.URL.Query().Get("till") != till {
+		t.Error("Wrong till")
+	}
+}
+
 func TestSplitSynchronizerError(t *testing.T) {
 	var notifyEventCalled int64
 
@@ -28,10 +42,7 @@ func TestSplitSynchronizerError(t *testing.T) {
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("noCache should be true")
-			}
-			if fetchOptions.ChangeNumber != -1 {
+			if fetchOptions.ChangeNumber() != -1 {
 				t.Error("Wrong changenumber passed")
 			}
 			return nil, &dtos.HTTPError{Code: 500, Message: "some"}
@@ -77,10 +88,7 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCall, 1)
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("noCache should be true")
-			}
-			if fetchOptions.ChangeNumber != -1 {
+			if fetchOptions.ChangeNumber() != -1 {
 				t.Error("Wrong changenumber passed")
 			}
 			return nil, &dtos.HTTPError{Code: 414, Message: "some"}
@@ -156,11 +164,8 @@ func TestSplitSynchronizer(t *testing.T) {
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("noCache should be true")
-			}
-			if fetchOptions.ChangeNumber != -1 {
-				t.Error("Wrong changenumber passed")
+			if fetchOptions.ChangeNumber() != -1 {
+				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
@@ -222,7 +227,7 @@ func TestSplitSyncProcess(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if fetchOptions.ChangeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -231,7 +236,7 @@ func TestSplitSyncProcess(t *testing.T) {
 					Till:   3,
 				}, nil
 			case 2:
-				if fetchOptions.ChangeNumber != 3 {
+				if fetchOptions.ChangeNumber() != 3 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -374,27 +379,21 @@ func TestByPassingCDN(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  1,
 					Till:   2,
 				}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  2,
 					Till:   2,
 				}, nil
 			case called == 12:
-				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
-					t.Error("ChangeNumber flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  3,
@@ -447,27 +446,21 @@ func TestByPassingCDNLimit(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  1,
 					Till:   2,
 				}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.Till != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  2,
 					Till:   2,
 				}, nil
 			case called >= 12:
-				if fetchOptions.Till == nil || *fetchOptions.Till != 2 {
-					t.Error("ChangeNumber flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  2,
@@ -768,7 +761,7 @@ func TestSplitSyncWithSets(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if fetchOptions.ChangeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -824,7 +817,7 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 			atomic.AddInt64(&call, 1)
 			switch call {
 			case 1:
-				if fetchOptions.ChangeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -873,5 +866,56 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	s4 := splitStorage.Split("split4")
 	if s4 == nil {
 		t.Error("split4 should be present")
+	}
+}
+
+func TestProcessMatchers(t *testing.T) {
+	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
+	splitChange := &dtos.SplitChangesDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
+		{
+			Name:   "split1",
+			Status: Active,
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: "NEW_MATCHER",
+					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Matchers: []dtos.MatcherDTO{
+							{MatcherType: "NEW_MATCHER", KeySelector: nil},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:   "split2",
+			Status: Active,
+			Conditions: []dtos.ConditionDTO{
+				{
+					ConditionType: grammar.ConditionTypeRollout,
+					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Matchers: []dtos.MatcherDTO{
+							{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+						},
+					},
+				},
+			},
+		},
+	}}
+	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
+
+	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
+		t.Error("ConditionType should be WHITELIST")
+	}
+	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+		t.Error("MatcherType should be ALL_KEYS")
+	}
+
+	if toAdd[1].Conditions[0].ConditionType != grammar.ConditionTypeRollout {
+		t.Error("ConditionType should be ROLLOUT")
+	}
+	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+		t.Error("MatcherType should be ALL_KEYS")
 	}
 }
