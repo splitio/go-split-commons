@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	MetadataDelimiter   = "+"
-	PreReleaseDelimiter = "-"
-	ValueDelimiter      = "."
+	metadataDelimiter            = "+"
+	preReleaseDelimiter          = "-"
+	valueDelimiter               = "."
+	unableToConvertSemverMessage = "unable to convert to semver, incorrect format: %s"
 )
 
 type Semver struct {
@@ -52,39 +53,39 @@ func BuildSemver(version string) (*Semver, error) {
 }
 
 func processMetadata(version string) (string, string, error) {
-	index, metadata := calculateIndexAndTrimString(version, MetadataDelimiter)
+	index, metadata := extract(version, metadataDelimiter)
 	if index == -1 {
 		return "", version, nil
 	}
 
 	if len(metadata) == 0 {
-		return "", "", fmt.Errorf("unable to convert to semver, incorrect pre release data")
+		return "", "", fmt.Errorf("unable to convert to semver, incorrect metadata")
 
 	}
 	return metadata, strings.TrimSpace(version[0:index]), nil
 }
 
 func processPreRelease(vWithoutMetadata string) ([]string, string, error) {
-	index, preReleaseData := calculateIndexAndTrimString(vWithoutMetadata, PreReleaseDelimiter)
+	index, preReleaseData := extract(vWithoutMetadata, preReleaseDelimiter)
 	if index == -1 {
 		return nil, vWithoutMetadata, nil
 	}
 
-	preRelease := strings.Split(preReleaseData, ValueDelimiter)
+	preRelease := strings.Split(preReleaseData, valueDelimiter)
 
 	if len(preRelease) == 0 || isEmpty(preRelease) {
-		return nil, "", fmt.Errorf("unable to convert to semver, incorrect pre release data")
+		return nil, "", fmt.Errorf("unable to convert to semver, incorrect prerelease data")
 	}
 	return preRelease, strings.TrimSpace(vWithoutMetadata[0:index]), nil
 }
 
-func calculateIndexAndTrimString(stringToTrim string, delimiter string) (int, string) {
-	index := strings.Index(stringToTrim, delimiter)
+func extract(str string, delimiter string) (int, string) {
+	index := strings.Index(str, delimiter)
 	if index == -1 {
 		return index, ""
 	}
 
-	return index, strings.TrimSpace(stringToTrim[index+1:])
+	return index, strings.TrimSpace(str[index+1:])
 }
 
 func isEmpty(preRelease []string) bool {
@@ -97,22 +98,22 @@ func isEmpty(preRelease []string) bool {
 }
 
 func processComponents(version string) (int64, int64, int64, error) {
-	vParts := strings.Split(version, ValueDelimiter)
+	vParts := strings.Split(version, valueDelimiter)
 	if len(vParts) != 3 {
-		return 0, 0, 0, fmt.Errorf("unable to convert to semver, incorrect format: %s", version)
+		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
 	}
 
 	major, err := strconv.ParseInt(vParts[0], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unable to convert to semver, incorrect format: %s", version)
+		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
 	}
 	minor, err := strconv.ParseInt(vParts[1], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unable to convert to semver, incorrect format: %s", version)
+		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
 	}
 	patch, err := strconv.ParseInt(vParts[2], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("unable to convert to semver, incorrect format: %s", version)
+		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
 	}
 	return major, minor, patch, nil
 }
@@ -164,14 +165,7 @@ func (s *Semver) Compare(toCompare Semver) int {
 			if err != nil {
 				return -1
 			}
-			if preRelease1 != preRelease2 {
-				if preRelease1 < preRelease2 {
-					return -1
-				}
-				return 1
-			} else {
-				return 0
-			}
+			return compareLongs(preRelease1, preRelease2)
 		}
 		return strings.Compare(s.preRelease[i], toCompare.preRelease[i])
 	}
@@ -187,16 +181,16 @@ func isNumeric(strNum string) bool {
 	if len(strNum) == 0 {
 		return false
 	}
-	_, err := strconv.ParseInt(strNum, 10, 0)
+	_, err := strconv.ParseInt(strNum, 10, 64)
 	return err == nil
 }
 
 func compareLongs(compare1 int64, compare2 int64) int {
-	if compare1 != compare2 {
-		if compare1 < compare2 {
-			return -1
-		}
-		return 1
+	if compare1 == compare2 {
+		return 0
 	}
-	return 0
+	if compare1 < compare2 {
+		return -1
+	}
+	return 1
 }
