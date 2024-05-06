@@ -13,10 +13,10 @@ const (
 	valueDelimiter      = "."
 )
 
-var errEmptyVersion = errors.New("version cannot be empty")
-var errInvalidMetadata = errors.New("invalid metadata when parsing semver")
-var errInvalidPrerelease = errors.New("invalid prerelease when parsing semver")
-var errUnableToConvertSemver = errors.New("unable to convert to semver, incorrect format")
+var ErrEmptyVersion = errors.New("version cannot be empty")
+var ErrInvalidMetadata = errors.New("invalid metadata when parsing semver")
+var ErrInvalidPrerelease = errors.New("invalid prerelease when parsing semver")
+var ErrUnableToConvertSemver = errors.New("unable to convert to semver, incorrect format")
 
 type Semver struct {
 	major      int64
@@ -30,7 +30,7 @@ type Semver struct {
 
 func BuildSemver(version string) (*Semver, error) {
 	if len(strings.TrimSpace(version)) == 0 {
-		return nil, errEmptyVersion
+		return nil, ErrEmptyVersion
 	}
 	metadata, vWithoutMetadata, err := processMetadata(version)
 	if err != nil {
@@ -63,7 +63,7 @@ func processMetadata(version string) (string, string, error) {
 	}
 
 	if len(metadata) == 0 {
-		return "", "", errInvalidMetadata
+		return "", "", ErrInvalidMetadata
 
 	}
 	return metadata, strings.TrimSpace(version[0:index]), nil
@@ -78,7 +78,7 @@ func processPreRelease(vWithoutMetadata string) ([]string, string, error) {
 	preRelease := strings.Split(preReleaseData, valueDelimiter)
 
 	if len(preRelease) == 0 || isEmpty(preRelease) {
-		return nil, "", errInvalidPrerelease
+		return nil, "", ErrInvalidPrerelease
 	}
 	return preRelease, strings.TrimSpace(vWithoutMetadata[0:index]), nil
 }
@@ -104,20 +104,20 @@ func isEmpty(preRelease []string) bool {
 func processComponents(version string) (int64, int64, int64, error) {
 	vParts := strings.Split(version, valueDelimiter)
 	if len(vParts) != 3 {
-		return 0, 0, 0, errUnableToConvertSemver
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 
 	major, err := strconv.ParseInt(vParts[0], 10, 64)
 	if err != nil {
-		return 0, 0, 0, errUnableToConvertSemver
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	minor, err := strconv.ParseInt(vParts[1], 10, 64)
 	if err != nil {
-		return 0, 0, 0, errUnableToConvertSemver
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	patch, err := strconv.ParseInt(vParts[2], 10, 64)
 	if err != nil {
-		return 0, 0, 0, errUnableToConvertSemver
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	return major, minor, patch, nil
 }
@@ -160,9 +160,9 @@ func (s *Semver) Compare(toCompare Semver) int {
 		if s.preRelease[i] == toCompare.preRelease[i] {
 			continue
 		}
-		if isNumeric(s.preRelease[i]) && isNumeric(toCompare.preRelease[i]) {
-			preRelease1, _ := strconv.ParseInt(s.preRelease[i], 10, 64)
-			preRelease2, _ := strconv.ParseInt(s.preRelease[i], 10, 64)
+		preRelease1, e1 := strconv.ParseInt(s.preRelease[i], 10, 64)
+		preRelease2, e2 := strconv.ParseInt(s.preRelease[i], 10, 64)
+		if e1 == nil && e2 == nil {
 			return compareLongs(preRelease1, preRelease2)
 		}
 		return strings.Compare(s.preRelease[i], toCompare.preRelease[i])
@@ -173,14 +173,6 @@ func (s *Semver) Compare(toCompare Semver) int {
 	toComparePreReleaseLen := len(toCompare.preRelease)
 
 	return compareLongs(int64(sPreReleaseLen), int64(toComparePreReleaseLen))
-}
-
-func isNumeric(strNum string) bool {
-	if len(strNum) == 0 {
-		return false
-	}
-	_, err := strconv.ParseInt(strNum, 10, 64)
-	return err == nil
 }
 
 func compareLongs(compare1 int64, compare2 int64) int {
