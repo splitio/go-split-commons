@@ -163,7 +163,7 @@ func (s *Semver) Compare(toCompare Semver) int {
 			continue
 		}
 		preRelease1, e1 := strconv.ParseInt(s.preRelease[i], 10, 64)
-		preRelease2, e2 := strconv.ParseInt(s.preRelease[i], 10, 64)
+		preRelease2, e2 := strconv.ParseInt(toCompare.preRelease[i], 10, 64)
 		if e1 == nil && e2 == nil {
 			return compareLongs(preRelease1, preRelease2)
 		}
@@ -187,7 +187,7 @@ func compareLongs(compare1 int64, compare2 int64) int {
 	return 1
 }
 
-// String returns the version string
+// Version returns the version string
 func (s *Semver) Version() string {
 	return s.version
 }

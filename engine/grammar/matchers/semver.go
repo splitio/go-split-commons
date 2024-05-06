@@ -33,8 +33,6 @@ func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[str
 	}
 
 	result := semver.Compare(g.semver) >= 0
-	fmt.Println("original", g.semver.Version(), "comming", asString, " result ", result, "compare ", semver.Compare(g.semver))
-
 	g.logger.Debug(fmt.Sprintf("%s >= %s | Result: %t", semver.Version(), g.semver.Version(), result))
 	return result
 }
