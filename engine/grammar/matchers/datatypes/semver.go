@@ -1,18 +1,22 @@
 package datatypes
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 
 	"strings"
 )
 
 const (
-	metadataDelimiter            = "+"
-	preReleaseDelimiter          = "-"
-	valueDelimiter               = "."
-	unableToConvertSemverMessage = "unable to convert to semver, incorrect format: %s"
+	metadataDelimiter   = "+"
+	preReleaseDelimiter = "-"
+	valueDelimiter      = "."
 )
+
+var ErrEmptyVersion = errors.New("version cannot be empty")
+var ErrInvalidMetadata = errors.New("invalid metadata when parsing semver")
+var ErrInvalidPrerelease = errors.New("invalid prerelease when parsing semver")
+var ErrUnableToConvertSemver = errors.New("unable to convert to semver, incorrect format")
 
 type Semver struct {
 	major      int64
@@ -26,7 +30,7 @@ type Semver struct {
 
 func BuildSemver(version string) (*Semver, error) {
 	if len(strings.TrimSpace(version)) == 0 {
-		return nil, fmt.Errorf("unable to convert to semver, version cannot be empty")
+		return nil, ErrEmptyVersion
 	}
 	metadata, vWithoutMetadata, err := processMetadata(version)
 	if err != nil {
@@ -59,7 +63,7 @@ func processMetadata(version string) (string, string, error) {
 	}
 
 	if len(metadata) == 0 {
-		return "", "", fmt.Errorf("unable to convert to semver, incorrect metadata")
+		return "", "", ErrInvalidMetadata
 
 	}
 	return metadata, strings.TrimSpace(version[0:index]), nil
@@ -74,7 +78,7 @@ func processPreRelease(vWithoutMetadata string) ([]string, string, error) {
 	preRelease := strings.Split(preReleaseData, valueDelimiter)
 
 	if len(preRelease) == 0 || isEmpty(preRelease) {
-		return nil, "", fmt.Errorf("unable to convert to semver, incorrect prerelease data")
+		return nil, "", ErrInvalidPrerelease
 	}
 	return preRelease, strings.TrimSpace(vWithoutMetadata[0:index]), nil
 }
@@ -100,20 +104,20 @@ func isEmpty(preRelease []string) bool {
 func processComponents(version string) (int64, int64, int64, error) {
 	vParts := strings.Split(version, valueDelimiter)
 	if len(vParts) != 3 {
-		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 
 	major, err := strconv.ParseInt(vParts[0], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	minor, err := strconv.ParseInt(vParts[1], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	patch, err := strconv.ParseInt(vParts[2], 10, 64)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf(unableToConvertSemverMessage, version)
+		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	return major, minor, patch, nil
 }
