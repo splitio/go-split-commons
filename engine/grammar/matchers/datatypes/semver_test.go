@@ -13,7 +13,7 @@ type Semvers struct {
 	semver3 string
 }
 
-func TestCompareSemver(t *testing.T) {
+func TestCompareSemverToGreaterAndEqual(t *testing.T) {
 	semvers, err := parseCSVTwoSemvers("../../../../testdata/valid_semantic_versions.csv")
 	if err != nil {
 		t.Error(err)
