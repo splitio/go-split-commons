@@ -151,10 +151,41 @@ type BetweenSemverMatcher struct {
 	endSemver   datatypes.Semver
 }
 
+// Match will match if the comparisonValue is less or equal to the matchingValue
+func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	matchingKey, err := b.matchingKey(key, attributes)
+	if err != nil {
+		b.logger.Warning(fmt.Sprintf("BetweenSemverMatcher: %s", err.Error()))
+		return false
+	}
+
+	asString, ok := matchingKey.(string)
+	if !ok {
+		b.logger.Error("BetweenSemverMatcher: Error type-asserting string")
+		return false
+	}
+
+	semver, err := datatypes.BuildSemver(asString)
+	if err != nil {
+		b.logger.Error("BetweenSemverMatcher: Error parsing semver")
+		return false
+	}
+
+	result := semver.Compare(b.startSemver) >= 0 && semver.Compare(b.endSemver) <= 0
+	b.logger.Debug(fmt.Sprintf("%s between %s and %s | Result: %t", semver.Version(), b.startSemver.Version(), b.endSemver.Version(), result))
+	return result
+}
+
 // NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
 func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) *BetweenSemverMatcher {
-	startSemver, _ := datatypes.BuildSemver(startVal)
-	endSemver, _ := datatypes.BuildSemver(endVal)
+	startSemver, err := datatypes.BuildSemver(startVal)
+	if err != nil {
+		return nil
+	}
+	endSemver, err := datatypes.BuildSemver(endVal)
+	if err != nil {
+		return nil
+	}
 	return &BetweenSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,

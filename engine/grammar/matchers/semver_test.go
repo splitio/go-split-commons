@@ -14,6 +14,7 @@ import (
 type semvers struct {
 	semver1 string
 	semver2 string
+	semver3 string
 }
 
 func parseCSVTwoSemvers(file string) ([]semvers, error) {
@@ -37,6 +38,32 @@ func parseCSVTwoSemvers(file string) ([]semvers, error) {
 		results = append(results, semvers{
 			semver1: row[0],
 			semver2: row[1],
+		})
+	}
+}
+
+func parseCSVThreeSemvers(file string) ([]semvers, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	csvr := csv.NewReader(f)
+
+	var results []semvers
+	for {
+		row, err := csvr.Read()
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return results, err
+		}
+		results = append(results, semvers{
+			semver1: row[0],
+			semver2: row[1],
+			semver3: row[2],
 		})
 	}
 }
@@ -270,6 +297,58 @@ func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 	dto := &dtos.MatcherDTO{
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      nil,
+	}
+	_, err := BuildMatcher(dto, nil, logger)
+	if err == nil {
+		t.Error("There should be errors when building the matcher")
+	}
+}
+
+func TestBetweenSemverMatcher(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	attrName := "version"
+	semvers, err := parseCSVThreeSemvers("../../../testdata/between_semver.csv")
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, threeSemvers := range semvers {
+		dto := &dtos.MatcherDTO{
+			MatcherType: MatcherTypeBetweenSemver,
+			BetweenString: &dtos.BetweenStringMatcherDataDTO{
+				Start: &threeSemvers.semver1,
+				End:   &threeSemvers.semver3,
+			},
+			KeySelector: &dtos.KeySelectorDTO{
+				Attribute: &attrName,
+			},
+		}
+		matcher, err := BuildMatcher(dto, nil, logger)
+		if err != nil {
+			t.Error("There should be no errors when building the matcher")
+		}
+		matcherType := reflect.TypeOf(matcher).String()
+
+		if matcherType != "*matchers.BetweenSemverMatcher" {
+			t.Errorf("Incorrect matcher constructed. Should be *matchers.BetweenSemverMatcher and was %s", matcherType)
+		}
+
+		attributes := make(map[string]interface{})
+		attributes[attrName] = threeSemvers.semver2
+		if !matcher.Match("asd", attributes, nil) {
+			t.Error(threeSemvers.semver2, " between ", threeSemvers.semver1, "and", threeSemvers.semver3, " should match")
+		}
+	}
+}
+
+func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		BetweenString: &dtos.BetweenStringMatcherDataDTO{
+			Start: nil,
+			End:   nil,
+		},
 	}
 	_, err := BuildMatcher(dto, nil, logger)
 	if err == nil {
