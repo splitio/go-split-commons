@@ -12,12 +12,6 @@ type EqualToSemverMatcher struct {
 	semver datatypes.Semver
 }
 
-// GreaterThanOrEqualToSemverMatcher struct to hold the semver to compare
-type GreaterThanOrEqualToSemverMatcher struct {
-	Matcher
-	semver datatypes.Semver
-}
-
 // Match will match if the comparisonValue is equal to the matchingValue
 func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
 	matchingKey, err := e.matchingKey(key, attributes)
@@ -43,6 +37,24 @@ func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface
 	return result
 }
 
+// NewEqualToSemverMatcher returns a pointer to a new instance of EqualToSemverMatcher
+func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *EqualToSemverMatcher {
+	semver, _ := datatypes.BuildSemver(cmpVal)
+	return &EqualToSemverMatcher{
+		Matcher: Matcher{
+			negate:        negate,
+			attributeName: attributeName,
+		},
+		semver: *semver,
+	}
+}
+
+// GreaterThanOrEqualToSemverMatcher struct to hold the semver to compare
+type GreaterThanOrEqualToSemverMatcher struct {
+	Matcher
+	semver datatypes.Semver
+}
+
 // Match compares the semver of the key with the semver in the feature flag
 func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
 	matchingKey, err := g.matchingKey(key, attributes)
@@ -66,18 +78,6 @@ func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[str
 	result := semver.Compare(g.semver) >= 0
 	g.logger.Debug(fmt.Sprintf("%s >= %s | Result: %t", semver.Version(), g.semver.Version(), result))
 	return result
-}
-
-// NewEqualToSemverMatcher returns a pointer to a new instance of EqualToSemverMatcher
-func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *EqualToSemverMatcher {
-	semver, _ := datatypes.BuildSemver(cmpVal)
-	return &EqualToSemverMatcher{
-		Matcher: Matcher{
-			negate:        negate,
-			attributeName: attributeName,
-		},
-		semver: *semver,
-	}
 }
 
 // NewGreaterThanOrEqualToSemverMatcher returns an instance of GreaterThanOrEqualToSemverMatcher

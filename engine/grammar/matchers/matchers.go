@@ -10,6 +10,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+var ErrInvalidEqualSemver = errors.New("semver is required for EQUAL_TO_SEMVER matcher type")
 var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher type")
 
 const (
@@ -350,7 +351,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		)
 	case MatcherEqualToSemver:
 		if dto.String == nil {
-			return nil, errors.New("String is required for EQUAL_TO_SEMVER matcher type")
+			return nil, ErrInvalidEqualSemver
 		}
 		logger.Debug(fmt.Sprintf(
 			"Building EqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
