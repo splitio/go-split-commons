@@ -28,6 +28,7 @@ type Semver struct {
 	version    string
 }
 
+// BuildSemver builds a semver object from a version string
 func BuildSemver(version string) (*Semver, error) {
 	if len(strings.TrimSpace(version)) == 0 {
 		return nil, ErrEmptyVersion
@@ -122,6 +123,7 @@ func processComponents(version string) (int64, int64, int64, error) {
 	return major, minor, patch, nil
 }
 
+// Compare compares two semver versions
 func (s *Semver) Compare(toCompare Semver) int {
 	if s.version == toCompare.version {
 		return 0

@@ -10,6 +10,10 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+var ErrInvalidEqualSemver = errors.New("semver is required for EQUAL_TO_SEMVER matcher type")
+var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher type")
+var ErrInvalidLTOESemver = errors.New("semver is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
+
 const (
 	// MatcherTypeAllKeys string value
 	MatcherTypeAllKeys = "ALL_KEYS"
@@ -348,7 +352,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		)
 	case MatcherEqualToSemver:
 		if dto.String == nil {
-			return nil, errors.New("String is required for EQUAL_TO_SEMVER matcher type")
+			return nil, ErrInvalidEqualSemver
 		}
 		logger.Debug(fmt.Sprintf(
 			"Building EqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
@@ -359,9 +363,22 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			dto.Negate,
 			attributeName,
 		)
+	case MatcherTypeGreaterThanOrEqualToSemver:
+		if dto.String == nil {
+			return nil, ErrInvalidGTOESemver
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building GreaterThanOrEqualToSemverMatcher with negate=%t, semver=%s, attributeName=%v",
+			dto.Negate, *dto.String, attributeName,
+		))
+		matcher = NewGreaterThanOrEqualToSemverMatcher(
+			dto.Negate,
+			*dto.String,
+			attributeName,
+		)
 	case MatcherTypeLessThanOrEqualToSemver:
 		if dto.String == nil {
-			return nil, errors.New("String is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
+			return nil, ErrInvalidLTOESemver
 		}
 		logger.Debug(fmt.Sprintf(
 			"Building LessThanOrEqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
