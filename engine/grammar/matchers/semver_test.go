@@ -355,3 +355,77 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 		t.Error("There should be errors when building the matcher")
 	}
 }
+
+func TestInListSemvers(t *testing.T) {
+	semvers := make([]string, 0, 3)
+	semvers = append(semvers, "1.0.0-rc.1")
+	semvers = append(semvers, "2.2.2-rc.1.2")
+	semvers = append(semvers, "1.1.2-prerelease+meta")
+	attrName := "version"
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+		MatcherType: MatcherTypeInListSemver,
+		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should be no errors when building the matcher")
+	}
+	matcherType := reflect.TypeOf(matcher).String()
+
+	if matcherType != "*matchers.InListSemverMatcher" {
+		t.Errorf("Incorrect matcher constructed. Should be *matchers.InListSemverMatcher and was %s", matcherType)
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.2.2-rc.1.2"
+	if !matcher.Match("asd", attributes, nil) {
+		t.Error("2.2.2-rc.1.2", " in list ", semvers, " should match")
+	}
+}
+
+func TestInListSemversNotMatch(t *testing.T) {
+	semvers := make([]string, 0, 3)
+	semvers = append(semvers, "1.0.0-rc.1")
+	semvers = append(semvers, "2.2.2-rc.1.2")
+	semvers = append(semvers, "1.1.2-prerelease+meta")
+	attrName := "version"
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+		MatcherType: MatcherTypeInListSemver,
+		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should be no errors when building the matcher")
+	}
+	matcherType := reflect.TypeOf(matcher).String()
+
+	if matcherType != "*matchers.InListSemverMatcher" {
+		t.Errorf("Incorrect matcher constructed. Should be *matchers.InListSemverMatcher and was %s", matcherType)
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.2.2"
+	if matcher.Match("asd", attributes, nil) {
+		t.Error("2.2.2-rc.1.2", " in list ", semvers, " should not match")
+	}
+}
+
+func TestInListInvalidSemvers(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: nil},
+	}
+	_, err := BuildMatcher(dto, nil, logger)
+	if err == nil {
+		t.Error("There should be errors when building the matcher")
+	}
+}

@@ -14,6 +14,7 @@ var ErrInvalidEqualSemver = errors.New("semver is required for EQUAL_TO_SEMVER m
 var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher type")
 var ErrInvalidLTOESemver = errors.New("semver is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
 var ErrInvalidLBetweenSemver = errors.New("semver is required for BETWEEN_SEMVER matcher type")
+var ErrInvalidLInListSemver = errors.New("semver is required for IN_LIST_SEMVER matcher type")
 
 const (
 	// MatcherTypeAllKeys string value
@@ -401,6 +402,19 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		matcher = NewBetweenSemverMatcher(
 			*dto.BetweenString.Start,
 			*dto.BetweenString.End,
+			dto.Negate,
+			attributeName,
+		)
+	case MatcherTypeInListSemver:
+		if dto.Whitelist == nil {
+			return nil, ErrInvalidLInListSemver
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building ErrInvalidLInListSemver with negate=%t, regex=%v, attributeName=%v",
+			dto.Negate, dto.Whitelist.Whitelist, attributeName,
+		))
+		matcher = NewInListSemverMatcher(
+			dto.Whitelist.Whitelist,
 			dto.Negate,
 			attributeName,
 		)
