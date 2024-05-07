@@ -16,6 +16,12 @@ type LessThanOrEqualToSemverMatcher struct {
 	semver datatypes.Semver
 }
 
+type BetweenSemverMatcher struct {
+	Matcher
+	startSemver datatypes.Semver
+	endSemver   datatypes.Semver
+}
+
 // Match will match if the comparisonValue is equal to the matchingValue
 func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
 	matchingKey, err := e.matchingKey(key, attributes)
@@ -87,5 +93,19 @@ func NewLessThanOrEqualToSemverMatcher(cmpVal string, negate bool, attributeName
 			attributeName: attributeName,
 		},
 		semver: *semver,
+	}
+}
+
+// NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
+func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) *BetweenSemverMatcher {
+	startSemver, _ := datatypes.BuildSemver(startVal)
+	endSemver, _ := datatypes.BuildSemver(endVal)
+	return &BetweenSemverMatcher{
+		Matcher: Matcher{
+			negate:        negate,
+			attributeName: attributeName,
+		},
+		startSemver: *startSemver,
+		endSemver:   *endSemver,
 	}
 }
