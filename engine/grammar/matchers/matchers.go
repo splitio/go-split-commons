@@ -12,6 +12,7 @@ import (
 
 var ErrInvalidEqualSemver = errors.New("semver is required for EQUAL_TO_SEMVER matcher type")
 var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher type")
+var ErrInvalidLTOESemver = errors.New("semver is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
 
 const (
 	// MatcherTypeAllKeys string value
@@ -373,6 +374,19 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		matcher = NewGreaterThanOrEqualToSemverMatcher(
 			dto.Negate,
 			*dto.String,
+			attributeName,
+		)
+	case MatcherTypeLessThanOrEqualToSemver:
+		if dto.String == nil {
+			return nil, ErrInvalidLTOESemver
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building LessThanOrEqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
+			dto.Negate, *dto.String, attributeName,
+		))
+		matcher = NewLessThanOrEqualToSemverMatcher(
+			*dto.String,
+			dto.Negate,
 			attributeName,
 		)
 	default:

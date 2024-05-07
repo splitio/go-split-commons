@@ -230,3 +230,49 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 		}
 	}
 }
+
+func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	attrName := "version"
+	semvers, err := parseCSVTwoSemvers("../../../testdata/valid_semantic_versions.csv")
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, twoSemvers := range semvers {
+		dto := &dtos.MatcherDTO{
+			MatcherType: MatcherTypeLessThanOrEqualToSemver,
+			String:      &twoSemvers.semver2,
+			KeySelector: &dtos.KeySelectorDTO{
+				Attribute: &attrName,
+			},
+		}
+		matcher, err := BuildMatcher(dto, nil, logger)
+		if err != nil {
+			t.Error("There should be no errors when building the matcher")
+		}
+		matcherType := reflect.TypeOf(matcher).String()
+
+		if matcherType != "*matchers.LessThanOrEqualToSemverMatcher" {
+			t.Errorf("Incorrect matcher constructed. Should be *matchers.LessThanOrEqualToSemverMatcher and was %s", matcherType)
+		}
+
+		attributes := make(map[string]interface{})
+		attributes[attrName] = twoSemvers.semver1
+		if matcher.Match("asd", attributes, nil) {
+			t.Error(twoSemvers.semver2, " <= ", twoSemvers.semver1, " should match")
+		}
+	}
+}
+
+func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		String:      nil,
+	}
+	_, err := BuildMatcher(dto, nil, logger)
+	if err == nil {
+		t.Error("There should be errors when building the matcher")
+	}
+}
