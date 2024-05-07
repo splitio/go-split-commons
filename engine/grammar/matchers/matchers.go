@@ -351,7 +351,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			return nil, errors.New("String is required for EQUAL_TO_SEMVER matcher type")
 		}
 		logger.Debug(fmt.Sprintf(
-			"Building SemverMatcher with negate=%t, regex=%s, attributeName=%v",
+			"Building EqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
 			dto.Negate, *dto.String, attributeName,
 		))
 		matcher = NewEqualToSemverMatcher(

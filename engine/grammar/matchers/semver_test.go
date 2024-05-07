@@ -12,7 +12,7 @@ func TestEqualToSemverMatcher(t *testing.T) {
 	attrName := "version"
 	str := "1.0.0"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -36,7 +36,7 @@ func TestPatchDiffers(t *testing.T) {
 	attrName := "version"
 	str := "1.0.0"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -60,7 +60,7 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 	attrName := "version"
 	str := "1.2.3----RC-SNAPSHOT.12.9.1--.12.88"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -84,7 +84,7 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 	attrName := "version"
 	str := "1.2.3----RC-SNAPSHOT.12.9.1--.12.88"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -108,7 +108,7 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 	attrName := "version"
 	str := "2.2.2-rc.2+metadata-lalala"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -132,7 +132,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 	attrName := "version"
 	str := "2.2.2-rc.2+metadata-lalala"
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -154,7 +154,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 func TestShouldReturnErrorWithNilSemver(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	dto := &dtos.MatcherDTO{
-		MatcherType: "EQUAL_TO_SEMVER",
+		MatcherType: MatcherEqualToSemver,
 		String:      nil,
 	}
 	_, err := BuildMatcher(dto, nil, logger)
