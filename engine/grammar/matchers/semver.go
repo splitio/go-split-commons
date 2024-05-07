@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // EqualToSemverMatcher struct to hold the semver to compare
@@ -199,7 +200,7 @@ func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attrib
 // InListSemverMatcher struct to hold the semver to compare
 type InListSemverMatcher struct {
 	Matcher
-	semvers []datatypes.Semver
+	semvers *set.ThreadUnsafeSet
 }
 
 // Match will match if the comparisonValue is in list to the matchingValue
@@ -221,26 +222,16 @@ func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{
 		i.logger.Error("InListSemverMatcher: Error parsing semver")
 		return false
 	}
-
-	for _, semsemver := range i.semvers {
-		result := semsemver.Version() == semver.Version()
-		if result {
-			i.logger.Debug(fmt.Sprintf("%s in list | Result: %t", semver.Version(), result))
-			return result
-		}
-
-	}
-	i.logger.Debug(fmt.Sprintf("%s in list | Result: %t", semver.Version(), false))
-	return false
+	return i.semvers.Has(semver.Version())
 }
 
 // NewInListSemverMatcher returns a pointer to a new instance of InListSemverMatcher
 func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string) *InListSemverMatcher {
-	semvers := make([]datatypes.Semver, 0, len(cmpList))
+	semvers := set.NewSet()
 	for _, str := range cmpList {
 		semver, err := datatypes.BuildSemver(str)
 		if err == nil {
-			semvers = append(semvers, *semver)
+			semvers.Add(semver.Version())
 		}
 	}
 	return &InListSemverMatcher{
