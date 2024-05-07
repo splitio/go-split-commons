@@ -13,6 +13,7 @@ import (
 var ErrInvalidEqualSemver = errors.New("semver is required for EQUAL_TO_SEMVER matcher type")
 var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher type")
 var ErrInvalidLTOESemver = errors.New("semver is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
+var ErrInvalidLBetweenSemver = errors.New("semver is required for BETWEEN_SEMVER matcher type")
 
 const (
 	// MatcherTypeAllKeys string value
@@ -386,6 +387,20 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		))
 		matcher = NewLessThanOrEqualToSemverMatcher(
 			*dto.String,
+			dto.Negate,
+			attributeName,
+		)
+	case MatcherTypeBetweenSemver:
+		if dto.BetweenString.Start == nil || dto.BetweenString.End == nil {
+			return nil, ErrInvalidLBetweenSemver
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building BetweenSemverMatcher with negate=%t, regexStart=%s, regexEnd=%s, attributeName=%v",
+			dto.Negate, *dto.BetweenString.Start, *dto.BetweenString.End, attributeName,
+		))
+		matcher = NewBetweenSemverMatcher(
+			*dto.BetweenString.Start,
+			*dto.BetweenString.End,
 			dto.Negate,
 			attributeName,
 		)
