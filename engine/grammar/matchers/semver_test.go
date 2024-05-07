@@ -264,3 +264,15 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 		}
 	}
 }
+
+func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		String:      nil,
+	}
+	_, err := BuildMatcher(dto, nil, logger)
+	if err == nil {
+		t.Error("There should be errors when building the matcher")
+	}
+}

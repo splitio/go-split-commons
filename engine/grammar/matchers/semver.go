@@ -39,7 +39,10 @@ func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface
 
 // NewEqualToSemverMatcher returns a pointer to a new instance of EqualToSemverMatcher
 func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *EqualToSemverMatcher {
-	semver, _ := datatypes.BuildSemver(cmpVal)
+	semver, err := datatypes.BuildSemver(cmpVal)
+	if err != nil {
+		return nil
+	}
 	return &EqualToSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,
@@ -127,8 +130,8 @@ func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string
 }
 
 // NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
-func NewLessThanOrEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *LessThanOrEqualToSemverMatcher {
-	semver, err := datatypes.BuildSemver(cmpVal)
+func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeName *string) *LessThanOrEqualToSemverMatcher {
+	semver, err := datatypes.BuildSemver(compareTo)
 	if err != nil {
 		return nil
 	}
