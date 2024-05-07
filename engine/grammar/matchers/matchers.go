@@ -359,6 +359,19 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			dto.Negate,
 			attributeName,
 		)
+	case MatcherTypeLessThanOrEqualToSemver:
+		if dto.String == nil {
+			return nil, errors.New("String is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building SemverMatcher with negate=%t, regex=%s, attributeName=%v",
+			dto.Negate, *dto.String, attributeName,
+		))
+		matcher = NewLessThanOrEqualToSemverMatcher(
+			*dto.String,
+			dto.Negate,
+			attributeName,
+		)
 	default:
 		return nil, errors.New("Matcher not found")
 	}
