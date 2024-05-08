@@ -11,12 +11,18 @@ import (
 )
 
 // OverrideWithUnsupported overrides the split with an unsupported matcher type
-func OverrideWithUnsupported(split *dtos.SplitDTO, idx int, jdx int) {
-	split.Conditions[idx].ConditionType = grammar.ConditionTypeWhitelist
-	split.Conditions[idx].MatcherGroup.Matchers[jdx].MatcherType = matchers.MatcherTypeAllKeys
-	split.Conditions[idx].MatcherGroup.Matchers[jdx].String = nil
-	split.Conditions[idx].Label = impressionlabels.UnsupportedMatcherType
-	split.Conditions[idx].Partitions = []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}}
+func OverrideWithUnsupported() dtos.ConditionDTO {
+	return dtos.ConditionDTO{
+		ConditionType: grammar.ConditionTypeWhitelist,
+		Label:         impressionlabels.UnsupportedMatcherType,
+		Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
+		MatcherGroup: dtos.MatcherGroupDTO{
+			Combiner: "AND",
+			Matchers: []dtos.MatcherDTO{{
+				MatcherType: matchers.MatcherTypeAllKeys,
+			}},
+		},
+	}
 }
 
 // ProcessMatchers processes the matchers of a split and validates them
@@ -25,8 +31,9 @@ func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
 		for jdx := range split.Conditions[idx].MatcherGroup.Matchers {
 			_, err := matchers.BuildMatcher(&split.Conditions[idx].MatcherGroup.Matchers[jdx], &injection.Context{}, logger)
 			if err != nil {
-				OverrideWithUnsupported(split, idx, jdx)
+				split.Conditions = []dtos.ConditionDTO{OverrideWithUnsupported()}
 			}
+			return
 		}
 	}
 }
