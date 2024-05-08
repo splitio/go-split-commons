@@ -105,6 +105,16 @@ func TestBetween(t *testing.T) {
 	}
 }
 
+func TestGetVersion(t *testing.T) {
+	semver, err := BuildSemver("02.03.04-02.04")
+	if err != nil {
+		t.Error("should create semver1")
+	}
+	if semver.Version() != "2.3.4-2.4" {
+		t.Error("semver should build 2.3.4-2.4")
+	}
+}
+
 func parseCSVOneSemver(file string) ([]string, error) {
 	f, err := os.Open(file)
 	if err != nil {

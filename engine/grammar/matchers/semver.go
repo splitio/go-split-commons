@@ -39,10 +39,10 @@ func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface
 }
 
 // NewEqualToSemverMatcher returns a pointer to a new instance of EqualToSemverMatcher
-func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *EqualToSemverMatcher {
+func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) (*EqualToSemverMatcher, error) {
 	semver, err := datatypes.BuildSemver(cmpVal)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &EqualToSemverMatcher{
 		Matcher: Matcher{
@@ -50,7 +50,7 @@ func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) 
 			attributeName: attributeName,
 		},
 		semver: *semver,
-	}
+	}, nil
 }
 
 // GreaterThanOrEqualToSemverMatcher struct to hold the semver to compare
@@ -85,10 +85,10 @@ func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[str
 }
 
 // NewGreaterThanOrEqualToSemverMatcher returns an instance of GreaterThanOrEqualToSemverMatcher
-func NewGreaterThanOrEqualToSemverMatcher(negate bool, compareTo string, attributeName *string) *GreaterThanOrEqualToSemverMatcher {
+func NewGreaterThanOrEqualToSemverMatcher(negate bool, compareTo string, attributeName *string) (*GreaterThanOrEqualToSemverMatcher, error) {
 	semver, err := datatypes.BuildSemver(compareTo)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &GreaterThanOrEqualToSemverMatcher{
 		Matcher: Matcher{
@@ -96,7 +96,7 @@ func NewGreaterThanOrEqualToSemverMatcher(negate bool, compareTo string, attribu
 			attributeName: attributeName,
 		},
 		semver: *semver,
-	}
+	}, nil
 }
 
 // LessThanOrEqualToSemverMatcher struct to hold the semver to compare
@@ -131,10 +131,10 @@ func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string
 }
 
 // NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
-func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeName *string) *LessThanOrEqualToSemverMatcher {
+func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeName *string) (*LessThanOrEqualToSemverMatcher, error) {
 	semver, err := datatypes.BuildSemver(compareTo)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &LessThanOrEqualToSemverMatcher{
 		Matcher: Matcher{
@@ -142,7 +142,7 @@ func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeN
 			attributeName: attributeName,
 		},
 		semver: *semver,
-	}
+	}, nil
 }
 
 // BetweenSemverMatcher struct to hold the semver to compare
@@ -178,14 +178,14 @@ func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface
 }
 
 // NewBetweenSemverMatcher returns a pointer to a new instance of BetweenSemverMatcher
-func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) *BetweenSemverMatcher {
+func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) (*BetweenSemverMatcher, error) {
 	startSemver, err := datatypes.BuildSemver(startVal)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	endSemver, err := datatypes.BuildSemver(endVal)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &BetweenSemverMatcher{
 		Matcher: Matcher{
@@ -194,7 +194,7 @@ func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attrib
 		},
 		startSemver: *startSemver,
 		endSemver:   *endSemver,
-	}
+	}, nil
 }
 
 // InListSemverMatcher struct to hold the semver to compare
@@ -226,12 +226,15 @@ func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{
 }
 
 // NewInListSemverMatcher returns a pointer to a new instance of InListSemverMatcher
-func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string) *InListSemverMatcher {
+func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string) (*InListSemverMatcher, []error) {
 	semvers := set.NewSet()
+	var errs []error
 	for _, str := range cmpList {
 		semver, err := datatypes.BuildSemver(str)
 		if err == nil {
 			semvers.Add(semver.Version())
+		} else {
+			errs = append(errs, err)
 		}
 	}
 	return &InListSemverMatcher{
@@ -240,5 +243,5 @@ func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string
 			attributeName: attributeName,
 		},
 		semvers: semvers,
-	}
+	}, errs
 }

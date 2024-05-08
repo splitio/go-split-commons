@@ -428,4 +428,34 @@ func TestInListInvalidSemvers(t *testing.T) {
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
+
+	semvers := make([]string, 0, 3)
+	semvers = append(semvers, "1.alpha.2")
+	semvers = append(semvers, "alpha.beta.1")
+	semvers = append(semvers, "1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788")
+	dto = &dtos.MatcherDTO{
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
+	}
+	_, err = BuildMatcher(dto, nil, logger)
+	if err == nil {
+		t.Error("There should be errors when building the matcher")
+	}
+}
+
+func TestNewInListMatcherInvalidSemvers(t *testing.T) {
+	semvers := make([]string, 0, 3)
+	semvers = append(semvers, "1.alpha.2")
+	semvers = append(semvers, "alpha.beta.1")
+	semvers = append(semvers, "1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788")
+	attrName := "version"
+	_, warnings := NewInListSemverMatcher(
+		semvers,
+		false,
+		&attrName,
+	)
+
+	if len(warnings) != 3 {
+		t.Error("There should be warnings when building the matcher")
+	}
 }
