@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
 // EqualToSemverMatcher struct to hold the semver to compare
@@ -151,7 +152,7 @@ type BetweenSemverMatcher struct {
 	endSemver   datatypes.Semver
 }
 
-// Match will match if the comparisonValue is less or equal to the matchingValue
+// Match will match if the comparisonValue is between to the matchingValue
 func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
 	matchingKey, err := b.matchingKey(key, attributes)
 	if err != nil {
@@ -176,7 +177,7 @@ func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface
 	return result
 }
 
-// NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
+// NewBetweenSemverMatcher returns a pointer to a new instance of BetweenSemverMatcher
 func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) *BetweenSemverMatcher {
 	startSemver, err := datatypes.BuildSemver(startVal)
 	if err != nil {
@@ -193,5 +194,51 @@ func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attrib
 		},
 		startSemver: *startSemver,
 		endSemver:   *endSemver,
+	}
+}
+
+// InListSemverMatcher struct to hold the semver to compare
+type InListSemverMatcher struct {
+	Matcher
+	semvers *set.ThreadUnsafeSet
+}
+
+// Match will match if the comparisonValue is in list to the matchingValue
+func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	matchingKey, err := i.matchingKey(key, attributes)
+	if err != nil {
+		i.logger.Warning(fmt.Sprintf("InListSemverMatcher: %s", err.Error()))
+		return false
+	}
+
+	asString, ok := matchingKey.(string)
+	if !ok {
+		i.logger.Error("InListSemverMatcher: Error type-asserting string")
+		return false
+	}
+
+	semver, err := datatypes.BuildSemver(asString)
+	if err != nil {
+		i.logger.Error("InListSemverMatcher: Error parsing semver")
+		return false
+	}
+	return i.semvers.Has(semver.Version())
+}
+
+// NewInListSemverMatcher returns a pointer to a new instance of InListSemverMatcher
+func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string) *InListSemverMatcher {
+	semvers := set.NewSet()
+	for _, str := range cmpList {
+		semver, err := datatypes.BuildSemver(str)
+		if err == nil {
+			semvers.Add(semver.Version())
+		}
+	}
+	return &InListSemverMatcher{
+		Matcher: Matcher{
+			negate:        negate,
+			attributeName: attributeName,
+		},
+		semvers: semvers,
 	}
 }
