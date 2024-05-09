@@ -5,16 +5,20 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // EqualToSemverMatcher struct to hold the semver to compare
 type EqualToSemverMatcher struct {
 	Matcher
-	semver datatypes.Semver
+	semver *datatypes.Semver
 }
 
 // Match will match if the comparisonValue is equal to the matchingValue
 func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if e.semver == nil {
+		return false
+	}
 	matchingKey, err := e.matchingKey(key, attributes)
 	if err != nil {
 		e.logger.Warning(fmt.Sprintf("EqualToSemverMatcher: %s", err.Error()))
@@ -39,28 +43,31 @@ func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface
 }
 
 // NewEqualToSemverMatcher returns a pointer to a new instance of EqualToSemverMatcher
-func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string) *EqualToSemverMatcher {
+func NewEqualToSemverMatcher(cmpVal string, negate bool, attributeName *string, logger logging.LoggerInterface) *EqualToSemverMatcher {
 	semver, err := datatypes.BuildSemver(cmpVal)
 	if err != nil {
-		return nil
+		logger.Error(fmt.Sprintf("couldnt't build semver %s for EQUAL_TO_SEMVER matcher: %s", cmpVal, err.Error()))
 	}
 	return &EqualToSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,
 			attributeName: attributeName,
 		},
-		semver: *semver,
+		semver: semver,
 	}
 }
 
 // GreaterThanOrEqualToSemverMatcher struct to hold the semver to compare
 type GreaterThanOrEqualToSemverMatcher struct {
 	Matcher
-	semver datatypes.Semver
+	semver *datatypes.Semver
 }
 
 // Match compares the semver of the key with the semver in the feature flag
 func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if g.semver == nil {
+		return false
+	}
 	matchingKey, err := g.matchingKey(key, attributes)
 	if err != nil {
 		g.logger.Warning(fmt.Sprintf("GreaterThanOrEqualToSemverMatcher: %s", err.Error()))
@@ -79,34 +86,37 @@ func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[str
 		return false
 	}
 
-	result := semver.Compare(g.semver) >= 0
+	result := semver.Compare(*g.semver) >= 0
 	g.logger.Debug(fmt.Sprintf("%s >= %s | Result: %t", semver.Version(), g.semver.Version(), result))
 	return result
 }
 
 // NewGreaterThanOrEqualToSemverMatcher returns an instance of GreaterThanOrEqualToSemverMatcher
-func NewGreaterThanOrEqualToSemverMatcher(negate bool, compareTo string, attributeName *string) *GreaterThanOrEqualToSemverMatcher {
+func NewGreaterThanOrEqualToSemverMatcher(negate bool, compareTo string, attributeName *string, logger logging.LoggerInterface) *GreaterThanOrEqualToSemverMatcher {
 	semver, err := datatypes.BuildSemver(compareTo)
 	if err != nil {
-		return nil
+		logger.Error(fmt.Sprintf("couldnt't build semver %s for GREATER_THAN_OR_EQUAL_TO_SEMVER matcher: %s", compareTo, err.Error()))
 	}
 	return &GreaterThanOrEqualToSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,
 			attributeName: attributeName,
 		},
-		semver: *semver,
+		semver: semver,
 	}
 }
 
 // LessThanOrEqualToSemverMatcher struct to hold the semver to compare
 type LessThanOrEqualToSemverMatcher struct {
 	Matcher
-	semver datatypes.Semver
+	semver *datatypes.Semver
 }
 
 // Match will match if the comparisonValue is less or equal to the matchingValue
 func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if l.semver == nil {
+		return false
+	}
 	matchingKey, err := l.matchingKey(key, attributes)
 	if err != nil {
 		l.logger.Warning(fmt.Sprintf("LessThanOrEqualToSemverMatcher: %s", err.Error()))
@@ -125,35 +135,38 @@ func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string
 		return false
 	}
 
-	result := semver.Compare(l.semver) <= 0
+	result := semver.Compare(*l.semver) <= 0
 	l.logger.Debug(fmt.Sprintf("%s >= %s | Result: %t", semver.Version(), l.semver.Version(), result))
 	return result
 }
 
 // NewLessThanOrEqualToSemverMatcher returns a pointer to a new instance of LessThanOrEqualToSemverMatcher
-func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeName *string) *LessThanOrEqualToSemverMatcher {
+func NewLessThanOrEqualToSemverMatcher(compareTo string, negate bool, attributeName *string, logger logging.LoggerInterface) *LessThanOrEqualToSemverMatcher {
 	semver, err := datatypes.BuildSemver(compareTo)
 	if err != nil {
-		return nil
+		logger.Error(fmt.Sprintf("couldnt't build semver %s for LESS_THAN_OR_EQUAL_TO_SEMVER matcher: %s", compareTo, err.Error()))
 	}
 	return &LessThanOrEqualToSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,
 			attributeName: attributeName,
 		},
-		semver: *semver,
+		semver: semver,
 	}
 }
 
 // BetweenSemverMatcher struct to hold the semver to compare
 type BetweenSemverMatcher struct {
 	Matcher
-	startSemver datatypes.Semver
-	endSemver   datatypes.Semver
+	startSemver *datatypes.Semver
+	endSemver   *datatypes.Semver
 }
 
 // Match will match if the comparisonValue is between to the matchingValue
 func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if b.startSemver == nil || b.endSemver == nil {
+		return false
+	}
 	matchingKey, err := b.matchingKey(key, attributes)
 	if err != nil {
 		b.logger.Warning(fmt.Sprintf("BetweenSemverMatcher: %s", err.Error()))
@@ -172,28 +185,28 @@ func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface
 		return false
 	}
 
-	result := semver.Compare(b.startSemver) >= 0 && semver.Compare(b.endSemver) <= 0
+	result := semver.Compare(*b.startSemver) >= 0 && semver.Compare(*b.endSemver) <= 0
 	b.logger.Debug(fmt.Sprintf("%s between %s and %s | Result: %t", semver.Version(), b.startSemver.Version(), b.endSemver.Version(), result))
 	return result
 }
 
 // NewBetweenSemverMatcher returns a pointer to a new instance of BetweenSemverMatcher
-func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string) *BetweenSemverMatcher {
+func NewBetweenSemverMatcher(startVal string, endVal string, negate bool, attributeName *string, logger logging.LoggerInterface) *BetweenSemverMatcher {
 	startSemver, err := datatypes.BuildSemver(startVal)
 	if err != nil {
-		return nil
+		logger.Error(fmt.Sprintf("couldnt't build semver %s for BETWEEN_SEMVER matcher, ignoring: %s", startVal, err.Error()))
 	}
 	endSemver, err := datatypes.BuildSemver(endVal)
 	if err != nil {
-		return nil
+		logger.Error(fmt.Sprintf("couldnt't build semver %s for BETWEEN_SEMVER matcher, ignoring: %s", endVal, err.Error()))
 	}
 	return &BetweenSemverMatcher{
 		Matcher: Matcher{
 			negate:        negate,
 			attributeName: attributeName,
 		},
-		startSemver: *startSemver,
-		endSemver:   *endSemver,
+		startSemver: startSemver,
+		endSemver:   endSemver,
 	}
 }
 
@@ -205,6 +218,9 @@ type InListSemverMatcher struct {
 
 // Match will match if the comparisonValue is in list to the matchingValue
 func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if i.semvers.IsEmpty() {
+		return false
+	}
 	matchingKey, err := i.matchingKey(key, attributes)
 	if err != nil {
 		i.logger.Warning(fmt.Sprintf("InListSemverMatcher: %s", err.Error()))
@@ -226,12 +242,14 @@ func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{
 }
 
 // NewInListSemverMatcher returns a pointer to a new instance of InListSemverMatcher
-func NewInListSemverMatcher(cmpList []string, negate bool, attributeName *string) *InListSemverMatcher {
+func NewInListSemverMatcher(setVersions []string, negate bool, attributeName *string, logger logging.LoggerInterface) *InListSemverMatcher {
 	semvers := set.NewSet()
-	for _, str := range cmpList {
-		semver, err := datatypes.BuildSemver(str)
+	for _, version := range setVersions {
+		semver, err := datatypes.BuildSemver(version)
 		if err == nil {
 			semvers.Add(semver.Version())
+		} else {
+			logger.Error(fmt.Sprintf("couldnt't build semver %s for IN_LIST_SEMVER matcher, ignoring: %s", version, err.Error()))
 		}
 	}
 	return &InListSemverMatcher{

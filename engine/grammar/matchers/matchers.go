@@ -364,6 +364,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			*dto.String,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
 	case MatcherTypeGreaterThanOrEqualToSemver:
 		if dto.String == nil {
@@ -377,6 +378,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			dto.Negate,
 			*dto.String,
 			attributeName,
+			logger,
 		)
 	case MatcherTypeLessThanOrEqualToSemver:
 		if dto.String == nil {
@@ -390,6 +392,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			*dto.String,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
 	case MatcherTypeBetweenSemver:
 		if dto.BetweenString.Start == nil || dto.BetweenString.End == nil {
@@ -404,6 +407,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			*dto.BetweenString.End,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
 	case MatcherTypeInListSemver:
 		if dto.Whitelist == nil {
@@ -417,6 +421,7 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			dto.Whitelist.Whitelist,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
 	default:
 		return nil, errors.New("Matcher not found")
