@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"strings"
@@ -46,6 +47,7 @@ func BuildSemver(version string) (*Semver, error) {
 		return nil, err
 	}
 
+	version, preRelease = processVersion(major, minor, patch, preRelease, metadata)
 	return &Semver{
 		metadata:   metadata,
 		preRelease: preRelease,
@@ -121,6 +123,28 @@ func processComponents(version string) (int64, int64, int64, error) {
 		return 0, 0, 0, ErrUnableToConvertSemver
 	}
 	return major, minor, patch, nil
+}
+
+func processVersion(major int64, minor int64, patch int64, preRelease []string, metadata string) (string, []string) {
+	toReturnVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
+	if len(preRelease) != 0 {
+		for i, _ := range preRelease {
+			preRelease = sanitizeIntStr(preRelease, i)
+		}
+		toReturnVersion = toReturnVersion + preReleaseDelimiter + strings.Join(preRelease, valueDelimiter)
+	}
+	if len(metadata) != 0 {
+		toReturnVersion = toReturnVersion + metadataDelimiter + metadata
+	}
+	return toReturnVersion, preRelease
+}
+
+func sanitizeIntStr(preRelease []string, i int) []string {
+	preReleaseNumeric, err := strconv.ParseInt(preRelease[i], 10, 64)
+	if err == nil {
+		preRelease[i] = strconv.FormatInt(preReleaseNumeric, 10)
+	}
+	return preRelease
 }
 
 // Compare compares two semver versions
