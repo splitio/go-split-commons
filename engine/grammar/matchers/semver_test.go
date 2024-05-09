@@ -140,6 +140,29 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 	}
 }
 
+func TestPreReleaseShouldReturnFalseWhenSemverIsNil(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	attrName := "version"
+	str := "1.2-SNAPSHOT"
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherEqualToSemver,
+		String:      &str,
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should be no errors when building the matcher")
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "1.2.3"
+	if matcher.Match("ass", attributes, nil) {
+		t.Error("Equal should match")
+	}
+}
+
 func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	attrName := "version"
@@ -258,6 +281,29 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 	}
 }
 
+func TestGreaterThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	attrName := "version"
+	semvers := "1.2-SNAPSHOT"
+	dto := &dtos.MatcherDTO{
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+		MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
+		String:      &semvers,
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should not be errors when building the matcher")
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.3.4"
+	if matcher.Match("asd", attributes, nil) {
+		t.Error("2.3.4 should not match")
+	}
+}
+
 func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	attrName := "version"
@@ -304,6 +350,29 @@ func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 	}
 }
 
+func TestLessThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	attrName := "version"
+	semvers := "1.2-SNAPSHOT"
+	dto := &dtos.MatcherDTO{
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		String:      &semvers,
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should not be errors when building the matcher")
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.3.4"
+	if matcher.Match("asd", attributes, nil) {
+		t.Error("2.3.4 should not match")
+	}
+}
+
 func TestBetweenSemverMatcher(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	attrName := "version"
@@ -341,10 +410,10 @@ func TestBetweenSemverMatcher(t *testing.T) {
 	}
 }
 
-func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
+func TestBetweenSemverWithNilSemvers(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		MatcherType: MatcherTypeBetweenSemver,
 		BetweenString: &dtos.BetweenStringMatcherDataDTO{
 			Start: nil,
 			End:   nil,
@@ -353,6 +422,33 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 	_, err := BuildMatcher(dto, nil, logger)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
+	}
+}
+
+func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
+	attrName := "version"
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	start := "1.alpha.2"
+	end := "3.4.5"
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeBetweenSemver,
+		BetweenString: &dtos.BetweenStringMatcherDataDTO{
+			Start: &start,
+			End:   &end,
+		},
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
+	}
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should not be errors when building the matcher")
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.2.2-rc.1.2"
+	if matcher.Match("asd", attributes, nil) {
+		t.Error("2.2.2-rc.1.2", " between should not match")
 	}
 }
 
@@ -419,26 +515,28 @@ func TestInListSemversNotMatch(t *testing.T) {
 }
 
 func TestInListInvalidSemvers(t *testing.T) {
+	attrName := "version"
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeLessThanOrEqualToSemver,
-		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: nil},
-	}
-	_, err := BuildMatcher(dto, nil, logger)
-	if err == nil {
-		t.Error("There should be errors when building the matcher")
-	}
 
 	semvers := make([]string, 0, 3)
 	semvers = append(semvers, "1.alpha.2")
 	semvers = append(semvers, "alpha.beta.1")
 	semvers = append(semvers, "1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788")
-	dto = &dtos.MatcherDTO{
-		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+	dto := &dtos.MatcherDTO{
+		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
+		KeySelector: &dtos.KeySelectorDTO{
+			Attribute: &attrName,
+		},
 	}
-	_, err = BuildMatcher(dto, nil, logger)
-	if err == nil {
-		t.Error("There should be errors when building the matcher")
+	matcher, err := BuildMatcher(dto, nil, logger)
+	if err != nil {
+		t.Error("There should not be errors when building the matcher")
+	}
+
+	attributes := make(map[string]interface{})
+	attributes[attrName] = "2.2.2"
+	if matcher.Match("asd", attributes, nil) {
+		t.Error("2.2.2", " in list ", semvers, " should not match")
 	}
 }
