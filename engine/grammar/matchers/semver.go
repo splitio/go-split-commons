@@ -65,6 +65,9 @@ type GreaterThanOrEqualToSemverMatcher struct {
 
 // Match compares the semver of the key with the semver in the feature flag
 func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	if g.semver == nil {
+		return false
+	}
 	matchingKey, err := g.matchingKey(key, attributes)
 	if err != nil {
 		g.logger.Warning(fmt.Sprintf("GreaterThanOrEqualToSemverMatcher: %s", err.Error()))
