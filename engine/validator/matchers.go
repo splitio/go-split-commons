@@ -10,30 +10,31 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-// OverrideWithUnsupported overrides the split with an unsupported matcher type
-func OverrideWithUnsupported() dtos.ConditionDTO {
-	return dtos.ConditionDTO{
-		ConditionType: grammar.ConditionTypeWhitelist,
-		Label:         impressionlabels.UnsupportedMatcherType,
-		Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
-		MatcherGroup: dtos.MatcherGroupDTO{
-			Combiner: "AND",
-			Matchers: []dtos.MatcherDTO{{
-				MatcherType: matchers.MatcherTypeAllKeys,
-			}},
-		},
+var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.ConditionDTO{{
+	ConditionType: grammar.ConditionTypeWhitelist,
+	Label:         impressionlabels.UnsupportedMatcherType,
+	Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
+	MatcherGroup: dtos.MatcherGroupDTO{
+		Combiner: "AND",
+		Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+	},
+}}
+
+func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
+	for _, condition := range conditions {
+		for _, matcher := range condition.MatcherGroup.Matchers {
+			_, err := matchers.BuildMatcher(&matcher, &injection.Context{}, logger)
+			if err != nil {
+				return true
+			}
+		}
 	}
+	return false
 }
 
 // ProcessMatchers processes the matchers of a split and validates them
 func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
-	for idx := range split.Conditions {
-		for jdx := range split.Conditions[idx].MatcherGroup.Matchers {
-			_, err := matchers.BuildMatcher(&split.Conditions[idx].MatcherGroup.Matchers[jdx], &injection.Context{}, logger)
-			if err != nil {
-				split.Conditions = []dtos.ConditionDTO{OverrideWithUnsupported()}
-			}
-			return
-		}
+	if shouldOverrideConditions(split.Conditions, logger) {
+		split.Conditions = unsupportedMatcherConditionReplacement
 	}
 }
