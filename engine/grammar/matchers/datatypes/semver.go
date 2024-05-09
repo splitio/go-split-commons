@@ -2,6 +2,7 @@ package datatypes
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"strings"
@@ -46,10 +47,10 @@ func BuildSemver(version string) (*Semver, error) {
 		return nil, err
 	}
 
-	version, preReleaseClean := processVersion(major, minor, patch, preRelease, metadata)
+	version, preRelease = processVersion(major, minor, patch, preRelease, metadata)
 	return &Semver{
 		metadata:   metadata,
-		preRelease: preReleaseClean,
+		preRelease: preRelease,
 		major:      major,
 		minor:      minor,
 		patch:      patch,
@@ -125,13 +126,10 @@ func processComponents(version string) (int64, int64, int64, error) {
 }
 
 func processVersion(major int64, minor int64, patch int64, preRelease []string, metadata string) (string, []string) {
-	toReturnVersion := strconv.FormatInt(major, 10) + valueDelimiter + strconv.FormatInt(minor, 10) + valueDelimiter + strconv.FormatInt(patch, 10)
+	toReturnVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 	if len(preRelease) != 0 {
 		for i, _ := range preRelease {
-			preReleaseNumeric, err := strconv.ParseInt(preRelease[i], 10, 64)
-			if err == nil {
-				preRelease[i] = strconv.FormatInt(preReleaseNumeric, 10)
-			}
+			preRelease = sanitizeIntStr(preRelease, i)
 		}
 		toReturnVersion = toReturnVersion + preReleaseDelimiter + strings.Join(preRelease, valueDelimiter)
 	}
@@ -139,6 +137,14 @@ func processVersion(major int64, minor int64, patch int64, preRelease []string, 
 		toReturnVersion = toReturnVersion + metadataDelimiter + metadata
 	}
 	return toReturnVersion, preRelease
+}
+
+func sanitizeIntStr(preRelease []string, i int) []string {
+	preReleaseNumeric, err := strconv.ParseInt(preRelease[i], 10, 64)
+	if err == nil {
+		preRelease[i] = strconv.FormatInt(preReleaseNumeric, 10)
+	}
+	return preRelease
 }
 
 // Compare compares two semver versions

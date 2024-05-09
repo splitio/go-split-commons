@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
 
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -361,15 +360,12 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			"Building EqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
 			dto.Negate, *dto.String, attributeName,
 		))
-		matcherSemver, err := NewEqualToSemverMatcher(
+		matcher = NewEqualToSemverMatcher(
 			*dto.String,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
-		if err != nil {
-			return nil, err
-		}
-		matcher = matcherSemver
 	case MatcherTypeGreaterThanOrEqualToSemver:
 		if dto.String == nil {
 			return nil, ErrInvalidGTOESemver
@@ -378,15 +374,12 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			"Building GreaterThanOrEqualToSemverMatcher with negate=%t, semver=%s, attributeName=%v",
 			dto.Negate, *dto.String, attributeName,
 		))
-		matcherSemver, err := NewGreaterThanOrEqualToSemverMatcher(
+		matcher = NewGreaterThanOrEqualToSemverMatcher(
 			dto.Negate,
 			*dto.String,
 			attributeName,
+			logger,
 		)
-		if err != nil {
-			return nil, err
-		}
-		matcher = matcherSemver
 	case MatcherTypeLessThanOrEqualToSemver:
 		if dto.String == nil {
 			return nil, ErrInvalidLTOESemver
@@ -395,15 +388,12 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			"Building LessThanOrEqualToSemverMatcher with negate=%t, regex=%s, attributeName=%v",
 			dto.Negate, *dto.String, attributeName,
 		))
-		matcherSemver, err := NewLessThanOrEqualToSemverMatcher(
+		matcher = NewLessThanOrEqualToSemverMatcher(
 			*dto.String,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
-		if err != nil {
-			return nil, err
-		}
-		matcher = matcherSemver
 	case MatcherTypeBetweenSemver:
 		if dto.BetweenString.Start == nil || dto.BetweenString.End == nil {
 			return nil, ErrInvalidLBetweenSemver
@@ -412,16 +402,13 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			"Building BetweenSemverMatcher with negate=%t, regexStart=%s, regexEnd=%s, attributeName=%v",
 			dto.Negate, *dto.BetweenString.Start, *dto.BetweenString.End, attributeName,
 		))
-		matcherSemver, err := NewBetweenSemverMatcher(
+		matcher = NewBetweenSemverMatcher(
 			*dto.BetweenString.Start,
 			*dto.BetweenString.End,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
-		if err != nil {
-			return nil, err
-		}
-		matcher = matcherSemver
 	case MatcherTypeInListSemver:
 		if dto.Whitelist == nil {
 			return nil, ErrInvalidLInListSemver
@@ -430,19 +417,12 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			"Building ErrInvalidLInListSemver with negate=%t, regex=%v, attributeName=%v",
 			dto.Negate, dto.Whitelist.Whitelist, attributeName,
 		))
-		matcherSemver, warnings := NewInListSemverMatcher(
+		matcher = NewInListSemverMatcher(
 			dto.Whitelist.Whitelist,
 			dto.Negate,
 			attributeName,
+			logger,
 		)
-		if len(warnings) != 0 {
-			for _, err := range warnings {
-				if errType, ok := err.(datatypes.SemverValidatonError); ok {
-					logger.Warning(errType.Message)
-				}
-			}
-		}
-		matcher = matcherSemver
 	default:
 		return nil, errors.New("Matcher not found")
 	}
