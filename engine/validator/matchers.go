@@ -10,7 +10,8 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.ConditionDTO{{
+// UnsupportedMatcherConditionReplacement is the default condition to be used when a matcher is not supported
+var UnsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.ConditionDTO{{
 	ConditionType: grammar.ConditionTypeWhitelist,
 	Label:         impressionlabels.UnsupportedMatcherType,
 	Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
@@ -35,6 +36,6 @@ func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.Log
 // ProcessMatchers processes the matchers of a split and validates them
 func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
 	if shouldOverrideConditions(split.Conditions, logger) {
-		split.Conditions = unsupportedMatcherConditionReplacement
+		split.Conditions = UnsupportedMatcherConditionReplacement
 	}
 }
