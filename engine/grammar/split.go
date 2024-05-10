@@ -25,14 +25,14 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
 func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO.Conditions, splitDTO, ctx, logger),
+		conditions: processConditions(splitDTO, ctx, logger),
 		splitData:  splitDTO,
 	}
 
 	return &split
 }
 
-func processConditions(conditions []dtos.ConditionDTO, splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
 	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
 		condition, err := NewCondition(&cond, ctx, logger)
