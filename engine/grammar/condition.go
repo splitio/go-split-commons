@@ -45,7 +45,7 @@ func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, log
 		if err == nil {
 			matcherObjs = append(matcherObjs, m)
 		} else {
-			logger.Debug("error in BuildMaycher, reason: ", err.Error())
+			logger.Debug("error in BuildMatcher, reason: ", err.Error())
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return nil, err
 			}
