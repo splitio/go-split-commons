@@ -2,6 +2,8 @@ package grammar
 
 import (
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -13,19 +15,34 @@ type Split struct {
 	conditions []*Condition
 }
 
+var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{
+	conditionType: ConditionTypeWhitelist,
+	label:         impressionlabels.UnsupportedMatcherType,
+	partitions:    []Partition{{partitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}},
+	matchers:      []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
+}}
+
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
 func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
-	conditions := make([]*Condition, 0)
-	for _, cond := range splitDTO.Conditions {
-		conditions = append(conditions, NewCondition(&cond, ctx, logger))
-	}
-
 	split := Split{
-		conditions: conditions,
+		conditions: processConditions(splitDTO, ctx, logger),
 		splitData:  splitDTO,
 	}
 
 	return &split
+}
+
+func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+	conditionsToReturn := make([]*Condition, 0)
+	for _, cond := range splitDTO.Conditions {
+		condition, err := NewCondition(&cond, ctx, logger)
+		if err != nil {
+			logger.Debug("Overriding conditions due unexpected matcher received")
+			return conditionReplacementUnsupportedMatcher
+		}
+		conditionsToReturn = append(conditionsToReturn, condition)
+	}
+	return conditionsToReturn
 }
 
 // Name returns the name of the feature
