@@ -37,6 +37,7 @@ func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger l
 	for _, cond := range splitDTO.Conditions {
 		condition, err := NewCondition(&cond, ctx, logger)
 		if err != nil {
+			logger.Debug("Overriding conditions due unexpected matcher received")
 			return conditionReplacementUnsupportedMatcher
 		}
 		conditionsToReturn = append(conditionsToReturn, condition)

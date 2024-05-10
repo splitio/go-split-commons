@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -192,6 +193,10 @@ func TestConditionUnsupportedMatcherWrapperObject(t *testing.T) {
 
 	if err == nil {
 		t.Error("err should not be nil")
+	}
+
+	if _, ok := err.(datatypes.UnsupportedMatcherError); !ok {
+		t.Error("err should be UnsupportedMatcherError")
 	}
 }
 
