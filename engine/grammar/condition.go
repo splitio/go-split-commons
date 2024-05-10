@@ -3,6 +3,7 @@ package grammar
 import (
 	"github.com/splitio/go-split-commons/v5/dtos"
 	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -36,6 +37,18 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 		partitions:    partitions,
 		label:         cond.Label,
 		conditionType: cond.ConditionType,
+	}
+}
+
+func proccessMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) []matchers.MatcherInterface {
+	matcherObjs := make([]matchers.MatcherInterface, 0)
+	for _, matcher := range condMatchers {
+		m, err := matchers.BuildMatcher(&matcher, ctx, logger)
+		if err == nil {
+			matcherObjs = append(matcherObjs, m)
+		} else if errType, ok := err.(datatypes.UnsupportedMatcherError); ok {
+
+		}
 	}
 }
 
