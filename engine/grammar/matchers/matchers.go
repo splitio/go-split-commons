@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
 
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -424,7 +425,9 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 			logger,
 		)
 	default:
-		return nil, errors.New("Matcher not found")
+		return nil, datatypes.UnsupportedMatcherError{
+			Message: fmt.Sprintf("Unable to create matcher for matcher type: %s", dto.MatcherType),
+		}
 	}
 
 	if ctx != nil {
