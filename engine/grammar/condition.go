@@ -18,17 +18,14 @@ type Condition struct {
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
-func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) *Condition {
+func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
 		partitions = append(partitions, Partition{partitionData: part})
 	}
-	matcherObjs := make([]matchers.MatcherInterface, 0)
-	for _, matcher := range cond.MatcherGroup.Matchers {
-		m, err := matchers.BuildMatcher(&matcher, ctx, logger)
-		if err == nil {
-			matcherObjs = append(matcherObjs, m)
-		}
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Condition{
@@ -37,19 +34,22 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 		partitions:    partitions,
 		label:         cond.Label,
 		conditionType: cond.ConditionType,
-	}
+	}, nil
 }
 
-func proccessMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) []matchers.MatcherInterface {
+func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) ([]matchers.MatcherInterface, error) {
 	matcherObjs := make([]matchers.MatcherInterface, 0)
 	for _, matcher := range condMatchers {
 		m, err := matchers.BuildMatcher(&matcher, ctx, logger)
 		if err == nil {
 			matcherObjs = append(matcherObjs, m)
-		} else if errType, ok := err.(datatypes.UnsupportedMatcherError); ok {
-
+		} else {
+			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
+				return nil, err
+			}
 		}
 	}
+	return matcherObjs, nil
 }
 
 // Partition struct with added logic that wraps around a DTO

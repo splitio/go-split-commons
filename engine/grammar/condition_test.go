@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -46,7 +47,11 @@ func TestConditionWrapperObject(t *testing.T) {
 		},
 	}
 
-	wrapped := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, nil, logger)
+
+	if err != nil {
+		t.Error("err should be nil")
+	}
 
 	if wrapped.Label() != "Label1" {
 		t.Error("Label not set properly")
@@ -113,7 +118,10 @@ func TestAnotherWrapper(t *testing.T) {
 		},
 	}
 
-	wrapped := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, nil, logger)
+	if err != nil {
+		t.Error("err should be nil")
+	}
 
 	if wrapped.Label() != "Label2" {
 		t.Error("Label not set properly")
@@ -139,5 +147,92 @@ func TestAnotherWrapper(t *testing.T) {
 	treatment2 := wrapped.CalculateTreatment(80)
 	if treatment2 != nil && *treatment2 != "off" {
 		t.Error("CalculateTreatment returned incorrect treatment")
+	}
+}
+
+func TestConditionUnsupportedMatcherWrapperObject(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	condition1 := dtos.ConditionDTO{
+		ConditionType: "WHITELIST",
+		Label:         "Label1",
+		MatcherGroup: dtos.MatcherGroupDTO{
+			Combiner: "AND",
+			Matchers: []dtos.MatcherDTO{
+				{
+					Negate:      false,
+					MatcherType: "UNSUPPORTED",
+					KeySelector: &dtos.KeySelectorDTO{
+						Attribute:   nil,
+						TrafficType: "something",
+					},
+				},
+				{
+					Negate:      true,
+					MatcherType: "ALL_KEYS",
+					KeySelector: &dtos.KeySelectorDTO{
+						Attribute:   nil,
+						TrafficType: "something",
+					},
+				},
+			},
+		},
+		Partitions: []dtos.PartitionDTO{
+			{
+				Size:      75,
+				Treatment: "on",
+			},
+			{
+				Size:      25,
+				Treatment: "off",
+			},
+		},
+	}
+
+	_, err := NewCondition(&condition1, nil, logger)
+
+	if err == nil {
+		t.Error("err should not be nil")
+	}
+}
+
+func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	condition1 := dtos.ConditionDTO{
+		ConditionType: "WHITELIST",
+		Label:         "Label1",
+		MatcherGroup: dtos.MatcherGroupDTO{
+			Combiner: "AND",
+			Matchers: []dtos.MatcherDTO{
+				{
+					Negate:      false,
+					MatcherType: matchers.MatcherTypeStartsWith,
+					KeySelector: &dtos.KeySelectorDTO{
+						Attribute:   nil,
+						TrafficType: "something",
+					},
+					Whitelist: nil,
+				},
+			},
+		},
+		Partitions: []dtos.PartitionDTO{
+			{
+				Size:      75,
+				Treatment: "on",
+			},
+			{
+				Size:      25,
+				Treatment: "off",
+			},
+		},
+	}
+
+	condition, err := NewCondition(&condition1, nil, logger)
+
+	if err != nil {
+		t.Error("err should be nil")
+	}
+
+	if len(condition.matchers) != 0 {
+		t.Error("matchers should be empty")
 	}
 }
