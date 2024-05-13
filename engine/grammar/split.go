@@ -20,6 +20,7 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{
 	label:         impressionlabels.UnsupportedMatcherType,
 	partitions:    []Partition{{partitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}},
 	matchers:      []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
+	combiner:      "AND",
 }}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes

@@ -137,7 +137,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		Conditions: []dtos.ConditionDTO{{
 			ConditionType: ConditionTypeWhitelist,
 			Label:         "test",
-			Partitions:    []dtos.PartitionDTO{{Treatment: "control", Size: 100}},
+			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
 				Matchers: []dtos.MatcherDTO{{MatcherType: "unssuported", Negate: false}},
@@ -196,5 +196,9 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 
 	if len(split.conditions) != 1 {
 		t.Error("conditions length should be 1")
+	}
+
+	if split.conditions[0].combiner != "AND" {
+		t.Error("combiner should be AND")
 	}
 }
