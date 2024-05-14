@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 
 	yaml "gopkg.in/yaml.v3"
@@ -256,7 +256,7 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
@@ -270,13 +270,13 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	case SplitFileFormatYAML:
 		splits = s.parseSplitsYAML(data)
 	case SplitFileFormatJSON:
-		return s.processSplitJson(data, changeNumber)
+		return s.processSplitJson(data, fetchOptions.ChangeNumber())
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 
 	}
 
-	till := changeNumber
+	till := fetchOptions.ChangeNumber()
 
 	// Get the SHA1 sum of the raw contents of the file, and compare it to the last one seen
 	// if it's equal, nothing has changed, return since == till
@@ -291,7 +291,7 @@ func (s *FileSplitFetcher) Fetch(changeNumber int64, _ *service.FetchOptions) (*
 	s.lastHash = currSum
 	return &dtos.SplitChangesDTO{
 		Splits: splits,
-		Since:  changeNumber,
+		Since:  fetchOptions.ChangeNumber(),
 		Till:   till,
 	}, nil
 }

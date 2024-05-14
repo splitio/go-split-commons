@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-split-commons/v5/service/api"
-	httpMocks "github.com/splitio/go-split-commons/v5/service/mocks"
-	"github.com/splitio/go-split-commons/v5/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v6/service"
+	"github.com/splitio/go-split-commons/v6/service/api"
+	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -20,9 +20,9 @@ func TestLocalSyncAllError(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return nil, errors.New("Some")
@@ -54,9 +54,9 @@ func TestLocalSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
@@ -103,9 +103,9 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
+			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
-				if changeNumber != -1 {
+				if fetchOptions.ChangeNumber() != -1 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{

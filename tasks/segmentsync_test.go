@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v5/service"
-	fetcherMock "github.com/splitio/go-split-commons/v5/service/mocks"
-	"github.com/splitio/go-split-commons/v5/storage/mocks"
-	"github.com/splitio/go-split-commons/v5/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v6/service"
+	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -69,10 +69,7 @@ func TestSegmentSyncTask(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("no cache shold be true")
-			}
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}

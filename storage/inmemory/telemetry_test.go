@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/telemetry"
 )
 
 func TestTelemetryStorage(t *testing.T) {

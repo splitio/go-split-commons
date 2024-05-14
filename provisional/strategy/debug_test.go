@@ -3,7 +3,7 @@ package strategy
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v6/dtos"
 )
 
 func TestDebugMode(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/splitio/go-split-commons/v5/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v5/engine/grammar"
-	"github.com/splitio/go-split-commons/v5/engine/hash"
+	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
+	"github.com/splitio/go-split-commons/v6/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
 	"github.com/splitio/go-toolkit/v5/logging"

@@ -1,16 +1,16 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/service"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/service"
 )
 
 // MockSegmentFetcher mocked implementation of segment fetcher
 type MockSegmentFetcher struct {
-	FetchCall func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error)
+	FetchCall func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error)
 }
 
 // Fetch mock
-func (m MockSegmentFetcher) Fetch(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-	return m.FetchCall(name, changeNumber, fetchOptions)
+func (m MockSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
+	return m.FetchCall(name, fetchOptions)
 }

@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/healthcheck/application"
-	"github.com/splitio/go-split-commons/v5/service"
-	"github.com/splitio/go-split-commons/v5/storage"
-	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/healthcheck/application"
+	"github.com/splitio/go-split-commons/v6/service"
+	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v6/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
@@ -103,7 +103,7 @@ func (s *UpdaterImpl) processUpdate(segmentChanges *dtos.SegmentChangesDTO) {
 	s.segmentStorage.Update(segmentChanges.Name, toAdd, toRemove, segmentChanges.Till)
 }
 
-func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service.FetchOptions) (*UpdateResult, error) {
+func (s *UpdaterImpl) fetchUntil(name string, fetchOptions *service.SegmentRequestParams) (*UpdateResult, error) {
 	var updatedKeys []string
 	var err error
 	var currentSince int64
@@ -114,7 +114,7 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 
 		before := time.Now()
 		var segmentChanges *dtos.SegmentChangesDTO
-		segmentChanges, err = s.segmentFetcher.Fetch(name, currentSince, fetchOptions)
+		segmentChanges, err = s.segmentFetcher.Fetch(name, fetchOptions.WithChangeNumber(currentSince))
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				s.runtimeTelemetry.RecordSyncError(telemetry.SegmentSync, httpError.Code)
@@ -139,12 +139,12 @@ func (s *UpdaterImpl) fetchUntil(name string, till *int64, fetchOptions *service
 	}, err
 }
 
-func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.FetchOptions) (internalSegmentSync, error) {
+func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions *service.SegmentRequestParams) (internalSegmentSync, error) {
 	internalBackoff := backoff.New(s.onDemandFetchBackoffBase, s.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
 		remainingAttempts = remainingAttempts - 1
-		updateResult, err := s.fetchUntil(name, till, fetchOptions) // what we should do with err
+		updateResult, err := s.fetchUntil(name, fetchOptions) // what we should do with err
 		if err != nil || remainingAttempts <= 0 {
 			return internalSegmentSync{updateResult: updateResult, successfulSync: false, attempt: remainingAttempts}, err
 		}
@@ -158,7 +158,7 @@ func (s *UpdaterImpl) attemptSegmentSync(name string, till *int64, fetchOptions 
 
 // SynchronizeSegment syncs segment
 func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResult, error) {
-	fetchOptions := service.NewFetchOptions(true, nil)
+	fetchOptions := service.MakeSegmentRequestParams()
 	s.hcMonitor.NotifyEvent(application.Segments)
 
 	currentSince, _ := s.segmentStorage.ChangeNumber(name)
@@ -166,7 +166,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 		return &UpdateResult{}, nil
 	}
 
-	internalSyncResult, err := s.attemptSegmentSync(name, till, &fetchOptions)
+	internalSyncResult, err := s.attemptSegmentSync(name, till, fetchOptions)
 	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
 		return internalSyncResult.updateResult, err
@@ -175,8 +175,8 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
 		return internalSyncResult.updateResult, nil
 	}
-	withCDNBypass := service.NewFetchOptions(true, &internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
-	internalSyncResultCDNBypass, err := s.attemptSegmentSync(name, till, &withCDNBypass)
+	withCDNBypass := service.MakeSegmentRequestParams().WithTill(internalSyncResult.updateResult.NewChangeNumber) // Set flag for bypassing CDN
+	internalSyncResultCDNBypass, err := s.attemptSegmentSync(name, till, withCDNBypass)
 	withoutCDNattempts := onDemandFetchBackoffMaxRetries - internalSyncResultCDNBypass.attempt
 	if err != nil {
 		return internalSyncResultCDNBypass.updateResult, err

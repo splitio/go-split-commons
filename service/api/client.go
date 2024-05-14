@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/conf"
-	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v6/conf"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -22,8 +23,8 @@ const (
 
 // Client interface for HTTPClient
 type Client interface {
-	Get(service string, headers map[string]string) ([]byte, error)
-	Post(service string, body []byte, headers map[string]string) error
+	Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error)
+	Post(endpoint string, body []byte, headers map[string]string) error
 }
 
 // HTTPClient structure to wrap up the net/http.Client
@@ -55,16 +56,14 @@ func NewHTTPClient(
 }
 
 // Get method is a get call to an url
-func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, error) {
-	serviceURL := c.url + service
-	c.logger.Debug("[GET] ", serviceURL)
+func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([]byte, error) {
+	serviceURL := c.url + endpoint
 	req, _ := http.NewRequest("GET", serviceURL, nil)
-
 	authorization := c.apikey
 	c.logger.Debug("Authorization [ApiKey]: ", logging.ObfuscateAPIKey(authorization))
 	req.Header.Add("Accept-Encoding", "gzip")
 	req.Header.Add("Content-Type", "application/json")
-	parsedHeaders := AddMetadataToHeaders(c.metadata, headers, nil)
+	parsedHeaders := AddMetadataToHeaders(c.metadata, make(map[string]string), nil)
 
 	for headerName, headerValue := range parsedHeaders {
 		req.Header.Add(headerName, headerValue)
@@ -74,6 +73,11 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 
 	req.Header.Add("Authorization", "Bearer "+authorization)
 
+	if fetchOptions != nil {
+		fetchOptions.Apply(req)
+	}
+
+	c.logger.Debug("[GET] ", req.URL.String())
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		c.logger.Error("Error requesting data to API: ", req.URL.String(), err.Error())
@@ -114,9 +118,9 @@ func (c *HTTPClient) Get(service string, headers map[string]string) ([]byte, err
 }
 
 // Post performs a HTTP POST request
-func (c *HTTPClient) Post(service string, body []byte, headers map[string]string) error {
+func (c *HTTPClient) Post(endpoint string, body []byte, headers map[string]string) error {
 
-	serviceURL := c.url + service
+	serviceURL := c.url + endpoint
 	c.logger.Debug("[POST] ", serviceURL)
 	req, _ := http.NewRequest("POST", serviceURL, bytes.NewBuffer(body))
 	//****************

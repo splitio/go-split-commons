@@ -60,6 +60,7 @@ type MatcherDTO struct {
 	Whitelist          *WhitelistMatcherDataDTO          `json:"whitelistMatcherData"`
 	UnaryNumeric       *UnaryNumericMatcherDataDTO       `json:"unaryNumericMatcherData"`
 	Between            *BetweenMatcherDataDTO            `json:"betweenMatcherData"`
+	BetweenString      *BetweenStringMatcherDataDTO      `json:"betweenStringMatcherData"`
 	Dependency         *DependencyMatcherDataDTO         `json:"dependencyMatcherData"`
 	Boolean            *bool                             `json:"booleanMatcherData"`
 	String             *string                           `json:"stringMatcherData"`
@@ -75,6 +76,12 @@ type BetweenMatcherDataDTO struct {
 	DataType string `json:"dataType"` //NUMBER or DATETIME
 	Start    int64  `json:"start"`
 	End      int64  `json:"end"`
+}
+
+// BetweenStringMatcherDataDTO structure to map a Matcher definition fetched from JSON message.
+type BetweenStringMatcherDataDTO struct {
+	Start *string `json:"start"`
+	End   *string `json:"end"`
 }
 
 // UnaryNumericMatcherDataDTO structure to map a Matcher definition fetched from JSON message.

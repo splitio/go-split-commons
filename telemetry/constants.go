@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v6/conf"
 )
 
 const (

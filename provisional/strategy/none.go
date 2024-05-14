@@ -3,7 +3,7 @@ package strategy
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v6/dtos"
 )
 
 // NoneImpl struct for none impression mode strategy.
