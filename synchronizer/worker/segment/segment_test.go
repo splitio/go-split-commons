@@ -2,26 +2,38 @@ package segment
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/flagsets"
-	"github.com/splitio/go-split-commons/v5/healthcheck/application"
-	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v5/service"
-	fetcherMock "github.com/splitio/go-split-commons/v5/service/mocks"
-	"github.com/splitio/go-split-commons/v5/storage/inmemory"
-	"github.com/splitio/go-split-commons/v5/storage/inmemory/mutexmap"
-	"github.com/splitio/go-split-commons/v5/storage/mocks"
-	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/flagsets"
+	"github.com/splitio/go-split-commons/v6/healthcheck/application"
+	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v6/service"
+	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/testhelpers"
 )
+
+func validReqParams(t *testing.T, fetchOptions service.RequestParams, till string) {
+	req, _ := http.NewRequest("GET", "test", nil)
+	fetchOptions.Apply(req)
+	if req.Header.Get("Cache-Control") != "no-cache" {
+		t.Error("Wrong header")
+	}
+	if req.URL.Query().Get("till") != till {
+		t.Error("Wrong till")
+	}
+}
 
 func TestSegmentsSynchronizerError(t *testing.T) {
 	var notifyEventCalled int64
@@ -45,10 +57,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("should have requested no cache")
-			}
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -149,10 +158,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 	}
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("should have requested no cache")
-			}
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -226,7 +232,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" {
 				t.Error("Wrong name")
 			}
@@ -340,7 +346,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if name != "segment1" && name != "segment2" {
 				t.Error("Wrong name")
 			}
@@ -425,7 +431,7 @@ func TestSegmentTill(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 		},
@@ -489,23 +495,17 @@ func TestSegmentCDNBypass(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.ChangeNumber != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
 			case called >= 2 && called <= 11:
-				if fetchOptions.ChangeNumber != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			case called == 12:
-				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
-					t.Error("ChangeNumber flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 3, Till: 3}, nil
 			}
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
@@ -568,23 +568,17 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			switch called := atomic.LoadInt64(&call); {
 			case called == 1:
-				if fetchOptions.ChangeNumber != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 1, Till: 2}, nil
 			case called > 1 && called <= 11:
-				if fetchOptions.ChangeNumber != nil {
-					t.Error("It should be nil")
-				}
+				validReqParams(t, fetchOptions, "")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			case called >= 12:
-				if fetchOptions.ChangeNumber == nil || *fetchOptions.ChangeNumber != 2 {
-					t.Error("ChangeNumber flag should be set with value 2")
-				}
+				validReqParams(t, fetchOptions, "2")
 				return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
 			}
 			return &dtos.SegmentChangesDTO{Name: name, Added: addedS1, Removed: []string{}, Since: 2, Till: 2}, nil
@@ -618,7 +612,6 @@ func TestSegmentCDNBypassLimit(t *testing.T) {
 }
 
 func TestSegmentSyncConcurrencyLimit(t *testing.T) {
-
 	splitStorage := &mocks.MockSplitStorage{
 		SegmentNamesCall: func() *set.ThreadUnsafeSet {
 			ss := set.NewSet()
@@ -634,7 +627,7 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 	var done sync.Map
 	var inProgress int32
 	segmentMockFetcher := fetcherMock.MockSegmentFetcher{
-		FetchCall: func(name string, changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SegmentChangesDTO, error) {
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.SegmentChangesDTO, error) {
 			if current := atomic.AddInt32(&inProgress, 1); current > maxConcurrency {
 				t.Errorf("throguhput exceeded max expected concurrency of %d. Is: %d", maxConcurrency, current)
 			}

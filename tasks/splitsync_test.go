@@ -1,18 +1,19 @@
 package tasks
 
 import (
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/flagsets"
-	hcMock "github.com/splitio/go-split-commons/v5/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v5/service"
-	fetcherMock "github.com/splitio/go-split-commons/v5/service/mocks"
-	"github.com/splitio/go-split-commons/v5/storage/mocks"
-	"github.com/splitio/go-split-commons/v5/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v5/telemetry"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/flagsets"
+	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v6/service"
+	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -52,13 +53,15 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
-		FetchCall: func(changeNumber int64, fetchOptions *service.FetchOptions) (*dtos.SplitChangesDTO, error) {
-			if !fetchOptions.CacheControlHeaders {
-				t.Error("noCache should be true.")
-			}
+		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
-			if changeNumber != -1 {
-				t.Error("Wrong changenumber passed")
+			req, _ := http.NewRequest("GET", "test", nil)
+			fetchOptions.Apply(req)
+			if req.Header.Get("Cache-Control") != "no-cache" {
+				t.Error("Wrong header")
+			}
+			if req.URL.Query().Get("since") != "-1" {
+				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/splitio/go-split-commons/v5/dtos"
+	"github.com/splitio/go-split-commons/v6/dtos"
 )
 
 // AuthClient inteface to be implemneted by AuthClient
@@ -11,12 +11,12 @@ type AuthClient interface {
 
 // SplitFetcher interface to be implemented by Split Fetchers
 type SplitFetcher interface {
-	Fetch(changeNumber int64, fetchOptions *FetchOptions) (*dtos.SplitChangesDTO, error)
+	Fetch(fetchOptions *FlagRequestParams) (*dtos.SplitChangesDTO, error)
 }
 
 // SegmentFetcher interface to be implemented by Split Fetchers
 type SegmentFetcher interface {
-	Fetch(name string, changeNumber int64, fetchOptions *FetchOptions) (*dtos.SegmentChangesDTO, error)
+	Fetch(name string, fetchOptions *SegmentRequestParams) (*dtos.SegmentChangesDTO, error)
 }
 
 // ImpressionsRecorder interface to be implemented by Impressions loggers

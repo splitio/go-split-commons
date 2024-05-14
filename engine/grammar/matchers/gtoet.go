@@ -3,7 +3,7 @@ package matchers
 import (
 	"fmt"
 
-	"github.com/splitio/go-split-commons/v5/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
 )
 
 // GreaterThanOrEqualToMatcher will match if two numbers or two datetimes are equal

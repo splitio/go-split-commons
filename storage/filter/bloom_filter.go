@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/bits-and-blooms/bloom/v3"
-	"github.com/splitio/go-split-commons/v5/storage"
+	"github.com/splitio/go-split-commons/v6/storage"
 )
 
 // BloomFilter description
