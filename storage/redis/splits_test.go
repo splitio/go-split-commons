@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v5/conf"
+	"github.com/splitio/go-split-commons/v6/conf"
 	"golang.org/x/exp/slices"
 
-	"github.com/splitio/go-split-commons/v5/dtos"
-	"github.com/splitio/go-split-commons/v5/flagsets"
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
