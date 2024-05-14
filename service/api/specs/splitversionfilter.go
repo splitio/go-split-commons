@@ -1,6 +1,6 @@
 package specs
 
-import "github.com/splitio/go-split-commons/v5/engine/grammar/matchers"
+import "github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
 type SplitVersionFilter struct {
 	excluded map[mkey]struct{}
