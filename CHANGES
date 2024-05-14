@@ -1,5 +1,8 @@
-6.X.X ( XX, 2024)
-- Changed FetchOptions and Fetch API.
+6.0.0 (May 14, 2024)
+- BREAKING CHANGE:
+    - Changed FetchOptions and Fetch API.
+- Added support for targeting rules based on semantic versions (https://semver.org/).
+- Added the logic to handle correctly when the SDK receives an unsupported Matcher type.
 
 5.2.2 (Apr 26, 2024)
 - Added split version filter to be used on semver matchers logic.
