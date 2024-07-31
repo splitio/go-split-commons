@@ -1,6 +1,8 @@
 package specs
 
 import (
+	"fmt"
+
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 )
 
@@ -37,13 +39,17 @@ func Match(version string) *string {
 	return nil
 }
 
-func ParseFlagSpec(spec string) string {
+func ParseAndValidate(spec string) (string, error) {
 	if len(spec) == 0 {
-		// set default flag spec
-		return FLAG_V1_0
+		// return default flag spec
+		return FLAG_V1_0, nil
 	}
 
-	return spec
+	if Match(spec) == nil {
+		return "", fmt.Errorf("unsupported flag spec")
+	}
+
+	return spec, nil
 }
 
 func mergeMaps(versionMap map[string]bool, toMergeMap map[string]bool) map[string]bool {
