@@ -46,7 +46,7 @@ func ParseAndValidate(spec string) (string, error) {
 	}
 
 	if Match(spec) == nil {
-		return "", fmt.Errorf("unsupported flag spec")
+		return spec, fmt.Errorf("unsupported flag spec")
 	}
 
 	return spec, nil
