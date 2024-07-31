@@ -29,8 +29,8 @@ func ShouldFilter(matcher string, apiVersion string) bool {
 
 // Match returns the spec version if it is valid, otherwise it returns nil
 func Match(version string) *string {
-	_, exist := MatchersMap[version]
-	if exist {
+	_, exists := MatchersMap[version]
+	if exists {
 		return &version
 	}
 
