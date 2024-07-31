@@ -1,29 +1,38 @@
 package specs
 
-import "github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+import (
+	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+)
 
-type SplitVersionFilter struct {
-	excluded map[mkey]struct{}
+var MatchersMap = map[string]map[string]bool{
+	FLAG_V1_0: {},
+	FLAG_V1_1: {
+		matchers.MatcherEqualToSemver:                  true,
+		matchers.MatcherTypeLessThanOrEqualToSemver:    true,
+		matchers.MatcherTypeGreaterThanOrEqualToSemver: true,
+		matchers.MatcherTypeBetweenSemver:              true,
+		matchers.MatcherTypeInListSemver:               true,
+	},
+	FLAG_V1_2: {matchers.MatcherInLargeSegment: true},
 }
 
-type mkey struct {
-	api     string
-	matcher string
-}
-
-func NewSplitVersionFilter() SplitVersionFilter {
-	matchersToExclude := map[mkey]struct{}{
-		{FLAG_V1_0, matchers.MatcherEqualToSemver}:                  {},
-		{FLAG_V1_0, matchers.MatcherTypeLessThanOrEqualToSemver}:    {},
-		{FLAG_V1_0, matchers.MatcherTypeGreaterThanOrEqualToSemver}: {},
-		{FLAG_V1_0, matchers.MatcherTypeBetweenSemver}:              {},
-		{FLAG_V1_0, matchers.MatcherTypeInListSemver}:               {},
+func ShouldFilter(matcher string, apiVersion string) bool {
+	for mapVersion, matchers := range MatchersMap {
+		// edge case when compare 1.2 < 1.10
+		if apiVersion < mapVersion && matchers[matcher] {
+			return true
+		}
 	}
 
-	return SplitVersionFilter{excluded: matchersToExclude}
+	return false
 }
 
-func (s *SplitVersionFilter) ShouldFilter(matcher string, apiVersion string) bool {
-	_, ok := s.excluded[mkey{apiVersion, matcher}]
-	return ok
+// Match returns the spec version if it is valid, otherwise it returns nil
+func Match(version string) *string {
+	_, exist := MatchersMap[version]
+	if exist {
+		return &version
+	}
+
+	return nil
 }
