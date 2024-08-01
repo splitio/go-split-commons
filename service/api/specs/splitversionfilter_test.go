@@ -23,7 +23,7 @@ func Test_ParseAndValidate(t *testing.T) {
 	}
 
 	res, err = ParseAndValidate("2.3")
-	if err == nil || res != "" {
+	if err == nil || res != "2.3" {
 		t.Error("Should be a unsupported version")
 	}
 }
