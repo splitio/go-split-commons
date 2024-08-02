@@ -1,3 +1,6 @@
+6.0.1 (Aug 5, 2024)
+- Updated split version filter to support 1.2.
+
 6.0.0 (May 14, 2024)
 - BREAKING CHANGE:
     - Changed FetchOptions and Fetch API.

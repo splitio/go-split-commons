@@ -1,8 +1,6 @@
 package specs
 
 import (
-	"fmt"
-
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 )
 
@@ -15,7 +13,28 @@ var V1_0 = mergeMaps(map[string]bool{
 	matchers.MatcherTypeInListSemver:               true,
 }, V1_1)
 
-func ShouldFilter(matcher string, apiVersion string) bool {
+type SplitVersionFilter struct {
+	v1_0 map[string]bool
+	v1_1 map[string]bool
+}
+
+func NewSplitVersionFilter() SplitVersionFilter {
+	v1_1 := map[string]bool{matchers.MatcherInLargeSegment: true}
+	v1_0 := mergeMaps(map[string]bool{
+		matchers.MatcherEqualToSemver:                  true,
+		matchers.MatcherTypeLessThanOrEqualToSemver:    true,
+		matchers.MatcherTypeGreaterThanOrEqualToSemver: true,
+		matchers.MatcherTypeBetweenSemver:              true,
+		matchers.MatcherTypeInListSemver:               true,
+	}, V1_1)
+
+	return SplitVersionFilter{
+		v1_0: v1_0,
+		v1_1: v1_1,
+	}
+}
+
+func (f *SplitVersionFilter) ShouldFilter(matcher string, apiVersion string) bool {
 	switch apiVersion {
 	case FLAG_V1_1:
 		return V1_1[matcher]
@@ -24,32 +43,6 @@ func ShouldFilter(matcher string, apiVersion string) bool {
 	}
 
 	return false
-}
-
-// Match returns the spec version if it is valid, otherwise it returns nil
-func Match(version string) *string {
-	switch version {
-	case FLAG_V1_0:
-		return &version
-	case FLAG_V1_1:
-		return &version
-	case FLAG_V1_2:
-		return &version
-	}
-	return nil
-}
-
-func ParseAndValidate(spec string) (string, error) {
-	if len(spec) == 0 {
-		// return default flag spec
-		return FLAG_V1_0, nil
-	}
-
-	if Match(spec) == nil {
-		return spec, fmt.Errorf("unsupported flag spec: %s", spec)
-	}
-
-	return spec, nil
 }
 
 func mergeMaps(versionMap map[string]bool, toMergeMap map[string]bool) map[string]bool {
