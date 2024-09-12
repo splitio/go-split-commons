@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	healthcheck "github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -41,6 +42,7 @@ func NewFetchSegmentsTask(
 	workerCount int,
 	queueSize int,
 	logger logging.LoggerInterface,
+	appMonitor healthcheck.MonitorProducerInterface,
 ) *asynctask.AsyncTask {
 
 	admin := atomic.Value{}
@@ -65,6 +67,7 @@ func NewFetchSegmentsTask(
 	}
 
 	update := func(logger logging.LoggerInterface) error {
+		appMonitor.NotifyEvent(healthcheck.Segments)
 		wa, ok := admin.Load().(*workerpool.WorkerAdmin)
 		if !ok || wa == nil {
 			return errors.New("unable to type-assert worker manager")

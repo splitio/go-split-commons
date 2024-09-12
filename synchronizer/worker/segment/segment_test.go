@@ -77,8 +77,8 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 	if err == nil {
 		t.Error("It should return err")
 	}
-	if atomic.LoadInt64(&notifyEventCalled) != 2 {
-		t.Error("It should be called twice")
+	if atomic.LoadInt64(&notifyEventCalled) != 3 {
+		t.Errorf("It should be called thrice. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -197,8 +197,8 @@ func TestSegmentSynchronizer(t *testing.T) {
 	if atomic.LoadInt64(&s2Requested) != 2 {
 		t.Error("Should be called twice")
 	}
-	if atomic.LoadInt64(&notifyEventCalled) != 2 {
-		t.Error("It should be called twice")
+	if atomic.LoadInt64(&notifyEventCalled) != 3 {
+		t.Errorf("It should be called thrice. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -288,8 +288,8 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		t.Error("Should be called twice")
 	}
 
-	if atomic.LoadInt64(&notifyEventCalled) != 2 {
-		t.Error("It should be called twice")
+	if atomic.LoadInt64(&notifyEventCalled) != 3 {
+		t.Errorf("It should be called thrice. Actual %d", notifyEventCalled)
 	}
 	testhelpers.AssertStringSliceEqualsNoOrder(t, []string{"item5", "item3"}, res2.UpdatedKeys, "")
 }
@@ -396,8 +396,8 @@ func TestSegmentSyncProcess(t *testing.T) {
 	if s2Requested != 1 {
 		t.Error("Should be called once")
 	}
-	if atomic.LoadInt64(&notifyEventCalled) != 2 {
-		t.Error("It should be called twice")
+	if atomic.LoadInt64(&notifyEventCalled) != 3 {
+		t.Errorf("It should be called thrice. Actual %d", notifyEventCalled)
 	}
 }
 

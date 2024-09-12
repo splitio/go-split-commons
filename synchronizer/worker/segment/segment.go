@@ -193,6 +193,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
+	s.hcMonitor.NotifyEvent(application.Segments)
 	wg := sync.WaitGroup{}
 	wg.Add(len(segmentNames))
 	failedSegments := set.NewThreadSafeSet()
