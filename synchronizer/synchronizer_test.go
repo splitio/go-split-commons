@@ -74,7 +74,7 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
 		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
@@ -156,7 +156,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
 		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
@@ -259,7 +259,7 @@ func TestSyncAllOk(t *testing.T) {
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
 		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 10, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 10, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
@@ -363,7 +363,7 @@ func TestPeriodicFetching(t *testing.T) {
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 1, logger),
 		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 1, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
 	}
@@ -487,7 +487,7 @@ func TestPeriodicRecording(t *testing.T) {
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 1, logger),
 		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 1, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger),
+		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 1, logger),
 	}
@@ -538,13 +538,14 @@ func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
 
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil)),
-		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, appMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -590,13 +591,14 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
 
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil)),
-		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMock.MockApplicationMonitor{}),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, appMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -649,13 +651,14 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	}
 	segmentMockStorage := storageMock.MockSegmentStorage{}
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
+	appMonitorMock := hcMock.MockApplicationMonitor{}
 
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil)),
-		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryStorage, hcMock.MockApplicationMonitor{}),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, appMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -737,7 +740,7 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, hcMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -806,7 +809,7 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, hcMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -874,7 +877,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, 1, 500, logger, hcMonitorMock),
 		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
@@ -998,7 +1001,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 		TelemetryRecorder: telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
 	}
 	splitTasks := SplitTasks{
-		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, 5, 50, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 10, 5, 50, logger, appMonitorMock),
 	}
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 
