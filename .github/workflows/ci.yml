@@ -18,12 +18,12 @@ jobs:
           - 6379:6379
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Go version
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.18.0'
 
@@ -35,7 +35,7 @@ jobs:
 
       - name: SonarQube Scan (Push)
         if: ${{ github.event_name == 'push' }}
-        uses: SonarSource/sonarcloud-github-action@v1.9.1
+        uses: SonarSource/sonarcloud-github-action@v2.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,7 +46,7 @@ jobs:
 
       - name: SonarQube Scan (Pull Request)
         if: ${{ github.event_name == 'pull_request' }}
-        uses: SonarSource/sonarcloud-github-action@v1.9.1
+        uses: SonarSource/sonarcloud-github-action@v2.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

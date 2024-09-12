@@ -14,6 +14,11 @@ func TestMatch(t *testing.T) {
 	}
 
 	specVersion = "1.2"
+	if Match(specVersion) == nil {
+		t.Error("Expected 1.2")
+	}
+
+	specVersion = "1.3"
 	if Match(specVersion) != nil {
 		t.Error("Expected nil")
 	}

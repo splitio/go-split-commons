@@ -62,6 +62,9 @@ const (
 	MatcherTypeBetweenSemver = "BETWEEN_SEMVER"
 	// MatcherTypeInListSemver string value
 	MatcherTypeInListSemver = "IN_LIST_SEMVER"
+
+	// MatcherInLargeSegment string value
+	MatcherInLargeSegment = "IN_LARGE_SEGMENT"
 )
 
 // MatcherInterface should be implemented by all matchers
