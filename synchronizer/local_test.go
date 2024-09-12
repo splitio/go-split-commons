@@ -49,7 +49,7 @@ func TestLocalSyncAllError(t *testing.T) {
 		t.Error("It should be called once")
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Acutla %d", notifyEventCalled)
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -104,7 +104,7 @@ func TestLocalSyncAllOk(t *testing.T) {
 		t.Error("It should be called once")
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Acutla %d", notifyEventCalled)
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -158,6 +158,6 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	}
 	syncForTest.StopPeriodicFetching()
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Acutla %d", notifyEventCalled)
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
 }
