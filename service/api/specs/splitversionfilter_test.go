@@ -6,7 +6,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 )
 
-func Test_ParseAndValidate(t *testing.T) {
+func TestParseAndValidate(t *testing.T) {
 	res, err := ParseAndValidate("")
 	if err != nil || res != FLAG_V1_0 {
 		t.Error("It should be 1.1")
@@ -28,7 +28,7 @@ func Test_ParseAndValidate(t *testing.T) {
 	}
 }
 
-func Test_splitVersionFilter(t *testing.T) {
+func TestsplitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
 	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
 	if !shouldFilter {
