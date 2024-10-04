@@ -1,18 +1,18 @@
 package dtos
 
-// Item represents a single item with a name.
-type MemItem struct {
+// Segment struct
+type Segment struct {
 	Name string `json:"n"`
 }
 
-// Member represents a member with keys and a change number.
-type Member struct {
-	Keys         []MemItem `json:"k"`
-	ChangeNumber int64     `json:"cn,omitempty"`
+// Memberships struct mapping segments data for memberships endpoint
+type Memberships struct {
+	Segments     []Segment `json:"k"`
+	ChangeNumber *int64    `json:"cn,omitempty"`
 }
 
-// MembershipsDTO groups my segments and large segments.
-type MembershipsDTO struct {
-	MySegments    Member `json:"ms"`
-	LargeSegments Member `json:"ls"`
+// MembershipsResponseDTO struct mapping memberships data for memberships endpoint
+type MembershipsResponseDTO struct {
+	MySegments      Memberships `json:"ms"`
+	MyLargeSegments Memberships `json:"ls"`
 }
