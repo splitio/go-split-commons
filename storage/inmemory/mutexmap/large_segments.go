@@ -51,11 +51,12 @@ func (s *LargeSegmentsStorageImpl) LargeSegmentsForUser(userKey string) []string
 }
 
 // Update adds and remove keys to segments
-func (s *LargeSegmentsStorageImpl) Update(name string, userKeys []string) {
+func (s *LargeSegmentsStorageImpl) Update(name string, userKeys []string, till int64) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.data[name] = userKeys
+	s.SetChangeNumber(name, till)
 }
 
 func (s *LargeSegmentsStorageImpl) SetChangeNumber(name string, till int64) {

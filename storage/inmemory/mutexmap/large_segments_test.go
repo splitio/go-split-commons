@@ -24,14 +24,14 @@ func TestLargeSegmentStorage(t *testing.T) {
 	storage := NewLargeSegmentsStorage()
 
 	keys1 := sortedKeys("ls1", 10000, nil)
-	storage.Update("ls_test_1", keys1)
+	storage.Update("ls_test_1", keys1, 10)
 
 	sharedKey := &keys1[5000]
 	keys2 := sortedKeys("ls2", 20000, sharedKey)
-	storage.Update("ls_test_2", keys2)
+	storage.Update("ls_test_2", keys2, 20)
 
 	keys3 := sortedKeys("ls3", 30000, sharedKey)
-	storage.Update("ls_test_3", keys3)
+	storage.Update("ls_test_3", keys3, 30)
 
 	if storage.Count() != 3 {
 		t.Error("Count should be 3. Actual: ", storage.Count())
