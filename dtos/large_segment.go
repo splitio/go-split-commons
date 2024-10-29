@@ -2,12 +2,6 @@ package dtos
 
 import "net/http"
 
-type LargeSegmentResponse struct {
-	Error error
-	Retry bool
-	Data  *LargeSegmentDTO
-}
-
 type LargeSegmentDTO struct {
 	Name         string
 	Keys         []string
