@@ -4,29 +4,23 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-split-commons/v6/storage"
 )
-
-// LargeSegmentsStorage defines the interface for a per-user large segments storage
-type LargeSegmentsStorage interface {
-	Count() int
-	LargeSegmentsForUser(userKey string) []string
-	Update(lsName string, userKeys []string)
-}
 
 // LargeSegmentsStorageImpl implements the LargeSegmentsStorage interface
 type LargeSegmentsStorageImpl struct {
-	largeSegments map[string][]string
-	mutex         *sync.RWMutex
-	logger        logging.LoggerInterface
+	data      map[string][]string
+	till      map[string]int64
+	mutex     *sync.RWMutex
+	tillMutex *sync.RWMutex
 }
 
 // NewLargeSegmentsStorage constructs a new LargeSegments cache
-func NewLargeSegmentsStorage(logger logging.LoggerInterface) *LargeSegmentsStorageImpl {
+func NewLargeSegmentsStorage() *LargeSegmentsStorageImpl {
 	return &LargeSegmentsStorageImpl{
-		largeSegments: make(map[string][]string),
-		mutex:         &sync.RWMutex{},
-		logger:        logger,
+		data:      make(map[string][]string),
+		mutex:     &sync.RWMutex{},
+		tillMutex: &sync.RWMutex{},
 	}
 }
 
@@ -34,7 +28,7 @@ func NewLargeSegmentsStorage(logger logging.LoggerInterface) *LargeSegmentsStora
 func (s *LargeSegmentsStorageImpl) Count() int {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	return len(s.largeSegments)
+	return len(s.data)
 }
 
 // SegmentsForUser returns the list of segments a certain user belongs to
@@ -42,8 +36,8 @@ func (s *LargeSegmentsStorageImpl) LargeSegmentsForUser(userKey string) []string
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	toReturn := make([]string, 0, len(s.largeSegments))
-	for lsName, data := range s.largeSegments {
+	toReturn := make([]string, 0, len(s.data))
+	for lsName, data := range s.data {
 		i := sort.Search(len(data), func(i int) bool {
 			return data[i] >= userKey
 		})
@@ -57,11 +51,27 @@ func (s *LargeSegmentsStorageImpl) LargeSegmentsForUser(userKey string) []string
 }
 
 // Update adds and remove keys to segments
-func (s *LargeSegmentsStorageImpl) Update(lsName string, userKeys []string) {
+func (s *LargeSegmentsStorageImpl) Update(name string, userKeys []string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.largeSegments[lsName] = userKeys
+	s.data[name] = userKeys
 }
 
-var _ LargeSegmentsStorage = (*LargeSegmentsStorageImpl)(nil)
+func (s *LargeSegmentsStorageImpl) SetChangeNumber(name string, till int64) {
+	s.tillMutex.Lock()
+	defer s.tillMutex.Unlock()
+	s.till[name] = till
+}
+
+func (s *LargeSegmentsStorageImpl) ChangeNumber(name string) int64 {
+	s.tillMutex.RLock()
+	defer s.tillMutex.RUnlock()
+	cn := s.till[name]
+	if cn == 0 {
+		cn = -1
+	}
+	return cn
+}
+
+var _ storage.LargeSegmentsStorage = (*LargeSegmentsStorageImpl)(nil)

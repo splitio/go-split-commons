@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"testing"
-
-	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func sortedKeys(prefix string, count int, shared *string) []string {
@@ -23,7 +21,7 @@ func sortedKeys(prefix string, count int, shared *string) []string {
 }
 
 func TestLargeSegmentStorage(t *testing.T) {
-	storage := NewLargeSegmentsStorage(logging.NewLogger(nil))
+	storage := NewLargeSegmentsStorage()
 
 	keys1 := sortedKeys("ls1", 10000, nil)
 	storage.Update("ls_test_1", keys1)
