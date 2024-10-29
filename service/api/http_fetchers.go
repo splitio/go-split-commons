@@ -124,7 +124,7 @@ func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.Advan
 	}
 }
 
-func (f *HTTPLargeSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentDTO, error) {
+func (f *HTTPLargeSegmentFetcher) RequestForExport(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfeDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/largeSegmentDefinition/")
 	bufferQuery.WriteString(name)
@@ -144,16 +144,10 @@ func (f *HTTPLargeSegmentFetcher) Fetch(name string, fetchOptions *service.Segme
 		return nil, fmt.Errorf("URL expired")
 	}
 
-	var toReturn dtos.LargeSegmentDTO
-	err = f.downloadAndParse(rfeDTO, &toReturn)
-	if err != nil {
-		return nil, err
-	}
-
-	return &toReturn, nil
+	return &rfeDTO, nil
 }
 
-func (f *HTTPLargeSegmentFetcher) downloadAndParse(rfe dtos.RfeDTO, tr *dtos.LargeSegmentDTO) error {
+func (f *HTTPLargeSegmentFetcher) Fetch(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error) {
 	method := rfe.Params.Method
 	if len(method) == 0 {
 		method = http.MethodGet
@@ -163,11 +157,11 @@ func (f *HTTPLargeSegmentFetcher) downloadAndParse(rfe dtos.RfeDTO, tr *dtos.Lar
 	req.Header = rfe.Params.Headers
 	response, err := f.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return dtos.HTTPError{
+		return nil, dtos.HTTPError{
 			Code:    response.StatusCode,
 			Message: response.Status,
 		}
@@ -176,8 +170,8 @@ func (f *HTTPLargeSegmentFetcher) downloadAndParse(rfe dtos.RfeDTO, tr *dtos.Lar
 
 	switch rfe.Format {
 	case Csv:
-		return csvReader(response, rfe, tr)
+		return csvReader(response, rfe)
 	default:
-		return fmt.Errorf("unsupported file format")
+		return nil, fmt.Errorf("unsupported file format")
 	}
 }

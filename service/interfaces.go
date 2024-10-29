@@ -20,7 +20,8 @@ type SegmentFetcher interface {
 }
 
 type LargeSegmentFetcher interface {
-	Fetch(name string, fetchOptions *SegmentRequestParams) (*dtos.LargeSegmentDTO, error)
+	RequestForExport(name string, fetchOptions *SegmentRequestParams) (*dtos.RfeDTO, error)
+	Fetch(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error)
 }
 
 // ImpressionsRecorder interface to be implemented by Impressions loggers

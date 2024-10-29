@@ -420,7 +420,12 @@ func TestFetchCsvFormatHappyPath(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	result, err := fetcher.Fetch(*rfe)
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -471,7 +476,11 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+	result, err := fetcher.Fetch(*rfe)
 	if err.Error() != "unssuported file content. The file has multiple columns" {
 		t.Error("Error should not be nil")
 	}
@@ -518,7 +527,11 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+	result, err := fetcher.Fetch(*rfe)
 	if err.Error() != "unsupported csv version 1111.0" {
 		t.Error("Error should not be nil")
 	}
@@ -565,7 +578,11 @@ func TestFetchUnknownFormat(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+	result, err := fetcher.Fetch(*rfe)
 	if err.Error() != "unsupported file format" {
 		t.Error("Error should not be nil")
 	}
@@ -593,13 +610,12 @@ func TestFetchAPIError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
 	if err.Error() != "500 Internal Server Error" {
-		t.Error("Error should not be nil")
+		t.Error("Error should be 500")
 	}
-
-	if result != (*dtos.LargeSegmentDTO)(nil) {
-		t.Error("Response.Data should be nil")
+	if rfe != nil {
+		t.Error("RequestForExport should be nil")
 	}
 }
 
@@ -639,7 +655,11 @@ func TestFetchDownloadServerError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+	result, err := fetcher.Fetch(*rfe)
 	if err.Error() != "500 Internal Server Error" {
 		t.Error("Error should not be nil")
 	}
@@ -686,7 +706,11 @@ func TestFetchWithPost(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+	result, err := fetcher.Fetch(*rfe)
 	if err != nil {
 		t.Error("Error shuld be nil")
 	}
@@ -731,12 +755,12 @@ func TestFetcahURLExpired(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	result, err := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
 	if err.Error() != "URL expired" {
 		t.Error("Error should be: URL expired")
 	}
 
-	if result != (*dtos.LargeSegmentDTO)(nil) {
-		t.Error("response.Data should be nil")
+	if rfe != nil {
+		t.Error("rfe should be nil")
 	}
 }

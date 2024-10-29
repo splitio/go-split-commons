@@ -46,7 +46,7 @@ func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string
 	return headers
 }
 
-func csvReader(response *http.Response, rfe dtos.RfeDTO, tr *dtos.LargeSegmentDTO) error {
+func csvReader(response *http.Response, rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error) {
 	switch rfe.Version {
 	case specs.MEMBERSHIP_V10:
 		keys := make([]string, 0, rfe.TotalKeys)
@@ -58,21 +58,22 @@ func csvReader(response *http.Response, rfe dtos.RfeDTO, tr *dtos.LargeSegmentDT
 					break
 				}
 
-				return fmt.Errorf("error reading csv file. %w", err)
+				return nil, fmt.Errorf("error reading csv file. %w", err)
 			}
 
 			if l := len(record); l != 1 {
-				return fmt.Errorf("unssuported file content. The file has multiple columns")
+				return nil, fmt.Errorf("unssuported file content. The file has multiple columns")
 			}
 
 			keys = append(keys, record[0])
 		}
 
-		tr.ChangeNumber = rfe.ChangeNumber
-		tr.Name = rfe.Name
-		tr.Keys = keys
-		return nil
+		return &dtos.LargeSegmentDTO{
+			Name:         rfe.Name,
+			Keys:         keys,
+			ChangeNumber: rfe.ChangeNumber,
+		}, nil
 	default:
-		return fmt.Errorf("unsupported csv version %s", rfe.Version)
+		return nil, fmt.Errorf("unsupported csv version %s", rfe.Version)
 	}
 }
