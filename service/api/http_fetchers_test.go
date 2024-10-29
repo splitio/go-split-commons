@@ -2,13 +2,16 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -376,5 +379,365 @@ func TestSegmentChangesFetchWithFlagOptions(t *testing.T) {
 	}
 	if queryParams.Get("till") != "10000" {
 		t.Error("Expected to have till")
+	}
+}
+
+// Large Segments tests
+func TestFetchCsvFormatHappyPath(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	test_csv, _ := os.ReadFile("testdata/large_segment_test.csv")
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(test_csv)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    fileServer.URL,
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error != nil {
+		t.Error("Error should be nil")
+		fmt.Println(response.Error)
+	}
+
+	if response.Data.Name != "large_segment_test" {
+		t.Error("LS name should be large_segment_test. Actual: ", response.Data.Name)
+	}
+
+	if len(response.Data.Keys) != 1500 {
+		t.Error("Keys lenght should be 1500. Actual: ", len(response.Data.Keys))
+	}
+}
+
+func TestFetchCsvMultipleColumns(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	test_csv, _ := os.ReadFile("testdata/ls_wrong.csv")
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(test_csv)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    fileServer.URL,
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "unssuported file content. The file has multiple columns" {
+		t.Error("Error should not be nil")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("Response.Data should be nil")
+	}
+}
+
+func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	test_csv, _ := os.ReadFile("testdata/large_segment_test.csv")
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(test_csv)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    fileServer.URL,
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1111.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "unsupported csv version 1111.0" {
+		t.Error("Error should not be nil")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("Response.Data should be nil")
+	}
+}
+
+func TestFetchUnknownFormat(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	test_csv, _ := os.ReadFile("testdata/large_segment_test.csv")
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(test_csv)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    fileServer.URL,
+			},
+			Format:       Unknown,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "unsupported file format" {
+		t.Error("Error should not be nil")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("Response.Data should be nil")
+	}
+}
+
+func TestFetchAPIError(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "500 Internal Server Error" {
+		t.Error("Error should not be nil")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("Response.Data should be nil")
+	}
+}
+
+func TestFetchDownloadServerError(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    fileServer.URL,
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "500 Internal Server Error" {
+		t.Error("Error should not be nil")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("Response.Data should be nil")
+	}
+}
+
+func TestFetchWithPost(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	test_csv, _ := os.ReadFile("testdata/large_segment_test.csv")
+	fileServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(test_csv)
+	}))
+	defer fileServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "POST",
+				URL:    fileServer.URL,
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() + 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error != nil {
+		t.Error("Error shuld be nil")
+	}
+
+	if response.Data.Name != "large_segment_test" {
+		t.Error("LS name should be large_segment_test. Actual: ", response.Data.Name)
+	}
+
+	if len(response.Data.Keys) != 1500 {
+		t.Error("Keys lenght should be 1500. Actual: ", len(response.Data.Keys))
+	}
+}
+
+func TestFetcahURLExpired(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := json.Marshal(dtos.RfeDTO{
+			Params: dtos.ParamsDTO{
+				Method: "GET",
+				URL:    "http://localhost",
+			},
+			Format:       Csv,
+			TotalKeys:    1500,
+			Size:         100,
+			ChangeNumber: 100,
+			Name:         "large_segment_test",
+			Version:      "1.0",
+			ExpiresAt:    time.Now().UnixMilli() - 10000,
+		})
+		w.Write(data)
+	}))
+	defer ts.Close()
+
+	fetcher := NewHTTPLargeSegmentFetcher(
+		"api-key",
+		"1.0",
+		conf.AdvancedConfig{
+			SdkURL: ts.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	response := fetcher.Fetch("large_segment_test", &service.SegmentRequestParams{})
+	if response.Error.Error() != "URL expired" {
+		t.Error("Error should be: URL expired")
+	}
+
+	if response.Data != (*dtos.LargeSegmentDTO)(nil) {
+		t.Error("response.Data should be nil")
 	}
 }

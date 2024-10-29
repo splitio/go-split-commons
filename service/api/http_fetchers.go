@@ -3,7 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -97,4 +100,100 @@ func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.Seg
 	}
 
 	return &segmentChangesDto, nil
+}
+
+type LargeSegmentFetcher interface {
+	Fetch(name string, fetchOptions *service.SegmentRequestParams) *dtos.LargeSegmentResponse
+}
+
+type HTTPLargeSegmentFetcher struct {
+	httpFetcherBase
+	membershipVersion *string
+	httpClient        *http.Client
+}
+
+// NewHTTPLargeSegmentsFetcher
+func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.LargeSegmentFetcher {
+	return &HTTPLargeSegmentFetcher{
+		httpFetcherBase: httpFetcherBase{
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
+			logger: logger,
+		},
+		membershipVersion: &cfg.MembershipVersion,
+		httpClient:        &http.Client{},
+	}
+}
+
+func (f *HTTPLargeSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) *dtos.LargeSegmentResponse {
+	var bufferQuery bytes.Buffer
+	bufferQuery.WriteString("/largeSegmentDefinition/")
+	bufferQuery.WriteString(name)
+
+	data, err := f.client.Get(bufferQuery.String(), fetchOptions)
+	if err != nil {
+		return &dtos.LargeSegmentResponse{
+			Error: err,
+			Retry: true,
+		}
+	}
+
+	var rfeDTO dtos.RfeDTO
+	err = json.Unmarshal(data, &rfeDTO)
+	if err != nil {
+		return &dtos.LargeSegmentResponse{
+			Error: fmt.Errorf("error getting Request for Export: %s. %w", name, err),
+			Retry: true,
+		}
+	}
+
+	if time.Now().UnixMilli() > rfeDTO.ExpiresAt {
+		return &dtos.LargeSegmentResponse{
+			Error: fmt.Errorf("URL expired"),
+			Retry: true,
+		}
+	}
+
+	var toReturn dtos.LargeSegmentDTO
+	retry, err := f.downloadAndParse(rfeDTO, &toReturn)
+	if err != nil {
+		return &dtos.LargeSegmentResponse{
+			Error: err,
+			Retry: retry,
+		}
+	}
+
+	return &dtos.LargeSegmentResponse{
+		Data:  &toReturn,
+		Error: nil,
+	}
+}
+
+func (f *HTTPLargeSegmentFetcher) downloadAndParse(rfe dtos.RfeDTO, tr *dtos.LargeSegmentDTO) (bool, error) {
+	method := rfe.Params.Method
+	if len(method) == 0 {
+		method = http.MethodGet
+	}
+
+	req, _ := http.NewRequest(method, rfe.Params.URL, bytes.NewBuffer(rfe.Params.Body))
+	req.Header = rfe.Params.Headers
+	response, err := f.httpClient.Do(req)
+	if err != nil {
+		return true, err
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return true,
+			dtos.HTTPError{
+				Code:    response.StatusCode,
+				Message: response.Status,
+			}
+	}
+	defer response.Body.Close()
+
+	switch rfe.Format {
+	case Csv:
+		return csvReader(response, rfe, tr)
+	default:
+		return false, fmt.Errorf("unsupported file format")
+	}
 }
