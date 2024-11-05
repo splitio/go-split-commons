@@ -24,14 +24,14 @@ func TestLargeSegmentStorage(t *testing.T) {
 	storage := NewLargeSegmentsStorage()
 
 	keys1 := sortedKeys("ls1", 10000, nil)
-	storage.Update("ls_test_1", keys1)
+	storage.Update("ls_test_1", keys1, 1)
 
 	sharedKey := &keys1[5000]
 	keys2 := sortedKeys("ls2", 20000, sharedKey)
-	storage.Update("ls_test_2", keys2)
+	storage.Update("ls_test_2", keys2, 2)
 
 	keys3 := sortedKeys("ls3", 30000, sharedKey)
-	storage.Update("ls_test_3", keys3)
+	storage.Update("ls_test_3", keys3, 3)
 
 	if storage.Count() != 3 {
 		t.Error("Count should be 3. Actual: ", storage.Count())
@@ -61,5 +61,29 @@ func TestLargeSegmentStorage(t *testing.T) {
 	result = storage.LargeSegmentsForUser("mauro-test")
 	if len(result) != 0 {
 		t.Error("Count should be empty. Actual: ", result)
+	}
+}
+
+func TestChangeNumber(t *testing.T) {
+	storage := NewLargeSegmentsStorage()
+	lsName := "largeSegment"
+
+	storage.SetChangeNumber(lsName, 1001)
+	result := storage.ChangeNumber(lsName)
+	if result != 1001 {
+		t.Error("ChangeNumber should be 1001. Actual: ", result)
+	}
+
+	otherLS := "otherLargeSegment"
+	storage.SetChangeNumber(otherLS, 2002)
+	result = storage.ChangeNumber(otherLS)
+	if result != 2002 {
+		t.Error("ChangeNumber should be 2002. Actual: ", result)
+	}
+
+	storage.SetChangeNumber(lsName, 1002)
+	result = storage.ChangeNumber(lsName)
+	if result != 1002 {
+		t.Error("ChangeNumber should be 1002. Actual: ", result)
 	}
 }

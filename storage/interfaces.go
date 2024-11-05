@@ -246,7 +246,7 @@ type Filter interface {
 // LargeSegmentStorageProducer interface should be implemented by all structs that offer writing large segments
 type LargeSegmentStorageProducer interface {
 	SetChangeNumber(name string, till int64)
-	Update(name string, userKeys []string)
+	Update(name string, userKeys []string, till int64)
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading large segments
