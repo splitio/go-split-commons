@@ -24,7 +24,7 @@ func (e *SegmentError) Error() string {
 	return errorsToPrint
 }
 
-func (e *SegmentError) addError(name string, err error) {
+func (e *SegmentError) AddError(name string, err error) {
 	e.mutex.Lock()
 	e.errors[name] = err
 	e.mutex.Unlock()

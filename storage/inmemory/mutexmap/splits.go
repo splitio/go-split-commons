@@ -203,6 +203,13 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	return segments
 }
 
+// LargeSegmentNames returns a slice with the names of all large segments referenced in splits
+func (m *MMSplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
+	// TODO(sanzmauro): add plit storage implementation
+	segments := set.NewSet()
+	return segments
+}
+
 // SetChangeNumber sets the till value belong to split
 func (m *MMSplitStorage) SetChangeNumber(till int64) error {
 	m.tillMutex.Lock()

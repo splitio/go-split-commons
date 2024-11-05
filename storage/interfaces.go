@@ -20,7 +20,8 @@ type SplitStorageConsumer interface {
 	ChangeNumber() (int64, error)
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
@@ -203,7 +204,8 @@ type SplitStorage interface {
 	SetChangeNumber(changeNumber int64) error
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
@@ -246,7 +248,7 @@ type Filter interface {
 // LargeSegmentStorageProducer interface should be implemented by all structs that offer writing large segments
 type LargeSegmentStorageProducer interface {
 	SetChangeNumber(name string, till int64)
-	Update(name string, userKeys []string)
+	Update(name string, userKeys []string, till int64)
 }
 
 // SegmentStorageConsumer interface should be implemented by all structs that ofer reading large segments

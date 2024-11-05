@@ -167,10 +167,10 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 	}
 
 	internalSyncResult, err := s.attemptSegmentSync(name, till, fetchOptions)
-	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
 		return internalSyncResult.updateResult, err
 	}
+	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if internalSyncResult.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
 		return internalSyncResult.updateResult, nil
@@ -216,7 +216,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {
 				failedSegments.Add(segmentName)
-				errorsToPrint.addError(segmentName, err)
+				errorsToPrint.AddError(segmentName, err)
 			}
 
 			mtx.Lock()
