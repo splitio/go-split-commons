@@ -77,9 +77,6 @@ func (u *UpdaterImpl) LargeSegmentNames() []interface{} {
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]int64, error) {
 	lsNames := u.LargeSegmentNames()
-
-	fmt.Println(lsNames)
-
 	wg := sync.WaitGroup{}
 	wg.Add(len(lsNames))
 	failedLargeSegments := set.NewThreadSafeSet()

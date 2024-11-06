@@ -2,7 +2,7 @@ package mocks
 
 type MockLargeSegmentStorage struct {
 	SetChangeNumberCall      func(name string, till int64)
-	UpdateCall               func(name string, userKeys []string)
+	UpdateCall               func(name string, userKeys []string, till int64)
 	ChangeNumberCall         func(name string) int64
 	CountCall                func() int
 	LargeSegmentsForUserCall func(userKey string) []string
@@ -12,8 +12,8 @@ func (m MockLargeSegmentStorage) SetChangeNumber(name string, till int64) {
 	m.SetChangeNumberCall(name, till)
 }
 
-func (m MockLargeSegmentStorage) Update(name string, userKeys []string) {
-	m.UpdateCall(name, userKeys)
+func (m MockLargeSegmentStorage) Update(name string, userKeys []string, till int64) {
+	m.UpdateCall(name, userKeys, till)
 }
 
 func (m MockLargeSegmentStorage) ChangeNumber(name string) int64 {
