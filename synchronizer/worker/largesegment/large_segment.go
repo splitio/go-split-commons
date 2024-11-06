@@ -77,9 +77,6 @@ func (u *UpdaterImpl) LargeSegmentNames() []interface{} {
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]int64, error) {
 	lsNames := u.LargeSegmentNames()
-
-	fmt.Println(lsNames)
-
 	wg := sync.WaitGroup{}
 	wg.Add(len(lsNames))
 	failedLargeSegments := set.NewThreadSafeSet()
@@ -165,8 +162,6 @@ func (u *UpdaterImpl) attemptLargeSegmentSync(name string, till *int64, fetchOpt
 			return internalLargeSegmentSync{newChangeNumber: cn, successfulSync: false, attempt: remainingAttempts}, err
 		}
 		if till == nil || *till <= cn {
-			fmt.Println("attemptLargeSegmentSync success")
-			fmt.Println(cn)
 			return internalLargeSegmentSync{newChangeNumber: cn, successfulSync: true, attempt: remainingAttempts}, nil
 		}
 
@@ -205,9 +200,6 @@ func (u *UpdaterImpl) fetchUntil(name string, fetchOptions *service.SegmentReque
 		// record latency telemetry
 
 		if currentSince == ls.ChangeNumber {
-			fmt.Println("cs == ls.cn")
-			fmt.Println(currentSince)
-			fmt.Println(ls.ChangeNumber)
 			// record successful sync telemetry
 			break
 		}
