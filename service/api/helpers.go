@@ -46,10 +46,10 @@ func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string
 	return headers
 }
 
-func csvReader(response *http.Response, rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error) {
-	switch rfe.Version {
+func csvReader(response *http.Response, rfd dtos.RfdDTO) (*dtos.LargeSegment, error) {
+	switch rfd.Version {
 	case specs.MEMBERSHIP_V10:
-		keys := make([]string, 0, rfe.TotalKeys)
+		keys := make([]string, 0, rfd.TotalKeys)
 		reader := csv.NewReader(response.Body)
 		for {
 			record, err := reader.Read()
@@ -68,12 +68,12 @@ func csvReader(response *http.Response, rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO,
 			keys = append(keys, record[0])
 		}
 
-		return &dtos.LargeSegmentDTO{
-			Name:         rfe.Name,
+		return &dtos.LargeSegment{
+			Name:         rfd.Name,
 			Keys:         keys,
-			ChangeNumber: rfe.ChangeNumber,
+			ChangeNumber: rfd.ChangeNumber,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported csv version %s", rfe.Version)
+		return nil, fmt.Errorf("unsupported csv version %s", rfd.Version)
 	}
 }

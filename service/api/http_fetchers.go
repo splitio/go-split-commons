@@ -103,7 +103,7 @@ func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.Seg
 }
 
 type LargeSegmentFetcher interface {
-	Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentDTO, error)
+	Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegment, error)
 }
 
 type HTTPLargeSegmentFetcher struct {
@@ -124,7 +124,7 @@ func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.Advan
 	}
 }
 
-func (f *HTTPLargeSegmentFetcher) RequestForExport(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfeDTO, error) {
+func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfdDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/largeSegmentDefinition/")
 	bufferQuery.WriteString(name)
@@ -134,27 +134,27 @@ func (f *HTTPLargeSegmentFetcher) RequestForExport(name string, fetchOptions *se
 		return nil, err
 	}
 
-	var rfeDTO dtos.RfeDTO
-	err = json.Unmarshal(data, &rfeDTO)
+	var rfdDTO dtos.RfdDTO
+	err = json.Unmarshal(data, &rfdDTO)
 	if err != nil {
 		return nil, err
 	}
 
-	if time.Now().UnixMilli() > rfeDTO.ExpiresAt {
+	if time.Now().UnixMilli() > rfdDTO.ExpiresAt {
 		return nil, fmt.Errorf("URL expired")
 	}
 
-	return &rfeDTO, nil
+	return &rfdDTO, nil
 }
 
-func (f *HTTPLargeSegmentFetcher) Fetch(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error) {
-	method := rfe.Params.Method
+func (f *HTTPLargeSegmentFetcher) Fetch(rfd dtos.RfdDTO) (*dtos.LargeSegment, error) {
+	method := rfd.Params.Method
 	if len(method) == 0 {
 		method = http.MethodGet
 	}
 
-	req, _ := http.NewRequest(method, rfe.Params.URL, bytes.NewBuffer(rfe.Params.Body))
-	req.Header = rfe.Params.Headers
+	req, _ := http.NewRequest(method, rfd.Params.URL, bytes.NewBuffer(rfd.Params.Body))
+	req.Header = rfd.Params.Headers
 	response, err := f.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -168,9 +168,9 @@ func (f *HTTPLargeSegmentFetcher) Fetch(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO,
 	}
 	defer response.Body.Close()
 
-	switch rfe.Format {
+	switch rfd.Format {
 	case Csv:
-		return csvReader(response, rfe)
+		return csvReader(response, rfd)
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 	}

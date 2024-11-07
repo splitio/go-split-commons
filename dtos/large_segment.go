@@ -2,13 +2,13 @@ package dtos
 
 import "net/http"
 
-type LargeSegmentDTO struct {
+type LargeSegment struct {
 	Name         string
 	Keys         []string
 	ChangeNumber int64
 }
 
-type RfeDTO struct {
+type RfdDTO struct {
 	Params       ParamsDTO `json:"p"`
 	Interval     *int64    `json:"i,omitempty"`
 	Format       int       `json:"f"`

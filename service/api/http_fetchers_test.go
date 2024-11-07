@@ -393,7 +393,7 @@ func TestFetchCsvFormatHappyPath(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    fileServer.URL,
@@ -420,7 +420,7 @@ func TestFetchCsvFormatHappyPath(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -449,7 +449,7 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    fileServer.URL,
@@ -476,7 +476,7 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -485,7 +485,7 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 		t.Error("Error should not be nil")
 	}
 
-	if result != (*dtos.LargeSegmentDTO)(nil) {
+	if result != (*dtos.LargeSegment)(nil) {
 		t.Error("Response.Data should be nil")
 	}
 }
@@ -500,7 +500,7 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    fileServer.URL,
@@ -527,7 +527,7 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -536,7 +536,7 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 		t.Error("Error should not be nil")
 	}
 
-	if result != (*dtos.LargeSegmentDTO)(nil) {
+	if result != (*dtos.LargeSegment)(nil) {
 		t.Error("Response.Data should be nil")
 	}
 }
@@ -551,7 +551,7 @@ func TestFetchUnknownFormat(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    fileServer.URL,
@@ -578,7 +578,7 @@ func TestFetchUnknownFormat(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -587,7 +587,7 @@ func TestFetchUnknownFormat(t *testing.T) {
 		t.Error("Error should not be nil")
 	}
 
-	if result != (*dtos.LargeSegmentDTO)(nil) {
+	if result != (*dtos.LargeSegment)(nil) {
 		t.Error("Response.Data should be nil")
 	}
 }
@@ -610,7 +610,7 @@ func TestFetchAPIError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err.Error() != "500 Internal Server Error" {
 		t.Error("Error should be 500")
 	}
@@ -628,7 +628,7 @@ func TestFetchDownloadServerError(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    fileServer.URL,
@@ -655,7 +655,7 @@ func TestFetchDownloadServerError(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -664,7 +664,7 @@ func TestFetchDownloadServerError(t *testing.T) {
 		t.Error("Error should not be nil")
 	}
 
-	if result != (*dtos.LargeSegmentDTO)(nil) {
+	if result != (*dtos.LargeSegment)(nil) {
 		t.Error("Response.Data should be nil")
 	}
 }
@@ -679,7 +679,7 @@ func TestFetchWithPost(t *testing.T) {
 	defer fileServer.Close()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "POST",
 				URL:    fileServer.URL,
@@ -706,7 +706,7 @@ func TestFetchWithPost(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err != nil {
 		t.Error("Error should be nil")
 	}
@@ -728,7 +728,7 @@ func TestFetcahURLExpired(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, _ := json.Marshal(dtos.RfeDTO{
+		data, _ := json.Marshal(dtos.RfdDTO{
 			Params: dtos.ParamsDTO{
 				Method: "GET",
 				URL:    "http://localhost",
@@ -755,7 +755,7 @@ func TestFetcahURLExpired(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	rfe, err := fetcher.RequestForExport("large_segment_test", &service.SegmentRequestParams{})
+	rfe, err := fetcher.RequestForDefinition("large_segment_test", &service.SegmentRequestParams{})
 	if err.Error() != "URL expired" {
 		t.Error("Error should be: URL expired")
 	}
