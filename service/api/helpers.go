@@ -27,6 +27,14 @@ const (
 	Csv
 )
 
+const (
+	// LargeSegmentDefinitionUpdate received when a large segment definition is updated
+	LargeSegmentNewDefinition = "LS_NEW_DEFINITION"
+
+	// LargeSegmentEmpty received when a large segment has no definition
+	LargeSegmentEmpty = "LS_EMPTY"
+)
+
 // AddMetadataToHeaders adds metadata in headers
 func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string, clientKey *string) map[string]string {
 	headers := make(map[string]string)
@@ -46,10 +54,10 @@ func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string
 	return headers
 }
 
-func csvReader(response *http.Response, rfd dtos.RfdDTO) (*dtos.LargeSegment, error) {
-	switch rfd.Version {
+func csvReader(response *http.Response, name string, specVersion string, cn int64, rfd *dtos.RFD) (*dtos.LargeSegment, error) {
+	switch specVersion {
 	case specs.MEMBERSHIP_V10:
-		keys := make([]string, 0, rfd.TotalKeys)
+		keys := make([]string, 0, rfd.Data.TotalKeys)
 		reader := csv.NewReader(response.Body)
 		for {
 			record, err := reader.Read()
@@ -69,11 +77,11 @@ func csvReader(response *http.Response, rfd dtos.RfdDTO) (*dtos.LargeSegment, er
 		}
 
 		return &dtos.LargeSegment{
-			Name:         rfd.Name,
+			Name:         name,
 			Keys:         keys,
-			ChangeNumber: rfd.ChangeNumber,
+			ChangeNumber: cn,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported csv version %s", rfd.Version)
+		return nil, fmt.Errorf("unsupported csv version %s", specVersion)
 	}
 }

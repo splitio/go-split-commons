@@ -124,7 +124,7 @@ func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.Advan
 	}
 }
 
-func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfdDTO, error) {
+func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/largeSegmentDefinition/")
 	bufferQuery.WriteString(name)
@@ -134,20 +134,27 @@ func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions
 		return nil, err
 	}
 
-	var rfdDTO dtos.RfdDTO
-	err = json.Unmarshal(data, &rfdDTO)
+	var rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO
+	err = json.Unmarshal(data, &rfdResponseDTO)
 	if err != nil {
 		return nil, err
 	}
+	if rfdResponseDTO.RFD == nil {
+		return nil, fmt.Errorf("something went wrong parsing LargeSegmentRFDResponseDTO")
+	}
 
-	if time.Now().UnixMilli() > rfdDTO.ExpiresAt {
+	if time.Now().UnixMilli() > rfdResponseDTO.RFD.Data.ExpiresAt {
 		return nil, fmt.Errorf("URL expired")
 	}
 
-	return &rfdDTO, nil
+	return rfdResponseDTO, nil
 }
 
-func (f *HTTPLargeSegmentFetcher) Fetch(rfd dtos.RfdDTO) (*dtos.LargeSegment, error) {
+func (f *HTTPLargeSegmentFetcher) Fetch(name string, rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+	rfd := rfdResponseDTO.RFD
+	if rfd == nil {
+		return nil, fmt.Errorf("something went wrong parsing LargeSegmentRFDResponseDTO")
+	}
 	method := rfd.Params.Method
 	if len(method) == 0 {
 		method = http.MethodGet
@@ -168,9 +175,9 @@ func (f *HTTPLargeSegmentFetcher) Fetch(rfd dtos.RfdDTO) (*dtos.LargeSegment, er
 	}
 	defer response.Body.Close()
 
-	switch rfd.Format {
+	switch rfd.Data.Format {
 	case Csv:
-		return csvReader(response, rfd)
+		return csvReader(response, name, rfdResponseDTO.SpecVersion, rfdResponseDTO.ChangeNumber, rfd)
 	default:
 		return nil, fmt.Errorf("unsupported file format")
 	}
