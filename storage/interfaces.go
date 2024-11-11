@@ -242,3 +242,22 @@ type Filter interface {
 	Contains(data string) bool
 	Clear()
 }
+
+// LargeSegmentStorageProducer interface should be implemented by all structs that offer writing large segments
+type LargeSegmentStorageProducer interface {
+	SetChangeNumber(name string, till int64)
+	Update(name string, userKeys []string, till int64)
+}
+
+// SegmentStorageConsumer interface should be implemented by all structs that ofer reading large segments
+type LargeSegmentStorageConsumer interface {
+	ChangeNumber(name string) int64
+	Count() int
+	LargeSegmentsForUser(userKey string) []string
+}
+
+// LargeSegmentsStorage defines the interface for a per-user large segments storage
+type LargeSegmentsStorage interface {
+	LargeSegmentStorageProducer
+	LargeSegmentStorageConsumer
+}
