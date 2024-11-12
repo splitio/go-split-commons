@@ -1,6 +1,12 @@
+6.0.2 (Nov xx, 2024)
+- Adding HTTPLargeSegmentsFetcher implementation.
+- Adding MembershipsResponseDTO.
+- Adding LargeSegmentDTO.
+- Bump dependencies for vulnerability fixes.
+
 6.0.1 (Sep 12, 2024)
 - Updated split version filter to support 1.2.
-- Fixed healcheck monitor for cases with no segments.
+- Fixed healthcheck monitor for cases with no segments.
 
 6.0.0 (May 14, 2024)
 - BREAKING CHANGE:

@@ -3,6 +3,8 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/splitio/go-split-commons/v6/conf"
@@ -97,4 +99,75 @@ func (f *HTTPSegmentFetcher) Fetch(segmentName string, fetchOptions *service.Seg
 	}
 
 	return &segmentChangesDto, nil
+}
+
+type LargeSegmentFetcher interface {
+	Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegment, error)
+}
+
+type HTTPLargeSegmentFetcher struct {
+	httpFetcherBase
+	largeSegmentVersion *string
+	httpClient          *http.Client
+}
+
+// NewHTTPLargeSegmentsFetcher
+func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.LargeSegmentFetcher {
+	return &HTTPLargeSegmentFetcher{
+		httpFetcherBase: httpFetcherBase{
+			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
+			logger: logger,
+		},
+		largeSegmentVersion: &cfg.LargeSegmentVersion,
+		httpClient:          &http.Client{},
+	}
+}
+
+func (f *HTTPLargeSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+	var bufferQuery bytes.Buffer
+	bufferQuery.WriteString("/largeSegmentDefinition/")
+	bufferQuery.WriteString(name)
+
+	data, err := f.client.Get(bufferQuery.String(), fetchOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	var rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO
+	err = json.Unmarshal(data, &rfdResponseDTO)
+	if err != nil {
+		return nil, err
+	}
+
+	return rfdResponseDTO, nil
+}
+
+func (f *HTTPLargeSegmentFetcher) DownloadFile(name string, rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+	rfd := rfdResponseDTO.RFD
+	method := rfd.Params.Method
+	if len(method) == 0 {
+		method = http.MethodGet
+	}
+
+	req, _ := http.NewRequest(method, rfd.Params.URL, bytes.NewBuffer(rfd.Params.Body))
+	req.Header = rfd.Params.Headers
+	response, err := f.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, dtos.HTTPError{
+			Code:    response.StatusCode,
+			Message: response.Status,
+		}
+	}
+	defer response.Body.Close()
+
+	switch rfd.Data.Format {
+	case Csv:
+		return csvReader(response, name, rfdResponseDTO.SpecVersion, rfdResponseDTO.ChangeNumber, rfd)
+	default:
+		return nil, fmt.Errorf("unsupported file format")
+	}
 }
