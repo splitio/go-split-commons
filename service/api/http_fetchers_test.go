@@ -666,7 +666,7 @@ func TestFetchWithPost(t *testing.T) {
 
 func buildLargeSegmentRFDResponseDTO(url string) dtos.LargeSegmentRFDResponseDTO {
 	return dtos.LargeSegmentRFDResponseDTO{
-		NotificationType: LargeSegmentNewDefinition,
+		NotificationType: "LS_NEW_DEFINITION",
 		SpecVersion:      specs.LARGESEGMENT_V10,
 		ChangeNumber:     100,
 		RFD: &dtos.RFD{

@@ -6,14 +6,14 @@ import (
 )
 
 type MockLargeSegmentFetcher struct {
-	RequestForExportCall func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfeDTO, error)
-	FetchCall            func(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error)
+	FetchCall        func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error)
+	DownloadFileCall func(name string, lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error)
 }
 
-func (m MockLargeSegmentFetcher) RequestForExport(name string, fetchOptions *service.SegmentRequestParams) (*dtos.RfeDTO, error) {
-	return m.RequestForExportCall(name, fetchOptions)
+func (m MockLargeSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+	return m.FetchCall(name, fetchOptions)
 }
 
-func (m MockLargeSegmentFetcher) Fetch(rfe dtos.RfeDTO) (*dtos.LargeSegmentDTO, error) {
-	return m.FetchCall(rfe)
+func (m MockLargeSegmentFetcher) DownloadFile(name string, lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+	return m.DownloadFileCall(name, lsRFDResponseDTO)
 }
