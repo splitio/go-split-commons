@@ -10,6 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/backoff"
@@ -200,7 +201,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 
 	var mtx sync.Mutex
 	results := make(map[string]UpdateResult, len(segmentNames))
-	errorsToPrint := NewErrors()
+	errorsToPrint := utils.NewErrors()
 
 	sem := semaphore.NewWeighted(maxConcurrency)
 	for _, name := range segmentNames {

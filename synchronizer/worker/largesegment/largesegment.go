@@ -12,7 +12,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -82,7 +82,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() error {
 	failedLargeSegments := set.NewThreadSafeSet()
 
 	var mtx sync.Mutex
-	errorsToPrint := segment.NewErrors()
+	errorsToPrint := utils.NewErrors()
 
 	sem := semaphore.NewWeighted(maxConcurrency)
 	for _, name := range lsNames {
