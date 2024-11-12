@@ -87,5 +87,5 @@ type AdvancedConfig struct {
 	FlagSetsFilter         []string
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
-	MembershipVersion      string
+	LargeSegmentVersion    string
 }

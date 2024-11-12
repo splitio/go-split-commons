@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -108,8 +107,8 @@ type LargeSegmentFetcher interface {
 
 type HTTPLargeSegmentFetcher struct {
 	httpFetcherBase
-	membershipVersion *string
-	httpClient        *http.Client
+	largeSegmentVersion *string
+	httpClient          *http.Client
 }
 
 // NewHTTPLargeSegmentsFetcher
@@ -119,12 +118,12 @@ func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.Advan
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
-		membershipVersion: &cfg.MembershipVersion,
-		httpClient:        &http.Client{},
+		largeSegmentVersion: &cfg.LargeSegmentVersion,
+		httpClient:          &http.Client{},
 	}
 }
 
-func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+func (f *HTTPLargeSegmentFetcher) Fetch(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 	var bufferQuery bytes.Buffer
 	bufferQuery.WriteString("/largeSegmentDefinition/")
 	bufferQuery.WriteString(name)
@@ -139,22 +138,12 @@ func (f *HTTPLargeSegmentFetcher) RequestForDefinition(name string, fetchOptions
 	if err != nil {
 		return nil, err
 	}
-	if rfdResponseDTO.RFD == nil {
-		return nil, fmt.Errorf("something went wrong parsing LargeSegmentRFDResponseDTO")
-	}
-
-	if time.Now().UnixMilli() > rfdResponseDTO.RFD.Data.ExpiresAt {
-		return nil, fmt.Errorf("URL expired")
-	}
 
 	return rfdResponseDTO, nil
 }
 
-func (f *HTTPLargeSegmentFetcher) Fetch(name string, rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+func (f *HTTPLargeSegmentFetcher) DownloadFile(name string, rfdResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
 	rfd := rfdResponseDTO.RFD
-	if rfd == nil {
-		return nil, fmt.Errorf("something went wrong parsing LargeSegmentRFDResponseDTO")
-	}
 	method := rfd.Params.Method
 	if len(method) == 0 {
 		method = http.MethodGet

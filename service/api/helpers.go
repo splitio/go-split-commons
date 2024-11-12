@@ -56,7 +56,7 @@ func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string
 
 func csvReader(response *http.Response, name string, specVersion string, cn int64, rfd *dtos.RFD) (*dtos.LargeSegment, error) {
 	switch specVersion {
-	case specs.MEMBERSHIP_V10:
+	case specs.LARGESEGMENT_V10:
 		keys := make([]string, 0, rfd.Data.TotalKeys)
 		reader := csv.NewReader(response.Body)
 		for {
