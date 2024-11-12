@@ -24,7 +24,7 @@ const (
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 5
 
-	maxConcurrency = 10
+	maxConcurrency = 5
 
 	// LargeSegmentDefinitionUpdate received when a large segment definition is updated
 	LargeSegmentNewDefinition = "LS_NEW_DEFINITION"
@@ -175,7 +175,7 @@ func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequ
 	lsRFDResponseDTO, err := u.largeSegmentFetcher.Fetch(name, fetchOptions.WithChangeNumber(currentSince))
 	if err != nil {
 		if httpError, ok := err.(dtos.HTTPError); ok {
-			// record sync error telemetry
+			// TODO(maurosanz): record sync error telemetry
 			if httpError.Code == http.StatusNotModified {
 				return false, nil
 			}
@@ -189,7 +189,6 @@ func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequ
 func (u *UpdaterImpl) processNotificationType(name string, lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (bool, error) {
 	switch lsRFDResponseDTO.NotificationType {
 	case LargeSegmentEmpty:
-		// logger debug
 		u.logger.Debug(fmt.Sprintf("Processing LargeSegmentEmpty notification for %s", name))
 		u.largeSegmentStorage.Update(name, []string{}, lsRFDResponseDTO.ChangeNumber)
 		return false, nil
