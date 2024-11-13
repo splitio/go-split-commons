@@ -1,35 +1,34 @@
 package tasks
 
 import (
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	workerMock "github.com/splitio/go-split-commons/v6/synchronizer/mocks"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestLargeSegmentSyncTaskHappyPath(t *testing.T) {
 	var syncLargeSegmentCall int64
-	var lsNamesCall int64
 	updater := workerMock.MockLargeSegmenUpdater{
-		SynchronizeLargeSegmentCall: func(name string, till *int64) (int64, error) {
-			fmt.Println(name)
+		SynchronizeLargeSegmentCall: func(name string, till *int64) error {
 			atomic.AddInt64(&syncLargeSegmentCall, 1)
-			return 0, nil
-		},
-		LargeSegmentNamesCall: func() []interface{} {
-			atomic.AddInt64(&lsNamesCall, 1)
-			tr := make([]interface{}, 0)
-			tr = append(tr, "ls1")
-			tr = append(tr, "ls2")
-			tr = append(tr, "ls3")
-			return tr
+			return nil
 		},
 	}
 
-	task := NewFetchLargeSegmentsTask(updater, 1, 10, 10, logging.NewLogger(&logging.LoggerOptions{}))
+	var lsNamesCall int64
+	splitSorage := mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			atomic.AddInt64(&lsNamesCall, 1)
+			return set.NewSet("ls1", "ls2", "ls3")
+		},
+	}
+
+	task := NewFetchLargeSegmentsTask(updater, splitSorage, 1, 10, 10, logging.NewLogger(&logging.LoggerOptions{}))
 
 	task.Start()
 	time.Sleep(3 * time.Second)

@@ -1,19 +1,14 @@
 package mocks
 
 type MockLargeSegmenUpdater struct {
-	SynchronizeLargeSegmentCall  func(name string, till *int64) (int64, error)
-	SynchronizeLargeSegmentsCall func() (map[string]int64, error)
-	LargeSegmentNamesCall        func() []interface{}
+	SynchronizeLargeSegmentCall  func(name string, till *int64) error
+	SynchronizeLargeSegmentsCall func() error
 }
 
-func (m MockLargeSegmenUpdater) SynchronizeLargeSegment(name string, till *int64) (int64, error) {
+func (m MockLargeSegmenUpdater) SynchronizeLargeSegment(name string, till *int64) error {
 	return m.SynchronizeLargeSegmentCall(name, till)
 }
 
-func (m MockLargeSegmenUpdater) SynchronizeLargeSegments() (map[string]int64, error) {
+func (m MockLargeSegmenUpdater) SynchronizeLargeSegments() error {
 	return m.SynchronizeLargeSegmentsCall()
-}
-
-func (m MockLargeSegmenUpdater) LargeSegmentNames() []interface{} {
-	return m.LargeSegmentNamesCall()
 }

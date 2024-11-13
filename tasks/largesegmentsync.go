@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/largesegment"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -12,11 +13,11 @@ import (
 )
 
 func updateLargeSegments(
-	fetcher largesegment.Updater,
+	splitStorage storage.SplitStorageConsumer,
 	admin *workerpool.WorkerAdmin,
 	logger logging.LoggerInterface,
 ) error {
-	lsList := fetcher.LargeSegmentNames()
+	lsList := splitStorage.LargeSegmentNames().List()
 	for _, name := range lsList {
 		ok := admin.QueueMessage(name)
 		if !ok {
@@ -37,6 +38,7 @@ func updateLargeSegments(
 // NewFetchLargeSegmentsTask creates a new large segment fetching and storing task
 func NewFetchLargeSegmentsTask(
 	fetcher largesegment.Updater,
+	splitStorage storage.SplitStorageConsumer,
 	period int,
 	workerCount int,
 	queueSize int,
@@ -52,7 +54,7 @@ func NewFetchLargeSegmentsTask(
 				0,
 				logger,
 				func(n string, t *int64) error {
-					_, err := fetcher.SynchronizeLargeSegment(n, t)
+					err := fetcher.SynchronizeLargeSegment(n, t)
 					return err
 				},
 			)
@@ -68,7 +70,7 @@ func NewFetchLargeSegmentsTask(
 			return errors.New("unable to type-assert worker manager")
 		}
 
-		return updateLargeSegments(fetcher, wa, logger)
+		return updateLargeSegments(splitStorage, wa, logger)
 	}
 
 	cleanup := func(logger logging.LoggerInterface) {
