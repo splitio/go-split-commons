@@ -63,3 +63,27 @@ func TestLargeSegmentStorage(t *testing.T) {
 		t.Error("Count should be empty. Actual: ", result)
 	}
 }
+
+func TestChangeNumber(t *testing.T) {
+	storage := NewLargeSegmentsStorage()
+	lsName := "largeSegment"
+
+	storage.SetChangeNumber(lsName, 1001)
+	result := storage.ChangeNumber(lsName)
+	if result != 1001 {
+		t.Error("ChangeNumber should be 1001. Actual: ", result)
+	}
+
+	otherLS := "otherLargeSegment"
+	storage.SetChangeNumber(otherLS, 2002)
+	result = storage.ChangeNumber(otherLS)
+	if result != 2002 {
+		t.Error("ChangeNumber should be 2002. Actual: ", result)
+	}
+
+	storage.SetChangeNumber(lsName, 1002)
+	result = storage.ChangeNumber(lsName)
+	if result != 1002 {
+		t.Error("ChangeNumber should be 1002. Actual: ", result)
+	}
+}
