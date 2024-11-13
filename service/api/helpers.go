@@ -27,14 +27,6 @@ const (
 	Csv
 )
 
-const (
-	// LargeSegmentDefinitionUpdate received when a large segment definition is updated
-	LargeSegmentNewDefinition = "LS_NEW_DEFINITION"
-
-	// LargeSegmentEmpty received when a large segment has no definition
-	LargeSegmentEmpty = "LS_EMPTY"
-)
-
 // AddMetadataToHeaders adds metadata in headers
 func AddMetadataToHeaders(metadata dtos.Metadata, extraHeaders map[string]string, clientKey *string) map[string]string {
 	headers := make(map[string]string)

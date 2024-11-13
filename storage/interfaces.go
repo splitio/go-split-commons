@@ -20,7 +20,8 @@ type SplitStorageConsumer interface {
 	ChangeNumber() (int64, error)
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
@@ -203,7 +204,8 @@ type SplitStorage interface {
 	SetChangeNumber(changeNumber int64) error
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
