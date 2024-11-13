@@ -3,7 +3,6 @@ package largesegment
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -133,7 +132,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) error {
 		return nil
 	}
 
-	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, fetchOptions.WithTill(rand.Int63()))
+	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, fetchOptions.WithTill(time.Now().UnixMilli()))
 	if err != nil {
 		return err
 	}
