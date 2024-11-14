@@ -112,7 +112,7 @@ type HTTPLargeSegmentFetcher struct {
 }
 
 // NewHTTPLargeSegmentsFetcher
-func NewHTTPLargeSegmentFetcher(apikey string, memVersion string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.LargeSegmentFetcher {
+func NewHTTPLargeSegmentFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.LargeSegmentFetcher {
 	return &HTTPLargeSegmentFetcher{
 		httpFetcherBase: httpFetcherBase{
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),

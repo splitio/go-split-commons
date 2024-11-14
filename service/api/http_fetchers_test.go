@@ -400,9 +400,9 @@ func TestFetchCsvFormatHappyPath(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -445,9 +445,9 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -487,9 +487,9 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -529,9 +529,9 @@ func TestFetchUnknownFormat(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -562,9 +562,9 @@ func TestFetchAPIError(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -595,9 +595,9 @@ func TestFetchDownloadServerError(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},
@@ -637,9 +637,9 @@ func TestFetchWithPost(t *testing.T) {
 
 	fetcher := NewHTTPLargeSegmentFetcher(
 		"api-key",
-		specs.LARGESEGMENT_V10,
 		conf.AdvancedConfig{
-			SdkURL: ts.URL,
+			SdkURL:              ts.URL,
+			LargeSegmentVersion: specs.LARGESEGMENT_V10,
 		},
 		logger,
 		dtos.Metadata{},

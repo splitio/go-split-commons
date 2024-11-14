@@ -2,6 +2,7 @@ package synchronizer
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory"
 	storageMock "github.com/splitio/go-split-commons/v6/storage/mocks"
+	syncMocks "github.com/splitio/go-split-commons/v6/synchronizer/mocks"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
@@ -250,11 +252,12 @@ func TestSyncAllOk(t *testing.T) {
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
-		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
+		SplitUpdater:        split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SegmentUpdater:      segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
+		EventRecorder:       event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
+		ImpressionRecorder:  impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
+		TelemetryRecorder:   telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
+		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{SynchronizeLargeSegmentsCall: func() error { return nil }},
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
@@ -1030,5 +1033,132 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	}
 	if r := atomic.LoadInt64(&recordUpdateCall); r != 1 {
 		t.Error("should haven been called. got: ", r)
+	}
+}
+
+// Large Segment test cases
+func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
+	segmentCount := 0
+	segmentUpdater := syncMocks.MockSegmentUpdater{
+		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
+			segmentCount++
+			var toReturn map[string]segment.UpdateResult
+			return toReturn, nil
+		},
+	}
+	splitCount := 0
+	splitUpdater := syncMocks.MockSplitUpdater{
+		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
+			splitCount++
+			return &split.UpdateResult{}, nil
+		},
+	}
+
+	lsCount := 0
+	lsUpdater := syncMocks.MockLargeSegmentUpdater{
+		SynchronizeLargeSegmentsCall: func() error {
+			lsCount++
+			return nil
+		},
+	}
+
+	// Workers
+	workers := Workers{
+		SegmentUpdater:      segmentUpdater,
+		SplitUpdater:        splitUpdater,
+		LargeSegmentUpdater: lsUpdater,
+	}
+
+	// Tasks
+	splitTasks := SplitTasks{}
+
+	cfn := conf.AdvancedConfig{
+		LargeSegmentLazyLoad: true,
+	}
+	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.SyncAll()
+
+	if segmentCount != 1 {
+		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
+	}
+	if splitCount != 1 {
+		t.Error("splitCount should be 1. Acutual: ", splitCount)
+	}
+	if lsCount != 0 {
+		t.Error("lsCount should be 0. Acutual: ", lsCount)
+	}
+}
+
+func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
+	segmentCount := 0
+	segmentUpdater := syncMocks.MockSegmentUpdater{
+		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
+			segmentCount++
+			var toReturn map[string]segment.UpdateResult
+			return toReturn, nil
+		},
+	}
+	splitCount := 0
+	splitUpdater := syncMocks.MockSplitUpdater{
+		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
+			splitCount++
+			return &split.UpdateResult{}, nil
+		},
+	}
+
+	lsCount := 0
+	lsUpdater := syncMocks.MockLargeSegmentUpdater{
+		SynchronizeLargeSegmentsCall: func() error {
+			lsCount++
+			return nil
+		},
+	}
+
+	// Workers
+	workers := Workers{
+		SegmentUpdater:      segmentUpdater,
+		SplitUpdater:        splitUpdater,
+		LargeSegmentUpdater: lsUpdater,
+	}
+
+	// Tasks
+	splitTasks := SplitTasks{}
+
+	cfn := conf.AdvancedConfig{
+		LargeSegmentLazyLoad: false,
+	}
+	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.SyncAll()
+
+	if segmentCount != 1 {
+		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
+	}
+	if splitCount != 1 {
+		t.Error("splitCount should be 1. Acutual: ", splitCount)
+	}
+	if lsCount != 1 {
+		t.Error("lsCount should be 1. Acutual: ", lsCount)
+	}
+}
+
+func TestSynchronizeLargeSegment(t *testing.T) {
+	lsName := "ls_test"
+	// Workers
+	workers := Workers{
+		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{
+			SynchronizeLargeSegmentCall: func(name string, till *int64) error {
+				if name != lsName {
+					return fmt.Errorf("wrong large segment name")
+				}
+
+				return nil
+			},
+		},
+	}
+	splitTasks := SplitTasks{}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	err := sync.SynchronizeLargeSegment(lsName, nil)
+	if err != nil {
+		t.Error("Error should be nil")
 	}
 }

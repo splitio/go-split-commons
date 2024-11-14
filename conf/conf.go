@@ -89,6 +89,5 @@ type AdvancedConfig struct {
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
 	LargeSegmentVersion    string
-	LargeSegmentEnabled    bool
 	LargeSegmentLazyLoad   bool
 }
