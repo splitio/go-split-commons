@@ -383,7 +383,6 @@ func TestPeriodicFetching(t *testing.T) {
 		t.Error("It should be called at least once")
 	}
 	syncForTest.StopPeriodicFetching()
-	t.Error("hola")
 }
 
 func TestPeriodicRecording(t *testing.T) {
