@@ -1038,26 +1038,26 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 
 // Large Segment test cases
 func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
-	segmentCount := 0
+	var segmentCount int64
 	segmentUpdater := syncMocks.MockSegmentUpdater{
 		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
-			segmentCount++
+			atomic.AddInt64(&segmentCount, 1)
 			var toReturn map[string]segment.UpdateResult
 			return toReturn, nil
 		},
 	}
-	splitCount := 0
+	var splitCount int64
 	splitUpdater := syncMocks.MockSplitUpdater{
 		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
-			splitCount++
+			atomic.AddInt64(&splitCount, 1)
 			return &split.UpdateResult{}, nil
 		},
 	}
 
-	lsCount := 0
+	var lsCount int64
 	lsUpdater := syncMocks.MockLargeSegmentUpdater{
 		SynchronizeLargeSegmentsCall: func() error {
-			lsCount++
+			atomic.AddInt64(&lsCount, 1)
 			return nil
 		},
 	}
@@ -1078,38 +1078,38 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
-	if segmentCount != 1 {
+	if atomic.LoadInt64(&segmentCount) != 1 {
 		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
 	}
-	if splitCount != 1 {
+	if atomic.LoadInt64(&splitCount) != 1 {
 		t.Error("splitCount should be 1. Acutual: ", splitCount)
 	}
-	if lsCount != 0 {
+	if atomic.LoadInt64(&lsCount) != 0 {
 		t.Error("lsCount should be 0. Acutual: ", lsCount)
 	}
 }
 
 func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
-	segmentCount := 0
+	var segmentCount int64
 	segmentUpdater := syncMocks.MockSegmentUpdater{
 		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
-			segmentCount++
+			atomic.AddInt64(&segmentCount, 1)
 			var toReturn map[string]segment.UpdateResult
 			return toReturn, nil
 		},
 	}
-	splitCount := 0
+	var splitCount int64
 	splitUpdater := syncMocks.MockSplitUpdater{
 		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
-			splitCount++
+			atomic.AddInt64(&splitCount, 1)
 			return &split.UpdateResult{}, nil
 		},
 	}
 
-	lsCount := 0
+	var lsCount int64
 	lsUpdater := syncMocks.MockLargeSegmentUpdater{
 		SynchronizeLargeSegmentsCall: func() error {
-			lsCount++
+			atomic.AddInt64(&lsCount, 1)
 			return nil
 		},
 	}
@@ -1130,13 +1130,13 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
-	if segmentCount != 1 {
+	if atomic.LoadInt64(&segmentCount) != 1 {
 		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
 	}
-	if splitCount != 1 {
+	if atomic.LoadInt64(&splitCount) != 1 {
 		t.Error("splitCount should be 1. Acutual: ", splitCount)
 	}
-	if lsCount != 1 {
+	if atomic.LoadInt64(&lsCount) != 1 {
 		t.Error("lsCount should be 1. Acutual: ", lsCount)
 	}
 }
