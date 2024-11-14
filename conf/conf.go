@@ -90,4 +90,6 @@ type AdvancedConfig struct {
 	FlagsSpecVersion       string
 	LargeSegmentVersion    string
 	LargeSegmentLazyLoad   bool
+	LargeSegmentQueueSize  int
+	LargeSegmentWorkers    int
 }

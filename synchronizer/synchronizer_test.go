@@ -383,6 +383,7 @@ func TestPeriodicFetching(t *testing.T) {
 		t.Error("It should be called at least once")
 	}
 	syncForTest.StopPeriodicFetching()
+	t.Error("hola")
 }
 
 func TestPeriodicRecording(t *testing.T) {
@@ -1161,4 +1162,68 @@ func TestSynchronizeLargeSegment(t *testing.T) {
 	if err != nil {
 		t.Error("Error should be nil")
 	}
+}
+
+func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	advanced := conf.AdvancedConfig{
+		SegmentQueueSize:      50,
+		SegmentWorkers:        5,
+		LargeSegmentQueueSize: 10,
+		LargeSegmentWorkers:   5,
+	}
+	var splitFetchCalled int64
+	var segmentFetchCalled int64
+	var lsFetchCalled int64
+	workers := Workers{
+		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{
+			SynchronizeLargeSegmentCall: func(name string, till *int64) error {
+				atomic.AddInt64(&lsFetchCalled, 1)
+				return nil
+			},
+		},
+		SplitUpdater: syncMocks.MockSplitUpdater{
+			SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
+				atomic.AddInt64(&splitFetchCalled, 1)
+				return &split.UpdateResult{}, nil
+			},
+		},
+		SegmentUpdater: syncMocks.MockSegmentUpdater{
+			SynchronizeSegmentCall: func(name string, till *int64) (*segment.UpdateResult, error) {
+				atomic.AddInt64(&segmentFetchCalled, 1)
+				return &segment.UpdateResult{}, nil
+			},
+			SegmentNamesCall: func() []interface{} {
+				return set.NewSet("segment1", "segment2").List()
+			},
+		},
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			return set.NewSet("ls1", "ls2", "ls3")
+		},
+	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask:      tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
+		SplitSyncTask:        tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
+		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegmentWorkers, advanced.LargeSegmentQueueSize, logger),
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	sync.StartPeriodicFetching()
+	time.Sleep(time.Millisecond * 2200)
+
+	if c := atomic.LoadInt64(&splitFetchCalled); c < 2 {
+		t.Error("splitFetchCalled should be called 2. Actual: ", c)
+	}
+	if c := atomic.LoadInt64(&segmentFetchCalled); c < 2 {
+		t.Error("segmentFetchCalled should be called 2. Actual: ", c)
+	}
+	if c := atomic.LoadInt64(&lsFetchCalled); c < 1 {
+		t.Error("lsFetchCalled should be called at least 1. Actual: ", c)
+	}
+	sync.StopPeriodicFetching()
 }
