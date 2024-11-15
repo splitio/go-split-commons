@@ -135,7 +135,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) error {
 
 	if internalLargeSegmentSync.successfulSync {
 		attempts := onDemandFetchBackoffMaxRetries - internalLargeSegmentSync.attempt
-		u.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
+		u.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts for %s.", attempts, name))
 		return nil
 	}
 
@@ -179,8 +179,9 @@ func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequ
 	currentSince := u.largeSegmentStorage.ChangeNumber(name)
 
 	lsRFDResponseDTO, err := u.largeSegmentFetcher.Fetch(name, fetchOptions.WithChangeNumber(currentSince))
+
 	if err != nil {
-		if httpError, ok := err.(dtos.HTTPError); ok {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
 			// TODO(maurosanz): record sync error telemetry
 			if httpError.Code == http.StatusNotModified {
 				return false, nil
