@@ -54,7 +54,7 @@ func NewFetchLargeSegmentsTask(
 				0,
 				logger,
 				func(n string, t *int64) error {
-					err := fetcher.SynchronizeLargeSegment(n, t)
+					_, err := fetcher.SynchronizeLargeSegment(n, t)
 					return err
 				},
 			)
