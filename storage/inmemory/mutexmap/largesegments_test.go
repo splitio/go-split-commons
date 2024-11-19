@@ -95,7 +95,7 @@ func TestContainsKey(t *testing.T) {
 	keys1 := sortedKeys("ls1", 10000, nil)
 	storage.Update(lsName, keys1, 1)
 
-	exists, err := storage.ContainsKey(lsName, keys1[500])
+	exists, err := storage.IsInLargeSegment(lsName, keys1[500])
 	if err != nil {
 		t.Error("error should be nil. Actual", err.Error())
 	}
@@ -103,7 +103,7 @@ func TestContainsKey(t *testing.T) {
 		t.Errorf("the key %s should exists", keys1[500])
 	}
 
-	exists, err = storage.ContainsKey(lsName, "wrong-key")
+	exists, err = storage.IsInLargeSegment(lsName, "wrong-key")
 	if err != nil {
 		t.Error("error should be nil. Actual", err.Error())
 	}
@@ -111,7 +111,7 @@ func TestContainsKey(t *testing.T) {
 		t.Error("the key wrong-key should not exists")
 	}
 
-	exists, err = storage.ContainsKey("wrong-key-lsname", keys1[500])
+	exists, err = storage.IsInLargeSegment("wrong-key-lsname", keys1[500])
 	if err == nil {
 		t.Error("error should not be nil. Actual", err)
 	}

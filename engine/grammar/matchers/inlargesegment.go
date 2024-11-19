@@ -20,7 +20,7 @@ func (m *InLargeSegmentMatcher) Match(key string, attributes map[string]interfac
 		return false
 	}
 
-	isInLargeSegment, err := storage.ContainsKey(m.name, key)
+	isInLargeSegment, err := storage.IsInLargeSegment(m.name, key)
 	if err != nil {
 		m.logger.Error(fmt.Printf("InLargeSegmentMatcher: Large Segment %s not found", m.name))
 	}

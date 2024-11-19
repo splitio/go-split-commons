@@ -72,7 +72,7 @@ func (s *LargeSegmentsStorageImpl) ChangeNumber(name string) int64 {
 	return cn
 }
 
-func (s *LargeSegmentsStorageImpl) ContainsKey(name string, key string) (bool, error) {
+func (s *LargeSegmentsStorageImpl) IsInLargeSegment(name string, key string) (bool, error) {
 	s.tillMutex.RLock()
 	defer s.tillMutex.RUnlock()
 	items, ok := s.data[name]
