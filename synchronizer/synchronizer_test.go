@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -250,6 +249,10 @@ func TestSyncAllOk(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
+
+	var largeSegmentUpdater syncMocks.LargeSegmentUpdaterMock
+	largeSegmentUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
+
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitUpdater:        split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
@@ -257,7 +260,7 @@ func TestSyncAllOk(t *testing.T) {
 		EventRecorder:       event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder:  impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
 		TelemetryRecorder:   telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
-		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{SynchronizeLargeSegmentsCall: func() error { return nil }},
+		LargeSegmentUpdater: &largeSegmentUpdater,
 	}
 	splitTasks := SplitTasks{
 		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 10, logger),
@@ -1038,87 +1041,53 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 
 // Large Segment test cases
 func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
-	var segmentCount int64
-	segmentUpdater := syncMocks.MockSegmentUpdater{
-		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
-			atomic.AddInt64(&segmentCount, 1)
-			var toReturn map[string]segment.UpdateResult
-			return toReturn, nil
-		},
-	}
-	var splitCount int64
-	splitUpdater := syncMocks.MockSplitUpdater{
-		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
-			atomic.AddInt64(&splitCount, 1)
-			return &split.UpdateResult{}, nil
-		},
-	}
+	// Updaters
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SynchronizeSegments").Return(map[string]segment.UpdateResult{}, nil).Once()
 
-	var lsCount int64
-	lsUpdater := syncMocks.MockLargeSegmentUpdater{
-		SynchronizeLargeSegmentsCall: func() error {
-			atomic.AddInt64(&lsCount, 1)
-			return nil
-		},
-	}
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
 
 	// Workers
 	workers := Workers{
-		SegmentUpdater:      segmentUpdater,
-		SplitUpdater:        splitUpdater,
-		LargeSegmentUpdater: lsUpdater,
+		SegmentUpdater:      &segmentUpdater,
+		SplitUpdater:        &splitUpdater,
+		LargeSegmentUpdater: &lsUpdater,
 	}
 
 	// Tasks
 	splitTasks := SplitTasks{}
 
-	cfn := conf.AdvancedConfig{
-		LargeSegmentLazyLoad: true,
-	}
+	// Config
+	cfn := conf.AdvancedConfig{LargeSegmentLazyLoad: true}
+
+	// Sync
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
-	if atomic.LoadInt64(&segmentCount) != 1 {
-		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
-	}
-	if atomic.LoadInt64(&splitCount) != 1 {
-		t.Error("splitCount should be 1. Acutual: ", splitCount)
-	}
-	if atomic.LoadInt64(&lsCount) != 0 {
-		t.Error("lsCount should be 0. Acutual: ", lsCount)
-	}
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
+	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
 }
 
 func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
-	var segmentCount int64
-	segmentUpdater := syncMocks.MockSegmentUpdater{
-		SynchronizeSegmentsCall: func() (map[string]segment.UpdateResult, error) {
-			atomic.AddInt64(&segmentCount, 1)
-			var toReturn map[string]segment.UpdateResult
-			return toReturn, nil
-		},
-	}
-	var splitCount int64
-	splitUpdater := syncMocks.MockSplitUpdater{
-		SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
-			atomic.AddInt64(&splitCount, 1)
-			return &split.UpdateResult{}, nil
-		},
-	}
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SynchronizeSegments").Return(map[string]segment.UpdateResult{}, nil).Once()
 
-	var lsCount int64
-	lsUpdater := syncMocks.MockLargeSegmentUpdater{
-		SynchronizeLargeSegmentsCall: func() error {
-			atomic.AddInt64(&lsCount, 1)
-			return nil
-		},
-	}
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
 
 	// Workers
 	workers := Workers{
-		SegmentUpdater:      segmentUpdater,
-		SplitUpdater:        splitUpdater,
-		LargeSegmentUpdater: lsUpdater,
+		SegmentUpdater:      &segmentUpdater,
+		SplitUpdater:        &splitUpdater,
+		LargeSegmentUpdater: &lsUpdater,
 	}
 
 	// Tasks
@@ -1130,37 +1099,29 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
-	if atomic.LoadInt64(&segmentCount) != 1 {
-		t.Error("segmentCount should be 1. Acutual: ", segmentCount)
-	}
-	if atomic.LoadInt64(&splitCount) != 1 {
-		t.Error("splitCount should be 1. Acutual: ", splitCount)
-	}
-	if atomic.LoadInt64(&lsCount) != 1 {
-		t.Error("lsCount should be 1. Acutual: ", lsCount)
-	}
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
 }
 
 func TestSynchronizeLargeSegment(t *testing.T) {
 	lsName := "ls_test"
-	// Workers
-	workers := Workers{
-		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{
-			SynchronizeLargeSegmentCall: func(name string, till *int64) error {
-				if name != lsName {
-					return fmt.Errorf("wrong large segment name")
-				}
 
-				return nil
-			},
-		},
-	}
-	splitTasks := SplitTasks{}
-	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", lsName, (*int64)(nil)).Return(nil).Once()
+
+	// Workers
+	workers := Workers{LargeSegmentUpdater: &lsUpdater}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
 	err := sync.SynchronizeLargeSegment(lsName, nil)
 	if err != nil {
 		t.Error("Error should be nil")
 	}
+
+	lsUpdater.AssertExpectations(t)
 }
 
 func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
@@ -1171,31 +1132,24 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 		LargeSegmentQueueSize: 10,
 		LargeSegmentWorkers:   5,
 	}
-	var splitFetchCalled int64
-	var segmentFetchCalled int64
-	var lsFetchCalled int64
+
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SegmentNames").Return(set.NewSet("segment1", "segment2").List()).Once()
+	segmentUpdater.On("SynchronizeSegment", "segment1", (*int64)(nil)).Return(map[string]segment.UpdateResult{}, nil).Once()
+	segmentUpdater.On("SynchronizeSegment", "segment2", (*int64)(nil)).Return(map[string]segment.UpdateResult{}, nil).Once()
+
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(nil).Once()
+
 	workers := Workers{
-		LargeSegmentUpdater: syncMocks.MockLargeSegmentUpdater{
-			SynchronizeLargeSegmentCall: func(name string, till *int64) error {
-				atomic.AddInt64(&lsFetchCalled, 1)
-				return nil
-			},
-		},
-		SplitUpdater: syncMocks.MockSplitUpdater{
-			SynchronizeSplitsCall: func(till *int64) (*split.UpdateResult, error) {
-				atomic.AddInt64(&splitFetchCalled, 1)
-				return &split.UpdateResult{}, nil
-			},
-		},
-		SegmentUpdater: syncMocks.MockSegmentUpdater{
-			SynchronizeSegmentCall: func(name string, till *int64) (*segment.UpdateResult, error) {
-				atomic.AddInt64(&segmentFetchCalled, 1)
-				return &segment.UpdateResult{}, nil
-			},
-			SegmentNamesCall: func() []interface{} {
-				return set.NewSet("segment1", "segment2").List()
-			},
-		},
+		LargeSegmentUpdater: &lsUpdater,
+		SplitUpdater:        &splitUpdater,
+		SegmentUpdater:      &segmentUpdater,
 	}
 	splitMockStorage := storageMock.MockSplitStorage{
 		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
@@ -1215,14 +1169,9 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	sync.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 2200)
 
-	if c := atomic.LoadInt64(&splitFetchCalled); c < 2 {
-		t.Error("splitFetchCalled should be called 2. Actual: ", c)
-	}
-	if c := atomic.LoadInt64(&segmentFetchCalled); c < 2 {
-		t.Error("segmentFetchCalled should be called 2. Actual: ", c)
-	}
-	if c := atomic.LoadInt64(&lsFetchCalled); c < 1 {
-		t.Error("lsFetchCalled should be called at least 1. Actual: ", c)
-	}
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
+
 	sync.StopPeriodicFetching()
 }
