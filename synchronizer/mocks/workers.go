@@ -15,13 +15,13 @@ type LargeSegmentUpdaterMock struct {
 	mock.Mock
 }
 
-func (u *LargeSegmentUpdaterMock) SynchronizeLargeSegment(name string, till *int64) error {
+func (u *LargeSegmentUpdaterMock) SynchronizeLargeSegment(name string, till *int64) (*int64, error) {
 	args := u.Called(name, till)
-	return args.Error(0)
+	return args.Get(0).(*int64), args.Error(1)
 }
-func (u *LargeSegmentUpdaterMock) SynchronizeLargeSegments() error {
+func (u *LargeSegmentUpdaterMock) SynchronizeLargeSegments() (map[string]*int64, error) {
 	args := u.Called()
-	return args.Error(0)
+	return args.Get(0).(map[string]*int64), args.Error(1)
 }
 func (u *LargeSegmentUpdaterMock) IsCached(name string) bool {
 	args := u.Called(name)
