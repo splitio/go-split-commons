@@ -401,6 +401,31 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 	}
 }
 
+func TestIsCached(t *testing.T) {
+	largeSegmentName := "large_segment_test"
+
+	fetcher := fetcherMock.MockLargeSegmentFetcher{}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	splitMockStorage := mocks.MockSplitStorage{}
+	largeSegmentStorage := mocks.MockLargeSegmentStorage{
+		ChangeNumberCall: func(name string) int64 {
+			if name == largeSegmentName {
+				return 100
+			}
+			return -1
+		},
+	}
+
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	if !updater.IsCached(largeSegmentName) {
+		t.Error("IsCached shoudl return true")
+	}
+	if updater.IsCached("another_ls_name") {
+		t.Error("IsCached shoudl return false")
+	}
+}
+
 func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 	largeSegmentName := "large_segment_test"
 
