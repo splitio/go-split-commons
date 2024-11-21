@@ -256,7 +256,7 @@ func TestLargeSegmentChangeUpdate(t *testing.T) {
 	if lsUpdate.UpdateType() != UpdateTypeLargeSegmentChange {
 		t.Error("Unexpected UpdateType")
 	}
-	if lsUpdate.String() != "LargeSegmentChange(channel=ls_channel,changeNumber=123456,timestamp=123456789)" {
+	if lsUpdate.String() != "LargeSegmentChange(channel=ls_channel,changeNumber=123456,count=1,timestamp=123456789)" {
 		t.Error("Unexpected String", lsUpdate.String())
 	}
 	if len(lsUpdate.LargeSegments) != 1 {

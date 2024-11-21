@@ -328,8 +328,8 @@ func (u *LargeSegmentChangeUpdate) UpdateType() string { return UpdateTypeLargeS
 
 // String returns the string representation of a segment update notification
 func (u *LargeSegmentChangeUpdate) String() string {
-	return fmt.Sprintf("LargeSegmentChange(channel=%s,changeNumber=%d,timestamp=%d)",
-		u.Channel(), u.ChangeNumber(), u.Timestamp())
+	return fmt.Sprintf("LargeSegmentChange(channel=%s,changeNumber=%d,count=%d,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), len(u.LargeSegments), u.Timestamp())
 }
 
 // Compile-type assertions of interface requirements

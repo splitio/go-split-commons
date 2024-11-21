@@ -136,13 +136,7 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	case dtos.UpdateTypeSegmentChange:
 		return nil, p.onSegmentUpdate(dtos.NewSegmentChangeUpdate(base, nested.SegmentName))
 	case dtos.UpdateTypeLargeSegmentChange:
-		fmt.Println("#case dtos.UpdateTypeLargeSegmentChange:")
-		fmt.Println(*nested.LargeSegments)
-		var largeSegments []dtos.LargeSegmentRFDResponseDTO
-		err := json.Unmarshal([]byte(*nested.LargeSegments), &largeSegments)
-		if err != nil {
-			p.logger.Debug(fmt.Sprintf("error parsing large segment json definition: '%s'", err.Error()))
-		}
+		largeSegments := p.processLargeSegmentMessage(nested)
 		return nil, p.onLargeSegmentUpdate(dtos.NewLargeSegmentChangeUpdate(base, largeSegments))
 	case dtos.UpdateTypeContol:
 		return p.onControlUpdate(dtos.NewControlUpdate(base.BaseMessage, nested.ControlType)), nil
@@ -150,6 +144,20 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		// TODO: log full event in debug mode
 		return nil, fmt.Errorf("invalid update type: %s", nested.Type)
 	}
+}
+
+func (p *NotificationParserImpl) processLargeSegmentMessage(nested *genericMessageData) []dtos.LargeSegmentRFDResponseDTO {
+	var largeSegments []dtos.LargeSegmentRFDResponseDTO
+	if nested.LargeSegments == nil {
+		p.logger.Debug("error reading nested message, LargeSegments property is nil")
+		return largeSegments
+	}
+
+	err := json.Unmarshal([]byte(*nested.LargeSegments), &largeSegments)
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error parsing large segment json definition: '%s'", err.Error()))
+	}
+	return largeSegments
 }
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {

@@ -831,9 +831,6 @@ func TestLargeParseSegmentChange(t *testing.T) {
 			})
 			return string(mainJSON)
 		},
-		IsErrorCall: func() bool { return false },
-		IsEmptyCall: func() bool { return false },
-		RetryCall:   func() int64 { return 0 },
 	}
 
 	logger := logging.NewLogger(nil)
@@ -858,6 +855,89 @@ func TestLargeParseSegmentChange(t *testing.T) {
 			}
 			if ls.RFD.Data.Format != 1 {
 				t.Error("Unexpected data format. Actual: ", ls.RFD.Data.Format)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestLargeParseSegmentChangeNestedMessage(t *testing.T) {
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:          dtos.UpdateTypeLargeSegmentChange,
+				ChangeNumber:  123,
+				LargeSegments: nil,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "largesegments_channel",
+			})
+			return string(mainJSON)
+		},
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onLargeSegmentUpdate: func(lscu *dtos.LargeSegmentChangeUpdate) error {
+			if lscu.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, lscu.ChangeNumber())
+			}
+			if lscu.Channel() != "largesegments_channel" {
+				t.Error(CHANNEL_SHOULD_BE, lscu.Channel())
+			}
+			if len(lscu.LargeSegments) != 0 {
+				t.Error("Large Segments len should be 0. Actual: ", len(lscu.LargeSegments))
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestLargeParseSegmentChangeWrongLsDefinition(t *testing.T) {
+	lsData := "[{\"n\":\"lsNameTest\",\"t\":\"LS_NEW_DEFINITION\",\"rfd\"]"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:          dtos.UpdateTypeLargeSegmentChange,
+				ChangeNumber:  123,
+				LargeSegments: &lsData,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "largesegments_channel",
+			})
+			return string(mainJSON)
+		},
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onLargeSegmentUpdate: func(lscu *dtos.LargeSegmentChangeUpdate) error {
+			if lscu.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, lscu.ChangeNumber())
+			}
+			if lscu.Channel() != "largesegments_channel" {
+				t.Error(CHANNEL_SHOULD_BE, lscu.Channel())
+			}
+			if len(lscu.LargeSegments) != 0 {
+				t.Error("Large Segments len should be 0. Actual: ", len(lscu.LargeSegments))
 			}
 			return nil
 		},
