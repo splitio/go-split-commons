@@ -6,6 +6,7 @@ type MockLargeSegmentStorage struct {
 	ChangeNumberCall         func(name string) int64
 	CountCall                func() int
 	LargeSegmentsForUserCall func(userKey string) []string
+	IsInLargeSegmentCall     func(name string, key string) (bool, error)
 }
 
 func (m MockLargeSegmentStorage) SetChangeNumber(name string, till int64) {
@@ -26,4 +27,8 @@ func (m MockLargeSegmentStorage) Count() int {
 
 func (m MockLargeSegmentStorage) LargeSegmentsForUser(userKey string) []string {
 	return m.LargeSegmentsForUserCall(userKey)
+}
+
+func (m MockLargeSegmentStorage) IsInLargeSegment(name string, key string) (bool, error) {
+	return m.IsInLargeSegmentCall(name, key)
 }

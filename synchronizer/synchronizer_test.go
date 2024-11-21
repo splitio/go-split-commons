@@ -1045,6 +1045,7 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
 
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
 
 	// Workers
 	workers := Workers{
@@ -1063,10 +1064,11 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
+	time.Sleep(time.Millisecond * 1000)
+
 	segmentUpdater.AssertExpectations(t)
 	splitUpdater.AssertExpectations(t)
 	lsUpdater.AssertExpectations(t)
-	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
 }
 
 func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
