@@ -204,7 +204,10 @@ func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeLargeSegment(name string, till *int64) error {
-	return s.workers.LargeSegmentUpdater.SynchronizeLargeSegment(name, till)
+	if s.workers.LargeSegmentUpdater != nil {
+		return s.workers.LargeSegmentUpdater.SynchronizeLargeSegment(name, till)
+	}
+	return nil
 }
 
 // SynchronizeFeatureFlags syncs featureFlags
@@ -259,12 +262,18 @@ func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments 
 		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 	}
 
-	for _, largeSegment := range s.filterCachedLargeSegments(referencedLargeSegments) {
-		go s.SynchronizeLargeSegment(largeSegment, nil)
+	if s.workers.LargeSegmentUpdater != nil {
+		for _, largeSegment := range s.filterCachedLargeSegments(referencedLargeSegments) {
+			go s.SynchronizeLargeSegment(largeSegment, nil)
+		}
 	}
 }
 
 func (s *SynchronizerImpl) synchronizeLargeSegments() error {
+	if s.workers.LargeSegmentUpdater == nil {
+		return nil
+	}
+
 	if s.largeSegmentLazyLoad {
 		go s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
 		return nil
