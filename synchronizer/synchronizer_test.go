@@ -1045,7 +1045,7 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
 
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
-	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegments").Return(map[string]*int64{}, nil).Once()
 
 	// Workers
 	workers := Workers{
@@ -1079,7 +1079,7 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
 
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
-	lsUpdater.On("SynchronizeLargeSegments").Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegments").Return(map[string]*int64{}, nil).Once()
 
 	// Workers
 	workers := Workers{
@@ -1106,8 +1106,9 @@ func TestSynchronizeLargeSegment(t *testing.T) {
 	lsName := "ls_test"
 
 	// Updaters
+	var cn *int64
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
-	lsUpdater.On("SynchronizeLargeSegment", lsName, (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", lsName, (*int64)(nil)).Return(cn, nil).Once()
 
 	// Workers
 	workers := Workers{LargeSegmentUpdater: &lsUpdater}
@@ -1207,10 +1208,11 @@ func TestSynchronizeLargeSegmentsAfterSplitSync(t *testing.T) {
 	lsNames := []string{"ls1", "ls2", "ls3"}
 
 	// Updaters
+	var cn *int64
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
-	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(nil).Once()
-	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(nil).Once()
-	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(cn, nil).Once()
 	lsUpdater.On("IsCached", "ls1").Return(false).Once()
 	lsUpdater.On("IsCached", "ls2").Return(false).Once()
 	lsUpdater.On("IsCached", "ls3").Return(false).Once()
@@ -1245,10 +1247,11 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	var splitUpdater syncMocks.SplitUpdaterMock
 	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
 
+	var cn *int64
 	var lsUpdater syncMocks.LargeSegmentUpdaterMock
-	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(nil).Once()
-	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(nil).Once()
-	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(cn, nil).Once()
 
 	workers := Workers{
 		LargeSegmentUpdater: &lsUpdater,

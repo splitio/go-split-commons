@@ -205,7 +205,8 @@ func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 // SynchronizeSegment syncs segment
 func (s *SynchronizerImpl) SynchronizeLargeSegment(name string, till *int64) error {
 	if s.workers.LargeSegmentUpdater != nil {
-		return s.workers.LargeSegmentUpdater.SynchronizeLargeSegment(name, till)
+		_, err := s.workers.LargeSegmentUpdater.SynchronizeLargeSegment(name, till)
+		return err
 	}
 	return nil
 }
@@ -282,7 +283,8 @@ func (s *SynchronizerImpl) synchronizeLargeSegments() error {
 			return nil
 		}
 
-		return s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
+		_, err := s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
+		return err
 	}
 
 	return nil

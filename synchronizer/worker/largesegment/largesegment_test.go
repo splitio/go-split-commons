@@ -80,13 +80,12 @@ func TestSynchronizeLargeSegmentHappyPath(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != 100 {
+	if *cn != 100 {
 		t.Error("Change Number should be 100. Actual: ", cn)
 	}
 
@@ -138,13 +137,12 @@ func TestSynchronizeLargeURLExpiredCDNBypass(t *testing.T) {
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
-	err := updater.SynchronizeLargeSegment(largeSegmentName, &till)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, &till)
 	if err != nil {
 		t.Error(err)
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != 3 {
+	if *cn != 3 {
 		t.Error("Change Number should be 3. Actual: ", cn)
 	}
 
@@ -198,14 +196,13 @@ func TestSynchronizeLargeURLExpiredCDNBypassLimit(t *testing.T) {
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
 	var till int64 = 3
-	err := updater.SynchronizeLargeSegment(largeSegmentName, &till)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, &till)
 	if err != nil {
 		t.Error(err)
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != -1 {
-		t.Error("Change Number should be -1. Actual: ", cn)
+	if *cn != 2 {
+		t.Error("Change Number should be -1. Actual: ", *cn)
 	}
 
 	if atomic.LoadInt64(&rfeCount) != 10 {
@@ -260,7 +257,7 @@ func TestLargeSegmentSyncConcurrencyLimit(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegments()
+	_, err := updater.SynchronizeLargeSegments()
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -298,13 +295,12 @@ func TestSynchronizeLargeSegmentFileNotModified(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != -1 {
+	if *cn != -1 {
 		t.Error("Change Number should be -1. Actual: ", cn)
 	}
 
@@ -340,13 +336,12 @@ func TestSynchronizeLargeSegmentLSEmptyNotification(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != 10 {
+	if *cn != 10 {
 		t.Error("Change Number should be 10. Actual: ", cn)
 	}
 
@@ -382,14 +377,13 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
 	if err == nil {
 		t.Error("Error should be something went wrong reading RequestForDownload data large_segment_test")
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != -1 {
-		t.Error("Change Number should be -1. Actual: ", cn)
+	if cn != nil {
+		t.Error("Change Number should be nil. Actual: ", *cn)
 	}
 
 	if fetcherCount != 1 {
@@ -460,13 +454,12 @@ func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 	updater.onDemandFetchBackoffBase = 1
 	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
-	err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
+	cn, err := updater.SynchronizeLargeSegment(largeSegmentName, nil)
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	cn := largeSegmentStorage.ChangeNumber(largeSegmentName)
-	if cn != 10 {
+	if *cn != 10 {
 		t.Error("Change Number should be 10. Actual: ", cn)
 	}
 
@@ -480,5 +473,73 @@ func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 
 	if largeSegmentStorage.Count() != 1 {
 		t.Error("Large Segment count should be 1. Actual: ", largeSegmentStorage.Count())
+	}
+}
+
+func TestLargeSegmentsSync(t *testing.T) {
+	ls10 := "large_segment_10"
+	ls20 := "large_segment_20"
+	ls30 := "large_segment_30"
+
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+			ss.Add(ls20)
+			ss.Add(ls30)
+
+			return ss
+		},
+	}
+
+	var fetchCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+			atomic.AddInt32(&fetchCall, 1)
+			switch name {
+			case ls10:
+				return buildLargeSegmentRFDResponseDTO(10), nil
+			case ls20:
+				return buildLargeSegmentRFDResponseDTO(20), nil
+			case ls30:
+				return buildLargeSegmentRFDResponseDTO(30), nil
+			}
+
+			return &dtos.LargeSegmentRFDResponseDTO{}, nil
+		},
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			return &dtos.LargeSegment{
+				Name:         name,
+				Keys:         []string{"key_1", "key_2", "key_3"},
+				ChangeNumber: rfe.ChangeNumber,
+			}, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+	updater.onDemandFetchBackoffBase = 1
+	updater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
+
+	result, err := updater.SynchronizeLargeSegments()
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 3 {
+		t.Error("LS Count should be 100. Actual: ", lsCount)
+	}
+
+	if *result[ls10] != 10 {
+		t.Error("ChangeNumber should be 10. Actual: ", *result[ls10])
+	}
+	if *result[ls20] != 20 {
+		t.Error("ChangeNumber should be 20. Actual: ", *result[ls20])
+	}
+	if *result[ls30] != 30 {
+		t.Error("ChangeNumber should be 30. Actual: ", *result[ls30])
 	}
 }
