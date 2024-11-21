@@ -1,6 +1,7 @@
 package mutexmap
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -39,11 +40,7 @@ func (s *LargeSegmentsStorageImpl) LargeSegmentsForUser(userKey string) []string
 
 	toReturn := make([]string, 0, len(s.data))
 	for lsName, data := range s.data {
-		i := sort.Search(len(data), func(i int) bool {
-			return data[i] >= userKey
-		})
-
-		if i < len(data) && data[i] == userKey {
+		if exists(userKey, data) {
 			toReturn = append(toReturn, lsName)
 		}
 	}
@@ -55,7 +52,6 @@ func (s *LargeSegmentsStorageImpl) LargeSegmentsForUser(userKey string) []string
 func (s *LargeSegmentsStorageImpl) Update(name string, userKeys []string, till int64) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
 	s.data[name] = userKeys
 	s.SetChangeNumber(name, till)
 }
@@ -74,6 +70,25 @@ func (s *LargeSegmentsStorageImpl) ChangeNumber(name string) int64 {
 		cn = -1
 	}
 	return cn
+}
+
+func (s *LargeSegmentsStorageImpl) IsInLargeSegment(name string, key string) (bool, error) {
+	s.tillMutex.RLock()
+	defer s.tillMutex.RUnlock()
+	items, ok := s.data[name]
+	if !ok {
+		return false, fmt.Errorf("large segment %s not found in storage", name)
+	}
+
+	return exists(key, items), nil
+}
+
+func exists(userKey string, data []string) bool {
+	i := sort.Search(len(data), func(i int) bool {
+		return data[i] >= userKey
+	})
+
+	return i < len(data) && data[i] == userKey
 }
 
 var _ storage.LargeSegmentsStorage = (*LargeSegmentsStorageImpl)(nil)

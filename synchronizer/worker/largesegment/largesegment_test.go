@@ -286,7 +286,7 @@ func TestSynchronizeLargeSegmentFileNotModified(t *testing.T) {
 	fetcher := fetcherMock.MockLargeSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 			atomic.AddInt64(&fetcherCount, 1)
-			return nil, dtos.HTTPError{Code: http.StatusNotModified, Message: "[304] Not Modified"}
+			return nil, &dtos.HTTPError{Code: http.StatusNotModified, Message: "[304] Not Modified"}
 		},
 	}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}

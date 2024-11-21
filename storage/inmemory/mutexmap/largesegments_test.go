@@ -87,3 +87,35 @@ func TestChangeNumber(t *testing.T) {
 		t.Error("ChangeNumber should be 1002. Actual: ", result)
 	}
 }
+
+func TestContainsKey(t *testing.T) {
+	storage := NewLargeSegmentsStorage()
+
+	lsName := "ls_test_1"
+	keys1 := sortedKeys("ls1", 10000, nil)
+	storage.Update(lsName, keys1, 1)
+
+	exists, err := storage.IsInLargeSegment(lsName, keys1[500])
+	if err != nil {
+		t.Error("error should be nil. Actual", err.Error())
+	}
+	if !exists {
+		t.Errorf("the key %s should exists", keys1[500])
+	}
+
+	exists, err = storage.IsInLargeSegment(lsName, "wrong-key")
+	if err != nil {
+		t.Error("error should be nil. Actual", err.Error())
+	}
+	if exists {
+		t.Error("the key wrong-key should not exists")
+	}
+
+	exists, err = storage.IsInLargeSegment("wrong-key-lsname", keys1[500])
+	if err == nil {
+		t.Error("error should not be nil. Actual", err)
+	}
+	if exists {
+		t.Error("exists should be false")
+	}
+}
