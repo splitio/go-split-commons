@@ -2,6 +2,8 @@ package mocks
 
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/largesegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
@@ -63,8 +65,34 @@ func (u *SegmentUpdaterMock) IsSegmentCached(segmentName string) bool {
 	return u.Called().Get(0).(bool)
 }
 
+type ImpressionRecorderMock struct {
+	mock.Mock
+}
+
+func (r *ImpressionRecorderMock) SynchronizeImpressions(bulkSize int64) error {
+	return r.Called(bulkSize).Error(0)
+}
+
+func (r *ImpressionRecorderMock) FlushImpressions(bulkSize int64) error {
+	return r.Called(bulkSize).Error(0)
+}
+
+type EventRecorderMock struct {
+	mock.Mock
+}
+
+func (e *EventRecorderMock) SynchronizeEvents(bulkSize int64) error {
+	return e.Called(bulkSize).Error(0)
+}
+
+func (e *EventRecorderMock) FlushEvents(bulkSize int64) error {
+	return e.Called(bulkSize).Error(0)
+}
+
 // ---
 
+var _ event.EventRecorder = (*EventRecorderMock)(nil)
+var _ impression.ImpressionRecorder = (*ImpressionRecorderMock)(nil)
 var _ largesegment.Updater = (*LargeSegmentUpdaterMock)(nil)
 var _ split.Updater = (*SplitUpdaterMock)(nil)
 var _ segment.Updater = (*SegmentUpdaterMock)(nil)

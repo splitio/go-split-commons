@@ -1277,3 +1277,30 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 
 	sync.StopPeriodicFetching()
 }
+
+func TestDataFlusher(t *testing.T) {
+	queue := make(chan string, 1)
+
+	var impRecorder syncMocks.ImpressionRecorderMock
+	impRecorder.On("SynchronizeImpressions", int64(10)).Return(nil).Once()
+
+	var eventRecorder syncMocks.EventRecorderMock
+	eventRecorder.On("SynchronizeEvents", int64(20)).Return(nil).Once()
+
+	workers := Workers{
+		ImpressionRecorder: &impRecorder,
+		EventRecorder:      &eventRecorder,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{
+		ImpressionsBulkSize: 10,
+		EventsBulkSize:      20,
+	}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), queue)
+	go sync.(*SynchronizerImpl).dataFlusher()
+
+	queue <- "EVENTS_FULL"
+	queue <- "IMPRESSIONS_FULL"
+	time.Sleep(time.Millisecond * 1000)
+
+	impRecorder.AssertExpectations(t)
+	eventRecorder.AssertExpectations(t)
+}
