@@ -54,7 +54,6 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
 }
-type NoOpUpdaterImpl struct{}
 
 // NewLargeSegmentUpdater creates new large segment synchronizer for processing larrge segment updates
 func NewLargeSegmentUpdater(
