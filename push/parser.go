@@ -34,14 +34,15 @@ type NotificationParser interface {
 
 // NotificationParserImpl implementas the NotificationParser interface
 type NotificationParserImpl struct {
-	dataUtils         DataUtils
-	logger            logging.LoggerInterface
-	onSplitUpdate     func(*dtos.SplitChangeUpdate) error
-	onSplitKill       func(*dtos.SplitKillUpdate) error
-	onSegmentUpdate   func(*dtos.SegmentChangeUpdate) error
-	onControlUpdate   func(*dtos.ControlUpdate) *int64
-	onOccupancyMesage func(*dtos.OccupancyMessage) *int64
-	onAblyError       func(*dtos.AblyError) *int64
+	dataUtils            DataUtils
+	logger               logging.LoggerInterface
+	onSplitUpdate        func(*dtos.SplitChangeUpdate) error
+	onSplitKill          func(*dtos.SplitKillUpdate) error
+	onSegmentUpdate      func(*dtos.SegmentChangeUpdate) error
+	onLargeSegmentUpdate func(*dtos.LargeSegmentChangeUpdate) error
+	onControlUpdate      func(*dtos.ControlUpdate) *int64
+	onOccupancyMesage    func(*dtos.OccupancyMessage) *int64
+	onAblyError          func(*dtos.AblyError) *int64
 }
 
 func NewNotificationParserImpl(
@@ -51,16 +52,18 @@ func NewNotificationParserImpl(
 	onSegmentUpdate func(*dtos.SegmentChangeUpdate) error,
 	onControlUpdate func(*dtos.ControlUpdate) *int64,
 	onOccupancyMessage func(*dtos.OccupancyMessage) *int64,
-	onAblyError func(*dtos.AblyError) *int64) *NotificationParserImpl {
+	onAblyError func(*dtos.AblyError) *int64,
+	onLargeSegmentUpdate func(*dtos.LargeSegmentChangeUpdate) error) *NotificationParserImpl {
 	return &NotificationParserImpl{
-		dataUtils:         NewDataUtilsImpl(),
-		logger:            loggerInterface,
-		onSplitUpdate:     onSplitUpdate,
-		onSplitKill:       onSplitKill,
-		onSegmentUpdate:   onSegmentUpdate,
-		onControlUpdate:   onControlUpdate,
-		onOccupancyMesage: onOccupancyMessage,
-		onAblyError:       onAblyError,
+		dataUtils:            NewDataUtilsImpl(),
+		logger:               loggerInterface,
+		onSplitUpdate:        onSplitUpdate,
+		onSplitKill:          onSplitKill,
+		onSegmentUpdate:      onSegmentUpdate,
+		onControlUpdate:      onControlUpdate,
+		onOccupancyMesage:    onOccupancyMessage,
+		onAblyError:          onAblyError,
+		onLargeSegmentUpdate: onLargeSegmentUpdate,
 	}
 }
 
@@ -132,6 +135,15 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		return nil, p.onSplitKill(dtos.NewSplitKillUpdate(base, nested.SplitName, nested.DefaultTreatment))
 	case dtos.UpdateTypeSegmentChange:
 		return nil, p.onSegmentUpdate(dtos.NewSegmentChangeUpdate(base, nested.SegmentName))
+	case dtos.UpdateTypeLargeSegmentChange:
+		fmt.Println("#case dtos.UpdateTypeLargeSegmentChange:")
+		fmt.Println(*nested.LargeSegments)
+		var largeSegments []dtos.LargeSegmentRFDResponseDTO
+		err := json.Unmarshal([]byte(*nested.LargeSegments), &largeSegments)
+		if err != nil {
+			p.logger.Debug(fmt.Sprintf("error parsing large segment json definition: '%s'", err.Error()))
+		}
+		return nil, p.onLargeSegmentUpdate(dtos.NewLargeSegmentChangeUpdate(base, largeSegments))
 	case dtos.UpdateTypeContol:
 		return p.onControlUpdate(dtos.NewControlUpdate(base.BaseMessage, nested.ControlType)), nil
 	default:
@@ -202,6 +214,7 @@ type genericMessageData struct {
 	PreviousChangeNumber  int64   `json:"pcn"`
 	CompressType          *int    `json:"c"`
 	FeatureFlagDefinition *string `json:"d"`
+	LargeSegments         *string `json:"ls"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }
