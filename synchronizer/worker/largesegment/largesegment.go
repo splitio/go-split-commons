@@ -41,6 +41,7 @@ type internalLargeSegmentSync struct {
 type Updater interface {
 	SynchronizeLargeSegment(name string, till *int64) error
 	SynchronizeLargeSegments() error
+	IsCached(name string) bool
 }
 
 // UpdaterImpl struct for segment sync
@@ -72,6 +73,11 @@ func NewLargeSegmentUpdater(
 		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 	}
+}
+
+func (s *UpdaterImpl) IsCached(name string) bool {
+	cn := s.largeSegmentStorage.ChangeNumber(name)
+	return cn != -1
 }
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() error {

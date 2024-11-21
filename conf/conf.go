@@ -52,14 +52,15 @@ type RedisConfig struct {
 
 // TaskPeriods struct is used to configure the period for each synchronization task
 type TaskPeriods struct {
-	SplitSync      int
-	SegmentSync    int
-	ImpressionSync int
-	GaugeSync      int // deprecated
-	CounterSync    int // deprecated
-	LatencySync    int // deprecated
-	EventsSync     int
-	TelemetrySync  int
+	SplitSync        int
+	SegmentSync      int
+	ImpressionSync   int
+	GaugeSync        int // deprecated
+	CounterSync      int // deprecated
+	LatencySync      int // deprecated
+	EventsSync       int
+	TelemetrySync    int
+	LargeSegmentSync int
 }
 
 // AdvancedConfig exposes more configurable parameters that can be used to further tailor the sdk to the user's needs
@@ -88,4 +89,7 @@ type AdvancedConfig struct {
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
 	LargeSegmentVersion    string
+	LargeSegmentLazyLoad   bool
+	LargeSegmentQueueSize  int
+	LargeSegmentWorkers    int
 }

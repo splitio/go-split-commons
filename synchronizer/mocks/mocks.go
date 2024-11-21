@@ -17,6 +17,7 @@ type MockSynchronizer struct {
 	StopPeriodicDataRecordingCall  func()
 	LocalKillCall                  func(string, string, int64)
 	RefreshRatesCall               func() (time.Duration, time.Duration)
+	SynchronizeLargeSegmentCall    func(name string, till *int64) error
 }
 
 // SyncAll mock
@@ -62,4 +63,9 @@ func (m *MockSynchronizer) RefreshRates() (time.Duration, time.Duration) {
 // RefreshRates call
 func (m *MockSynchronizer) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	return m.SynchronizeFeatureFlagsCall(ffChange)
+}
+
+// SynchronizeSegment mock
+func (m *MockSynchronizer) SynchronizeLargeSegment(name string, till *int64) error {
+	return m.SynchronizeLargeSegmentCall(name, till)
 }

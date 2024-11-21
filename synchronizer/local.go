@@ -108,6 +108,9 @@ func (s *Local) SynchronizeSegment(name string, till *int64) error {
 	return nil
 }
 
+// SynchronizeLargeSegment syncs segment
+func (s *Local) SynchronizeLargeSegment(name string, till *int64) error { return nil }
+
 // LocalKill local kill without any logic for localhost mode
 func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {}
 
