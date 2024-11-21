@@ -14,10 +14,11 @@ const (
 
 // Update type constants
 const (
-	UpdateTypeSplitChange   = "SPLIT_UPDATE"
-	UpdateTypeSplitKill     = "SPLIT_KILL"
-	UpdateTypeSegmentChange = "SEGMENT_UPDATE"
-	UpdateTypeContol        = "CONTROL"
+	UpdateTypeSplitChange        = "SPLIT_UPDATE"
+	UpdateTypeSplitKill          = "SPLIT_KILL"
+	UpdateTypeSegmentChange      = "SEGMENT_UPDATE"
+	UpdateTypeContol             = "CONTROL"
+	UpdateTypeLargeSegmentChange = "LARGE_SEGMENT_UPDATE"
 )
 
 // Control type constants
@@ -310,6 +311,27 @@ func (u *ControlUpdate) String() string {
 		u.Channel(), u.controlType, u.Timestamp())
 }
 
+type LargeSegmentChangeUpdate struct {
+	BaseUpdate
+	LargeSegments []LargeSegmentRFDResponseDTO `json:"ls"`
+}
+
+func NewLargeSegmentChangeUpdate(baseUpdate BaseUpdate, largeSegments []LargeSegmentRFDResponseDTO) *LargeSegmentChangeUpdate {
+	return &LargeSegmentChangeUpdate{
+		BaseUpdate:    baseUpdate,
+		LargeSegments: largeSegments,
+	}
+}
+
+// UpdateType is always UpdateTypeLargeSegmentChange for Large Segmet Updates
+func (u *LargeSegmentChangeUpdate) UpdateType() string { return UpdateTypeLargeSegmentChange }
+
+// String returns the string representation of a segment update notification
+func (u *LargeSegmentChangeUpdate) String() string {
+	return fmt.Sprintf("LargeSegmentChange(channel=%s,changeNumber=%d,count=%d,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), len(u.LargeSegments), u.Timestamp())
+}
+
 // Compile-type assertions of interface requirements
 var _ Event = &AblyError{}
 var _ Message = &OccupancyMessage{}
@@ -317,6 +339,8 @@ var _ Message = &SplitChangeUpdate{}
 var _ Message = &SplitKillUpdate{}
 var _ Message = &SegmentChangeUpdate{}
 var _ Message = &ControlUpdate{}
+var _ Message = &LargeSegmentChangeUpdate{}
 var _ Update = &SplitChangeUpdate{}
 var _ Update = &SplitKillUpdate{}
 var _ Update = &SegmentChangeUpdate{}
+var _ Update = &LargeSegmentChangeUpdate{}

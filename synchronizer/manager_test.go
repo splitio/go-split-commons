@@ -38,19 +38,19 @@ func TestSynchronizerErr(t *testing.T) {
 	status := make(chan int, 1)
 	_, err := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
 	if err != nil {
-		t.Error("It should not return err")
+		t.Error("It should not return err", err.Error())
 	}
 
 	myKey := "12345"
 	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey, appMonitor)
 	if err == nil || err.Error() != "invalid ClientKey" {
-		t.Error("It should return err")
+		t.Error("It should return err", err.Error())
 	}
 
 	myKey = "1234"
 	_, err = NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, &myKey, appMonitor)
 	if err != nil {
-		t.Error("It should not return err")
+		t.Error("It should not return err", err.Error())
 	}
 }
 

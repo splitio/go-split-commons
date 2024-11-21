@@ -27,6 +27,7 @@ type RFD struct {
 
 // LargeSegmentRFDResponseDTO
 type LargeSegmentRFDResponseDTO struct {
+	Name             string `json:"n"`
 	NotificationType string `json:"t"`
 	RFD              *RFD   `json:"rfd,omitempty"`
 	SpecVersion      string `json:"v"`
