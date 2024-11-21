@@ -3,6 +3,7 @@ package push
 import (
 	"testing"
 
+	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/push/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -28,7 +29,10 @@ func TestProcessor(t *testing.T) {
 			}
 		},
 	}
-	processor, err := NewProcessor(5000, 5000, syncMock, logger, 5000)
+	processor, err := NewProcessor(5000, 5000, syncMock, logger, conf.LargeSegmentConfig{
+		Enable:    true,
+		QueueSize: 5000,
+	})
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -94,7 +98,7 @@ func TestProcessor(t *testing.T) {
 	if len(processor.splitQueue) != 2 {
 		t.Error("It should be 2")
 	}
-	if len(processor.lsQueue) != 1 {
+	if len(processor.largeSegment.queue) != 1 {
 		t.Error("lsQueue should be 1")
 	}
 }

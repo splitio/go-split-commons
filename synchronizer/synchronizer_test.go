@@ -1058,7 +1058,12 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	splitTasks := SplitTasks{}
 
 	// Config
-	cfn := conf.AdvancedConfig{LargeSegmentLazyLoad: true}
+	cfn := conf.AdvancedConfig{
+		LargeSegment: conf.LargeSegmentConfig{
+			Enable:   true,
+			LazyLoad: true,
+		},
+	}
 
 	// Sync
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -1092,7 +1097,10 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	splitTasks := SplitTasks{}
 
 	cfn := conf.AdvancedConfig{
-		LargeSegmentLazyLoad: false,
+		LargeSegment: conf.LargeSegmentConfig{
+			Enable:   true,
+			LazyLoad: false,
+		},
 	}
 	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
@@ -1233,10 +1241,13 @@ func TestSynchronizeLargeSegmentsAfterSplitSync(t *testing.T) {
 func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := conf.AdvancedConfig{
-		SegmentQueueSize:      50,
-		SegmentWorkers:        5,
-		LargeSegmentQueueSize: 10,
-		LargeSegmentWorkers:   5,
+		SegmentQueueSize: 50,
+		SegmentWorkers:   5,
+		LargeSegment: conf.LargeSegmentConfig{
+			Enable:    true,
+			QueueSize: 10,
+			Workers:   5,
+		},
 	}
 
 	var segmentUpdater syncMocks.SegmentUpdaterMock
@@ -1269,7 +1280,7 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	splitTasks := SplitTasks{
 		SegmentSyncTask:      tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:        tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
-		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegmentWorkers, advanced.LargeSegmentQueueSize, logger),
+		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger),
 	}
 	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 

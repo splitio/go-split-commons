@@ -12,6 +12,10 @@ const (
 	defaultSplitUpdateQueueSize        = 5000
 	defaultSegmentUpdateQueueSize      = 5000
 	defaultLargeSegmentUpdateQueueSize = 5000
+	defaultLargeSegmentQueueSize       = 5000
+	defaultLargeSegmentWorkers         = 5
+	defaultLargeSegmentLazyLoad        = false
+	defaultLargeSegmentEnabled         = false
 	defaultAuthServiceURL              = "https://auth.split.io"
 	defaultEventsURL                   = "https://events.split.io/api"
 	defaultSdkURL                      = "https://sdk.split.io/api"
@@ -38,21 +42,27 @@ const (
 // GetDefaultAdvancedConfig returns default conf
 func GetDefaultAdvancedConfig() AdvancedConfig {
 	return AdvancedConfig{
-		EventsQueueSize:             defaultEventsQueueSize,
-		HTTPTimeout:                 defaultHTTPTimeout,
-		EventsBulkSize:              defaultEventsBulkSize,
-		ImpressionsBulkSize:         defaultImpressionsBulkSize,
-		ImpressionsQueueSize:        defaultImpressionsQueueSize,
-		SegmentQueueSize:            defaultSegmentQueueSize,
-		SegmentUpdateQueueSize:      defaultSegmentUpdateQueueSize,
-		SegmentWorkers:              defaultSegmentWorkers,
-		SplitUpdateQueueSize:        defaultSplitUpdateQueueSize,
-		StreamingEnabled:            defaultStreamingEnabled,
-		AuthServiceURL:              defaultAuthServiceURL,
-		EventsURL:                   defaultEventsURL,
-		SdkURL:                      defaultSdkURL,
-		StreamingServiceURL:         defaultStreamingServiceURL,
-		TelemetryServiceURL:         defaultTelemetryServiceURL,
-		LargeSegmentUpdateQueueSize: defaultLargeSegmentUpdateQueueSize,
+		EventsQueueSize:        defaultEventsQueueSize,
+		HTTPTimeout:            defaultHTTPTimeout,
+		EventsBulkSize:         defaultEventsBulkSize,
+		ImpressionsBulkSize:    defaultImpressionsBulkSize,
+		ImpressionsQueueSize:   defaultImpressionsQueueSize,
+		SegmentQueueSize:       defaultSegmentQueueSize,
+		SegmentUpdateQueueSize: defaultSegmentUpdateQueueSize,
+		SegmentWorkers:         defaultSegmentWorkers,
+		SplitUpdateQueueSize:   defaultSplitUpdateQueueSize,
+		StreamingEnabled:       defaultStreamingEnabled,
+		AuthServiceURL:         defaultAuthServiceURL,
+		EventsURL:              defaultEventsURL,
+		SdkURL:                 defaultSdkURL,
+		StreamingServiceURL:    defaultStreamingServiceURL,
+		TelemetryServiceURL:    defaultTelemetryServiceURL,
+		LargeSegment: LargeSegmentConfig{
+			Enable:          defaultLargeSegmentEnabled,
+			UpdateQueueSize: defaultLargeSegmentUpdateQueueSize,
+			LazyLoad:        defaultLargeSegmentLazyLoad,
+			Workers:         defaultLargeSegmentWorkers,
+			QueueSize:       defaultLargeSegmentQueueSize,
+		},
 	}
 }

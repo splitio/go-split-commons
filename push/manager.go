@@ -71,8 +71,7 @@ func NewManager(
 	metadata dtos.Metadata,
 	clientKey *string,
 ) (*ManagerImpl, error) {
-
-	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegmentUpdateQueueSize)
+	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegment)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}

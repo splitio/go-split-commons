@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -13,6 +14,11 @@ const (
 	segmentQueueMinSize      = 5000
 	largeSegmentQueueMinSize = 5000
 )
+
+type LargeSegment struct {
+	queue  chan dtos.LargeSegmentChangeUpdate
+	worker *LargeSegmentUpdateWorker
+}
 
 // Processor provides the interface for an update-message processor
 type Processor interface {
@@ -28,12 +34,11 @@ type Processor interface {
 type ProcessorImpl struct {
 	segmentQueue  chan dtos.SegmentChangeUpdate
 	splitQueue    chan dtos.SplitChangeUpdate
-	lsQueue       chan dtos.LargeSegmentChangeUpdate
 	splitWorker   *SplitUpdateWorker
 	segmentWorker *SegmentUpdateWorker
-	lsWorker      *LargeSegmentUpdateWorker
 	synchronizer  synchronizerInterface
 	logger        logging.LoggerInterface
+	largeSegment  *LargeSegment
 }
 
 // NewProcessor creates new processor
@@ -42,16 +47,13 @@ func NewProcessor(
 	segmentQueueSize int64,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
-	largeSegmentQueueSize int64,
+	lscfg conf.LargeSegmentConfig,
 ) (*ProcessorImpl, error) {
 	if segmentQueueSize < segmentQueueMinSize {
 		return nil, errors.New("small size of segmentQueue")
 	}
 	if splitQueueSize < splitQueueMinSize {
 		return nil, errors.New("small size of splitQueue")
-	}
-	if largeSegmentQueueSize < largeSegmentQueueMinSize {
-		return nil, errors.New("small size of largeSegmentQueueSize")
 	}
 
 	splitQueue := make(chan dtos.SplitChangeUpdate, splitQueueSize)
@@ -66,10 +68,21 @@ func NewProcessor(
 		return nil, fmt.Errorf("error instantiating split worker: %w", err)
 	}
 
-	lsQueue := make(chan dtos.LargeSegmentChangeUpdate, largeSegmentQueueSize)
-	lsWorker, err := NewLargeSegmentUpdateWorker(lsQueue, synchronizer, logger)
-	if err != nil {
-		return nil, fmt.Errorf("error instantiating large segment worker: %w", err)
+	var largeSegment *LargeSegment
+	if lscfg.Enable {
+		if lscfg.QueueSize < largeSegmentQueueMinSize {
+			return nil, errors.New("small size of largeSegmentQueueSize")
+		}
+		lsQueue := make(chan dtos.LargeSegmentChangeUpdate, lscfg.QueueSize)
+		lsWorker, err := NewLargeSegmentUpdateWorker(lsQueue, synchronizer, logger)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating large segment worker: %w", err)
+		}
+
+		largeSegment = &LargeSegment{
+			queue:  lsQueue,
+			worker: lsWorker,
+		}
 	}
 
 	return &ProcessorImpl{
@@ -79,8 +92,7 @@ func NewProcessor(
 		segmentWorker: segmentWorker,
 		synchronizer:  synchronizer,
 		logger:        logger,
-		lsQueue:       lsQueue,
-		lsWorker:      lsWorker,
+		largeSegment:  largeSegment,
 	}, nil
 }
 
@@ -112,10 +124,14 @@ func (p *ProcessorImpl) ProcessSegmentChangeUpdate(update *dtos.SegmentChangeUpd
 }
 
 func (p *ProcessorImpl) ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmentChangeUpdate) error {
+	if p.largeSegment == nil {
+		return nil
+	}
+
 	if update == nil {
 		return errors.New("large segment change update cannot be nil")
 	}
-	p.lsQueue <- *update
+	p.largeSegment.queue <- *update
 	return nil
 }
 
@@ -123,12 +139,16 @@ func (p *ProcessorImpl) ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmen
 func (p *ProcessorImpl) StartWorkers() {
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
-	p.lsWorker.Start()
+	if p.largeSegment != nil {
+		p.largeSegment.worker.Start()
+	}
 }
 
 // StopWorkers pauses split & segments workers
 func (p *ProcessorImpl) StopWorkers() {
 	p.splitWorker.Stop()
 	p.segmentWorker.Stop()
-	p.lsWorker.Stop()
+	if p.largeSegment != nil {
+		p.largeSegment.worker.Stop()
+	}
 }

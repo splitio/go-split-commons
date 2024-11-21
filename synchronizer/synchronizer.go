@@ -88,7 +88,7 @@ func NewSynchronizer(
 		splitsRefreshRate:    confAdvanced.SplitsRefreshRate,
 		segmentsRefreshRate:  confAdvanced.SegmentsRefreshRate,
 		httpTiemoutSecs:      confAdvanced.HTTPTimeout,
-		largeSegmentLazyLoad: confAdvanced.LargeSegmentLazyLoad,
+		largeSegmentLazyLoad: confAdvanced.LargeSegment.LazyLoad,
 	}
 }
 

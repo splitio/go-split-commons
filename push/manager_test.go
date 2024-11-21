@@ -22,9 +22,8 @@ import (
 
 func TestAuth500(t *testing.T) {
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -66,9 +65,8 @@ func TestAuth500(t *testing.T) {
 func TestAuth401(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -114,9 +112,8 @@ func TestAuth401(t *testing.T) {
 
 func TestAuthPushDisabled(t *testing.T) {
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -155,9 +152,8 @@ func TestAuthPushDisabled(t *testing.T) {
 func TestStreamingConnectionFails(t *testing.T) {
 	before := time.Now().UTC()
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -216,9 +212,8 @@ func TestStreamingConnectionFails(t *testing.T) {
 func TestStreamingUnexpectedDisconnection(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -296,9 +291,8 @@ func TestStreamingUnexpectedDisconnection(t *testing.T) {
 func TestExpectedDisconnection(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -378,9 +372,8 @@ func TestExpectedDisconnection(t *testing.T) {
 func TestMultipleCallsToStartAndStop(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -472,9 +465,8 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 	called := 0
 	var tokenRefreshes int64
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -562,9 +554,8 @@ func TestUsageAndTokenRefresh(t *testing.T) {
 func TestEventForwarding(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -668,9 +659,8 @@ func TestEventForwarding(t *testing.T) {
 func TestEventForwardingReturnsError(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}
@@ -773,9 +763,8 @@ func TestEventForwardingReturnsError(t *testing.T) {
 func TestEventForwardingReturnsNewStatus(t *testing.T) {
 	called := 0
 	cfg := &conf.AdvancedConfig{
-		SplitUpdateQueueSize:        10000,
-		SegmentUpdateQueueSize:      10000,
-		LargeSegmentUpdateQueueSize: 10000,
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
 	}
 	logger := logging.NewLogger(nil)
 	synchronizer := &pushMocks.LocalSyncMock{}

@@ -68,29 +68,34 @@ type TaskPeriods struct {
 // - SegmentQueueSize - How many segments can be queued for updating (should be >= # segments the user has)
 // - SegmentWorkers - How many workers will be used when performing segments sync.
 type AdvancedConfig struct {
-	HTTPTimeout                 int
-	SegmentQueueSize            int
-	SegmentWorkers              int
-	SdkURL                      string
-	EventsURL                   string
-	TelemetryServiceURL         string
-	EventsBulkSize              int64
-	EventsQueueSize             int
-	ImpressionsQueueSize        int
-	ImpressionsBulkSize         int64
-	StreamingEnabled            bool
-	AuthServiceURL              string
-	StreamingServiceURL         string
-	SplitUpdateQueueSize        int64
-	SegmentUpdateQueueSize      int64
-	SplitsRefreshRate           int
-	SegmentsRefreshRate         int
-	FlagSetsFilter              []string
-	AuthSpecVersion             string
-	FlagsSpecVersion            string
-	LargeSegmentVersion         string
-	LargeSegmentLazyLoad        bool
-	LargeSegmentWorkers         int
-	LargeSegmentUpdateQueueSize int64
-	LargeSegmentQueueSize       int
+	HTTPTimeout            int
+	SegmentQueueSize       int
+	SegmentWorkers         int
+	SdkURL                 string
+	EventsURL              string
+	TelemetryServiceURL    string
+	EventsBulkSize         int64
+	EventsQueueSize        int
+	ImpressionsQueueSize   int
+	ImpressionsBulkSize    int64
+	StreamingEnabled       bool
+	AuthServiceURL         string
+	StreamingServiceURL    string
+	SplitUpdateQueueSize   int64
+	SegmentUpdateQueueSize int64
+	SplitsRefreshRate      int
+	SegmentsRefreshRate    int
+	FlagSetsFilter         []string
+	AuthSpecVersion        string
+	FlagsSpecVersion       string
+	LargeSegment           LargeSegmentConfig
+}
+
+type LargeSegmentConfig struct {
+	Enable          bool
+	Version         string
+	LazyLoad        bool
+	Workers         int
+	UpdateQueueSize int64
+	QueueSize       int
 }

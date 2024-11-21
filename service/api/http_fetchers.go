@@ -118,7 +118,7 @@ func NewHTTPLargeSegmentFetcher(apikey string, cfg conf.AdvancedConfig, logger l
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
-		largeSegmentVersion: &cfg.LargeSegmentVersion,
+		largeSegmentVersion: &cfg.LargeSegment.Version,
 		httpClient:          &http.Client{},
 	}
 }
