@@ -1120,6 +1120,112 @@ func TestSynchronizeLargeSegment(t *testing.T) {
 	lsUpdater.AssertExpectations(t)
 }
 
+func TestSynchronizeLargeSegmentWithoutUpdaters(t *testing.T) {
+	lsName := "ls_test"
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegment(lsName, nil)
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentsWithoutUpdaters(t *testing.T) {
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.(*SynchronizerImpl).synchronizeLargeSegments()
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestFilterCachedLargeSegmentsWithoutUpdater(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	filtered := sync.(*SynchronizerImpl).filterCachedLargeSegments(lsNames)
+	if len(filtered) != 0 {
+		t.Error("filtered len should be 0. Actual: ", len(filtered))
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestFilterCachedLargeSegments(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("IsCached", "ls1").Return(true).Once()
+	lsUpdater.On("IsCached", "ls2").Return(false).Once()
+	lsUpdater.On("IsCached", "ls3").Return(true).Once()
+	// Workers
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	filtered := sync.(*SynchronizerImpl).filterCachedLargeSegments(lsNames)
+	if len(filtered) != 1 {
+		t.Error("filtered len should be 1. Actual: ", len(filtered))
+	}
+	if filtered[0] != "ls2" {
+		t.Error("Filtered name should be ls2. Actual: ", filtered[0])
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentsAfterSplitSync(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(nil).Once()
+	lsUpdater.On("IsCached", "ls1").Return(false).Once()
+	lsUpdater.On("IsCached", "ls2").Return(false).Once()
+	lsUpdater.On("IsCached", "ls3").Return(false).Once()
+
+	// Workers
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.(*SynchronizerImpl).synchronizeLargeSegmentsAfterSplitSync(lsNames)
+
+	time.Sleep(time.Millisecond * 1000)
+
+	lsUpdater.AssertExpectations(t)
+}
+
 func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	advanced := conf.AdvancedConfig{

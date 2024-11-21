@@ -213,7 +213,8 @@ func (s *SynchronizerImpl) SynchronizeLargeSegment(name string, till *int64) err
 // SynchronizeFeatureFlags syncs featureFlags
 func (s *SynchronizerImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	result, err := s.workers.SplitUpdater.SynchronizeFeatureFlags(ffChange)
-	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments, result.ReferencedLargeSegments)
+	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments)
+	s.synchronizeLargeSegmentsAfterSplitSync(result.ReferencedLargeSegments)
 	return err
 }
 
@@ -247,21 +248,13 @@ func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []s
 	return toRet
 }
 
-func (s *SynchronizerImpl) filterCachedLargeSegments(ReferencedLargeSegments []string) []string {
-	toRet := make([]string, 0, len(ReferencedLargeSegments))
-	for _, name := range ReferencedLargeSegments {
-		if !s.workers.LargeSegmentUpdater.IsCached(name) {
-			toRet = append(toRet, name)
-		}
-	}
-	return toRet
-}
-
-func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments []string, referencedLargeSegments []string) {
+func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments []string) {
 	for _, segment := range s.filterCachedSegments(referencedSegments) {
 		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 	}
+}
 
+func (s *SynchronizerImpl) synchronizeLargeSegmentsAfterSplitSync(referencedLargeSegments []string) {
 	if s.workers.LargeSegmentUpdater != nil {
 		for _, largeSegment := range s.filterCachedLargeSegments(referencedLargeSegments) {
 			go s.SynchronizeLargeSegment(largeSegment, nil)
@@ -269,17 +262,30 @@ func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments 
 	}
 }
 
+func (s *SynchronizerImpl) filterCachedLargeSegments(referencedLargeSegments []string) []string {
+	if s.workers.LargeSegmentUpdater != nil {
+		toRet := make([]string, 0, len(referencedLargeSegments))
+		for _, name := range referencedLargeSegments {
+			if !s.workers.LargeSegmentUpdater.IsCached(name) {
+				toRet = append(toRet, name)
+			}
+		}
+		return toRet
+	}
+	return []string{}
+}
+
 func (s *SynchronizerImpl) synchronizeLargeSegments() error {
-	if s.workers.LargeSegmentUpdater == nil {
-		return nil
+	if s.workers.LargeSegmentUpdater != nil {
+		if s.largeSegmentLazyLoad {
+			go s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
+			return nil
+		}
+
+		return s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
 	}
 
-	if s.largeSegmentLazyLoad {
-		go s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
-		return nil
-	}
-
-	return s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
+	return nil
 }
 
 var _ Synchronizer = &SynchronizerImpl{}
