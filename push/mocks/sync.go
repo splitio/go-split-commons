@@ -5,15 +5,16 @@ import (
 )
 
 type LocalSyncMock struct {
-	SyncAllCall                    func() error
-	SynchronizeFeatureFlagsCall    func(ffChange *dtos.SplitChangeUpdate) error
-	LocalKillCall                  func(splitName string, defaultTreatment string, changeNumber int64)
-	SynchronizeSegmentCall         func(segmentName string, till *int64) error
-	StartPeriodicFetchingCall      func()
-	StopPeriodicFetchingCall       func()
-	StartPeriodicDataRecordingCall func()
-	StopPeriodicDataRecordingCall  func()
-	SynchronizeLargeSegmentCall    func(name string, till *int64) error
+	SyncAllCall                       func() error
+	SynchronizeFeatureFlagsCall       func(ffChange *dtos.SplitChangeUpdate) error
+	LocalKillCall                     func(splitName string, defaultTreatment string, changeNumber int64)
+	SynchronizeSegmentCall            func(segmentName string, till *int64) error
+	StartPeriodicFetchingCall         func()
+	StopPeriodicFetchingCall          func()
+	StartPeriodicDataRecordingCall    func()
+	StopPeriodicDataRecordingCall     func()
+	SynchronizeLargeSegmentCall       func(name string, till *int64) error
+	SynchronizeLargeSegmentUpdateCall func(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
 }
 
 func (l *LocalSyncMock) SyncAll() error {
@@ -50,4 +51,8 @@ func (l *LocalSyncMock) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate
 
 func (l *LocalSyncMock) SynchronizeLargeSegment(name string, till *int64) error {
 	return l.SynchronizeLargeSegmentCall(name, till)
+}
+
+func (l *LocalSyncMock) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
+	return l.SynchronizeLargeSegmentUpdateCall(lsRFDResponseDTO)
 }

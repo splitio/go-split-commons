@@ -18,7 +18,7 @@ const (
 	UpdateTypeSplitKill          = "SPLIT_KILL"
 	UpdateTypeSegmentChange      = "SEGMENT_UPDATE"
 	UpdateTypeContol             = "CONTROL"
-	UpdateTypeLargeSegmentChange = "LARGE_SEGMENT_UPDATE"
+	UpdateTypeLargeSegmentChange = "LS_DEFINITION_UPDATE"
 )
 
 // Control type constants

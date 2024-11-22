@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
 )
@@ -56,8 +55,9 @@ func (s *LargeSegmentUpdateWorker) Start() {
 			case lstUpdate := <-s.lsQueue:
 				s.logger.Debug("Received Large Segment updates and proceding to perform fetch")
 				for _, ls := range lstUpdate.LargeSegments {
-					s.logger.Debug(fmt.Sprintf("LargeSegmentName: %s\nChangeNumber: %d", ls.Name, ls.ChangeNumber))
-					err := s.sync.SynchronizeLargeSegment(ls.Name, common.Int64Ref(ls.ChangeNumber))
+					s.logger.Debug(fmt.Sprintf("LargeSegmentName: %s\nChangeNumber: %d", ls.Name, lstUpdate.ChangeNumber()))
+					ls.ChangeNumber = lstUpdate.ChangeNumber()
+					err := s.sync.SynchronizeLargeSegmentUpdate(&ls)
 					if err != nil {
 						s.logger.Error(err)
 					}
