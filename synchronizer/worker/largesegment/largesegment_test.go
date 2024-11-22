@@ -544,3 +544,165 @@ func TestLargeSegmentsSync(t *testing.T) {
 		t.Error("ChangeNumber should be 30. Actual: ", *result[ls30])
 	}
 }
+
+func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
+	ls10 := "large_segment_10"
+	ls20 := "large_segment_20"
+	ls30 := "large_segment_30"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+			ss.Add(ls20)
+			ss.Add(ls30)
+
+			return ss
+		},
+	}
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return &dtos.LargeSegment{
+				Name:         name,
+				Keys:         []string{"key_1", "key_2", "key_3"},
+				ChangeNumber: rfe.ChangeNumber,
+			}, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := buildLargeSegmentRFDResponseDTO(ls10, 10)
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 1 {
+		t.Error("DownloadCall should be 1. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+}
+
+func TestSynchronizeLargeSegmentUpdateListEmpty(t *testing.T) {
+	ls10 := "large_segment_10"
+	ls20 := "large_segment_20"
+	ls30 := "large_segment_30"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+			ss.Add(ls20)
+			ss.Add(ls30)
+
+			return ss
+		},
+	}
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return nil, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		NotificationType: "LS_EMPTY",
+		Name:             ls10,
+		SpecVersion:      "1.0",
+		ChangeNumber:     10,
+	}
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 0 {
+		t.Error("DownloadCall should be 0. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+}
+
+func TestSynchronizeLargeSegmentUpdateWithUrlExpired(t *testing.T) {
+	ls10 := "large_segment_10"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+
+			return ss
+		},
+	}
+
+	var fetchCall int32
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+			atomic.AddInt32(&fetchCall, 1)
+			switch name {
+			case ls10:
+				return buildLargeSegmentRFDResponseDTO(ls10, 10), nil
+			}
+
+			return &dtos.LargeSegmentRFDResponseDTO{}, nil
+		},
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return &dtos.LargeSegment{
+				Name:         name,
+				Keys:         []string{"key_1", "key_2", "key_3"},
+				ChangeNumber: rfe.ChangeNumber,
+			}, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := buildLargeSegmentRFDResponseDTO(ls10, 10)
+	dto.RFD.Data.ExpiresAt = time.Now().UnixMilli() - 1000
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 1 {
+		t.Error("DownloadCall should be 0. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+	if atomic.LoadInt32(&fetchCall) != 1 {
+		t.Error("fetchCall should be 1. Actual: ", atomic.LoadInt32(&fetchCall))
+	}
+}

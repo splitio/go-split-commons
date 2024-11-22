@@ -1320,3 +1320,21 @@ func TestDataFlusher(t *testing.T) {
 	impRecorder.AssertExpectations(t)
 	eventRecorder.AssertExpectations(t)
 }
+
+func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
+	dto := &dtos.LargeSegmentRFDResponseDTO{}
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	var cn *int64
+	lsUpdater.On("SynchronizeLargeSegmentUpdate", dto).Return(cn, nil).Once()
+
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("Error should be nil. Actual:", err)
+	}
+	lsUpdater.AssertExpectations(t)
+}
