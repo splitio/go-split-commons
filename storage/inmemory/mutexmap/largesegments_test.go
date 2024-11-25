@@ -88,6 +88,23 @@ func TestChangeNumber(t *testing.T) {
 	}
 }
 
+func TestTotalKeys(t *testing.T) {
+	storage := NewLargeSegmentsStorage()
+
+	lsName := "ls_test_1"
+	keys1 := sortedKeys("ls1", 10000, nil)
+	storage.Update(lsName, keys1, 1)
+
+	len := storage.TotalKeys(lsName)
+	if len != 10000 {
+		t.Error("Total Keys should be 10000. Actual: ", len)
+	}
+
+	len = storage.TotalKeys("other_ls")
+	if len != 0 {
+		t.Error("Total Keys should be 0. Actual: ", len)
+	}
+}
 func TestContainsKey(t *testing.T) {
 	storage := NewLargeSegmentsStorage()
 

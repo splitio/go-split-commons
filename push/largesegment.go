@@ -55,7 +55,7 @@ func (s *LargeSegmentUpdateWorker) Start() {
 			case lstUpdate := <-s.lsQueue:
 				s.logger.Debug("Received Large Segment updates and proceding to perform fetch")
 				for _, ls := range lstUpdate.LargeSegments {
-					s.logger.Debug(fmt.Sprintf("LargeSegmentName: %s\nChangeNumber: %d", ls.Name, lstUpdate.ChangeNumber()))
+					s.logger.Debug(fmt.Sprintf("LargeSegmentName: %s. ChangeNumber: %d", ls.Name, lstUpdate.ChangeNumber()))
 					ls.ChangeNumber = lstUpdate.ChangeNumber()
 					err := s.sync.SynchronizeLargeSegmentUpdate(&ls)
 					if err != nil {

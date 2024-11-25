@@ -26,6 +26,17 @@ func NewLargeSegmentsStorage() *LargeSegmentsStorageImpl {
 	}
 }
 
+func (s *LargeSegmentsStorageImpl) TotalKeys(name string) int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	items, ok := s.data[name]
+	if !ok {
+		return 0
+	}
+
+	return len(items)
+}
+
 // Count retuns the amount of Large Segments
 func (s *LargeSegmentsStorageImpl) Count() int {
 	s.mutex.RLock()
