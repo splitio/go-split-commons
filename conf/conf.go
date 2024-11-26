@@ -60,7 +60,7 @@ type TaskPeriods struct {
 	LatencySync      int // deprecated
 	EventsSync       int
 	TelemetrySync    int
-	LargeSegmentSync int
+	LargeSegmentSync *int
 }
 
 // AdvancedConfig exposes more configurable parameters that can be used to further tailor the sdk to the user's needs
