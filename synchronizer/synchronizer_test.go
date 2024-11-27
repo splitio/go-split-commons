@@ -1322,10 +1322,14 @@ func TestDataFlusher(t *testing.T) {
 }
 
 func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
-	dto := &dtos.LargeSegmentRFDResponseDTO{}
-	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		Name: "ls1",
+	}
+
 	var cn *int64
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
 	lsUpdater.On("SynchronizeLargeSegmentUpdate", dto).Return(cn, nil).Once()
+	lsUpdater.On("IsCached", "ls1").Return(true).Once()
 
 	workers := Workers{
 		LargeSegmentUpdater: &lsUpdater,
@@ -1336,5 +1340,27 @@ func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
 	if err != nil {
 		t.Error("Error should be nil. Actual:", err)
 	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentUpdateNotCached(t *testing.T) {
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		Name: "ls1",
+	}
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("IsCached", "ls1").Return(false).Once()
+
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("Error should be nil. Actual:", err)
+	}
+
 	lsUpdater.AssertExpectations(t)
 }

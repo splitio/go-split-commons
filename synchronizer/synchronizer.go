@@ -213,7 +213,7 @@ func (s *SynchronizerImpl) SynchronizeLargeSegment(name string, till *int64) err
 }
 
 func (s *SynchronizerImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
-	if s.workers.LargeSegmentUpdater != nil {
+	if s.workers.LargeSegmentUpdater != nil && s.workers.LargeSegmentUpdater.IsCached(lsRFDResponseDTO.Name) {
 		_, err := s.workers.LargeSegmentUpdater.SynchronizeLargeSegmentUpdate(lsRFDResponseDTO)
 		return err
 	}
