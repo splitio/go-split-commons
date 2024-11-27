@@ -30,8 +30,8 @@ func TestProcessor(t *testing.T) {
 		},
 	}
 	processor, err := NewProcessor(5000, 5000, syncMock, logger, conf.LargeSegmentConfig{
-		Enable:    true,
-		QueueSize: 5000,
+		Enable:          true,
+		UpdateQueueSize: 5000,
 	})
 	if err != nil {
 		t.Error("It should not return err")
