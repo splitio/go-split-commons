@@ -1,28 +1,26 @@
 package conf
 
 const (
-	defaultHTTPTimeout            = 30
-	defaultSegmentQueueSize       = 500
-	defaultSegmentWorkers         = 10
-	defaultEventsBulkSize         = 5000
-	defaultEventsQueueSize        = 10000
-	defaultImpressionsQueueSize   = 10000
-	defaultImpressionsBulkSize    = 5000
-	defaultStreamingEnabled       = true
-	defaultSplitUpdateQueueSize   = 5000
-	defaultSegmentUpdateQueueSize = 5000
-
+	defaultHTTPTimeout                 = 30
+	defaultSegmentQueueSize            = 500
+	defaultSegmentWorkers              = 10
+	defaultEventsBulkSize              = 5000
+	defaultEventsQueueSize             = 10000
+	defaultImpressionsQueueSize        = 10000
+	defaultImpressionsBulkSize         = 5000
+	defaultStreamingEnabled            = true
+	defaultSplitUpdateQueueSize        = 5000
+	defaultSegmentUpdateQueueSize      = 5000
 	defaultLargeSegmentUpdateQueueSize = 5000
 	defaultLargeSegmentQueueSize       = 5000
 	defaultLargeSegmentWorkers         = 5
 	defaultLargeSegmentLazyLoad        = false
 	defaultLargeSegmentEnabled         = false
-
-	defaultAuthServiceURL      = "https://auth.split.io"
-	defaultEventsURL           = "https://events.split.io/api"
-	defaultSdkURL              = "https://sdk.split.io/api"
-	defaultStreamingServiceURL = "https://streaming.split.io/sse"
-	defaultTelemetryServiceURL = "https://telemetry.split.io/api/v1"
+	defaultAuthServiceURL              = "https://auth.split.io"
+	defaultEventsURL                   = "https://events.split.io/api"
+	defaultSdkURL                      = "https://sdk.split.io/api"
+	defaultStreamingServiceURL         = "https://streaming.split.io/sse"
+	defaultTelemetryServiceURL         = "https://telemetry.split.io/api/v1"
 )
 
 const (
