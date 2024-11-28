@@ -84,7 +84,13 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		c.logger.Error(fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status))
+		message := fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status)
+		if resp.StatusCode == http.StatusNotModified {
+			c.logger.Debug(message)
+		} else {
+			c.logger.Error(message)
+		}
+
 		return nil, &dtos.HTTPError{
 			Code:    resp.StatusCode,
 			Message: resp.Status,

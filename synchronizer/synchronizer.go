@@ -54,6 +54,7 @@ type Synchronizer interface {
 	StopPeriodicDataRecording()
 	RefreshRates() (splits time.Duration, segments time.Duration)
 	SynchronizeLargeSegment(name string, till *int64) error
+	SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -202,12 +203,21 @@ func (s *SynchronizerImpl) SynchronizeSegment(name string, till *int64) error {
 	return err
 }
 
-// SynchronizeSegment syncs segment
+// SynchronizeLargeSegment syncs large segment
 func (s *SynchronizerImpl) SynchronizeLargeSegment(name string, till *int64) error {
 	if s.workers.LargeSegmentUpdater != nil {
 		_, err := s.workers.LargeSegmentUpdater.SynchronizeLargeSegment(name, till)
 		return err
 	}
+	return nil
+}
+
+func (s *SynchronizerImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
+	if s.workers.LargeSegmentUpdater != nil && s.workers.LargeSegmentUpdater.IsCached(lsRFDResponseDTO.Name) {
+		_, err := s.workers.LargeSegmentUpdater.SynchronizeLargeSegmentUpdate(lsRFDResponseDTO)
+		return err
+	}
+
 	return nil
 }
 

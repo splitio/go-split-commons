@@ -231,8 +231,8 @@ func TestLargeSegmentChangeUpdate(t *testing.T) {
 		{
 			Name:             "ls1",
 			NotificationType: UpdateTypeLargeSegmentChange,
-			RFD:              &RFD{},
 			SpecVersion:      "1.0",
+			RFD:              &RFD{},
 			ChangeNumber:     123123,
 		},
 	}

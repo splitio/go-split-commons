@@ -257,6 +257,7 @@ type LargeSegmentStorageConsumer interface {
 	Count() int
 	LargeSegmentsForUser(userKey string) []string
 	IsInLargeSegment(name string, key string) (bool, error)
+	TotalKeys(name string) int
 }
 
 // LargeSegmentsStorage defines the interface for a per-user large segments storage

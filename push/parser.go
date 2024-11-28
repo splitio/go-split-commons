@@ -147,17 +147,12 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 }
 
 func (p *NotificationParserImpl) processLargeSegmentMessage(nested *genericMessageData) []dtos.LargeSegmentRFDResponseDTO {
-	var largeSegments []dtos.LargeSegmentRFDResponseDTO
 	if nested.LargeSegments == nil {
 		p.logger.Debug("error reading nested message, LargeSegments property is nil")
-		return largeSegments
+		return []dtos.LargeSegmentRFDResponseDTO{}
 	}
 
-	err := json.Unmarshal([]byte(*nested.LargeSegments), &largeSegments)
-	if err != nil {
-		p.logger.Debug(fmt.Sprintf("error parsing large segment json definition: '%s'", err.Error()))
-	}
-	return largeSegments
+	return nested.LargeSegments
 }
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
@@ -212,17 +207,17 @@ type metrics struct {
 }
 
 type genericMessageData struct {
-	Metrics               metrics `json:"metrics"`
-	Type                  string  `json:"type"`
-	ChangeNumber          int64   `json:"changeNumber"`
-	SplitName             string  `json:"splitName"`
-	DefaultTreatment      string  `json:"defaultTreatment"`
-	SegmentName           string  `json:"segmentName"`
-	ControlType           string  `json:"controlType"`
-	PreviousChangeNumber  int64   `json:"pcn"`
-	CompressType          *int    `json:"c"`
-	FeatureFlagDefinition *string `json:"d"`
-	LargeSegments         *string `json:"ls"`
+	Metrics               metrics                           `json:"metrics"`
+	Type                  string                            `json:"type"`
+	ChangeNumber          int64                             `json:"changeNumber"`
+	SplitName             string                            `json:"splitName"`
+	DefaultTreatment      string                            `json:"defaultTreatment"`
+	SegmentName           string                            `json:"segmentName"`
+	ControlType           string                            `json:"controlType"`
+	PreviousChangeNumber  int64                             `json:"pcn"`
+	CompressType          *int                              `json:"c"`
+	FeatureFlagDefinition *string                           `json:"d"`
+	LargeSegments         []dtos.LargeSegmentRFDResponseDTO `json:"ls"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }

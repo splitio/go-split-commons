@@ -32,7 +32,7 @@ func validReqParams(t *testing.T, fetchOptions service.RequestParams, validateTi
 	}
 }
 
-func buildLargeSegmentRFDResponseDTO(cn int64) *dtos.LargeSegmentRFDResponseDTO {
+func buildLargeSegmentRFDResponseDTO(name string, cn int64) *dtos.LargeSegmentRFDResponseDTO {
 	return &dtos.LargeSegmentRFDResponseDTO{
 		NotificationType: LargeSegmentNewDefinition,
 		ChangeNumber:     cn,
@@ -46,6 +46,7 @@ func buildLargeSegmentRFDResponseDTO(cn int64) *dtos.LargeSegmentRFDResponseDTO 
 				Method: http.MethodGet,
 			},
 		},
+		Name: name,
 	}
 }
 
@@ -58,7 +59,7 @@ func TestSynchronizeLargeSegmentHappyPath(t *testing.T) {
 			atomic.AddInt64(&fetcherCount, 1)
 			switch fetcherCount {
 			case 1:
-				return buildLargeSegmentRFDResponseDTO(100), nil
+				return buildLargeSegmentRFDResponseDTO(name, 100), nil
 			default:
 				return &dtos.LargeSegmentRFDResponseDTO{}, nil
 			}
@@ -109,12 +110,12 @@ func TestSynchronizeLargeURLExpiredCDNBypass(t *testing.T) {
 			switch called := atomic.LoadInt64(&rfeCount); {
 			case called >= 1 && called <= 5:
 				validReqParams(t, fetchOptions, false)
-				dto := buildLargeSegmentRFDResponseDTO(2)
+				dto := buildLargeSegmentRFDResponseDTO(name, 2)
 				dto.RFD.Data.ExpiresAt = time.Now().UnixMilli() - 10000
 				return dto, nil
 			case called >= 6:
 				validReqParams(t, fetchOptions, true)
-				return buildLargeSegmentRFDResponseDTO(3), nil
+				return buildLargeSegmentRFDResponseDTO(name, 3), nil
 			}
 			return nil, dtos.HTTPError{Code: http.StatusInternalServerError, Message: "[500] Internal Server Error"}
 		},
@@ -166,12 +167,12 @@ func TestSynchronizeLargeURLExpiredCDNBypassLimit(t *testing.T) {
 			switch called := atomic.LoadInt64(&rfeCount); {
 			case called >= 1 && called <= 5:
 				validReqParams(t, fetchOptions, false)
-				dto := buildLargeSegmentRFDResponseDTO(2)
+				dto := buildLargeSegmentRFDResponseDTO(name, 2)
 				dto.RFD.Data.ExpiresAt = time.Now().UnixMilli() - 10000
 				return dto, nil
 			case called >= 6:
 				validReqParams(t, fetchOptions, true)
-				dto := buildLargeSegmentRFDResponseDTO(2)
+				dto := buildLargeSegmentRFDResponseDTO(name, 2)
 				dto.RFD.Data.ExpiresAt = time.Now().UnixMilli() - 10000
 				return dto, nil
 			}
@@ -239,7 +240,7 @@ func TestLargeSegmentSyncConcurrencyLimit(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			done.Store(name, emptyVal)
 			atomic.AddInt32(&inProgress, -1)
-			return buildLargeSegmentRFDResponseDTO(2), nil
+			return buildLargeSegmentRFDResponseDTO(name, 2), nil
 		},
 		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
 			return &dtos.LargeSegment{
@@ -320,7 +321,7 @@ func TestSynchronizeLargeSegmentLSEmptyNotification(t *testing.T) {
 	fetcher := fetcherMock.MockLargeSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 			atomic.AddInt64(&fetcherCount, 1)
-			dto := buildLargeSegmentRFDResponseDTO(10)
+			dto := buildLargeSegmentRFDResponseDTO(name, 10)
 			dto.RFD = nil
 			dto.NotificationType = LargeSegmentEmpty
 
@@ -361,7 +362,7 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 	fetcher := fetcherMock.MockLargeSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 			atomic.AddInt64(&fetcherCount, 1)
-			dto := buildLargeSegmentRFDResponseDTO(10)
+			dto := buildLargeSegmentRFDResponseDTO(name, 10)
 			dto.RFD = nil
 			dto.NotificationType = LargeSegmentNewDefinition
 
@@ -386,8 +387,8 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 		t.Error("Change Number should be nil. Actual: ", *cn)
 	}
 
-	if fetcherCount != 1 {
-		t.Error("fetcherCount should be 1. Actual: ", fetcherCount)
+	if fetcherCount != 5 {
+		t.Error("fetcherCount should be 5. Actual: ", fetcherCount)
 	}
 
 	if largeSegmentStorage.Count() != 0 {
@@ -428,7 +429,7 @@ func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 	fetcher := fetcherMock.MockLargeSegmentFetcher{
 		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
 			fetcherCount++
-			return buildLargeSegmentRFDResponseDTO(10), nil
+			return buildLargeSegmentRFDResponseDTO(name, 10), nil
 		},
 		DownloadFileCall: func(name string, lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
 			downloadCount++
@@ -498,11 +499,11 @@ func TestLargeSegmentsSync(t *testing.T) {
 			atomic.AddInt32(&fetchCall, 1)
 			switch name {
 			case ls10:
-				return buildLargeSegmentRFDResponseDTO(10), nil
+				return buildLargeSegmentRFDResponseDTO(name, 10), nil
 			case ls20:
-				return buildLargeSegmentRFDResponseDTO(20), nil
+				return buildLargeSegmentRFDResponseDTO(name, 20), nil
 			case ls30:
-				return buildLargeSegmentRFDResponseDTO(30), nil
+				return buildLargeSegmentRFDResponseDTO(name, 30), nil
 			}
 
 			return &dtos.LargeSegmentRFDResponseDTO{}, nil
@@ -541,5 +542,167 @@ func TestLargeSegmentsSync(t *testing.T) {
 	}
 	if *result[ls30] != 30 {
 		t.Error("ChangeNumber should be 30. Actual: ", *result[ls30])
+	}
+}
+
+func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
+	ls10 := "large_segment_10"
+	ls20 := "large_segment_20"
+	ls30 := "large_segment_30"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+			ss.Add(ls20)
+			ss.Add(ls30)
+
+			return ss
+		},
+	}
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return &dtos.LargeSegment{
+				Name:         name,
+				Keys:         []string{"key_1", "key_2", "key_3"},
+				ChangeNumber: rfe.ChangeNumber,
+			}, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := buildLargeSegmentRFDResponseDTO(ls10, 10)
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 1 {
+		t.Error("DownloadCall should be 1. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+}
+
+func TestSynchronizeLargeSegmentUpdateListEmpty(t *testing.T) {
+	ls10 := "large_segment_10"
+	ls20 := "large_segment_20"
+	ls30 := "large_segment_30"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+			ss.Add(ls20)
+			ss.Add(ls30)
+
+			return ss
+		},
+	}
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return nil, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		NotificationType: "LS_EMPTY",
+		Name:             ls10,
+		SpecVersion:      "1.0",
+		ChangeNumber:     10,
+	}
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 0 {
+		t.Error("DownloadCall should be 0. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+}
+
+func TestSynchronizeLargeSegmentUpdateWithUrlExpired(t *testing.T) {
+	ls10 := "large_segment_10"
+	splitMockStorage := &mocks.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			ss := set.NewSet()
+			ss.Add(ls10)
+
+			return ss
+		},
+	}
+
+	var fetchCall int32
+	var downloadCall int32
+	fetcher := fetcherMock.MockLargeSegmentFetcher{
+		FetchCall: func(name string, fetchOptions *service.SegmentRequestParams) (*dtos.LargeSegmentRFDResponseDTO, error) {
+			atomic.AddInt32(&fetchCall, 1)
+			switch name {
+			case ls10:
+				return buildLargeSegmentRFDResponseDTO(ls10, 10), nil
+			}
+
+			return &dtos.LargeSegmentRFDResponseDTO{}, nil
+		},
+		DownloadFileCall: func(name string, rfe *dtos.LargeSegmentRFDResponseDTO) (*dtos.LargeSegment, error) {
+			atomic.AddInt32(&downloadCall, 1)
+			return &dtos.LargeSegment{
+				Name:         name,
+				Keys:         []string{"key_1", "key_2", "key_3"},
+				ChangeNumber: rfe.ChangeNumber,
+			}, nil
+		},
+	}
+	telemetryMockStorage := mocks.MockTelemetryStorage{}
+	appMonitorMock := hcMock.MockApplicationMonitor{}
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
+
+	dto := buildLargeSegmentRFDResponseDTO(ls10, 10)
+	dto.RFD.Data.ExpiresAt = time.Now().UnixMilli() - 1000
+	cn, err := updater.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+
+	if *cn != 10 {
+		t.Error("CN should be 10. Actual: ", *cn)
+	}
+
+	lsCount := largeSegmentStorage.Count()
+	if lsCount != 1 {
+		t.Error("LS Count should be 1. Actual: ", lsCount)
+	}
+
+	if atomic.LoadInt32(&downloadCall) != 1 {
+		t.Error("DownloadCall should be 0. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+	if atomic.LoadInt32(&fetchCall) != 1 {
+		t.Error("fetchCall should be 1. Actual: ", atomic.LoadInt32(&fetchCall))
 	}
 }

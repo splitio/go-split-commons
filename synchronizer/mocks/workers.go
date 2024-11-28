@@ -28,6 +28,11 @@ func (u *LargeSegmentUpdaterMock) IsCached(name string) bool {
 	return args.Get(0).(bool)
 }
 
+func (u *LargeSegmentUpdaterMock) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*int64, error) {
+	args := u.Called(lsRFDResponseDTO)
+	return args.Get(0).(*int64), args.Error(1)
+}
+
 // SplitUpdaterMock
 type SplitUpdaterMock struct {
 	mock.Mock

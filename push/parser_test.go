@@ -813,20 +813,15 @@ func TestParseFFDtoDefinitionNil(t *testing.T) {
 	}
 }
 
-func TestLargeParseSegmentChange(t *testing.T) {
-	lsData := "[{\"n\":\"lsNameTest\",\"t\":\"LS_NEW_DEFINITION\",\"rfd\":{\"d\":{\"f\":1,\"k\":1000000,\"s\":37000000,\"e\":1732138098624},\"p\":{\"m\":\"GET\",\"u\":\"\",\"h\":{\"Host\":[\"\"]}}},\"v\":\"1.0\",\"cn\":1731510132359}]"
+func TestParseLargeSegmentChange(t *testing.T) {
+	lsData := "{\"type\":\"LS_DEFINITION_UPDATE\",\"changeNumber\":123,\"ls\":[{\"n\":\"lsNameTest\",\"rfd\":{\"p\":{\"m\":\"GET\",\"u\":\"https://split-large-segments.com\",\"h\":{\"Host\":[\"split-large\"]}},\"d\":{\"k\":10,\"s\":56,\"f\":1,\"e\":1732230421086,\"v\":\"1.0\"}},\"t\":\"LS_NEW_DEFINITION\"}]}"
 	event := &sseMocks.RawEventMock{
 		IDCall:    func() string { return "abc" },
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
-			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:          dtos.UpdateTypeLargeSegmentChange,
-				ChangeNumber:  123,
-				LargeSegments: &lsData,
-			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
-				Data:      string(updateJSON),
+				Data:      lsData,
 				Channel:   "largesegments_channel",
 			})
 			return string(mainJSON)
@@ -850,11 +845,11 @@ func TestLargeParseSegmentChange(t *testing.T) {
 			if ls.Name != "lsNameTest" {
 				t.Error("LS Name should be lsNameTest. Actual: ", ls.Name)
 			}
-			if ls.ChangeNumber != 1731510132359 {
-				t.Error("Unexpected change number. Actual: ", ls.ChangeNumber)
-			}
 			if ls.RFD.Data.Format != 1 {
 				t.Error("Unexpected data format. Actual: ", ls.RFD.Data.Format)
+			}
+			if ls.NotificationType != "LS_NEW_DEFINITION" {
+				t.Error("Unexpected Notification Type: Actual: ", ls.NotificationType)
 			}
 			return nil
 		},
@@ -865,7 +860,7 @@ func TestLargeParseSegmentChange(t *testing.T) {
 	}
 }
 
-func TestLargeParseSegmentChangeNestedMessage(t *testing.T) {
+func TestParseLargeSegmentChangeNestedMessage(t *testing.T) {
 	event := &sseMocks.RawEventMock{
 		IDCall:    func() string { return "abc" },
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
@@ -906,20 +901,58 @@ func TestLargeParseSegmentChangeNestedMessage(t *testing.T) {
 	}
 }
 
-func TestLargeParseSegmentChangeWrongLsDefinition(t *testing.T) {
-	lsData := "[{\"n\":\"lsNameTest\",\"t\":\"LS_NEW_DEFINITION\",\"rfd\"]"
+func TestParseLargeSegmentChangeWithEmptyList(t *testing.T) {
+	lsData := "{\"type\":\"LS_DEFINITION_UPDATE\",\"changeNumber\":1732227257338,\"ls\":[{\"n\":\"maldo_ls\",\"t\":\"LS_EMPTY\"}]}"
 	event := &sseMocks.RawEventMock{
 		IDCall:    func() string { return "abc" },
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
-			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:          dtos.UpdateTypeLargeSegmentChange,
-				ChangeNumber:  123,
-				LargeSegments: &lsData,
-			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
-				Data:      string(updateJSON),
+				Data:      lsData,
+				Channel:   "largesegments_channel",
+			})
+			return string(mainJSON)
+		},
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger: logger,
+		onLargeSegmentUpdate: func(lscu *dtos.LargeSegmentChangeUpdate) error {
+			if lscu.ChangeNumber() != 1732227257338 {
+				t.Error(CN_SHOULD_BE_123, lscu.ChangeNumber())
+			}
+			if lscu.Channel() != "largesegments_channel" {
+				t.Error(CHANNEL_SHOULD_BE, lscu.Channel())
+			}
+			if len(lscu.LargeSegments) != 1 {
+				t.Error("Large Segments len should be 1. Actual: ", len(lscu.LargeSegments))
+			}
+			ls := lscu.LargeSegments[0]
+			if ls.Name != "maldo_ls" {
+				t.Error("Unexpected LS Name: Actual: ", ls.Name)
+			}
+			if ls.NotificationType != "LS_EMPTY" {
+				t.Error("Unexpected Notification Type: Actual: ", ls.NotificationType)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestLargeParseSegmentChangeWrongLsDefinition(t *testing.T) {
+	lsData := "{\"type\":\"LS_DEFINITION_UPDATE\",\"changeNumber\":123,\"ls\":[]}"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      lsData,
 				Channel:   "largesegments_channel",
 			})
 			return string(mainJSON)

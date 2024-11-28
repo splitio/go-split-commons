@@ -16,16 +16,16 @@ func TestLargeSegmentUpdateWorker(t *testing.T) {
 
 	var count int32
 	mockSync := &mocks.LocalSyncMock{
-		SynchronizeLargeSegmentCall: func(name string, till *int64) error {
+		SynchronizeLargeSegmentUpdateCall: func(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
 			atomic.AddInt32(&count, 1)
-			switch name {
+			switch lsRFDResponseDTO.Name {
 			case "ls1":
-				if *till != 101 {
-					t.Error("Unexpected till for ls1. ", *till)
+				if lsRFDResponseDTO.ChangeNumber != 100 {
+					t.Error("Unexpected CN for ls1. ", lsRFDResponseDTO.ChangeNumber)
 				}
 			case "ls2":
-				if *till != 201 {
-					t.Error("Unexpected till for ls2. ", *till)
+				if lsRFDResponseDTO.ChangeNumber != 200 {
+					t.Error("Unexpected CN for ls2. ", lsRFDResponseDTO.ChangeNumber)
 				}
 			default:
 				t.Error("Unexpected name")
@@ -39,9 +39,8 @@ func TestLargeSegmentUpdateWorker(t *testing.T) {
 		{
 			Name:             "ls1",
 			NotificationType: dtos.UpdateTypeLargeSegmentChange,
-			RFD:              &dtos.RFD{},
 			SpecVersion:      "1.0",
-			ChangeNumber:     101,
+			RFD:              &dtos.RFD{},
 		},
 	}
 
@@ -77,8 +76,8 @@ func TestLargeSegmentUpdateWorker(t *testing.T) {
 		{
 			Name:             "ls2",
 			NotificationType: dtos.UpdateTypeLargeSegmentChange,
-			RFD:              &dtos.RFD{},
 			SpecVersion:      "1.0",
+			RFD:              &dtos.RFD{},
 			ChangeNumber:     201,
 		},
 	}

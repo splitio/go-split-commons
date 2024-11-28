@@ -38,9 +38,16 @@ type internalLargeSegmentSync struct {
 	attempt         int
 }
 
+type internalUpdateResponse struct {
+	changeNumber int64
+	retry        bool
+	err          error
+}
+
 // Updater interface
 type Updater interface {
 	SynchronizeLargeSegment(name string, till *int64) (*int64, error)
+	SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*int64, error)
 	SynchronizeLargeSegments() (map[string]*int64, error)
 	IsCached(name string) bool
 }
@@ -156,19 +163,29 @@ func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) (*int64,
 	return &internalSyncResultCDNBypass.newChangeNumber, nil
 }
 
+func (u *UpdaterImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (*int64, error) {
+	resp := u.processUpdate(lsRFDResponseDTO)
+
+	if resp.retry {
+		return u.SynchronizeLargeSegment(lsRFDResponseDTO.Name, nil)
+	}
+
+	return &resp.changeNumber, resp.err
+}
+
 func (u *UpdaterImpl) attemptLargeSegmentSync(name string, fetchOptions *service.SegmentRequestParams) (internalLargeSegmentSync, error) {
 	internalBackoff := backoff.New(u.onDemandFetchBackoffBase, u.onDemandFetchBackoffMaxWait)
 	remainingAttempts := onDemandFetchBackoffMaxRetries
 	for {
 		remainingAttempts--
-		cn, retry, err := u.attemptSync(name, fetchOptions)
+		resp := u.attemptSync(name, fetchOptions)
 
-		if !retry {
-			return internalLargeSegmentSync{newChangeNumber: cn, successfulSync: true, attempt: remainingAttempts}, err
+		if !resp.retry {
+			return internalLargeSegmentSync{newChangeNumber: resp.changeNumber, successfulSync: true, attempt: remainingAttempts}, resp.err
 		}
 
 		if remainingAttempts <= 0 {
-			return internalLargeSegmentSync{newChangeNumber: cn, successfulSync: false, attempt: remainingAttempts}, err
+			return internalLargeSegmentSync{newChangeNumber: resp.changeNumber, successfulSync: false, attempt: remainingAttempts}, resp.err
 		}
 
 		howLong := internalBackoff.Next()
@@ -176,7 +193,7 @@ func (u *UpdaterImpl) attemptLargeSegmentSync(name string, fetchOptions *service
 	}
 }
 
-func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequestParams) (int64, bool, error) {
+func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequestParams) internalUpdateResponse {
 	u.logger.Debug(fmt.Sprintf("Synchronizing large segment %s", name))
 	currentSince := u.largeSegmentStorage.ChangeNumber(name)
 
@@ -186,42 +203,56 @@ func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequ
 		if httpError, ok := err.(*dtos.HTTPError); ok {
 			// TODO(maurosanz): record sync error telemetry
 			if httpError.Code == http.StatusNotModified {
-				return fetchOptions.ChangeNumber(), false, nil
+				return internalUpdateResponse{
+					changeNumber: fetchOptions.ChangeNumber(), retry: false}
 			}
 		}
-		return fetchOptions.ChangeNumber(), true, err
+		return internalUpdateResponse{changeNumber: fetchOptions.ChangeNumber(), retry: true, err: err}
 	}
 
-	return u.processNotificationType(name, lsRFDResponseDTO)
+	return u.processUpdate(lsRFDResponseDTO)
 }
 
-func (u *UpdaterImpl) processNotificationType(name string, lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) (int64, bool, error) {
+func (u *UpdaterImpl) processUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) internalUpdateResponse {
 	switch lsRFDResponseDTO.NotificationType {
 	case LargeSegmentEmpty:
-		u.logger.Debug(fmt.Sprintf("Processing LargeSegmentEmpty notification for %s", name))
-		u.largeSegmentStorage.Update(name, []string{}, lsRFDResponseDTO.ChangeNumber)
-		return lsRFDResponseDTO.ChangeNumber, false, nil
+		u.logger.Debug(fmt.Sprintf("Processing LargeSegmentEmpty notification for %s", lsRFDResponseDTO.Name))
+		u.largeSegmentStorage.Update(lsRFDResponseDTO.Name, []string{}, lsRFDResponseDTO.ChangeNumber)
+		return internalUpdateResponse{changeNumber: lsRFDResponseDTO.ChangeNumber, retry: false}
 	case LargeSegmentNewDefinition:
 		if lsRFDResponseDTO.RFD == nil {
-			return lsRFDResponseDTO.ChangeNumber, false, fmt.Errorf("something went wrong reading RequestForDownload data for %s", name)
+			return internalUpdateResponse{
+				changeNumber: lsRFDResponseDTO.ChangeNumber,
+				retry:        true,
+				err:          fmt.Errorf("something went wrong reading RequestForDownload data for %s", lsRFDResponseDTO.Name),
+			}
 		}
 
 		if lsRFDResponseDTO.RFD.Data.ExpiresAt <= time.Now().UnixMilli() {
-			u.logger.Warning(fmt.Sprintf("URL expired for %s", name))
-			return lsRFDResponseDTO.ChangeNumber, true, nil
+			u.logger.Warning(fmt.Sprintf("URL expired for %s", lsRFDResponseDTO.Name))
+			return internalUpdateResponse{changeNumber: lsRFDResponseDTO.ChangeNumber, retry: true}
 		}
 
-		ls, err := u.largeSegmentFetcher.DownloadFile(name, lsRFDResponseDTO)
+		data := lsRFDResponseDTO.RFD.Data
+		u.logger.Debug(fmt.Sprintf("Downloading LargeSegment file for %s.Size=%d,Format=%d,TotalKeys=%d,V=%s", lsRFDResponseDTO.Name, data.FileSize, data.Format, data.TotalKeys, lsRFDResponseDTO.SpecVersion))
+
+		ls, err := u.largeSegmentFetcher.DownloadFile(lsRFDResponseDTO.Name, lsRFDResponseDTO)
 		if err != nil {
 			u.logger.Warning(err.Error())
-			return lsRFDResponseDTO.ChangeNumber, true, nil
+			return internalUpdateResponse{changeNumber: lsRFDResponseDTO.ChangeNumber, retry: true}
 		}
 
-		u.largeSegmentStorage.Update(name, ls.Keys, ls.ChangeNumber)
-		return ls.ChangeNumber, false, nil
+		u.logger.Debug(fmt.Sprintf("Downloaded and parsed Large Segment file for %s successfully. Keys=%d,CN=%d", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber))
+
+		u.largeSegmentStorage.Update(lsRFDResponseDTO.Name, ls.Keys, ls.ChangeNumber)
+		return internalUpdateResponse{changeNumber: ls.ChangeNumber, retry: false}
 	}
 
-	return lsRFDResponseDTO.ChangeNumber, false, fmt.Errorf("unsopported Notification Type")
+	return internalUpdateResponse{
+		changeNumber: lsRFDResponseDTO.ChangeNumber,
+		retry:        false,
+		err:          fmt.Errorf("unsopported Notification Type"),
+	}
 }
 
 var _ Updater = (*UpdaterImpl)(nil)

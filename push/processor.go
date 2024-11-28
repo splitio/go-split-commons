@@ -70,17 +70,17 @@ func NewProcessor(
 
 	var largeSegment *LargeSegment
 	if lscfg.Enable {
-		if lscfg.QueueSize < largeSegmentQueueMinSize {
+		if lscfg.UpdateQueueSize < largeSegmentQueueMinSize {
 			return nil, errors.New("small size of largeSegmentQueueSize")
 		}
-		lsQueue := make(chan dtos.LargeSegmentChangeUpdate, lscfg.QueueSize)
-		lsWorker, err := NewLargeSegmentUpdateWorker(lsQueue, synchronizer, logger)
+		lsUpdateQueue := make(chan dtos.LargeSegmentChangeUpdate, lscfg.UpdateQueueSize)
+		lsWorker, err := NewLargeSegmentUpdateWorker(lsUpdateQueue, synchronizer, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error instantiating large segment worker: %w", err)
 		}
 
 		largeSegment = &LargeSegment{
-			queue:  lsQueue,
+			queue:  lsUpdateQueue,
 			worker: lsWorker,
 		}
 	}
