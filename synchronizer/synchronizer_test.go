@@ -1280,7 +1280,7 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	splitTasks := SplitTasks{
 		SegmentSyncTask:      tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:        tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
-		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger),
+		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger, appMonitorMock),
 	}
 	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 

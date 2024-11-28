@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/healthcheck/application"
+	hc "github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
@@ -61,6 +61,7 @@ type UpdaterImpl struct {
 	runtimeTelemetry            storage.TelemetryRuntimeProducer
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
+	hcMonitor                   hc.MonitorProducerInterface
 }
 
 // NewLargeSegmentUpdater creates new large segment synchronizer for processing larrge segment updates
@@ -70,7 +71,7 @@ func NewLargeSegmentUpdater(
 	largeSegmentFetcher service.LargeSegmentFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
-	hcMonitor application.MonitorProducerInterface,
+	hcMonitor hc.MonitorProducerInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -80,6 +81,7 @@ func NewLargeSegmentUpdater(
 		runtimeTelemetry:            runtimeTelemetry,
 		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
+		hcMonitor:                   hcMonitor,
 	}
 }
 
@@ -90,6 +92,7 @@ func (s *UpdaterImpl) IsCached(name string) bool {
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 	lsNames := u.splitStorage.LargeSegmentNames().List()
+	u.hcMonitor.NotifyEvent(hc.LargeSegments)
 	wg := sync.WaitGroup{}
 	wg.Add(len(lsNames))
 	failedLargeSegments := set.NewThreadSafeSet()
@@ -132,6 +135,8 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 
 func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) (*int64, error) {
 	fetchOptions := service.MakeSegmentRequestParams()
+	u.hcMonitor.NotifyEvent(hc.LargeSegments)
+
 	currentSince := u.largeSegmentStorage.ChangeNumber(name)
 	if till != nil && *till <= currentSince { // the passed till is less than change_number, no need to perform updates
 		return nil, nil

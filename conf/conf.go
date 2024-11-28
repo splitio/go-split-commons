@@ -97,4 +97,5 @@ type LargeSegmentConfig struct {
 	Workers         int
 	UpdateQueueSize int64
 	QueueSize       int
+	RefreshRate     int
 }

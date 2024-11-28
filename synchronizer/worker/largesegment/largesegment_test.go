@@ -73,9 +73,15 @@ func TestSynchronizeLargeSegmentHappyPath(t *testing.T) {
 		},
 	}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
+
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
 
 	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 	updater.onDemandFetchBackoffBase = 1
@@ -92,6 +98,10 @@ func TestSynchronizeLargeSegmentHappyPath(t *testing.T) {
 
 	if fetcherCount != 1 {
 		t.Error("fetcherCount should be 2. Actual: ", fetcherCount)
+	}
+
+	if eventCall != 1 {
+		t.Error("eventCall should be 2. Actual: ", eventCall)
 	}
 
 	if largeSegmentStorage.Count() != 1 {
@@ -128,8 +138,15 @@ func TestSynchronizeLargeURLExpiredCDNBypass(t *testing.T) {
 			}, nil
 		},
 	}
+
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -149,6 +166,10 @@ func TestSynchronizeLargeURLExpiredCDNBypass(t *testing.T) {
 
 	if atomic.LoadInt64(&rfeCount) != 6 {
 		t.Error("fetcherCount should be 6. Actual: ", atomic.LoadInt64(&rfeCount))
+	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 2. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 
 	if largeSegmentStorage.Count() != 1 {
@@ -187,8 +208,14 @@ func TestSynchronizeLargeURLExpiredCDNBypassLimit(t *testing.T) {
 			}, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -208,6 +235,10 @@ func TestSynchronizeLargeURLExpiredCDNBypassLimit(t *testing.T) {
 
 	if atomic.LoadInt64(&rfeCount) != 10 {
 		t.Error("fetcherCount should be 10. Actual: ", atomic.LoadInt64(&rfeCount))
+	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 
 	if largeSegmentStorage.Count() != 0 {
@@ -250,8 +281,14 @@ func TestLargeSegmentSyncConcurrencyLimit(t *testing.T) {
 			}, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
 	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
@@ -275,6 +312,10 @@ func TestLargeSegmentSyncConcurrencyLimit(t *testing.T) {
 	if lsCount != 100 {
 		t.Error("LS Count should be 100. Actual: ", lsCount)
 	}
+
+	if atomic.LoadInt64(&eventCall) != 101 {
+		t.Error("eventCall should be 101. Actual: ", atomic.LoadInt64(&eventCall))
+	}
 }
 
 func TestSynchronizeLargeSegmentFileNotModified(t *testing.T) {
@@ -287,8 +328,14 @@ func TestSynchronizeLargeSegmentFileNotModified(t *testing.T) {
 			return nil, &dtos.HTTPError{Code: http.StatusNotModified, Message: "[304] Not Modified"}
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -312,6 +359,10 @@ func TestSynchronizeLargeSegmentFileNotModified(t *testing.T) {
 	if largeSegmentStorage.Count() != 0 {
 		t.Error("Large Segment count should be 0. Actual: ", largeSegmentStorage.Count())
 	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
+	}
 }
 
 func TestSynchronizeLargeSegmentLSEmptyNotification(t *testing.T) {
@@ -328,8 +379,14 @@ func TestSynchronizeLargeSegmentLSEmptyNotification(t *testing.T) {
 			return dto, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -353,6 +410,10 @@ func TestSynchronizeLargeSegmentLSEmptyNotification(t *testing.T) {
 	if largeSegmentStorage.Count() != 1 {
 		t.Error("Large Segment count should be 1. Actual: ", largeSegmentStorage.Count())
 	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
+	}
 }
 
 func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
@@ -369,8 +430,14 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 			return dto, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -393,6 +460,10 @@ func TestSynchronizeLargeSegmentNewDefWithRFDnil(t *testing.T) {
 
 	if largeSegmentStorage.Count() != 0 {
 		t.Error("Large Segment count should be 0. Actual: ", largeSegmentStorage.Count())
+	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 }
 
@@ -446,8 +517,14 @@ func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 			return nil, dtos.HTTPError{Code: http.StatusInternalServerError, Message: "[500]"}
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	splitMockStorage := mocks.MockSplitStorage{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
@@ -474,6 +551,10 @@ func TestSynchronizeLargeSegmentDownloadFail(t *testing.T) {
 
 	if largeSegmentStorage.Count() != 1 {
 		t.Error("Large Segment count should be 1. Actual: ", largeSegmentStorage.Count())
+	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 }
 
@@ -516,8 +597,14 @@ func TestLargeSegmentsSync(t *testing.T) {
 			}, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
 	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
@@ -542,6 +629,10 @@ func TestLargeSegmentsSync(t *testing.T) {
 	}
 	if *result[ls30] != 30 {
 		t.Error("ChangeNumber should be 30. Actual: ", *result[ls30])
+	}
+
+	if atomic.LoadInt64(&eventCall) != 4 {
+		t.Error("eventCall should be 4. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 }
 
@@ -570,8 +661,14 @@ func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
 			}, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
@@ -592,6 +689,9 @@ func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
 
 	if atomic.LoadInt32(&downloadCall) != 1 {
 		t.Error("DownloadCall should be 1. Actual: ", atomic.LoadInt32(&downloadCall))
+	}
+	if atomic.LoadInt64(&eventCall) != 0 {
+		t.Error("eventCall should be 0. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 }
 
@@ -678,8 +778,14 @@ func TestSynchronizeLargeSegmentUpdateWithUrlExpired(t *testing.T) {
 			}, nil
 		},
 	}
+	var eventCall int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&eventCall, 1)
+		},
+	}
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{}
 	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 	updater := NewLargeSegmentUpdater(splitMockStorage, largeSegmentStorage, fetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
@@ -704,5 +810,9 @@ func TestSynchronizeLargeSegmentUpdateWithUrlExpired(t *testing.T) {
 	}
 	if atomic.LoadInt32(&fetchCall) != 1 {
 		t.Error("fetchCall should be 1. Actual: ", atomic.LoadInt32(&fetchCall))
+	}
+
+	if atomic.LoadInt64(&eventCall) != 1 {
+		t.Error("eventCall should be 1. Actual: ", atomic.LoadInt64(&eventCall))
 	}
 }

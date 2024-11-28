@@ -26,7 +26,9 @@ func TestSynchronizerErr(t *testing.T) {
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
 		StopPeriodicDataRecordingCall:  func() {},
-		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 	}
 	logger := logging.NewLogger(nil)
 	cfg := conf.GetDefaultAdvancedConfig()
@@ -62,7 +64,9 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -138,7 +142,9 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	startPeriodicRecordingCount := int32(0)
 	stopPeriodicRecordingCount := int32(0)
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return errors.New("some error")
@@ -211,7 +217,9 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -342,7 +350,9 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -491,7 +501,9 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
 			return nil
@@ -630,7 +642,9 @@ func TestStreamingPaused(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		},
 		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
@@ -714,7 +728,9 @@ func TestStreamingPaused(t *testing.T) {
 
 func TestOccupancyFlicker(t *testing.T) {
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 2 * time.Minute },
+		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
+			return 1 * time.Minute, 2 * time.Minute, 2 * time.Minute
+		},
 		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
 		StopPeriodicFetchingCall:       func() {},
@@ -806,6 +822,11 @@ func TestOccupancyFlicker(t *testing.T) {
 		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
 	}
 
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.LargeSegments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
 	// -------
 
 	// Second period update (when occupancy goes to 0)
@@ -821,6 +842,12 @@ func TestOccupancyFlicker(t *testing.T) {
 		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
 	}
 
+	expected = 2*time.Minute + fetchTaskTolerance
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.LargeSegments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
 	// -----
 
 	// Third updates (occupany back to >0)
@@ -832,6 +859,11 @@ func TestOccupancyFlicker(t *testing.T) {
 
 	p, ok = getFromChan(periodChanges)
 	if !ok || p.ct != application.Segments || !inRange(p.newp, expected) {
+		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
+	}
+
+	p, ok = getFromChan(periodChanges)
+	if !ok || p.ct != application.LargeSegments || !inRange(p.newp, expected) {
 		t.Errorf("wrong initial period change. found: %t type: %d, new period: %d, expected: %d", ok, p.ct, p.newp, expected)
 	}
 
