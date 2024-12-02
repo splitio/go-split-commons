@@ -1,4 +1,4 @@
-6.0.2 (Nov xx, 2024)
+6.0.2 (Dec 2, 2024)
 - Adding HTTPLargeSegmentsFetcher implementation.
 - Adding MembershipsResponseDTO.
 - Adding LargeSegmentDTO.
