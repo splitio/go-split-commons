@@ -1054,9 +1054,6 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 		LargeSegmentUpdater: &lsUpdater,
 	}
 
-	// Tasks
-	splitTasks := SplitTasks{}
-
 	// Config
 	cfn := conf.AdvancedConfig{
 		LargeSegment: conf.LargeSegmentConfig{
@@ -1066,7 +1063,7 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 	}
 
 	// Sync
-	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync := NewSynchronizer(cfn, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
 	time.Sleep(time.Millisecond * 1000)

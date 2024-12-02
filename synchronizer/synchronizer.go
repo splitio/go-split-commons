@@ -15,6 +15,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/sync"
 )
 
 // SplitTasks struct for tasks
@@ -70,6 +71,7 @@ type SynchronizerImpl struct {
 	httpTiemoutSecs          int
 	largeSegmentLazyLoad     bool
 	largeSegmentsRefreshRate int
+	initFlag                 *sync.AtomicBool
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -92,6 +94,7 @@ func NewSynchronizer(
 		httpTiemoutSecs:          confAdvanced.HTTPTimeout,
 		largeSegmentLazyLoad:     confAdvanced.LargeSegment.LazyLoad,
 		largeSegmentsRefreshRate: confAdvanced.LargeSegment.RefreshRate,
+		initFlag:                 sync.NewAtomicBool(true),
 	}
 }
 
@@ -292,7 +295,8 @@ func (s *SynchronizerImpl) filterCachedLargeSegments(referencedLargeSegments []s
 
 func (s *SynchronizerImpl) synchronizeLargeSegments() error {
 	if s.workers.LargeSegmentUpdater != nil {
-		if s.largeSegmentLazyLoad {
+		if s.largeSegmentLazyLoad && s.initFlag.IsSet() {
+			s.initFlag.Unset()
 			go s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
 			return nil
 		}

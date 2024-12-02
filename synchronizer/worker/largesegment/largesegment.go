@@ -15,6 +15,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+	tSync "github.com/splitio/go-toolkit/v5/sync"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -62,6 +63,7 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
 	hcMonitor                   hc.MonitorProducerInterface
+	syncInProgress              *tSync.AtomicBool
 }
 
 // NewLargeSegmentUpdater creates new large segment synchronizer for processing larrge segment updates
@@ -82,6 +84,7 @@ func NewLargeSegmentUpdater(
 		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 		hcMonitor:                   hcMonitor,
+		syncInProgress:              tSync.NewAtomicBool(false),
 	}
 }
 
@@ -91,6 +94,11 @@ func (s *UpdaterImpl) IsCached(name string) bool {
 }
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
+	if !u.syncInProgress.TestAndSet() {
+		u.logger.Debug("SynchronizeLargeSegments task is already running.")
+		return map[string]*int64{}, nil
+	}
+
 	lsNames := u.splitStorage.LargeSegmentNames().List()
 	u.hcMonitor.NotifyEvent(hc.LargeSegments)
 	wg := sync.WaitGroup{}
@@ -126,6 +134,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 	}
 	wg.Wait()
 
+	u.syncInProgress.Unset()
 	if failedLargeSegments.Size() > 0 {
 		return results, fmt.Errorf("the following errors happened when synchronizing large segments: %v", errorsToPrint.Error())
 	}
@@ -153,7 +162,8 @@ func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) (*int64,
 		return &internalLargeSegmentSync.newChangeNumber, nil
 	}
 
-	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, fetchOptions.WithTill(time.Now().UnixMilli()))
+	withCDNBypass := service.MakeSegmentRequestParams().WithTill(time.Now().UnixMilli()) // Set flag for bypassing CDN
+	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, withCDNBypass)
 	if err != nil {
 		return nil, err
 	}
@@ -239,15 +249,17 @@ func (u *UpdaterImpl) processUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDRespon
 		}
 
 		data := lsRFDResponseDTO.RFD.Data
+		before := time.Now()
 		u.logger.Debug(fmt.Sprintf("Downloading LargeSegment file for %s.Size=%d,Format=%d,TotalKeys=%d,V=%s", lsRFDResponseDTO.Name, data.FileSize, data.Format, data.TotalKeys, lsRFDResponseDTO.SpecVersion))
 
 		ls, err := u.largeSegmentFetcher.DownloadFile(lsRFDResponseDTO.Name, lsRFDResponseDTO)
 		if err != nil {
-			u.logger.Warning(err.Error())
+			u.logger.Warning(fmt.Sprintf("%s. %s", lsRFDResponseDTO.RFD.Params.URL, err.Error()))
 			return internalUpdateResponse{changeNumber: lsRFDResponseDTO.ChangeNumber, retry: true}
 		}
 
-		u.logger.Debug(fmt.Sprintf("Downloaded and parsed Large Segment file for %s successfully. Keys=%d,CN=%d", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber))
+		duration := time.Since(before).Seconds()
+		u.logger.Debug(fmt.Sprintf("Downloaded and parsed Large Segment file for %s successfully. Keys=%d,CN=%d,Time=%vs", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber, duration))
 
 		u.largeSegmentStorage.Update(lsRFDResponseDTO.Name, ls.Keys, ls.ChangeNumber)
 		return internalUpdateResponse{changeNumber: ls.ChangeNumber, retry: false}
