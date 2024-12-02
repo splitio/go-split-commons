@@ -318,6 +318,13 @@ func (r *SplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	return segmentNames
 }
 
+// LargeSegmentNames returns a slice with the names of all large segments referenced in splits
+func (r *SplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
+	// TODO(sanzmauro): add split storage implementation
+	segments := set.NewSet()
+	return segments
+}
+
 // SetChangeNumber sets the till value belong to segmentName
 func (r *SplitStorage) SetChangeNumber(changeNumber int64) error {
 	return r.client.Set(KeySplitTill, changeNumber, 0)

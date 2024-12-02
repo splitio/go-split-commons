@@ -14,6 +14,37 @@
   },
   "conditions": [
     {
+      "conditionType": "WHITELIST",
+      "matcherGroup": {
+        "combiner": "AND",
+        "matchers": [
+          {
+            "keySelector": null,
+            "matcherType": "IN_LARGE_SEGMENT",
+            "negate": false,
+            "userDefinedSegmentMatcherData": null,
+            "whitelistMatcherData": null,
+            "unaryNumericMatcherData": null,
+            "betweenMatcherData": null,
+            "dependencyMatcherData": null,
+            "booleanMatcherData": null,
+            "stringMatcherData": null,
+            "betweenStringMatcherData": null,
+            "userDefinedLargeSegmentMatcherData": {
+              "largeSegmentName": "mauro_sanz_ls"
+            }
+          }
+        ]
+      },
+      "partitions": [
+        {
+          "treatment": "gaston_tkm",
+          "size": 100
+        }
+      ],
+      "label": "whitelisted large segment"
+    },
+    {
       "conditionType": "ROLLOUT",
       "matcherGroup": {
         "combiner": "AND",
