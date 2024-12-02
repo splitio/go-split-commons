@@ -8,15 +8,17 @@ import (
 
 // MockSynchronizer mock implementation
 type MockSynchronizer struct {
-	SyncAllCall                    func() error
-	SynchronizeFeatureFlagsCall    func(ffChange *dtos.SplitChangeUpdate) error
-	SynchronizeSegmentCall         func(segmentName string, till *int64) error
-	StartPeriodicFetchingCall      func()
-	StopPeriodicFetchingCall       func()
-	StartPeriodicDataRecordingCall func()
-	StopPeriodicDataRecordingCall  func()
-	LocalKillCall                  func(string, string, int64)
-	RefreshRatesCall               func() (time.Duration, time.Duration)
+	SyncAllCall                       func() error
+	SynchronizeFeatureFlagsCall       func(ffChange *dtos.SplitChangeUpdate) error
+	SynchronizeSegmentCall            func(segmentName string, till *int64) error
+	StartPeriodicFetchingCall         func()
+	StopPeriodicFetchingCall          func()
+	StartPeriodicDataRecordingCall    func()
+	StopPeriodicDataRecordingCall     func()
+	LocalKillCall                     func(string, string, int64)
+	RefreshRatesCall                  func() (time.Duration, time.Duration)
+	SynchronizeLargeSegmentCall       func(name string, till *int64) error
+	SynchronizeLargeSegmentUpdateCall func(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
 }
 
 // SyncAll mock
@@ -62,4 +64,14 @@ func (m *MockSynchronizer) RefreshRates() (time.Duration, time.Duration) {
 // RefreshRates call
 func (m *MockSynchronizer) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	return m.SynchronizeFeatureFlagsCall(ffChange)
+}
+
+// SynchronizeSegment mock
+func (m *MockSynchronizer) SynchronizeLargeSegment(name string, till *int64) error {
+	return m.SynchronizeLargeSegmentCall(name, till)
+}
+
+// SynchronizeLargeSegmentUpdate call
+func (m *MockSynchronizer) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
+	return m.SynchronizeLargeSegmentUpdateCall(lsRFDResponseDTO)
 }

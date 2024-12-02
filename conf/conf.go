@@ -87,4 +87,15 @@ type AdvancedConfig struct {
 	FlagSetsFilter         []string
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
+	LargeSegment           *LargeSegmentConfig
+}
+
+type LargeSegmentConfig struct {
+	Enable          bool
+	Version         string
+	LazyLoad        bool
+	Workers         int
+	UpdateQueueSize int64
+	QueueSize       int
+	RefreshRate     int
 }
