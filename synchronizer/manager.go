@@ -223,9 +223,6 @@ func (s *ManagerImpl) startPolling() {
 	splitRate, segmentRate := s.synchronizer.RefreshRates()
 	s.hcMonitor.Reset(hc.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
 	s.hcMonitor.Reset(hc.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
-	fmt.Println("toma que toma")
-	fmt.Println(fetchTaskTolerance.Seconds())
-	fmt.Println(s.largeSegmentRefreshRate)
 	s.hcMonitor.Reset(hc.LargeSegments, int(fetchTaskTolerance.Seconds()+s.largeSegmentRefreshRate.Seconds()))
 }
 
