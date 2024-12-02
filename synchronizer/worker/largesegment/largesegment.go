@@ -98,6 +98,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 		u.logger.Debug("SynchronizeLargeSegments task is already running.")
 		return map[string]*int64{}, nil
 	}
+	defer u.syncInProgress.Unset()
 
 	lsNames := u.splitStorage.LargeSegmentNames().List()
 	u.hcMonitor.NotifyEvent(hc.LargeSegments)
@@ -134,7 +135,6 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 	}
 	wg.Wait()
 
-	u.syncInProgress.Unset()
 	if failedLargeSegments.Size() > 0 {
 		return results, fmt.Errorf("the following errors happened when synchronizing large segments: %v", errorsToPrint.Error())
 	}
