@@ -47,17 +47,18 @@ type Manager interface {
 
 // ManagerImpl struct
 type ManagerImpl struct {
-	synchronizer     Synchronizer
-	logger           logging.LoggerInterface
-	config           conf.AdvancedConfig
-	pushManager      push.Manager
-	managerStatus    chan int
-	streamingStatus  chan int64
-	operationMode    int32
-	lifecycle        lifecycle.Manager
-	backoff          backoff.Interface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        hc.MonitorProducerInterface
+	synchronizer            Synchronizer
+	logger                  logging.LoggerInterface
+	config                  conf.AdvancedConfig
+	pushManager             push.Manager
+	managerStatus           chan int
+	streamingStatus         chan int64
+	operationMode           int32
+	lifecycle               lifecycle.Manager
+	backoff                 backoff.Interface
+	runtimeTelemetry        storage.TelemetryRuntimeProducer
+	hcMonitor               hc.MonitorProducerInterface
+	largeSegmentRefreshRate time.Duration
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -86,6 +87,11 @@ func NewSynchronizerManager(
 		runtimeTelemetry: runtimeTelemetry,
 		hcMonitor:        hcMonitor,
 	}
+
+	if config.LargeSegment != nil {
+		manager.largeSegmentRefreshRate = time.Duration(config.LargeSegment.RefreshRate) * time.Second
+	}
+
 	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
 		streamingStatus := make(chan int64, 1000)
@@ -214,10 +220,10 @@ func (s *ManagerImpl) startPolling() {
 	s.synchronizer.StartPeriodicFetching()
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling))
 
-	splitRate, segmentRate, lsRate := s.synchronizer.RefreshRates()
+	splitRate, segmentRate := s.synchronizer.RefreshRates()
 	s.hcMonitor.Reset(hc.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
 	s.hcMonitor.Reset(hc.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
-	s.hcMonitor.Reset(hc.LargeSegments, int(fetchTaskTolerance.Seconds()+lsRate.Seconds()))
+	s.hcMonitor.Reset(hc.LargeSegments, int(fetchTaskTolerance.Seconds()+s.largeSegmentRefreshRate.Seconds()))
 }
 
 func (s *ManagerImpl) stopPolling() {

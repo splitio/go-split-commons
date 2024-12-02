@@ -95,8 +95,8 @@ func (s *Local) StopPeriodicDataRecording() {
 }
 
 // RefreshRates returns anything
-func (s *Local) RefreshRates() (time.Duration, time.Duration, time.Duration) {
-	return 10 * time.Minute, 10 * time.Minute, 10 * time.Minute
+func (s *Local) RefreshRates() (time.Duration, time.Duration) {
+	return 10 * time.Minute, 10 * time.Minute
 }
 
 // SynchronizeSegment syncs segment

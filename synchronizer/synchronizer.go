@@ -53,25 +53,24 @@ type Synchronizer interface {
 	StopPeriodicFetching()
 	StartPeriodicDataRecording()
 	StopPeriodicDataRecording()
-	RefreshRates() (splits time.Duration, segments time.Duration, ls time.Duration)
+	RefreshRates() (splits time.Duration, segments time.Duration)
 	SynchronizeLargeSegment(name string, till *int64) error
 	SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
 }
 
 // SynchronizerImpl implements Synchronizer
 type SynchronizerImpl struct {
-	splitTasks               SplitTasks
-	workers                  Workers
-	logger                   logging.LoggerInterface
-	inMememoryFullQueue      chan string
-	impressionBulkSize       int64
-	eventBulkSize            int64
-	splitsRefreshRate        int
-	segmentsRefreshRate      int
-	httpTiemoutSecs          int
-	largeSegmentLazyLoad     bool
-	largeSegmentsRefreshRate int
-	initFlag                 *sync.AtomicBool
+	splitTasks           SplitTasks
+	workers              Workers
+	logger               logging.LoggerInterface
+	inMememoryFullQueue  chan string
+	impressionBulkSize   int64
+	eventBulkSize        int64
+	splitsRefreshRate    int
+	segmentsRefreshRate  int
+	httpTiemoutSecs      int
+	largeSegmentLazyLoad bool
+	initFlag             *sync.AtomicBool
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -82,20 +81,24 @@ func NewSynchronizer(
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
 ) Synchronizer {
-	return &SynchronizerImpl{
-		impressionBulkSize:       confAdvanced.ImpressionsBulkSize,
-		eventBulkSize:            confAdvanced.EventsBulkSize,
-		splitTasks:               splitTasks,
-		workers:                  workers,
-		logger:                   logger,
-		inMememoryFullQueue:      inMememoryFullQueue,
-		splitsRefreshRate:        confAdvanced.SplitsRefreshRate,
-		segmentsRefreshRate:      confAdvanced.SegmentsRefreshRate,
-		httpTiemoutSecs:          confAdvanced.HTTPTimeout,
-		largeSegmentLazyLoad:     confAdvanced.LargeSegment.LazyLoad,
-		largeSegmentsRefreshRate: confAdvanced.LargeSegment.RefreshRate,
-		initFlag:                 sync.NewAtomicBool(true),
+	sync := &SynchronizerImpl{
+		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
+		eventBulkSize:       confAdvanced.EventsBulkSize,
+		splitTasks:          splitTasks,
+		workers:             workers,
+		logger:              logger,
+		inMememoryFullQueue: inMememoryFullQueue,
+		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
+		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
+		httpTiemoutSecs:     confAdvanced.HTTPTimeout,
+		initFlag:            sync.NewAtomicBool(true),
 	}
+
+	if confAdvanced.LargeSegment != nil {
+		sync.largeSegmentLazyLoad = confAdvanced.LargeSegment.LazyLoad
+	}
+
+	return sync
 }
 
 // SyncAll syncs splits and segments
@@ -193,10 +196,9 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 }
 
 // RefreshRates returns the refresh rates of the splits & segment tasks
-func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.Duration, ls time.Duration) {
+func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.Duration) {
 	return time.Duration(s.splitsRefreshRate) * time.Second,
-		time.Duration(s.segmentsRefreshRate) * time.Second,
-		time.Duration(s.largeSegmentsRefreshRate) * time.Second
+		time.Duration(s.segmentsRefreshRate) * time.Second
 }
 
 // LocalKill locally kills a split

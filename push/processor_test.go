@@ -29,7 +29,7 @@ func TestProcessor(t *testing.T) {
 			}
 		},
 	}
-	processor, err := NewProcessor(5000, 5000, syncMock, logger, conf.LargeSegmentConfig{
+	processor, err := NewProcessor(5000, 5000, syncMock, logger, &conf.LargeSegmentConfig{
 		Enable:          true,
 		UpdateQueueSize: 5000,
 	})

@@ -402,7 +402,7 @@ func TestFetchCsvFormatHappyPath(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -450,7 +450,7 @@ func TestFetchCsvMultipleColumns(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -495,7 +495,7 @@ func TestFetchCsvFormatWithOtherVersion(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -540,7 +540,7 @@ func TestFetchUnknownFormat(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -576,7 +576,7 @@ func TestFetchAPIError(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -612,7 +612,7 @@ func TestFetchDownloadServerError(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
@@ -657,7 +657,7 @@ func TestFetchWithPost(t *testing.T) {
 		"api-key",
 		conf.AdvancedConfig{
 			SdkURL: ts.URL,
-			LargeSegment: conf.LargeSegmentConfig{
+			LargeSegment: &conf.LargeSegmentConfig{
 				Version: specs.LARGESEGMENT_V10,
 				Enable:  true,
 			},
