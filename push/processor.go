@@ -47,7 +47,7 @@ func NewProcessor(
 	segmentQueueSize int64,
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
-	lscfg conf.LargeSegmentConfig,
+	lscfg *conf.LargeSegmentConfig,
 ) (*ProcessorImpl, error) {
 	if segmentQueueSize < segmentQueueMinSize {
 		return nil, errors.New("small size of segmentQueue")
@@ -69,7 +69,7 @@ func NewProcessor(
 	}
 
 	var largeSegment *LargeSegment
-	if lscfg.Enable {
+	if lscfg != nil && lscfg.Enable {
 		if lscfg.UpdateQueueSize < largeSegmentQueueMinSize {
 			return nil, errors.New("small size of largeSegmentQueueSize")
 		}

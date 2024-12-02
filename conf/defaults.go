@@ -57,7 +57,7 @@ func GetDefaultAdvancedConfig() AdvancedConfig {
 		SdkURL:                 defaultSdkURL,
 		StreamingServiceURL:    defaultStreamingServiceURL,
 		TelemetryServiceURL:    defaultTelemetryServiceURL,
-		LargeSegment: LargeSegmentConfig{
+		LargeSegment: &LargeSegmentConfig{
 			Enable:          defaultLargeSegmentEnabled,
 			UpdateQueueSize: defaultLargeSegmentUpdateQueueSize,
 			LazyLoad:        defaultLargeSegmentLazyLoad,

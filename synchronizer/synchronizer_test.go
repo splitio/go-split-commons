@@ -1056,7 +1056,7 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 
 	// Config
 	cfn := conf.AdvancedConfig{
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:   true,
 			LazyLoad: true,
 		},
@@ -1094,7 +1094,7 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	splitTasks := SplitTasks{}
 
 	cfn := conf.AdvancedConfig{
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:   true,
 			LazyLoad: false,
 		},
@@ -1240,7 +1240,7 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	advanced := conf.AdvancedConfig{
 		SegmentQueueSize: 50,
 		SegmentWorkers:   5,
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:    true,
 			QueueSize: 10,
 			Workers:   5,

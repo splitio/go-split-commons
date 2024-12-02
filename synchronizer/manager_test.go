@@ -26,8 +26,8 @@ func TestSynchronizerErr(t *testing.T) {
 		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
 		StopPeriodicDataRecordingCall:  func() {},
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 	}
 	logger := logging.NewLogger(nil)
@@ -64,8 +64,8 @@ func TestStreamingDisabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
@@ -142,8 +142,8 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	startPeriodicRecordingCount := int32(0)
 	stopPeriodicRecordingCount := int32(0)
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
@@ -217,8 +217,8 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
@@ -350,8 +350,8 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 	stopPeriodicRecordingCount := int32(0)
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
@@ -501,8 +501,8 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall: func() error {
 			atomic.AddInt32(&syncAllCount, 1)
@@ -642,8 +642,8 @@ func TestStreamingPaused(t *testing.T) {
 	called := 0
 
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 1 * time.Minute, 1 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
 		},
 		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
@@ -728,8 +728,8 @@ func TestStreamingPaused(t *testing.T) {
 
 func TestOccupancyFlicker(t *testing.T) {
 	syncMock := &mocks.MockSynchronizer{
-		RefreshRatesCall: func() (time.Duration, time.Duration, time.Duration) {
-			return 1 * time.Minute, 2 * time.Minute, 2 * time.Minute
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 2 * time.Minute
 		},
 		SyncAllCall:                    func() error { return nil },
 		StartPeriodicFetchingCall:      func() {},
@@ -743,6 +743,7 @@ func TestOccupancyFlicker(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
+	cfg.LargeSegment.RefreshRate = int((2 * time.Minute).Seconds())
 	splitStorage := &storageMocks.MockSplitStorage{}
 	telemetryStorage := storageMocks.MockTelemetryStorage{RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {}}
 	authClient := &apiMocks.MockAuthClient{}
