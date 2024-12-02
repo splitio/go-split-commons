@@ -17,6 +17,7 @@ import (
 	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory"
 	storageMock "github.com/splitio/go-split-commons/v6/storage/mocks"
+	syncMocks "github.com/splitio/go-split-commons/v6/synchronizer/mocks"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/event"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
@@ -248,6 +249,7 @@ func TestSyncAllOk(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
+
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
 		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
@@ -1031,4 +1033,331 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	if r := atomic.LoadInt64(&recordUpdateCall); r != 1 {
 		t.Error("should haven been called. got: ", r)
 	}
+}
+
+// Large Segment test cases
+func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
+	// Updaters
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SynchronizeSegments").Return(map[string]segment.UpdateResult{}, nil).Once()
+
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegments").Return(map[string]*int64{}, nil).Once()
+
+	// Workers
+	workers := Workers{
+		SegmentUpdater:      &segmentUpdater,
+		SplitUpdater:        &splitUpdater,
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	// Config
+	cfn := conf.AdvancedConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
+			Enable:   true,
+			LazyLoad: true,
+		},
+	}
+
+	// Sync
+	sync := NewSynchronizer(cfn, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.SyncAll()
+
+	time.Sleep(time.Millisecond * 1000)
+
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SynchronizeSegments").Return(map[string]segment.UpdateResult{}, nil).Once()
+
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegments").Return(map[string]*int64{}, nil).Once()
+
+	// Workers
+	workers := Workers{
+		SegmentUpdater:      &segmentUpdater,
+		SplitUpdater:        &splitUpdater,
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	// Tasks
+	splitTasks := SplitTasks{}
+
+	cfn := conf.AdvancedConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
+			Enable:   true,
+			LazyLoad: false,
+		},
+	}
+	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.SyncAll()
+
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegment(t *testing.T) {
+	lsName := "ls_test"
+
+	// Updaters
+	var cn *int64
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", lsName, (*int64)(nil)).Return(cn, nil).Once()
+
+	// Workers
+	workers := Workers{LargeSegmentUpdater: &lsUpdater}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegment(lsName, nil)
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentWithoutUpdaters(t *testing.T) {
+	lsName := "ls_test"
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegment(lsName, nil)
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentsWithoutUpdaters(t *testing.T) {
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.(*SynchronizerImpl).synchronizeLargeSegments()
+	if err != nil {
+		t.Error("Error should be nil")
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestFilterCachedLargeSegmentsWithoutUpdater(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+
+	// Workers
+	workers := Workers{}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	filtered := sync.(*SynchronizerImpl).filterCachedLargeSegments(lsNames)
+	if len(filtered) != 0 {
+		t.Error("filtered len should be 0. Actual: ", len(filtered))
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestFilterCachedLargeSegments(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("IsCached", "ls1").Return(true).Once()
+	lsUpdater.On("IsCached", "ls2").Return(false).Once()
+	lsUpdater.On("IsCached", "ls3").Return(true).Once()
+	// Workers
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	filtered := sync.(*SynchronizerImpl).filterCachedLargeSegments(lsNames)
+	if len(filtered) != 1 {
+		t.Error("filtered len should be 1. Actual: ", len(filtered))
+	}
+	if filtered[0] != "ls2" {
+		t.Error("Filtered name should be ls2. Actual: ", filtered[0])
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentsAfterSplitSync(t *testing.T) {
+	lsNames := []string{"ls1", "ls2", "ls3"}
+
+	// Updaters
+	var cn *int64
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("IsCached", "ls1").Return(false).Once()
+	lsUpdater.On("IsCached", "ls2").Return(false).Once()
+	lsUpdater.On("IsCached", "ls3").Return(false).Once()
+
+	// Workers
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync.(*SynchronizerImpl).synchronizeLargeSegmentsAfterSplitSync(lsNames)
+
+	time.Sleep(time.Millisecond * 1000)
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	advanced := conf.AdvancedConfig{
+		SegmentQueueSize: 50,
+		SegmentWorkers:   5,
+		LargeSegment: &conf.LargeSegmentConfig{
+			Enable:    true,
+			QueueSize: 10,
+			Workers:   5,
+		},
+	}
+
+	var segmentUpdater syncMocks.SegmentUpdaterMock
+	segmentUpdater.On("SegmentNames").Return(set.NewSet("segment1", "segment2").List()).Once()
+	segmentUpdater.On("SynchronizeSegment", "segment1", (*int64)(nil)).Return(map[string]segment.UpdateResult{}, nil).Once()
+	segmentUpdater.On("SynchronizeSegment", "segment2", (*int64)(nil)).Return(map[string]segment.UpdateResult{}, nil).Once()
+
+	var splitUpdater syncMocks.SplitUpdaterMock
+	splitUpdater.On("SynchronizeSplits", (*int64)(nil)).Return(&split.UpdateResult{}, nil).Once()
+
+	var cn *int64
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegment", "ls1", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls2", (*int64)(nil)).Return(cn, nil).Once()
+	lsUpdater.On("SynchronizeLargeSegment", "ls3", (*int64)(nil)).Return(cn, nil).Once()
+
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+		SplitUpdater:        &splitUpdater,
+		SegmentUpdater:      &segmentUpdater,
+	}
+	splitMockStorage := storageMock.MockSplitStorage{
+		LargeSegmentNamesCall: func() *set.ThreadUnsafeSet {
+			return set.NewSet("ls1", "ls2", "ls3")
+		},
+	}
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+	splitTasks := SplitTasks{
+		SegmentSyncTask:      tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
+		SplitSyncTask:        tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
+		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger, appMonitorMock),
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	sync.StartPeriodicFetching()
+	time.Sleep(time.Millisecond * 2200)
+
+	segmentUpdater.AssertExpectations(t)
+	splitUpdater.AssertExpectations(t)
+	lsUpdater.AssertExpectations(t)
+
+	sync.StopPeriodicFetching()
+}
+
+func TestDataFlusher(t *testing.T) {
+	queue := make(chan string, 1)
+
+	var impRecorder syncMocks.ImpressionRecorderMock
+	impRecorder.On("SynchronizeImpressions", int64(10)).Return(nil).Once()
+
+	var eventRecorder syncMocks.EventRecorderMock
+	eventRecorder.On("SynchronizeEvents", int64(20)).Return(nil).Once()
+
+	workers := Workers{
+		ImpressionRecorder: &impRecorder,
+		EventRecorder:      &eventRecorder,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{
+		ImpressionsBulkSize: 10,
+		EventsBulkSize:      20,
+	}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), queue)
+	go sync.(*SynchronizerImpl).dataFlusher()
+
+	queue <- "EVENTS_FULL"
+	queue <- "IMPRESSIONS_FULL"
+	time.Sleep(time.Millisecond * 1000)
+
+	impRecorder.AssertExpectations(t)
+	eventRecorder.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentUpdate(t *testing.T) {
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		Name: "ls1",
+	}
+
+	var cn *int64
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("SynchronizeLargeSegmentUpdate", dto).Return(cn, nil).Once()
+	lsUpdater.On("IsCached", "ls1").Return(true).Once()
+
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("Error should be nil. Actual:", err)
+	}
+
+	lsUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeLargeSegmentUpdateNotCached(t *testing.T) {
+	dto := &dtos.LargeSegmentRFDResponseDTO{
+		Name: "ls1",
+	}
+
+	var lsUpdater syncMocks.LargeSegmentUpdaterMock
+	lsUpdater.On("IsCached", "ls1").Return(false).Once()
+
+	workers := Workers{
+		LargeSegmentUpdater: &lsUpdater,
+	}
+	sync := NewSynchronizer(conf.AdvancedConfig{}, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	err := sync.SynchronizeLargeSegmentUpdate(dto)
+	if err != nil {
+		t.Error("Error should be nil. Actual:", err)
+	}
+
+	lsUpdater.AssertExpectations(t)
 }

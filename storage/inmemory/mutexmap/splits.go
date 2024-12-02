@@ -203,6 +203,23 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	return segments
 }
 
+// LargeSegmentNames returns a slice with the names of all large segments referenced in splits
+func (m *MMSplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
+	largeSegments := set.NewSet()
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	for _, split := range m.data {
+		for _, condition := range split.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedLargeSegment != nil {
+					largeSegments.Add(matcher.UserDefinedLargeSegment.LargeSegmentName)
+				}
+			}
+		}
+	}
+	return largeSegments
+}
+
 // SetChangeNumber sets the till value belong to split
 func (m *MMSplitStorage) SetChangeNumber(till int64) error {
 	m.tillMutex.Lock()

@@ -4,12 +4,12 @@ package dtos
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
-var splitsMock, _ = ioutil.ReadFile("../testdata/splits_mock.json")
-var splitMock, _ = ioutil.ReadFile("../testdata/split_mock.json")
+var splitsMock, _ = os.ReadFile("../testdata/splits_mock.json")
+var splitMock, _ = os.ReadFile("../testdata/split_mock.json")
 
 func TestSplitDTO(t *testing.T) {
 	mockedData := fmt.Sprintf(string(splitsMock), splitMock)
@@ -62,6 +62,20 @@ func TestSplitDTO(t *testing.T) {
 
 		if len(splitChangesDtoFromMarshal.Splits[0].Sets) != 0 {
 			t.Error("Marshal struct mal formed [Sets]")
+		}
+
+		condition := splitChangesDtoFromMarshal.Splits[0].Conditions[0]
+		if condition.ConditionType != "WHITELIST" {
+			t.Error("Marshal struct mal formed [ConditionType]. Actual: ", condition.ConditionType)
+		}
+
+		matcher := condition.MatcherGroup.Matchers[0]
+		if matcher.MatcherType != "IN_LARGE_SEGMENT" {
+			t.Error("Marshal struct mal formed [MatcherType]")
+		}
+
+		if matcher.UserDefinedLargeSegment.LargeSegmentName != "mauro_sanz_ls" {
+			t.Error("Marshal struct mal formed [UserDefinedLargeSegment]")
 		}
 	}
 }

@@ -45,22 +45,22 @@ func TestsplitVersionFilter(t *testing.T) {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherInLargeSegment, FLAG_V1_0)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherInLargeSegment, FLAG_V1_1)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_1)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherInLargeSegment, FLAG_V1_2)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_2)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherInLargeSegment, "4.3")
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, "4.3")
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}

@@ -327,3 +327,35 @@ func TestGetNamesByFlagSets(t *testing.T) {
 		t.Error("size of names by set2 should be 2, but was: ", len(sSet2))
 	}
 }
+
+func TestLargeSegmentNames(t *testing.T) {
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
+
+	splits := make([]dtos.SplitDTO, 0, 10)
+	for index := 0; index < 10; index++ {
+		splits = append(splits, dtos.SplitDTO{
+			Name: fmt.Sprintf("SomeSplit_%d", index),
+			Algo: index,
+			Conditions: []dtos.ConditionDTO{
+				{
+					MatcherGroup: dtos.MatcherGroupDTO{
+						Matchers: []dtos.MatcherDTO{
+							{
+								MatcherType: "IN_LARGE_SEGMENT",
+								UserDefinedLargeSegment: &dtos.UserDefinedLargeSegmentMatcherDataDTO{
+									LargeSegmentName: fmt.Sprintf("mauro_large_segment_%d", index),
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+	splitStorage.Update(splits, nil, 123)
+
+	lsNames := splitStorage.LargeSegmentNames().List()
+	if len(lsNames) != 10 {
+		t.Error("size of ls names should be 10. Actual: ", len(lsNames))
+	}
+}
