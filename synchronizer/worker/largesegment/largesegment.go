@@ -118,6 +118,7 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 			continue
 		}
 
+		u.initLargeSegment(conv)
 		go func(name string) {
 			sem.Acquire(context.Background(), 1)
 			defer sem.Release(1)
@@ -218,8 +219,7 @@ func (u *UpdaterImpl) attemptSync(name string, fetchOptions *service.SegmentRequ
 		if httpError, ok := err.(*dtos.HTTPError); ok {
 			// TODO(maurosanz): record sync error telemetry
 			if httpError.Code == http.StatusNotModified {
-				return internalUpdateResponse{
-					changeNumber: fetchOptions.ChangeNumber(), retry: false}
+				return internalUpdateResponse{changeNumber: fetchOptions.ChangeNumber(), retry: false}
 			}
 		}
 		return internalUpdateResponse{changeNumber: fetchOptions.ChangeNumber(), retry: true, err: err}
@@ -270,6 +270,14 @@ func (u *UpdaterImpl) processUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDRespon
 		retry:        false,
 		err:          fmt.Errorf("unsopported Notification Type"),
 	}
+}
+
+func (u *UpdaterImpl) initLargeSegment(name string) {
+	if u.IsCached(name) {
+		return
+	}
+
+	u.largeSegmentStorage.Update(name, []string{}, -1)
 }
 
 var _ Updater = (*UpdaterImpl)(nil)
