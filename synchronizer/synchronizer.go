@@ -15,6 +15,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/splitio/go-toolkit/v5/sync"
 )
 
 // SplitTasks struct for tasks
@@ -69,6 +70,7 @@ type SynchronizerImpl struct {
 	segmentsRefreshRate  int
 	httpTiemoutSecs      int
 	largeSegmentLazyLoad bool
+	initFlag             *sync.AtomicBool
 }
 
 // NewSynchronizer creates new SynchronizerImpl
@@ -79,18 +81,24 @@ func NewSynchronizer(
 	logger logging.LoggerInterface,
 	inMememoryFullQueue chan string,
 ) Synchronizer {
-	return &SynchronizerImpl{
-		impressionBulkSize:   confAdvanced.ImpressionsBulkSize,
-		eventBulkSize:        confAdvanced.EventsBulkSize,
-		splitTasks:           splitTasks,
-		workers:              workers,
-		logger:               logger,
-		inMememoryFullQueue:  inMememoryFullQueue,
-		splitsRefreshRate:    confAdvanced.SplitsRefreshRate,
-		segmentsRefreshRate:  confAdvanced.SegmentsRefreshRate,
-		httpTiemoutSecs:      confAdvanced.HTTPTimeout,
-		largeSegmentLazyLoad: confAdvanced.LargeSegment.LazyLoad,
+	sync := &SynchronizerImpl{
+		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
+		eventBulkSize:       confAdvanced.EventsBulkSize,
+		splitTasks:          splitTasks,
+		workers:             workers,
+		logger:              logger,
+		inMememoryFullQueue: inMememoryFullQueue,
+		splitsRefreshRate:   confAdvanced.SplitsRefreshRate,
+		segmentsRefreshRate: confAdvanced.SegmentsRefreshRate,
+		httpTiemoutSecs:     confAdvanced.HTTPTimeout,
+		initFlag:            sync.NewAtomicBool(true),
 	}
+
+	if confAdvanced.LargeSegment != nil {
+		sync.largeSegmentLazyLoad = confAdvanced.LargeSegment.LazyLoad
+	}
+
+	return sync
 }
 
 // SyncAll syncs splits and segments
@@ -189,7 +197,8 @@ func (s *SynchronizerImpl) StopPeriodicDataRecording() {
 
 // RefreshRates returns the refresh rates of the splits & segment tasks
 func (s *SynchronizerImpl) RefreshRates() (splits time.Duration, segments time.Duration) {
-	return time.Duration(s.splitsRefreshRate) * time.Second, time.Duration(s.segmentsRefreshRate) * time.Second
+	return time.Duration(s.splitsRefreshRate) * time.Second,
+		time.Duration(s.segmentsRefreshRate) * time.Second
 }
 
 // LocalKill locally kills a split
@@ -288,7 +297,8 @@ func (s *SynchronizerImpl) filterCachedLargeSegments(referencedLargeSegments []s
 
 func (s *SynchronizerImpl) synchronizeLargeSegments() error {
 	if s.workers.LargeSegmentUpdater != nil {
-		if s.largeSegmentLazyLoad {
+		if s.largeSegmentLazyLoad && s.initFlag.IsSet() {
+			s.initFlag.Unset()
 			go s.workers.LargeSegmentUpdater.SynchronizeLargeSegments()
 			return nil
 		}

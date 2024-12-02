@@ -107,8 +107,7 @@ type LargeSegmentFetcher interface {
 
 type HTTPLargeSegmentFetcher struct {
 	httpFetcherBase
-	largeSegmentVersion *string
-	httpClient          *http.Client
+	httpClient *http.Client
 }
 
 // NewHTTPLargeSegmentsFetcher
@@ -118,8 +117,7 @@ func NewHTTPLargeSegmentFetcher(apikey string, cfg conf.AdvancedConfig, logger l
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
 			logger: logger,
 		},
-		largeSegmentVersion: &cfg.LargeSegment.Version,
-		httpClient:          &http.Client{},
+		httpClient: &http.Client{},
 	}
 }
 

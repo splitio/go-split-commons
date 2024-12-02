@@ -1054,19 +1054,16 @@ func TestSyncAllWithLargeSegmentLazyLoad(t *testing.T) {
 		LargeSegmentUpdater: &lsUpdater,
 	}
 
-	// Tasks
-	splitTasks := SplitTasks{}
-
 	// Config
 	cfn := conf.AdvancedConfig{
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:   true,
 			LazyLoad: true,
 		},
 	}
 
 	// Sync
-	sync := NewSynchronizer(cfn, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	sync := NewSynchronizer(cfn, SplitTasks{}, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	sync.SyncAll()
 
 	time.Sleep(time.Millisecond * 1000)
@@ -1097,7 +1094,7 @@ func TestSyncAllWithLargeSegmentLazyLoadFalse(t *testing.T) {
 	splitTasks := SplitTasks{}
 
 	cfn := conf.AdvancedConfig{
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:   true,
 			LazyLoad: false,
 		},
@@ -1243,7 +1240,7 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	advanced := conf.AdvancedConfig{
 		SegmentQueueSize: 50,
 		SegmentWorkers:   5,
-		LargeSegment: conf.LargeSegmentConfig{
+		LargeSegment: &conf.LargeSegmentConfig{
 			Enable:    true,
 			QueueSize: 10,
 			Workers:   5,
@@ -1280,7 +1277,7 @@ func TestStartAndStopFetchingWithLargeSegmentTask(t *testing.T) {
 	splitTasks := SplitTasks{
 		SegmentSyncTask:      tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
 		SplitSyncTask:        tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
-		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger),
+		LargeSegmentSyncTask: tasks.NewFetchLargeSegmentsTask(workers.LargeSegmentUpdater, splitMockStorage, 1, advanced.LargeSegment.Workers, advanced.LargeSegment.QueueSize, logger, appMonitorMock),
 	}
 	sync := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logging.NewLogger(&logging.LoggerOptions{}), nil)
 

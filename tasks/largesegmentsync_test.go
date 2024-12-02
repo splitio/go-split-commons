@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	syncMocks "github.com/splitio/go-split-commons/v6/synchronizer/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -25,7 +26,13 @@ func TestLargeSegmentSyncTaskHappyPath(t *testing.T) {
 		},
 	}
 
-	task := NewFetchLargeSegmentsTask(&updater, splitSorage, 1, 10, 10, logging.NewLogger(&logging.LoggerOptions{}))
+	var notifyEventCalled int64
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
+	}
+	task := NewFetchLargeSegmentsTask(&updater, splitSorage, 1, 10, 10, logging.NewLogger(&logging.LoggerOptions{}), appMonitorMock)
 
 	task.Start()
 	time.Sleep(3 * time.Second)
@@ -40,6 +47,9 @@ func TestLargeSegmentSyncTaskHappyPath(t *testing.T) {
 
 	if lsNamesCall != 2 {
 		t.Error("Large Segment Call should be 2. Actual: ", lsNamesCall)
+	}
+	if atomic.LoadInt64(&notifyEventCalled) < 1 {
+		t.Error("It should be called at least once")
 	}
 
 	updater.AssertExpectations(t)

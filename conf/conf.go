@@ -87,7 +87,7 @@ type AdvancedConfig struct {
 	FlagSetsFilter         []string
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
-	LargeSegment           LargeSegmentConfig
+	LargeSegment           *LargeSegmentConfig
 }
 
 type LargeSegmentConfig struct {
@@ -97,4 +97,5 @@ type LargeSegmentConfig struct {
 	Workers         int
 	UpdateQueueSize int64
 	QueueSize       int
+	RefreshRate     int
 }

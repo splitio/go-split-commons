@@ -8,7 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/healthcheck/application"
+	hc "github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/push"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
@@ -47,17 +47,18 @@ type Manager interface {
 
 // ManagerImpl struct
 type ManagerImpl struct {
-	synchronizer     Synchronizer
-	logger           logging.LoggerInterface
-	config           conf.AdvancedConfig
-	pushManager      push.Manager
-	managerStatus    chan int
-	streamingStatus  chan int64
-	operationMode    int32
-	lifecycle        lifecycle.Manager
-	backoff          backoff.Interface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
-	hcMonitor        application.MonitorProducerInterface
+	synchronizer            Synchronizer
+	logger                  logging.LoggerInterface
+	config                  conf.AdvancedConfig
+	pushManager             push.Manager
+	managerStatus           chan int
+	streamingStatus         chan int64
+	operationMode           int32
+	lifecycle               lifecycle.Manager
+	backoff                 backoff.Interface
+	runtimeTelemetry        storage.TelemetryRuntimeProducer
+	hcMonitor               hc.MonitorProducerInterface
+	largeSegmentRefreshRate time.Duration
 }
 
 // NewSynchronizerManager creates new sync manager
@@ -71,7 +72,7 @@ func NewSynchronizerManager(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	metadata dtos.Metadata,
 	clientKey *string,
-	hcMonitor application.MonitorProducerInterface,
+	hcMonitor hc.MonitorProducerInterface,
 ) (*ManagerImpl, error) {
 	if managerStatus == nil || cap(managerStatus) < 1 {
 		return nil, errors.New("Status channel cannot be nil nor having capacity")
@@ -86,6 +87,11 @@ func NewSynchronizerManager(
 		runtimeTelemetry: runtimeTelemetry,
 		hcMonitor:        hcMonitor,
 	}
+
+	if config.LargeSegment != nil {
+		manager.largeSegmentRefreshRate = time.Duration(config.LargeSegment.RefreshRate) * time.Second
+	}
+
 	manager.lifecycle.Setup()
 	if config.StreamingEnabled {
 		streamingStatus := make(chan int64, 1000)
@@ -215,8 +221,9 @@ func (s *ManagerImpl) startPolling() {
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeSyncMode, telemetry.Polling))
 
 	splitRate, segmentRate := s.synchronizer.RefreshRates()
-	s.hcMonitor.Reset(application.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
-	s.hcMonitor.Reset(application.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
+	s.hcMonitor.Reset(hc.Splits, int(fetchTaskTolerance.Seconds()+splitRate.Seconds()))
+	s.hcMonitor.Reset(hc.Segments, int(fetchTaskTolerance.Seconds()+segmentRate.Seconds()))
+	s.hcMonitor.Reset(hc.LargeSegments, int(fetchTaskTolerance.Seconds()+s.largeSegmentRefreshRate.Seconds()))
 }
 
 func (s *ManagerImpl) stopPolling() {
@@ -237,7 +244,7 @@ func (s *ManagerImpl) enableStreaming() {
 
 	// update health monitor expirations based on remaining token life + a tolerance
 	nextExp := s.pushManager.NextRefresh().Sub(time.Now()) + refreshTokenTolerance
-	s.hcMonitor.Reset(application.Splits, int(nextExp.Seconds()))
-	s.hcMonitor.Reset(application.Segments, int(nextExp.Seconds()))
-
+	s.hcMonitor.Reset(hc.Splits, int(nextExp.Seconds()))
+	s.hcMonitor.Reset(hc.Segments, int(nextExp.Seconds()))
+	s.hcMonitor.Reset(hc.LargeSegments, int(nextExp.Seconds()))
 }

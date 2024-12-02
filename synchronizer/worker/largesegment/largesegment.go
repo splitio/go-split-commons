@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/healthcheck/application"
+	hc "github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+	tSync "github.com/splitio/go-toolkit/v5/sync"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -61,6 +62,8 @@ type UpdaterImpl struct {
 	runtimeTelemetry            storage.TelemetryRuntimeProducer
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
+	hcMonitor                   hc.MonitorProducerInterface
+	syncInProgress              *tSync.AtomicBool
 }
 
 // NewLargeSegmentUpdater creates new large segment synchronizer for processing larrge segment updates
@@ -70,7 +73,7 @@ func NewLargeSegmentUpdater(
 	largeSegmentFetcher service.LargeSegmentFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
-	hcMonitor application.MonitorProducerInterface,
+	hcMonitor hc.MonitorProducerInterface,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -80,6 +83,8 @@ func NewLargeSegmentUpdater(
 		runtimeTelemetry:            runtimeTelemetry,
 		onDemandFetchBackoffBase:    onDemandFetchBackoffBase,
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
+		hcMonitor:                   hcMonitor,
+		syncInProgress:              tSync.NewAtomicBool(false),
 	}
 }
 
@@ -89,7 +94,14 @@ func (s *UpdaterImpl) IsCached(name string) bool {
 }
 
 func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
+	if !u.syncInProgress.TestAndSet() {
+		u.logger.Debug("SynchronizeLargeSegments task is already running.")
+		return map[string]*int64{}, nil
+	}
+	defer u.syncInProgress.Unset()
+
 	lsNames := u.splitStorage.LargeSegmentNames().List()
+	u.hcMonitor.NotifyEvent(hc.LargeSegments)
 	wg := sync.WaitGroup{}
 	wg.Add(len(lsNames))
 	failedLargeSegments := set.NewThreadSafeSet()
@@ -132,6 +144,8 @@ func (u *UpdaterImpl) SynchronizeLargeSegments() (map[string]*int64, error) {
 
 func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) (*int64, error) {
 	fetchOptions := service.MakeSegmentRequestParams()
+	u.hcMonitor.NotifyEvent(hc.LargeSegments)
+
 	currentSince := u.largeSegmentStorage.ChangeNumber(name)
 	if till != nil && *till <= currentSince { // the passed till is less than change_number, no need to perform updates
 		return nil, nil
@@ -148,7 +162,8 @@ func (u *UpdaterImpl) SynchronizeLargeSegment(name string, till *int64) (*int64,
 		return &internalLargeSegmentSync.newChangeNumber, nil
 	}
 
-	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, fetchOptions.WithTill(time.Now().UnixMilli()))
+	withCDNBypass := service.MakeSegmentRequestParams().WithTill(time.Now().UnixMilli()) // Set flag for bypassing CDN
+	internalSyncResultCDNBypass, err := u.attemptLargeSegmentSync(name, withCDNBypass)
 	if err != nil {
 		return nil, err
 	}
@@ -234,15 +249,17 @@ func (u *UpdaterImpl) processUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDRespon
 		}
 
 		data := lsRFDResponseDTO.RFD.Data
+		before := time.Now()
 		u.logger.Debug(fmt.Sprintf("Downloading LargeSegment file for %s.Size=%d,Format=%d,TotalKeys=%d,V=%s", lsRFDResponseDTO.Name, data.FileSize, data.Format, data.TotalKeys, lsRFDResponseDTO.SpecVersion))
 
 		ls, err := u.largeSegmentFetcher.DownloadFile(lsRFDResponseDTO.Name, lsRFDResponseDTO)
 		if err != nil {
-			u.logger.Warning(err.Error())
+			u.logger.Warning(fmt.Sprintf("%s. %s", lsRFDResponseDTO.RFD.Params.URL, err.Error()))
 			return internalUpdateResponse{changeNumber: lsRFDResponseDTO.ChangeNumber, retry: true}
 		}
 
-		u.logger.Debug(fmt.Sprintf("Downloaded and parsed Large Segment file for %s successfully. Keys=%d,CN=%d", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber))
+		duration := time.Since(before).Seconds()
+		u.logger.Debug(fmt.Sprintf("Successfully downloaded and parsed the Large Segment file for %s. Keys=%d,CN=%d,Time=%vs", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber, duration))
 
 		u.largeSegmentStorage.Update(lsRFDResponseDTO.Name, ls.Keys, ls.ChangeNumber)
 		return internalUpdateResponse{changeNumber: ls.ChangeNumber, retry: false}

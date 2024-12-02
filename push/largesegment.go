@@ -3,7 +3,6 @@ package push
 import (
 	"errors"
 	"fmt"
-	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -25,9 +24,6 @@ func NewLargeSegmentUpdateWorker(
 	if cap(lsQueue) < 5000 {
 		return nil, errors.New("largeSegmentQueue capacity must be larger")
 	}
-
-	running := atomic.Value{}
-	running.Store(false)
 
 	worker := &LargeSegmentUpdateWorker{
 		lsQueue: lsQueue,
