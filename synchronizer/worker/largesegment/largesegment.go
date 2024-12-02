@@ -259,7 +259,7 @@ func (u *UpdaterImpl) processUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDRespon
 		}
 
 		duration := time.Since(before).Seconds()
-		u.logger.Debug(fmt.Sprintf("Downloaded and parsed Large Segment file for %s successfully. Keys=%d,CN=%d,Time=%vs", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber, duration))
+		u.logger.Debug(fmt.Sprintf("Successfully downloaded and parsed the Large Segment file for %s. Keys=%d,CN=%d,Time=%vs", lsRFDResponseDTO.Name, len(ls.Keys), ls.ChangeNumber, duration))
 
 		u.largeSegmentStorage.Update(lsRFDResponseDTO.Name, ls.Keys, ls.ChangeNumber)
 		return internalUpdateResponse{changeNumber: ls.ChangeNumber, retry: false}
