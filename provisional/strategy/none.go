@@ -14,7 +14,7 @@ type NoneImpl struct {
 }
 
 // NewNoneImpl creates new NoneImpl.
-func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker UniqueKeysTracker, listenerEnabled bool) ProcessStrategyInterface {
+func NewNoneImpl(impressionCounter *ImpressionsCounter, uniqueKeysTracker UniqueKeysTracker, listenerEnabled bool) *NoneImpl {
 	return &NoneImpl{
 		impressionsCounter: impressionCounter,
 		uniqueKeysTracker:  uniqueKeysTracker,
@@ -51,3 +51,5 @@ func (s *NoneImpl) ApplySingle(impression *dtos.Impression) bool {
 
 	return s.apply(impression, now)
 }
+
+var _ ProcessStrategyInterface = (*NoneImpl)(nil)

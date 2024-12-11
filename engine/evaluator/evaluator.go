@@ -27,6 +27,7 @@ type Result struct {
 	EvaluationTime    time.Duration
 	SplitChangeNumber int64
 	Config            *string
+	TrackImpression   bool
 }
 
 // Results represents the result of multiple evaluations at once
@@ -88,6 +89,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			Label:             impressionlabels.Killed,
 			SplitChangeNumber: split.ChangeNumber(),
 			Config:            config,
+			TrackImpression:   split.TrackImpression(),
 		}
 	}
 
@@ -112,6 +114,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		Label:             label,
 		SplitChangeNumber: split.ChangeNumber(),
 		Config:            config,
+		TrackImpression:   split.TrackImpression(),
 	}
 }
 

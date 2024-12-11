@@ -185,3 +185,72 @@ func TestImpManagerRedis(t *testing.T) {
 		t.Error("It should have pt")
 	}
 }
+
+func TestProcess(t *testing.T) {
+	observer, _ := strategy.NewImpressionObserver(5000)
+	debug := strategy.NewDebugImpl(observer, true)
+	filter := filter.NewBloomFilter(3000, 0.01)
+	uniqueTracker := strategy.NewUniqueKeysTracker(filter)
+	counter := strategy.NewImpressionsCounter()
+	none := strategy.NewNoneImpl(counter, uniqueTracker, false)
+
+	now := time.Now().UTC().UnixNano()
+	values := []dtos.ImpressionExt{
+		{
+			Track: false,
+			Impression: dtos.Impression{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "someFeature",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         now,
+				Treatment:    "someTreatment",
+			},
+		},
+		{
+			Track: false,
+			Impression: dtos.Impression{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "harnessFlag",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         now,
+				Treatment:    "someTreatment",
+			},
+		},
+		{
+			Track: true,
+			Impression: dtos.Impression{
+				BucketingKey: "someBucketingKey",
+				ChangeNumber: 123456789,
+				FeatureName:  "featureTest",
+				KeyName:      "someKey",
+				Label:        "someLabel",
+				Time:         now,
+				Treatment:    "someTreatment",
+			},
+		},
+	}
+
+	impManager := NewImpressionManager(debug)
+
+	impressionsForLog, impressionsForListener := impManager.Process(values, true)
+	if len(impressionsForListener) != 3 {
+		t.Error("Impressions for Listener should be 3. Actual: ", len(impressionsForListener))
+	}
+	if len(impressionsForLog) != 3 {
+		t.Error("Impressions for Log should be 3. Actual: ", len(impressionsForLog))
+	}
+
+	impManager.SetNoneStrategy(none)
+
+	impressionsForLog, impressionsForListener = impManager.Process(values, false)
+	if len(impressionsForListener) != 0 {
+		t.Error("Impressions for Listener should be 0. Actual: ", len(impressionsForListener))
+	}
+	if len(impressionsForLog) != 1 {
+		t.Error("Impressions for Log should be 1. Actual: ", len(impressionsForLog))
+	}
+}
