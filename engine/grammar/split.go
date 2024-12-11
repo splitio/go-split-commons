@@ -112,6 +112,6 @@ func (s *Split) Configurations() map[string]string {
 	return s.splitData.Configurations
 }
 
-func (s *Split) TrackImpression() bool {
+func (s *Split) TrackImpressions() bool {
 	return s.splitData.TrackImpressions == nil || *s.splitData.TrackImpressions
 }

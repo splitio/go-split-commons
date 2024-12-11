@@ -89,7 +89,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			Label:             impressionlabels.Killed,
 			SplitChangeNumber: split.ChangeNumber(),
 			Config:            config,
-			TrackImpression:   split.TrackImpression(),
+			TrackImpression:   split.TrackImpressions(),
 		}
 	}
 
@@ -114,7 +114,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		Label:             label,
 		SplitChangeNumber: split.ChangeNumber(),
 		Config:            config,
-		TrackImpression:   split.TrackImpression(),
+		TrackImpression:   split.TrackImpressions(),
 	}
 }
 
