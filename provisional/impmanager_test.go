@@ -195,7 +195,7 @@ func TestProcess(t *testing.T) {
 	none := strategy.NewNoneImpl(counter, uniqueTracker, false)
 
 	now := time.Now().UTC().UnixNano()
-	values := []dtos.ImpressionExt{
+	values := []dtos.ImpressionDecorated{
 		{
 			Track: false,
 			Impression: dtos.Impression{

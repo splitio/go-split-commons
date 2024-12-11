@@ -39,7 +39,7 @@ func (i *ImpressionManagerImpl) SetNoneStrategy(noneStrategy *strategy.NoneImpl)
 	i.noneStrategy = noneStrategy
 }
 
-func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionExt, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
+func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
 	forLog := make([]dtos.Impression, 0, len(values))
 	forListener := make([]dtos.Impression, 0, len(values))
 

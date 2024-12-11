@@ -12,7 +12,7 @@ type Impression struct {
 	Pt           int64  `json:"pt,omitempty"`
 }
 
-type ImpressionExt struct {
+type ImpressionDecorated struct {
 	Impression Impression
 	Track      bool
 }
