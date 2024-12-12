@@ -234,7 +234,7 @@ func TestProcess(t *testing.T) {
 		},
 	}
 
-	impManager := NewImpressionManager(debug)
+	impManager := NewImpressionManager(debug).(*ImpressionManagerImpl)
 
 	impressionsForLog, impressionsForListener := impManager.Process(values, true)
 	if len(impressionsForListener) != 3 {

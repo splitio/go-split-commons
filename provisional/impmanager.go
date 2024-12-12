@@ -18,7 +18,7 @@ type ImpressionManagerImpl struct {
 }
 
 // NewImpressionManager creates new ImpManager
-func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) *ImpressionManagerImpl {
+func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
 	return &ImpressionManagerImpl{
 		processStrategy: processStrategy,
 	}
@@ -57,5 +57,3 @@ func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, liste
 
 	return forLog, forListener
 }
-
-var _ ImpressionManager = (*ImpressionManagerImpl)(nil)
