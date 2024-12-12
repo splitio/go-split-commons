@@ -14,6 +14,7 @@ type ImpressionManager interface {
 // ImpressionManagerImpl implements
 type ImpressionManagerImpl struct {
 	processStrategy strategy.ProcessStrategyInterface
+	noneStrategy    *strategy.NoneImpl
 }
 
 // NewImpressionManager creates new ImpManager
@@ -32,4 +33,27 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 // and returns whether it should be sent to the BE and to the lister
 func (i *ImpressionManagerImpl) ProcessSingle(impression *dtos.Impression) bool {
 	return i.processStrategy.ApplySingle(impression)
+}
+
+func (i *ImpressionManagerImpl) SetNoneStrategy(noneStrategy *strategy.NoneImpl) {
+	i.noneStrategy = noneStrategy
+}
+
+func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
+	forLog := make([]dtos.Impression, 0, len(values))
+	forListener := make([]dtos.Impression, 0, len(values))
+
+	for index := range values {
+		if !values[index].Track && i.noneStrategy != nil {
+			i.noneStrategy.ApplySingle(&values[index].Impression)
+		} else if i.processStrategy.ApplySingle(&values[index].Impression) {
+			forLog = append(forLog, values[index].Impression)
+		}
+
+		if listenerEnabled {
+			forListener = append(forListener, values[index].Impression)
+		}
+	}
+
+	return forLog, forListener
 }

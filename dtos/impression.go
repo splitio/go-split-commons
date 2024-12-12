@@ -12,6 +12,11 @@ type Impression struct {
 	Pt           int64  `json:"pt,omitempty"`
 }
 
+type ImpressionDecorated struct {
+	Impression Impression
+	Track      bool
+}
+
 // ImpressionQueueObject struct mapping impressions
 type ImpressionQueueObject struct {
 	Metadata   Metadata   `json:"m"`
