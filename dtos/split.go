@@ -24,7 +24,7 @@ type SplitDTO struct {
 	Conditions            []ConditionDTO    `json:"conditions"`
 	Configurations        map[string]string `json:"configurations"`
 	Sets                  []string          `json:"sets"`
-	TrackImpressions      *bool             `json:"trackImpressions"`
+	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string

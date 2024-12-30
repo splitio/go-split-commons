@@ -22,12 +22,12 @@ const (
 // Result represents the result of an evaluation, including the resulting treatment, the label for the impression,
 // the latency and error if any
 type Result struct {
-	Treatment         string
-	Label             string
-	EvaluationTime    time.Duration
-	SplitChangeNumber int64
-	Config            *string
-	TrackImpression   bool
+	Treatment           string
+	Label               string
+	EvaluationTime      time.Duration
+	SplitChangeNumber   int64
+	Config              *string
+	ImpressionsDisabled bool
 }
 
 // Results represents the result of multiple evaluations at once
@@ -85,11 +85,11 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		}
 
 		return &Result{
-			Treatment:         split.DefaultTreatment(),
-			Label:             impressionlabels.Killed,
-			SplitChangeNumber: split.ChangeNumber(),
-			Config:            config,
-			TrackImpression:   split.TrackImpressions(),
+			Treatment:           split.DefaultTreatment(),
+			Label:               impressionlabels.Killed,
+			SplitChangeNumber:   split.ChangeNumber(),
+			Config:              config,
+			ImpressionsDisabled: split.ImpressionsDisabled(),
 		}
 	}
 
@@ -110,11 +110,11 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	}
 
 	return &Result{
-		Treatment:         *treatment,
-		Label:             label,
-		SplitChangeNumber: split.ChangeNumber(),
-		Config:            config,
-		TrackImpression:   split.TrackImpressions(),
+		Treatment:           *treatment,
+		Label:               label,
+		SplitChangeNumber:   split.ChangeNumber(),
+		Config:              config,
+		ImpressionsDisabled: split.ImpressionsDisabled(),
 	}
 }
 

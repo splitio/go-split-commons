@@ -197,7 +197,7 @@ func TestProcess(t *testing.T) {
 	now := time.Now().UTC().UnixNano()
 	values := []dtos.ImpressionDecorated{
 		{
-			Track: false,
+			Disabled: true,
 			Impression: dtos.Impression{
 				BucketingKey: "someBucketingKey",
 				ChangeNumber: 123456789,
@@ -209,7 +209,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			Track: false,
+			Disabled: true,
 			Impression: dtos.Impression{
 				BucketingKey: "someBucketingKey",
 				ChangeNumber: 123456789,
@@ -221,7 +221,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			Track: true,
+			Disabled: false,
 			Impression: dtos.Impression{
 				BucketingKey: "someBucketingKey",
 				ChangeNumber: 123456789,

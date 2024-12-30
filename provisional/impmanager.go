@@ -44,7 +44,7 @@ func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, liste
 	forListener := make([]dtos.Impression, 0, len(values))
 
 	for index := range values {
-		if !values[index].Track && i.noneStrategy != nil {
+		if values[index].Disabled && i.noneStrategy != nil {
 			i.noneStrategy.ApplySingle(&values[index].Impression)
 		} else if i.processStrategy.ApplySingle(&values[index].Impression) {
 			forLog = append(forLog, values[index].Impression)

@@ -14,7 +14,7 @@ type Impression struct {
 
 type ImpressionDecorated struct {
 	Impression Impression
-	Track      bool
+	Disabled   bool
 }
 
 // ImpressionQueueObject struct mapping impressions
