@@ -14,7 +14,7 @@ type ImpressionManager interface {
 // ImpressionManagerImpl implements
 type ImpressionManagerImpl struct {
 	processStrategy strategy.ProcessStrategyInterface
-	noneStrategy    strategy.NoneImpl
+	noneStrategy    strategy.ProcessStrategyInterface
 }
 
 // NewImpressionManager creates new ImpManager
@@ -24,7 +24,7 @@ func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) Imp
 	}
 }
 
-func NewImpressionManagerImp(none strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) *ImpressionManagerImpl {
+func NewImpressionManagerImp(none *strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) *ImpressionManagerImpl {
 	return &ImpressionManagerImpl{
 		processStrategy: processStrategy,
 		noneStrategy:    none,
