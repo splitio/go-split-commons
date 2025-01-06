@@ -234,23 +234,22 @@ func TestProcess(t *testing.T) {
 		},
 	}
 
-	impManager := NewImpressionManager(debug).(*ImpressionManagerImpl)
-
+	impManager := NewImpressionManagerImp(*none, debug)
 	impressionsForLog, impressionsForListener := impManager.Process(values, true)
 	if len(impressionsForListener) != 3 {
 		t.Error("Impressions for Listener should be 3. Actual: ", len(impressionsForListener))
 	}
-	if len(impressionsForLog) != 3 {
+	if len(impressionsForLog) != 1 {
 		t.Error("Impressions for Log should be 3. Actual: ", len(impressionsForLog))
 	}
 
-	impManager.SetNoneStrategy(none)
+	impManager = NewImpressionManagerImp(*none, nil)
 
 	impressionsForLog, impressionsForListener = impManager.Process(values, false)
 	if len(impressionsForListener) != 0 {
 		t.Error("Impressions for Listener should be 0. Actual: ", len(impressionsForListener))
 	}
-	if len(impressionsForLog) != 1 {
+	if len(impressionsForLog) != 0 {
 		t.Error("Impressions for Log should be 1. Actual: ", len(impressionsForLog))
 	}
 }
