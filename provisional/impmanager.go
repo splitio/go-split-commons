@@ -9,6 +9,7 @@ import (
 type ImpressionManager interface {
 	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
 	ProcessSingle(impression *dtos.Impression) bool
+	Process(values []dtos.ImpressionDecorated, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression)
 }
 
 // ImpressionManagerImpl implements
@@ -17,6 +18,7 @@ type ImpressionManagerImpl struct {
 	noneStrategy    strategy.ProcessStrategyInterface
 }
 
+// DEPRECATED
 // NewImpressionManager creates new ImpManager
 func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
 	return &ImpressionManagerImpl{
@@ -24,7 +26,7 @@ func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) Imp
 	}
 }
 
-func NewImpressionManagerImp(none *strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) *ImpressionManagerImpl {
+func NewImpressionManagerImp(none *strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
 	return &ImpressionManagerImpl{
 		processStrategy: processStrategy,
 		noneStrategy:    none,
