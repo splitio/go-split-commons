@@ -195,47 +195,41 @@ func TestProcess(t *testing.T) {
 	none := strategy.NewNoneImpl(counter, uniqueTracker, false)
 
 	now := time.Now().UTC().UnixNano()
-	values := []dtos.ImpressionDecorated{
+	impressions := []dtos.Impression{
 		{
-			Disabled: true,
-			Impression: dtos.Impression{
-				BucketingKey: "someBucketingKey",
-				ChangeNumber: 123456789,
-				FeatureName:  "someFeature",
-				KeyName:      "someKey",
-				Label:        "someLabel",
-				Time:         now,
-				Treatment:    "someTreatment",
-			},
+			BucketingKey: "someBucketingKey",
+			ChangeNumber: 123456789,
+			FeatureName:  "someFeature",
+			KeyName:      "someKey",
+			Label:        "someLabel",
+			Time:         now,
+			Treatment:    "someTreatment",
+			Disabled:     true,
 		},
 		{
-			Disabled: true,
-			Impression: dtos.Impression{
-				BucketingKey: "someBucketingKey",
-				ChangeNumber: 123456789,
-				FeatureName:  "harnessFlag",
-				KeyName:      "someKey",
-				Label:        "someLabel",
-				Time:         now,
-				Treatment:    "someTreatment",
-			},
+			BucketingKey: "someBucketingKey",
+			ChangeNumber: 123456789,
+			FeatureName:  "harnessFlag",
+			KeyName:      "someKey",
+			Label:        "someLabel",
+			Time:         now,
+			Treatment:    "someTreatment",
+			Disabled:     true,
 		},
 		{
-			Disabled: false,
-			Impression: dtos.Impression{
-				BucketingKey: "someBucketingKey",
-				ChangeNumber: 123456789,
-				FeatureName:  "featureTest",
-				KeyName:      "someKey",
-				Label:        "someLabel",
-				Time:         now,
-				Treatment:    "someTreatment",
-			},
+			BucketingKey: "someBucketingKey",
+			ChangeNumber: 123456789,
+			FeatureName:  "featureTest",
+			KeyName:      "someKey",
+			Label:        "someLabel",
+			Time:         now,
+			Treatment:    "someTreatment",
+			Disabled:     false,
 		},
 	}
 
 	impManager := NewImpressionManagerImp(none, debug)
-	impressionsForLog, impressionsForListener := impManager.Process(values, true)
+	impressionsForLog, impressionsForListener := impManager.Process(impressions, true)
 	if len(impressionsForListener) != 3 {
 		t.Error("Impressions for Listener should be 3. Actual: ", len(impressionsForListener))
 	}
@@ -245,7 +239,7 @@ func TestProcess(t *testing.T) {
 
 	impManager = NewImpressionManagerImp(none, none)
 
-	impressionsForLog, impressionsForListener = impManager.Process(values, false)
+	impressionsForLog, impressionsForListener = impManager.Process(impressions, false)
 	if len(impressionsForListener) != 0 {
 		t.Error("Impressions for Listener should be 0. Actual: ", len(impressionsForListener))
 	}

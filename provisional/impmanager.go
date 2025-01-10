@@ -9,7 +9,7 @@ import (
 type ImpressionManager interface {
 	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
 	ProcessSingle(impression *dtos.Impression) bool
-	Process(values []dtos.ImpressionDecorated, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression)
+	Process(impressions []dtos.Impression, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression)
 }
 
 // ImpressionManagerImpl implements
@@ -44,20 +44,20 @@ func (i *ImpressionManagerImpl) ProcessSingle(impression *dtos.Impression) bool 
 	return i.processStrategy.ApplySingle(impression)
 }
 
-func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
-	forLog := make([]dtos.Impression, 0, len(values))
-	forListener := make([]dtos.Impression, 0, len(values))
+func (i *ImpressionManagerImpl) Process(impressions []dtos.Impression, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
+	forLog := make([]dtos.Impression, 0, len(impressions))
+	forListener := make([]dtos.Impression, 0, len(impressions))
 
-	for index := range values {
-		if values[index].Disabled {
-			i.keyTracker.ApplySingle(&values[index].Impression)
-		} else if i.processStrategy.ApplySingle(&values[index].Impression) {
-			forLog = append(forLog, values[index].Impression)
+	for index := range impressions {
+		if impressions[index].Disabled {
+			i.keyTracker.ApplySingle(&impressions[index])
+		} else if i.processStrategy.ApplySingle(&impressions[index]) {
+			forLog = append(forLog, impressions[index])
 		}
+	}
 
-		if listenerEnabled {
-			forListener = append(forListener, values[index].Impression)
-		}
+	if listenerEnabled {
+		forListener = impressions
 	}
 
 	return forLog, forListener

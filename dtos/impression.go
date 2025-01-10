@@ -13,11 +13,6 @@ type Impression struct {
 	Disabled     bool   `json:"-"`
 }
 
-type ImpressionDecorated struct {
-	Impression Impression
-	Disabled   bool
-}
-
 // ImpressionQueueObject struct mapping impressions
 type ImpressionQueueObject struct {
 	Metadata   Metadata   `json:"m"`
