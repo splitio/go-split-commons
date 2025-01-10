@@ -243,7 +243,7 @@ func TestProcess(t *testing.T) {
 		t.Error("Impressions for Log should be 3. Actual: ", len(impressionsForLog))
 	}
 
-	impManager = NewImpressionManagerImp(none, nil)
+	impManager = NewImpressionManagerImp(none, none)
 
 	impressionsForLog, impressionsForListener = impManager.Process(values, false)
 	if len(impressionsForListener) != 0 {

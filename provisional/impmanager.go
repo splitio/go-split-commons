@@ -15,7 +15,7 @@ type ImpressionManager interface {
 // ImpressionManagerImpl implements
 type ImpressionManagerImpl struct {
 	processStrategy strategy.ProcessStrategyInterface
-	noneStrategy    strategy.ProcessStrategyInterface
+	keyTracker      strategy.ProcessStrategyInterface
 }
 
 // DEPRECATED
@@ -29,7 +29,7 @@ func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) Imp
 func NewImpressionManagerImp(none *strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
 	return &ImpressionManagerImpl{
 		processStrategy: processStrategy,
-		noneStrategy:    none,
+		keyTracker:      none,
 	}
 }
 
@@ -49,14 +49,10 @@ func (i *ImpressionManagerImpl) Process(values []dtos.ImpressionDecorated, liste
 	forListener := make([]dtos.Impression, 0, len(values))
 
 	for index := range values {
-		if !values[index].Disabled && i.processStrategy != nil {
-			toLog := i.processStrategy.ApplySingle(&values[index].Impression)
-
-			if toLog {
-				forLog = append(forLog, values[index].Impression)
-			}
-		} else {
-			i.noneStrategy.ApplySingle(&values[index].Impression)
+		if values[index].Disabled {
+			i.keyTracker.ApplySingle(&values[index].Impression)
+		} else if i.processStrategy.ApplySingle(&values[index].Impression) {
+			forLog = append(forLog, values[index].Impression)
 		}
 
 		if listenerEnabled {
