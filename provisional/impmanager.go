@@ -9,17 +9,27 @@ import (
 type ImpressionManager interface {
 	ProcessImpressions(impressions []dtos.Impression) ([]dtos.Impression, []dtos.Impression)
 	ProcessSingle(impression *dtos.Impression) bool
+	Process(impressions []dtos.Impression, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression)
 }
 
 // ImpressionManagerImpl implements
 type ImpressionManagerImpl struct {
 	processStrategy strategy.ProcessStrategyInterface
+	keyTracker      strategy.ProcessStrategyInterface
 }
 
+// DEPRECATED
 // NewImpressionManager creates new ImpManager
 func NewImpressionManager(processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
 	return &ImpressionManagerImpl{
 		processStrategy: processStrategy,
+	}
+}
+
+func NewImpressionManagerImp(none *strategy.NoneImpl, processStrategy strategy.ProcessStrategyInterface) ImpressionManager {
+	return &ImpressionManagerImpl{
+		processStrategy: processStrategy,
+		keyTracker:      none,
 	}
 }
 
@@ -32,4 +42,23 @@ func (i *ImpressionManagerImpl) ProcessImpressions(impressions []dtos.Impression
 // and returns whether it should be sent to the BE and to the lister
 func (i *ImpressionManagerImpl) ProcessSingle(impression *dtos.Impression) bool {
 	return i.processStrategy.ApplySingle(impression)
+}
+
+func (i *ImpressionManagerImpl) Process(impressions []dtos.Impression, listenerEnabled bool) ([]dtos.Impression, []dtos.Impression) {
+	forLog := make([]dtos.Impression, 0, len(impressions))
+	forListener := make([]dtos.Impression, 0, len(impressions))
+
+	for index := range impressions {
+		if impressions[index].Disabled {
+			i.keyTracker.ApplySingle(&impressions[index])
+		} else if i.processStrategy.ApplySingle(&impressions[index]) {
+			forLog = append(forLog, impressions[index])
+		}
+	}
+
+	if listenerEnabled {
+		forListener = impressions
+	}
+
+	return forLog, forListener
 }

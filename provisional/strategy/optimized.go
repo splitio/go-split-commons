@@ -34,6 +34,7 @@ func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
 	}
 
 	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {
+		s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, 1)
 		return true
 	}
 
@@ -55,8 +56,6 @@ func (s *OptimizedImpl) Apply(impressions []dtos.Impression) ([]dtos.Impression,
 	if s.listenerEnabled {
 		forListener = impressions
 	}
-
-	s.runtimeTelemetry.RecordImpressionsStats(telemetry.ImpressionsDeduped, int64(len(impressions)-len(forLog)))
 
 	return forLog, forListener
 }
