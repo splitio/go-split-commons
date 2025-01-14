@@ -1,3 +1,7 @@
+6.1.0 (Jan 14, 2025)
+- Added support for Impressions toggle.
+- Bump dependencies for vulnerability fixes.
+
 6.0.2 (Dec 2, 2024)
 - Adding HTTPLargeSegmentsFetcher implementation.
 - Adding MembershipsResponseDTO.
