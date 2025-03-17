@@ -1,15 +1,23 @@
 package mocks
 
+import (
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/stretchr/testify/mock"
+)
+
 type MockUniqueKeysStorage struct {
-	CountCall   func() int64
-	PopNRawCall func(n int64) ([]string, int64, error)
+	mock.Mock
 }
 
-// Count mock
-func (m MockUniqueKeysStorage) Count() int64 {
-	return m.CountCall()
+func (u *MockUniqueKeysStorage) Add(featureName string, key string) {
+	u.Called(featureName, key)
 }
 
-func (m MockUniqueKeysStorage) PopNRaw(n int64) ([]string, int64, error) {
-	return m.PopNRawCall(n)
+func (u *MockUniqueKeysStorage) PopAll() dtos.Uniques {
+	args := u.Called()
+	return args.Get(0).(dtos.Uniques)
 }
+
+var _ storage.UniqueKeysStorageConsumer = (*MockUniqueKeysStorage)(nil)
+var _ storage.UniqueKeysStorageProducer = (*MockUniqueKeysStorage)(nil)

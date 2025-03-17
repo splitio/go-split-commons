@@ -265,3 +265,16 @@ type LargeSegmentsStorage interface {
 	LargeSegmentStorageProducer
 	LargeSegmentStorageConsumer
 }
+
+type UniqueKeysStorageConsumer interface {
+	PopAll() dtos.Uniques
+}
+
+type UniqueKeysStorageProducer interface {
+	Add(featureName string, key string)
+}
+
+type UniqueKeysStorage interface {
+	UniqueKeysStorageConsumer
+	UniqueKeysStorageProducer
+}

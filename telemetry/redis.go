@@ -8,15 +8,21 @@ import (
 
 // SynchronizerRedis struct
 type SynchronizerRedis struct {
-	storage storage.TelemetryConfigProducer
-	logger  logging.LoggerInterface
+	storage           storage.TelemetryConfigProducer
+	logger            logging.LoggerInterface
+	uniqueKeysStorage storage.UniqueKeysStorageConsumer
 }
 
 // NewSynchronizerRedis constructor
-func NewSynchronizerRedis(storage storage.TelemetryConfigProducer, logger logging.LoggerInterface) TelemetrySynchronizer {
+func NewSynchronizerRedis(
+	storage storage.TelemetryConfigProducer,
+	logger logging.LoggerInterface,
+	uniqueKeysStorage storage.UniqueKeysStorageConsumer,
+) TelemetrySynchronizer {
 	return &SynchronizerRedis{
-		storage: storage,
-		logger:  logger,
+		storage:           storage,
+		logger:            logger,
+		uniqueKeysStorage: uniqueKeysStorage,
 	}
 }
 
@@ -45,7 +51,8 @@ func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady in
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (r *SynchronizerRedis) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
+func (r *SynchronizerRedis) SynchronizeUniqueKeys() error {
+	uniques := r.uniqueKeysStorage.PopAll()
 	if len(uniques.Keys) < 1 {
 		r.logger.Debug("Unique keys list is empty, nothing to synchronize.")
 		return nil

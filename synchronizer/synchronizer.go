@@ -254,6 +254,9 @@ func (s *SynchronizerImpl) dataFlusher() {
 			if err != nil {
 				s.logger.Error("Error flushing storage queue", err)
 			}
+		case "UNIQUE_KEYS_FULL":
+			s.logger.Debug("FLUSHING Unique Keys storage")
+			s.workers.TelemetryRecorder.SynchronizeUniqueKeys()
 		}
 	}
 }

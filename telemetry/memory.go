@@ -20,6 +20,7 @@ type RecorderSingle struct {
 	logger            logging.LoggerInterface
 	metadata          dtos.Metadata
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
+	uniqueKeysStorage storage.UniqueKeysStorageConsumer
 }
 
 // NewTelemetrySynchronizer creates new event synchronizer for posting events
@@ -31,6 +32,7 @@ func NewTelemetrySynchronizer(
 	logger logging.LoggerInterface,
 	metadata dtos.Metadata,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
+	uniqueKeysStorage storage.UniqueKeysStorageConsumer,
 ) TelemetrySynchronizer {
 	return &RecorderSingle{
 		telemetryStorage:  telemetryStorage,
@@ -40,6 +42,7 @@ func NewTelemetrySynchronizer(
 		logger:            logger,
 		metadata:          metadata,
 		runtimeTelemetry:  runtimeTelemetry,
+		uniqueKeysStorage: uniqueKeysStorage,
 	}
 }
 
@@ -133,7 +136,9 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (e *RecorderSingle) SynchronizeUniqueKeys(uniques dtos.Uniques) error {
+func (e *RecorderSingle) SynchronizeUniqueKeys() error {
+	uniques := e.uniqueKeysStorage.PopAll()
+
 	if len(uniques.Keys) < 1 {
 		e.logger.Debug("Unique keys list is empty, nothing to synchronize.")
 		return nil
