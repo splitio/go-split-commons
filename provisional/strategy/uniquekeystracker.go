@@ -2,7 +2,6 @@ package strategy
 
 import (
 	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 )
 
 // UniqueKeysTracker interface
@@ -12,15 +11,15 @@ type UniqueKeysTracker interface {
 
 // UniqueKeysTrackerImpl description
 type UniqueKeysTrackerImpl struct {
-	filter storage.Filter
-	cache  *mutexmap.MMUniqueKeysStorage
+	filter  storage.Filter
+	storage storage.UniqueKeysStorageProducer
 }
 
 // NewUniqueKeysTracker create new implementation
-func NewUniqueKeysTracker(f storage.Filter, cache *mutexmap.MMUniqueKeysStorage) UniqueKeysTracker {
+func NewUniqueKeysTracker(f storage.Filter, storage storage.UniqueKeysStorageProducer) UniqueKeysTracker {
 	return &UniqueKeysTrackerImpl{
-		filter: f,
-		cache:  cache,
+		filter:  f,
+		storage: storage,
 	}
 }
 
@@ -32,7 +31,7 @@ func (t *UniqueKeysTrackerImpl) Track(featureName string, key string) bool {
 	}
 
 	t.filter.Add(fKey)
-	t.cache.Add(featureName, key)
+	t.storage.Add(featureName, key)
 
 	return true
 }

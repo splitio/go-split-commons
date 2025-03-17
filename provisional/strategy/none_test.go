@@ -1,80 +1,84 @@
 package strategy
 
-// import (
-// 	"testing"
-// 	"time"
+import (
+	"testing"
+	"time"
 
-// 	"github.com/splitio/go-split-commons/v6/dtos"
-// 	"github.com/splitio/go-split-commons/v6/storage/filter"
-// 	"github.com/splitio/go-split-commons/v6/util"
-// )
+	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/storage/filter"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v6/util"
+	"github.com/splitio/go-toolkit/v5/logging"
+)
 
-// func TestNoneMode(t *testing.T) {
-// 	now := time.Now().UTC().UnixNano()
-// 	filter := filter.NewBloomFilter(1000, 0.01)
-// 	tracker := NewUniqueKeysTracker(filter)
-// 	counter := NewImpressionsCounter()
-// 	none := NewNoneImpl(counter, tracker, true)
+func TestNoneMode(t *testing.T) {
+	now := time.Now().UTC().UnixNano()
+	filter := filter.NewBloomFilter(1000, 0.01)
+	uniqueKeysStorage := mutexmap.NewMMUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	tracker := NewUniqueKeysTracker(filter, uniqueKeysStorage)
+	counter := NewImpressionsCounter()
+	none := NewNoneImpl(counter, tracker, true)
 
-// 	imp := dtos.Impression{
-// 		BucketingKey: "someBuck",
-// 		ChangeNumber: 123,
-// 		KeyName:      "someKey",
-// 		Label:        "someLabel",
-// 		Time:         now,
-// 		Treatment:    "on",
-// 		FeatureName:  "feature-test",
-// 	}
+	imp := dtos.Impression{
+		BucketingKey: "someBuck",
+		ChangeNumber: 123,
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         now,
+		Treatment:    "on",
+		FeatureName:  "feature-test",
+	}
 
-// 	toLog, toListener := none.Apply([]dtos.Impression{imp})
+	toLog, toListener := none.Apply([]dtos.Impression{imp})
 
-// 	if len(toLog) != 0 || len(toListener) != 1 {
-// 		t.Error("Should not have to log")
-// 	}
+	if len(toLog) != 0 || len(toListener) != 1 {
+		t.Error("Should not have to log")
+	}
 
-// 	toLog, toListener = none.Apply([]dtos.Impression{imp})
+	toLog, toListener = none.Apply([]dtos.Impression{imp})
 
-// 	if len(toLog) != 0 || len(toListener) != 1 {
-// 		t.Error("Should not have to log")
-// 	}
+	if len(toLog) != 0 || len(toListener) != 1 {
+		t.Error("Should not have to log")
+	}
 
-// 	counts := counter.PopAll()
-// 	value := counts[Key{
-// 		FeatureName: imp.FeatureName,
-// 		TimeFrame:   util.TruncateTimeFrame(now),
-// 	}]
+	counts := counter.PopAll()
+	value := counts[Key{
+		FeatureName: imp.FeatureName,
+		TimeFrame:   util.TruncateTimeFrame(now),
+	}]
 
-// 	if value != 2 {
-// 		t.Error("Should be 2")
-// 	}
-// }
+	if value != 2 {
+		t.Error("Should be 2")
+	}
+}
 
-// func TestApplySingleNone(t *testing.T) {
-// 	now := time.Now().UTC().UnixNano()
-// 	filter := filter.NewBloomFilter(1000, 0.01)
-// 	tracker := NewUniqueKeysTracker(filter)
-// 	counter := NewImpressionsCounter()
-// 	none := NewNoneImpl(counter, tracker, true)
+func TestApplySingleNone(t *testing.T) {
+	now := time.Now().UTC().UnixNano()
+	filter := filter.NewBloomFilter(1000, 0.01)
+	uniqueKeysStorage := mutexmap.NewMMUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	tracker := NewUniqueKeysTracker(filter, uniqueKeysStorage)
+	counter := NewImpressionsCounter()
+	none := NewNoneImpl(counter, tracker, true)
 
-// 	imp := dtos.Impression{
-// 		BucketingKey: "someBuck",
-// 		ChangeNumber: 123,
-// 		KeyName:      "someKey",
-// 		Label:        "someLabel",
-// 		Time:         now,
-// 		Treatment:    "on",
-// 		FeatureName:  "feature-test",
-// 	}
+	imp := dtos.Impression{
+		BucketingKey: "someBuck",
+		ChangeNumber: 123,
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         now,
+		Treatment:    "on",
+		FeatureName:  "feature-test",
+	}
 
-// 	toLog := none.ApplySingle(&imp)
+	toLog := none.ApplySingle(&imp)
 
-// 	if toLog {
-// 		t.Error("Should be false")
-// 	}
+	if toLog {
+		t.Error("Should be false")
+	}
 
-// 	toLog = none.ApplySingle(&imp)
+	toLog = none.ApplySingle(&imp)
 
-// 	if toLog {
-// 		t.Error("Should be false")
-// 	}
-// }
+	if toLog {
+		t.Error("Should be false")
+	}
+}

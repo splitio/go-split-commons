@@ -10,24 +10,22 @@ import (
 )
 
 type MMUniqueKeysStorage struct {
-	data             map[string]*set.ThreadUnsafeSet
-	maxSize          int64
-	size             int64
-	mutex            *sync.RWMutex
-	fullChan         chan string //only write channel
-	logger           logging.LoggerInterface
-	runtimeTelemetry storage.TelemetryRuntimeProducer
+	data     map[string]*set.ThreadUnsafeSet
+	maxSize  int64
+	size     int64
+	mutex    *sync.RWMutex
+	fullChan chan string //only write channel
+	logger   logging.LoggerInterface
 }
 
-func NewMMUniqueKeysStorage(maxSize int64, isFull chan string, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer) *MMUniqueKeysStorage {
+func NewMMUniqueKeysStorage(maxSize int64, isFull chan string, logger logging.LoggerInterface) *MMUniqueKeysStorage {
 	return &MMUniqueKeysStorage{
-		data:             make(map[string]*set.ThreadUnsafeSet),
-		maxSize:          maxSize,
-		size:             0,
-		mutex:            &sync.RWMutex{},
-		fullChan:         isFull,
-		logger:           logger,
-		runtimeTelemetry: runtimeTelemetry,
+		data:     make(map[string]*set.ThreadUnsafeSet),
+		maxSize:  maxSize,
+		size:     0,
+		mutex:    &sync.RWMutex{},
+		fullChan: isFull,
+		logger:   logger,
 	}
 }
 
