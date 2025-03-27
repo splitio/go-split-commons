@@ -31,7 +31,7 @@ func (t *UniqueKeysTrackerImpl) Track(featureName string, key string) bool {
 	}
 
 	t.filter.Add(fKey)
-	t.storage.Add(featureName, key)
+	t.storage.Push(featureName, key)
 
 	return true
 }

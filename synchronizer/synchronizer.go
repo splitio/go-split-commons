@@ -66,6 +66,7 @@ type SynchronizerImpl struct {
 	inMememoryFullQueue  chan string
 	impressionBulkSize   int64
 	eventBulkSize        int64
+	uniqueKeysBulkSize   int64
 	splitsRefreshRate    int
 	segmentsRefreshRate  int
 	httpTiemoutSecs      int
@@ -84,6 +85,7 @@ func NewSynchronizer(
 	sync := &SynchronizerImpl{
 		impressionBulkSize:  confAdvanced.ImpressionsBulkSize,
 		eventBulkSize:       confAdvanced.EventsBulkSize,
+		uniqueKeysBulkSize:  confAdvanced.UniqueKeysBulkSize,
 		splitTasks:          splitTasks,
 		workers:             workers,
 		logger:              logger,
@@ -256,7 +258,7 @@ func (s *SynchronizerImpl) dataFlusher() {
 			}
 		case "UNIQUE_KEYS_FULL":
 			s.logger.Debug("FLUSHING Unique Keys storage")
-			s.workers.TelemetryRecorder.SynchronizeUniqueKeys()
+			s.workers.TelemetryRecorder.SynchronizeUniqueKeys(s.uniqueKeysBulkSize)
 		}
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/provisional/strategy"
 	"github.com/splitio/go-split-commons/v6/storage/filter"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory"
-	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexqueue"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -124,7 +124,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 func TestImpManagerInMemoryNone(t *testing.T) {
 	counter := strategy.NewImpressionsCounter()
 	filter := filter.NewBloomFilter(3000, 0.01)
-	uniqueKeysStorage := mutexmap.NewMMUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	uniqueKeysStorage := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
 	uniqueTracker := strategy.NewUniqueKeysTracker(filter, uniqueKeysStorage)
 	none := strategy.NewNoneImpl(counter, uniqueTracker, true)
 	impManager := NewImpressionManager(none)
@@ -193,7 +193,7 @@ func TestProcess(t *testing.T) {
 	observer, _ := strategy.NewImpressionObserver(5000)
 	debug := strategy.NewDebugImpl(observer, true)
 	filter := filter.NewBloomFilter(3000, 0.01)
-	uniqueKeysStorage := mutexmap.NewMMUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	uniqueKeysStorage := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
 	uniqueTracker := strategy.NewUniqueKeysTracker(filter, uniqueKeysStorage)
 	counter := strategy.NewImpressionsCounter()
 	none := strategy.NewNoneImpl(counter, uniqueTracker, false)

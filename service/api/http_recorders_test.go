@@ -237,11 +237,11 @@ func TestJsonUniqueKeys(t *testing.T) {
 		Keys: []dtos.Key{
 			{
 				Feature: "feature-1",
-				Keys:    []string{"key-1", "key-2"},
+				Keys:    []interface{}{"key-1", "key-2"},
 			},
 			{
 				Feature: "feature-2",
-				Keys:    []string{"key-10", "key-20"},
+				Keys:    []interface{}{"key-10", "key-20"},
 			},
 		},
 	}
@@ -317,11 +317,11 @@ func TestPostUniqueKeys(t *testing.T) {
 	keys := []dtos.Key{
 		{
 			Feature: "feature-1",
-			Keys:    []string{"key-1", "key-2"},
+			Keys:    []interface{}{"key-1", "key-2"},
 		},
 		{
 			Feature: "feature-2",
-			Keys:    []string{"key-3", "key-4"},
+			Keys:    []interface{}{"key-3", "key-4"},
 		},
 	}
 	err := telemetryRecorder.RecordUniqueKeys(dtos.Uniques{

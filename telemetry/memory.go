@@ -136,8 +136,8 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (e *RecorderSingle) SynchronizeUniqueKeys() error {
-	uniques := e.uniqueKeysStorage.PopAll()
+func (e *RecorderSingle) SynchronizeUniqueKeys(bulkSize int64) error {
+	uniques := e.uniqueKeysStorage.PopN(bulkSize)
 
 	if len(uniques.Keys) < 1 {
 		e.logger.Debug("Unique keys list is empty, nothing to synchronize.")

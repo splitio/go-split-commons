@@ -9,7 +9,7 @@ func (n *NoOp) SynchronizeStats() error {
 	return nil
 }
 
-func (n *NoOp) SynchronizeUniqueKeys() error {
+func (n *NoOp) SynchronizeUniqueKeys(bulkSize int64) error {
 	return nil
 }
 

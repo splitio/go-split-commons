@@ -51,8 +51,8 @@ func (r *SynchronizerRedis) SynchronizeConfig(cfg InitConfig, timedUntilReady in
 }
 
 // SynchronizeUniqueKeys syncs unique keys
-func (r *SynchronizerRedis) SynchronizeUniqueKeys() error {
-	uniques := r.uniqueKeysStorage.PopAll()
+func (r *SynchronizerRedis) SynchronizeUniqueKeys(bulkSize int64) error {
+	uniques := r.uniqueKeysStorage.PopN(bulkSize)
 	if len(uniques.Keys) < 1 {
 		r.logger.Debug("Unique keys list is empty, nothing to synchronize.")
 		return nil

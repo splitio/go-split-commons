@@ -47,15 +47,15 @@ func TestPopNRaw(t *testing.T) {
 		Keys: []dtos.Key{
 			{
 				Feature: "feature-test-1",
-				Keys:    []string{"key-1", "key-2", "key-3"},
+				Keys:    []interface{}{"key-1", "key-2", "key-3"},
 			},
 			{
 				Feature: "feature-test-2",
-				Keys:    []string{"key-1", "key-2", "key-3"},
+				Keys:    []interface{}{"key-1", "key-2", "key-3"},
 			},
 			{
 				Feature: "feature-test-3",
-				Keys:    []string{"key-1", "key-2", "key-3"},
+				Keys:    []interface{}{"key-1", "key-2", "key-3"},
 			},
 		},
 	}

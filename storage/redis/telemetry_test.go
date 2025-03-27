@@ -191,11 +191,11 @@ func TestRecordUniqueKeys(t *testing.T) {
 		Keys: []dtos.Key{
 			{
 				Feature: "feature-1",
-				Keys:    []string{"key-1", "key-2"},
+				Keys:    []interface{}{"key-1", "key-2"},
 			},
 			{
 				Feature: "feature-2",
-				Keys:    []string{"key-1", "key-2"},
+				Keys:    []interface{}{"key-1", "key-2"},
 			},
 		},
 	})

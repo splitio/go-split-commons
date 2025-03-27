@@ -11,13 +11,14 @@ func NewRecordUniqueKeysTask(
 	recorder telemetry.TelemetrySynchronizer,
 	period int,
 	logger logging.LoggerInterface,
+	bulkSize int64,
 ) *asynctask.AsyncTask {
 	record := func(logger logging.LoggerInterface) error {
-		return recorder.SynchronizeUniqueKeys()
+		return recorder.SynchronizeUniqueKeys(bulkSize)
 	}
 
 	onStop := func(logger logging.LoggerInterface) {
-		recorder.SynchronizeUniqueKeys()
+		recorder.SynchronizeUniqueKeys(bulkSize)
 	}
 
 	return asynctask.NewAsyncTask("SubmitUniqueKeys", record, period, nil, onStop, logger)
