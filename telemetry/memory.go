@@ -137,6 +137,10 @@ func (e *RecorderSingle) SynchronizeConfig(cfg InitConfig, timedUntilReady int64
 
 // SynchronizeUniqueKeys syncs unique keys
 func (e *RecorderSingle) SynchronizeUniqueKeys(bulkSize int64) error {
+	if e.uniqueKeysStorage == nil {
+		return nil
+	}
+
 	uniques := e.uniqueKeysStorage.PopN(bulkSize)
 
 	if len(uniques.Keys) < 1 {
