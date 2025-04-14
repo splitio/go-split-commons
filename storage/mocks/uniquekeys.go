@@ -16,3 +16,16 @@ func (m MockUniqueKeysStorage) Push(featureName string, key string) {
 func (m MockUniqueKeysStorage) PopN(bulkSize int64) dtos.Uniques {
 	return m.PopNCall(bulkSize)
 }
+
+type MockUniqueKeysMultiSdkConsumer struct {
+	CountCall   func() int64
+	PopNRawCall func(int64) ([]string, int64, error)
+}
+
+func (m MockUniqueKeysMultiSdkConsumer) Count() int64 {
+	return m.CountCall()
+}
+
+func (m MockUniqueKeysMultiSdkConsumer) PopNRaw(n int64) ([]string, int64, error) {
+	return m.PopNRawCall(n)
+}
