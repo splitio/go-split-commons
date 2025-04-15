@@ -8,17 +8,17 @@ import (
 
 func TestParseAndValidate(t *testing.T) {
 	res, err := ParseAndValidate("")
-	if err != nil || res != FLAG_V1_0 {
+	if err != nil || res != Default {
 		t.Error("It should be 1.1")
 	}
 
 	res, err = ParseAndValidate("1.1")
-	if err != nil || res != FLAG_V1_1 {
+	if err != nil || res != FlagSpecs[1] {
 		t.Error("It should be 1.1")
 	}
 
 	res, err = ParseAndValidate("1.2")
-	if err != nil || res != FLAG_V1_2 {
+	if err != nil || res != FlagSpecs[2] {
 		t.Error("It should be 1.2")
 	}
 
@@ -28,34 +28,34 @@ func TestParseAndValidate(t *testing.T) {
 	}
 }
 
-func TestsplitVersionFilter(t *testing.T) {
+func TestSplitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
-	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
+	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, Default)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, FLAG_V1_0)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, Default)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_1)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FlagSpecs[1])
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_0)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, Default)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_1)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FlagSpecs[1])
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_2)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FlagSpecs[2])
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}

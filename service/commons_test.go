@@ -9,7 +9,7 @@ import (
 )
 
 func TestSplitFetchOptions(t *testing.T) {
-	fetchOptions := MakeFlagRequestParams().WithChangeNumber(123456).WithFlagSetsFilter("filter").WithTill(*common.Int64Ref(123)).WithSpecVersion(common.StringRef(specs.FLAG_V1_1))
+	fetchOptions := MakeFlagRequestParams().WithChangeNumber(123456).WithFlagSetsFilter("filter").WithTill(*common.Int64Ref(123)).WithSpecVersion(common.StringRef(specs.FlagSpecs[1]))
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
 
@@ -19,7 +19,7 @@ func TestSplitFetchOptions(t *testing.T) {
 	if req.URL.Query().Get(since) != "123456" {
 		t.Error("Change number not set")
 	}
-	if req.URL.Query().Get(spec) != specs.FLAG_V1_1 {
+	if req.URL.Query().Get(spec) != specs.FlagSpecs[1] {
 		t.Error("Spec version not set")
 	}
 	if req.URL.Query().Get(sets) != "filter" {
@@ -55,14 +55,14 @@ func TestSegmentRequestParams(t *testing.T) {
 }
 
 func TestAuthRequestParams(t *testing.T) {
-	fetchOptions := MakeAuthRequestParams(common.StringRef(specs.FLAG_V1_1))
+	fetchOptions := MakeAuthRequestParams(common.StringRef(specs.FlagSpecs[1]))
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
 
 	if req.Header.Get(cacheControl) != cacheControlNoCache {
 		t.Error("Cache control header not set")
 	}
-	if req.URL.Query().Get(spec) != specs.FLAG_V1_1 {
+	if req.URL.Query().Get(spec) != specs.FlagSpecs[1] {
 		t.Error("Spec version not set")
 	}
 	if req.URL.String() != "test?s=1.1" {
