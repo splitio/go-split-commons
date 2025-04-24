@@ -6,16 +6,13 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var flagSpecs = []string{
-	"1.0", // default
-	"1.1", // Semver Matcher
-	"1.2", // Large Segment Matcher
-}
+const (
+	FLAG_V1_0 = "1.0" // default
+	FLAG_V1_1 = "1.1" // Semver Matcher
+	FLAG_V1_2 = "1.2" // Large Segment Matcher
+)
 
-var FLAG_V1_0 = flagSpecs[0]
-var FLAG_V1_1 = flagSpecs[1]
-var FLAG_V1_2 = flagSpecs[2]
-
+var flagSpecs = []string{FLAG_V1_0, FLAG_V1_1, FLAG_V1_2}
 var Latest = flagSpecs[len(flagSpecs)-1]
 
 // Match returns the spec version if it is valid, otherwise it returns nil
