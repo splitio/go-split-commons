@@ -64,6 +64,7 @@ func TestTelemetrySyncTask(t *testing.T) {
 			logging.NewLogger(&logging.LoggerOptions{}),
 			dtos.Metadata{},
 			mockedTelemetryStorage,
+			nil,
 		),
 		2,
 		logging.NewLogger(&logging.LoggerOptions{}),
