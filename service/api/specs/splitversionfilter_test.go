@@ -8,7 +8,7 @@ import (
 
 func TestParseAndValidate(t *testing.T) {
 	res, err := ParseAndValidate("")
-	if err != nil || res != Default {
+	if err != nil || res != FLAG_V1_0 {
 		t.Error("It should be 1.1")
 	}
 
@@ -30,12 +30,12 @@ func TestParseAndValidate(t *testing.T) {
 
 func TestSplitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
-	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, Default)
+	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, Default)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, FLAG_V1_0)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
@@ -45,7 +45,7 @@ func TestSplitVersionFilter(t *testing.T) {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, Default)
+	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}

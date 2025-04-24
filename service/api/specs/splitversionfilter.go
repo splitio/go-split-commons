@@ -13,7 +13,7 @@ func NewSplitVersionFilter() SplitVersionFilter {
 		FLAG_V1_1: {matchers.MatcherTypeInLargeSegment: true},
 	}
 
-	data[Default] = mergeMaps(map[string]bool{
+	data[FLAG_V1_0] = mergeMaps(map[string]bool{
 		matchers.MatcherEqualToSemver:                  true,
 		matchers.MatcherTypeLessThanOrEqualToSemver:    true,
 		matchers.MatcherTypeGreaterThanOrEqualToSemver: true,
