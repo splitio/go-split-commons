@@ -10,7 +10,7 @@ type SplitVersionFilter struct {
 
 func NewSplitVersionFilter() SplitVersionFilter {
 	data := map[string]map[string]bool{
-		FlagSpecs[1]: {matchers.MatcherTypeInLargeSegment: true},
+		FLAG_V1_1: {matchers.MatcherTypeInLargeSegment: true},
 	}
 
 	data[Default] = mergeMaps(map[string]bool{
@@ -19,7 +19,7 @@ func NewSplitVersionFilter() SplitVersionFilter {
 		matchers.MatcherTypeGreaterThanOrEqualToSemver: true,
 		matchers.MatcherTypeBetweenSemver:              true,
 		matchers.MatcherTypeInListSemver:               true,
-	}, data[FlagSpecs[1]])
+	}, data[FLAG_V1_1])
 
 	return SplitVersionFilter{
 		data: data,

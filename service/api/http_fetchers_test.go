@@ -40,7 +40,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		if r.URL.Query().Get("sets") != "" {
 			t.Error("wrong sets")
 		}
-		if r.URL.Query().Get("s") != specs.FlagSpecs[1] {
+		if r.URL.Query().Get("s") != specs.FLAG_V1_1 {
 			t.Error("wrong spec")
 		}
 		if r.URL.RawQuery != "s=1.1&since=123456" {
@@ -55,7 +55,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		conf.AdvancedConfig{
 			EventsURL:        ts.URL,
 			SdkURL:           ts.URL,
-			FlagsSpecVersion: specs.FlagSpecs[1],
+			FlagsSpecVersion: specs.FLAG_V1_1,
 		},
 		logger,
 		dtos.Metadata{},
@@ -213,7 +213,7 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 			EventsURL:        ts.URL,
 			SdkURL:           ts.URL,
 			FlagSetsFilter:   []string{"one", "two"},
-			FlagsSpecVersion: specs.FlagSpecs[1],
+			FlagsSpecVersion: specs.FLAG_V1_1,
 		},
 		logger,
 		dtos.Metadata{},
@@ -235,7 +235,7 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 	if !queryParams.Has("sets") {
 		t.Error("Expected to have sets")
 	}
-	if queryParams.Get("s") != specs.FlagSpecs[1] {
+	if queryParams.Get("s") != specs.FLAG_V1_1 {
 		t.Error("Expected to have spec")
 	}
 	asString := queryParams.Get("sets")
