@@ -1,4 +1,4 @@
-module github.com/splitio/go-split-commons/v6
+module github.com/splitio/go-split-commons/v7
 
 go 1.18
 

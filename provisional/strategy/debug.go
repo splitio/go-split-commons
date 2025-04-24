@@ -1,7 +1,7 @@
 package strategy
 
 import (
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
 // DebugImpl struct for debug impression mode strategy.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/storage/filter"
-	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-split-commons/v7/storage/filter"
+	"github.com/splitio/go-split-commons/v7/storage/inmemory/mutexqueue"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
