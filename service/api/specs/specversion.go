@@ -8,8 +8,9 @@ import (
 
 const (
 	FLAG_V1_0 = "1.0" // default
-	FLAG_V1_1 = "1.1" // Semver Matcher
-	FLAG_V1_2 = "1.2" // Large Segment Matcher
+	FLAG_V1_1 = "1.1" // Semver
+	FLAG_V1_2 = "1.2" // Large Segment
+	FLAG_V1_3 = "1.3" // Rule-based Segment
 )
 
 var flagSpecs = []string{FLAG_V1_0, FLAG_V1_1, FLAG_V1_2}
