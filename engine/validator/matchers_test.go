@@ -3,9 +3,9 @@ package validator
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/matchers"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )

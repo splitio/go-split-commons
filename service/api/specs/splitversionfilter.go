@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/matchers"
 )
 
 type SplitVersionFilter struct {

@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar"
-	"github.com/splitio/go-split-commons/v6/engine/hash"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
 	"github.com/splitio/go-toolkit/v5/logging"
