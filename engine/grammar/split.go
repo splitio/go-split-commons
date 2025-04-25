@@ -111,3 +111,7 @@ func (s *Split) ChangeNumber() int64 {
 func (s *Split) Configurations() map[string]string {
 	return s.splitData.Configurations
 }
+
+func (s *Split) ImpressionsDisabled() bool {
+	return s.splitData.ImpressionsDisabled
+}

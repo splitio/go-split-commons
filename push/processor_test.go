@@ -3,6 +3,7 @@ package push
 import (
 	"testing"
 
+	"github.com/splitio/go-split-commons/v6/conf"
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/push/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -28,7 +29,10 @@ func TestProcessor(t *testing.T) {
 			}
 		},
 	}
-	processor, err := NewProcessor(5000, 5000, syncMock, logger)
+	processor, err := NewProcessor(5000, 5000, syncMock, logger, &conf.LargeSegmentConfig{
+		Enable:          true,
+		UpdateQueueSize: 5000,
+	})
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -77,5 +81,24 @@ func TestProcessor(t *testing.T) {
 	}
 	if len(processor.splitQueue) != 2 {
 		t.Error("It should be 2")
+	}
+
+	se3 := dtos.NewLargeSegmentChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "NDA5ODc2MTAyNg==_MzAyODY0NDkyOA==_largesegments"), changeNumber),
+		[]dtos.LargeSegmentRFDResponseDTO{{Name: "largesegment", NotificationType: "large"}},
+	)
+
+	err = processor.ProcessLargeSegmentChangeUpdate(se3)
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	if len(processor.segmentQueue) != 1 {
+		t.Error("It should be 0")
+	}
+	if len(processor.splitQueue) != 2 {
+		t.Error("It should be 2")
+	}
+	if len(processor.largeSegment.queue) != 1 {
+		t.Error("lsQueue should be 1")
 	}
 }

@@ -24,6 +24,7 @@ type SplitDTO struct {
 	Conditions            []ConditionDTO    `json:"conditions"`
 	Configurations        map[string]string `json:"configurations"`
 	Sets                  []string          `json:"sets"`
+	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string
@@ -53,17 +54,23 @@ type MatcherGroupDTO struct {
 
 // MatcherDTO structure to map a Matcher definition fetched from JSON message.
 type MatcherDTO struct {
-	KeySelector        *KeySelectorDTO                   `json:"keySelector"`
-	MatcherType        string                            `json:"matcherType"`
-	Negate             bool                              `json:"negate"`
-	UserDefinedSegment *UserDefinedSegmentMatcherDataDTO `json:"userDefinedSegmentMatcherData"`
-	Whitelist          *WhitelistMatcherDataDTO          `json:"whitelistMatcherData"`
-	UnaryNumeric       *UnaryNumericMatcherDataDTO       `json:"unaryNumericMatcherData"`
-	Between            *BetweenMatcherDataDTO            `json:"betweenMatcherData"`
-	BetweenString      *BetweenStringMatcherDataDTO      `json:"betweenStringMatcherData"`
-	Dependency         *DependencyMatcherDataDTO         `json:"dependencyMatcherData"`
-	Boolean            *bool                             `json:"booleanMatcherData"`
-	String             *string                           `json:"stringMatcherData"`
+	KeySelector             *KeySelectorDTO                        `json:"keySelector"`
+	MatcherType             string                                 `json:"matcherType"`
+	Negate                  bool                                   `json:"negate"`
+	UserDefinedSegment      *UserDefinedSegmentMatcherDataDTO      `json:"userDefinedSegmentMatcherData"`
+	Whitelist               *WhitelistMatcherDataDTO               `json:"whitelistMatcherData"`
+	UnaryNumeric            *UnaryNumericMatcherDataDTO            `json:"unaryNumericMatcherData"`
+	Between                 *BetweenMatcherDataDTO                 `json:"betweenMatcherData"`
+	BetweenString           *BetweenStringMatcherDataDTO           `json:"betweenStringMatcherData"`
+	Dependency              *DependencyMatcherDataDTO              `json:"dependencyMatcherData"`
+	Boolean                 *bool                                  `json:"booleanMatcherData"`
+	String                  *string                                `json:"stringMatcherData"`
+	UserDefinedLargeSegment *UserDefinedLargeSegmentMatcherDataDTO `json:"userDefinedLargeSegmentMatcherData"`
+}
+
+// UserDefinedLargeSegmentMatcherDataDTO structure to map a Matcher definition fetched from JSON message.
+type UserDefinedLargeSegmentMatcherDataDTO struct {
+	LargeSegmentName string `json:"largeSegmentName"`
 }
 
 // UserDefinedSegmentMatcherDataDTO structure to map a Matcher definition fetched from JSON message.

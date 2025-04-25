@@ -10,6 +10,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/backoff"
@@ -167,10 +168,10 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 	}
 
 	internalSyncResult, err := s.attemptSegmentSync(name, till, fetchOptions)
-	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if err != nil {
 		return internalSyncResult.updateResult, err
 	}
+	attempts := onDemandFetchBackoffMaxRetries - internalSyncResult.attempt
 	if internalSyncResult.successfulSync {
 		s.logger.Debug(fmt.Sprintf("Refresh completed in %d attempts.", attempts))
 		return internalSyncResult.updateResult, nil
@@ -193,13 +194,14 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
 	s.logger.Debug("Segment Sync", segmentNames)
+	s.hcMonitor.NotifyEvent(application.Segments)
 	wg := sync.WaitGroup{}
 	wg.Add(len(segmentNames))
 	failedSegments := set.NewThreadSafeSet()
 
 	var mtx sync.Mutex
 	results := make(map[string]UpdateResult, len(segmentNames))
-	errorsToPrint := NewErrors()
+	errorsToPrint := utils.NewErrors()
 
 	sem := semaphore.NewWeighted(maxConcurrency)
 	for _, name := range segmentNames {
@@ -215,7 +217,7 @@ func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 			res, err := s.SynchronizeSegment(segmentName, nil)
 			if err != nil {
 				failedSegments.Add(segmentName)
-				errorsToPrint.addError(segmentName, err)
+				errorsToPrint.AddError(segmentName, err)
 			}
 
 			mtx.Lock()

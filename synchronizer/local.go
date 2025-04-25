@@ -43,7 +43,7 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 	if cfg.RefreshEnabled {
 		splitTasks.SplitSyncTask = tasks.NewFetchSplitsTask(workers.SplitUpdater, cfg.SplitPeriod, logger)
 		if cfg.SegmentDirectory != "" {
-			splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentUpdater, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger)
+			splitTasks.SegmentSyncTask = tasks.NewFetchSegmentsTask(workers.SegmentUpdater, cfg.SegmentPeriod, cfg.SegmentWorkers, cfg.QueueSize, logger, hcMonitor)
 		}
 	}
 
@@ -105,6 +105,14 @@ func (s *Local) SynchronizeSegment(name string, till *int64) error {
 		_, err := s.workers.SegmentUpdater.SynchronizeSegment(name, till)
 		return err
 	}
+	return nil
+}
+
+// SynchronizeLargeSegment syncs segment
+func (s *Local) SynchronizeLargeSegment(name string, till *int64) error { return nil }
+
+// SynchronizeLargeSegment syncs segment
+func (s *Local) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
 	return nil
 }
 

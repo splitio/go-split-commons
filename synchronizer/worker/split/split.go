@@ -18,6 +18,7 @@ import (
 
 const (
 	matcherTypeInSegment           = "IN_SEGMENT"
+	matcherTypeInLargeSegment      = "IN_LARGE_SEGMENT"
 	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
@@ -38,10 +39,11 @@ type Updater interface {
 
 // UpdateResult encapsulates information regarding the split update performed
 type UpdateResult struct {
-	UpdatedSplits      []string
-	ReferencedSegments []string
-	NewChangeNumber    int64
-	RequiresFetch      bool
+	UpdatedSplits           []string
+	ReferencedSegments      []string
+	ReferencedLargeSegments []string
+	NewChangeNumber         int64
+	RequiresFetch           bool
 }
 
 type internalSplitSync struct {
@@ -94,6 +96,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	// just guessing sizes so the we don't realloc immediately
 	segmentReferences := make([]string, 0, 10)
 	updatedSplitNames := make([]string, 0, 10)
+	largeSegmentReferences := make([]string, 0, 10)
 	var err error
 	var currentSince int64
 
@@ -116,15 +119,17 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 		s.processUpdate(splits)
 		segmentReferences = appendSegmentNames(segmentReferences, splits)
 		updatedSplitNames = appendSplitNames(updatedSplitNames, splits)
+		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splits)
 		if currentSince == splits.Since {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			break
 		}
 	}
 	return &UpdateResult{
-		UpdatedSplits:      common.DedupeStringSlice(updatedSplitNames),
-		ReferencedSegments: common.DedupeStringSlice(segmentReferences),
-		NewChangeNumber:    currentSince,
+		UpdatedSplits:           common.DedupeStringSlice(updatedSplitNames),
+		ReferencedSegments:      common.DedupeStringSlice(segmentReferences),
+		NewChangeNumber:         currentSince,
+		ReferencedLargeSegments: common.DedupeStringSlice(largeSegmentReferences),
 	}, err
 }
 
@@ -197,6 +202,19 @@ func appendSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
 	return dst
 }
 
+func appendLargeSegmentNames(dst []string, splits *dtos.SplitChangesDTO) []string {
+	for _, split := range splits.Splits {
+		for _, cond := range split.Conditions {
+			for _, matcher := range cond.MatcherGroup.Matchers {
+				if matcher.MatcherType == matcherTypeInLargeSegment && matcher.UserDefinedLargeSegment != nil {
+					dst = append(dst, matcher.UserDefinedLargeSegment.LargeSegmentName)
+				}
+			}
+		}
+	}
+	return dst
+}
+
 func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
 	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
 	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags.Splits))
@@ -229,6 +247,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	if ffChange.FeatureFlag() != nil && *ffChange.PreviousChangeNumber() == changeNumber {
 		segmentReferences := make([]string, 0, 10)
 		updatedSplitNames := make([]string, 0, 1)
+		largeSegmentReferences := make([]string, 0, 10)
 		s.logger.Debug(fmt.Sprintf("updating feature flag %s", ffChange.FeatureFlag().Name))
 		featureFlags := make([]dtos.SplitDTO, 0, 1)
 		featureFlags = append(featureFlags, *ffChange.FeatureFlag())
@@ -238,11 +257,13 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 		s.runtimeTelemetry.RecordUpdatesFromSSE(telemetry.SplitUpdate)
 		updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
 		segmentReferences = appendSegmentNames(segmentReferences, &featureFlagChange)
+		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, &featureFlagChange)
 		return &UpdateResult{
-			UpdatedSplits:      updatedSplitNames,
-			ReferencedSegments: segmentReferences,
-			NewChangeNumber:    ffChange.BaseUpdate.ChangeNumber(),
-			RequiresFetch:      false,
+			UpdatedSplits:           updatedSplitNames,
+			ReferencedSegments:      segmentReferences,
+			NewChangeNumber:         ffChange.BaseUpdate.ChangeNumber(),
+			RequiresFetch:           false,
+			ReferencedLargeSegments: largeSegmentReferences,
 		}
 	}
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")

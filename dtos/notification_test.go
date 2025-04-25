@@ -225,3 +225,41 @@ func TestControlUpdate(t *testing.T) {
 		t.Error("Unexpected String")
 	}
 }
+
+func TestLargeSegmentChangeUpdate(t *testing.T) {
+	ls := []LargeSegmentRFDResponseDTO{
+		{
+			Name:             "ls1",
+			NotificationType: UpdateTypeLargeSegmentChange,
+			SpecVersion:      "1.0",
+			RFD:              &RFD{},
+			ChangeNumber:     123123,
+		},
+	}
+
+	lsUpdate := NewLargeSegmentChangeUpdate(NewBaseUpdate(NewBaseMessage(123456789, "ls_channel"), 123456), ls)
+	if lsUpdate.EventType() != SSEEventTypeMessage {
+		t.Error("Unexpected EventType")
+	}
+	if lsUpdate.Timestamp() != 123456789 {
+		t.Error("Unexpected Timestamp")
+	}
+	if lsUpdate.Channel() != "ls_channel" {
+		t.Error("Unexpected Channel")
+	}
+	if lsUpdate.MessageType() != MessageTypeUpdate {
+		t.Error("Unexpected MessageType")
+	}
+	if lsUpdate.ChangeNumber() != 123456 {
+		t.Error("Unexpected ChangeNumber")
+	}
+	if lsUpdate.UpdateType() != UpdateTypeLargeSegmentChange {
+		t.Error("Unexpected UpdateType")
+	}
+	if lsUpdate.String() != "LargeSegmentChange(channel=ls_channel,changeNumber=123456,count=1,timestamp=123456789)" {
+		t.Error("Unexpected String", lsUpdate.String())
+	}
+	if len(lsUpdate.LargeSegments) != 1 {
+		t.Error("LargeSegments len should be 1. Actual: ", len(lsUpdate.LargeSegments))
+	}
+}

@@ -17,6 +17,7 @@ import (
 
 func TestLocalSyncAllError(t *testing.T) {
 	var splitFetchCalled int64
+	var notifyEventCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitAPI := api.SplitAPI{
 		SplitFetcher: httpMocks.MockSplitFetcher{
@@ -35,7 +36,9 @@ func TestLocalSyncAllError(t *testing.T) {
 	segmentMockStorage := mocks.MockSegmentStorage{}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
 	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {},
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
 	}
 	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
@@ -44,6 +47,9 @@ func TestLocalSyncAllError(t *testing.T) {
 	}
 	if atomic.LoadInt64(&splitFetchCalled) != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -78,13 +84,16 @@ func TestLocalSyncAllOk(t *testing.T) {
 			}
 		},
 	}
+	var notifyEventCalled int64
 	segmentMockStorage := mocks.MockSegmentStorage{}
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
 	}
 	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {},
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
 	}
 	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
@@ -93,6 +102,9 @@ func TestLocalSyncAllOk(t *testing.T) {
 	}
 	if splitFetchCalled != 1 {
 		t.Error("It should be called once")
+	}
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
 }
 
@@ -132,8 +144,11 @@ func TestLocalPeriodicFetching(t *testing.T) {
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
 	}
+	var notifyEventCalled int64
 	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {},
+		NotifyEventCall: func(counterType int) {
+			atomic.AddInt64(&notifyEventCalled, 1)
+		},
 	}
 	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
@@ -142,4 +157,7 @@ func TestLocalPeriodicFetching(t *testing.T) {
 		t.Error("It should be called once", splitFetchCalled)
 	}
 	syncForTest.StopPeriodicFetching()
+	if atomic.LoadInt64(&notifyEventCalled) != 1 {
+		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
+	}
 }

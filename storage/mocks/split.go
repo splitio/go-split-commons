@@ -14,6 +14,7 @@ type MockSplitStorage struct {
 	UpdateCall             func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
 	RemoveCall             func(splitName string)
 	SegmentNamesCall       func() *set.ThreadUnsafeSet
+	LargeSegmentNamesCall  func() *set.ThreadUnsafeSet
 	SetChangeNumberCall    func(changeNumber int64) error
 	SplitCall              func(splitName string) *dtos.SplitDTO
 	SplitNamesCall         func() []string
@@ -55,6 +56,11 @@ func (m MockSplitStorage) Remove(splitname string) {
 // SegmentNames mock
 func (m MockSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	return m.SegmentNamesCall()
+}
+
+// SegmentNames mock
+func (m MockSplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
+	return m.LargeSegmentNamesCall()
 }
 
 // SetChangeNumber mock

@@ -9,6 +9,8 @@ const (
 	Storage
 	// SyncErros monitor type
 	SyncErros
+	// LargeSegments monitor type
+	LargeSegments
 )
 
 // MonitorProducerInterface application monitor producer interface

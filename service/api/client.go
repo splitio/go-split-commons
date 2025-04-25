@@ -83,6 +83,19 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 		c.logger.Error("Error requesting data to API: ", req.URL.String(), err.Error())
 		return nil, err
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		message := fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status)
+		if resp.StatusCode == http.StatusNotModified {
+			c.logger.Debug(message)
+		} else {
+			c.logger.Error(message)
+		}
+
+		return nil, &dtos.HTTPError{
+			Code:    resp.StatusCode,
+			Message: resp.Status,
+		}
+	}
 	defer resp.Body.Close()
 
 	// Check that the server actually sent compressed data
@@ -105,16 +118,7 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 	}
 
 	c.logger.Verbose("[RESPONSE_BODY]", string(body), "[END_RESPONSE_BODY]")
-
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return body, nil
-	}
-
-	c.logger.Error(fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status))
-	return nil, &dtos.HTTPError{
-		Code:    resp.StatusCode,
-		Message: resp.Status,
-	}
+	return body, nil
 }
 
 // Post performs a HTTP POST request

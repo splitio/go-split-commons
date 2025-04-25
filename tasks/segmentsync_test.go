@@ -99,6 +99,7 @@ func TestSegmentSyncTask(t *testing.T) {
 		10,
 		100,
 		logging.NewLogger(&logging.LoggerOptions{}),
+		appMonitorMock,
 	)
 
 	segmentTask.Start()
