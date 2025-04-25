@@ -143,8 +143,8 @@ type Stats struct {
 
 // Key struct
 type Key struct {
-	Feature string   `json:"f,omitempty"`
-	Keys    []string `json:"ks,omitempty"`
+	Feature string        `json:"f,omitempty"`
+	Keys    []interface{} `json:"ks,omitempty"`
 }
 
 // Uniques struct

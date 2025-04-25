@@ -6,13 +6,16 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/storage/filter"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexqueue"
 	"github.com/splitio/go-split-commons/v6/util"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 func TestNoneMode(t *testing.T) {
 	now := time.Now().UTC().UnixNano()
 	filter := filter.NewBloomFilter(1000, 0.01)
-	tracker := NewUniqueKeysTracker(filter)
+	uniqueKeysStorage := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	tracker := NewUniqueKeysTracker(filter, uniqueKeysStorage)
 	counter := NewImpressionsCounter()
 	none := NewNoneImpl(counter, tracker, true)
 
@@ -52,7 +55,8 @@ func TestNoneMode(t *testing.T) {
 func TestApplySingleNone(t *testing.T) {
 	now := time.Now().UTC().UnixNano()
 	filter := filter.NewBloomFilter(1000, 0.01)
-	tracker := NewUniqueKeysTracker(filter)
+	uniqueKeysStorage := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	tracker := NewUniqueKeysTracker(filter, uniqueKeysStorage)
 	counter := NewImpressionsCounter()
 	none := NewNoneImpl(counter, tracker, true)
 

@@ -1,3 +1,11 @@
+7.0.0 (Apr 24, 2025)
+- BREAKING CHANGE:
+    - UniqueKeysTracker interface changed:
+        - Added Unique keys storage implementation.
+        - Added support for batch posting.
+- Bump dependencies for vulnerability fixes.
+- Updated flag specs handler.
+
 6.1.0 (Jan 14, 2025)
 - Added support for Impressions toggle.
 - Bump dependencies for vulnerability fixes.

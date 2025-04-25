@@ -28,7 +28,7 @@ func TestParseAndValidate(t *testing.T) {
 	}
 }
 
-func TestsplitVersionFilter(t *testing.T) {
+func TestSplitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
 	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
 	if !shouldFilter {

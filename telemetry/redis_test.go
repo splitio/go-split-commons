@@ -34,7 +34,7 @@ func TestRecorderRedis(t *testing.T) {
 		},
 	}
 
-	sender := NewSynchronizerRedis(redisMock, logger)
+	sender := NewSynchronizerRedis(redisMock, logger, nil)
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	sender.SynchronizeConfig(InitConfig{}, 0, factories, []string{"sentinel"})

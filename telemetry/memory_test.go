@@ -64,7 +64,7 @@ func TestTelemetryRecorderError(t *testing.T) {
 		},
 	}
 
-	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
+	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage, nil)
 
 	err := telemetrySync.SynchronizeStats()
 	if err == nil {
@@ -119,7 +119,7 @@ func TestTelemetryRecorder(t *testing.T) {
 		RecordStatsCall: func(stats dtos.Stats, metadata dtos.Metadata) error { return nil },
 	}
 
-	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
+	telemetrySync := NewTelemetrySynchronizer(mockedTelemetryStorage, telemetryRecorderMock, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage, nil)
 
 	err := telemetrySync.SynchronizeStats()
 	if err != nil {
@@ -201,7 +201,7 @@ func TestTelemetryRecorderSync(t *testing.T) {
 		PopUpdatesFromSSECall: func() dtos.UpdatesFromSSE { return dtos.UpdatesFromSSE{} },
 	}
 
-	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage)
+	telemetryRecorder := NewTelemetrySynchronizer(mockedTelemetryStorage, httpTelemetryRecorder, mockedSplitStorage, mockedSegmentStorage, logging.NewLogger(&logging.LoggerOptions{}), dtos.Metadata{}, mockedTelemetryStorage, nil)
 
 	telemetryRecorder.SynchronizeStats()
 
@@ -255,7 +255,7 @@ func TestConfig(t *testing.T) {
 		},
 	}
 
-	sync := NewTelemetrySynchronizer(mockTelemetryStorage, mockRecorder, st.MockSplitStorage{}, st.MockSegmentStorage{}, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"}, mockTelemetryStorage)
+	sync := NewTelemetrySynchronizer(mockTelemetryStorage, mockRecorder, st.MockSplitStorage{}, st.MockSegmentStorage{}, logger, dtos.Metadata{SDKVersion: "go-test", MachineIP: "1.1.1.1", MachineName: "some"}, mockTelemetryStorage, nil)
 	factories := make(map[string]int64)
 	factories["one"] = 1
 	factories["two"] = 1

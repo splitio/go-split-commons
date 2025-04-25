@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/storage/filter"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-func Test(t *testing.T) {
+func TestUniqueKeysTracker(t *testing.T) {
 	bf := filter.NewBloomFilter(10000, 0.01)
-
-	tracker := NewUniqueKeysTracker(bf)
+	uniqueKeysStorage := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+	tracker := NewUniqueKeysTracker(bf, uniqueKeysStorage)
 
 	for i := 0; i < 10; i++ {
 		if !tracker.Track("feature-1", "key-"+fmt.Sprint(i)) {

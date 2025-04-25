@@ -7,6 +7,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/provisional/strategy"
 	"github.com/splitio/go-split-commons/v6/service/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexqueue"
 	st "github.com/splitio/go-split-commons/v6/storage/mocks"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -55,6 +56,8 @@ func TestUniqueKeysTask(t *testing.T) {
 		SegmentKeysCountCall: func() int64 { return 10 },
 	}
 
+	uniqueKeys := mutexqueue.NewMQUniqueKeysStorage(100, make(chan string), logging.NewLogger(nil))
+
 	synchronizer := telemetry.NewTelemetrySynchronizer(
 		mockedTelemetryStorage,
 		mockedTelemetryHTTP,
@@ -63,6 +66,7 @@ func TestUniqueKeysTask(t *testing.T) {
 		logging.NewLogger(&logging.LoggerOptions{}),
 		dtos.Metadata{},
 		mockedTelemetryStorage,
+		uniqueKeys,
 	)
 
 	filter := st.MockFilter{
@@ -70,12 +74,13 @@ func TestUniqueKeysTask(t *testing.T) {
 		ContainsCall: func(data string) bool { return false },
 		ClearCall:    func() {},
 	}
-	tracker := strategy.NewUniqueKeysTracker(filter)
+
+	tracker := strategy.NewUniqueKeysTracker(filter, uniqueKeys)
 	task := NewRecordUniqueKeysTask(
 		synchronizer,
-		tracker,
 		2,
 		logging.NewLogger(&logging.LoggerOptions{}),
+		5,
 	)
 
 	if !tracker.Track("tratment-1", "key-1") {
