@@ -7,7 +7,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -18,8 +17,8 @@ type Split struct {
 }
 
 type SplitProducer interface {
-	GetSplit(splitName string, ctx *injection.Context, logger logging.LoggerInterface) *Split
-	GetSplits(splitNames []string, ctx *injection.Context, logger logging.LoggerInterface) iter.Seq2[string, *Split]
+	GetSplit(splitName string, logger logging.LoggerInterface) *Split
+	GetSplits(splitNames []string, logger logging.LoggerInterface) iter.Seq2[string, *Split]
 	GetNamesByFlagSets(sets []string) map[string][]string
 }
 
@@ -32,19 +31,19 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{
 }}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
-func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
+func NewSplit(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO, ctx, logger),
+		conditions: processConditions(splitDTO, logger),
 		splitData:  splitDTO,
 	}
 
 	return &split
 }
 
-func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+func processConditions(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface) []*Condition {
 	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
-		condition, err := NewCondition(&cond, ctx, logger)
+		condition, err := NewCondition(&cond, logger)
 		if err != nil {
 			logger.Debug("Overriding conditions due unexpected matcher received")
 			return conditionReplacementUnsupportedMatcher

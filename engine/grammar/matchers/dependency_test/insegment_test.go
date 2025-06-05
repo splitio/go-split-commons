@@ -30,7 +30,7 @@ func TestInSegmentMatcher(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("segmentStorage", segmentStorage)
 
-	matcher, err := matchers.BuildMatcher(dto, ctx, logger)
+	matcher, err := matchers.BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -41,16 +41,16 @@ func TestInSegmentMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.InSegmentMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("item1", nil, nil) {
+	if !matcher.Match("item1", nil, nil, ctx) {
 		t.Error("Should match a key present in the segment")
 	}
 
-	if matcher.Match("item7", nil, nil) {
+	if matcher.Match("item7", nil, nil, ctx) {
 		t.Error("Should not match a key not present in the segment")
 	}
 
 	segmentStorage.Update("segmentito", set.NewSet(), segmentKeys, 123)
-	if matcher.Match("item1", nil, nil) {
+	if matcher.Match("item1", nil, nil, ctx) {
 		t.Error("Should return false for a nonexistent segment")
 	}
 }

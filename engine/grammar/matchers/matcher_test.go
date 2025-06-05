@@ -6,7 +6,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -21,7 +20,7 @@ func TestMatcherConstruction(t *testing.T) {
 		},
 	}
 
-	matcher1, err := BuildMatcher(&dto1, nil, logger)
+	matcher1, err := BuildMatcher(&dto1, logger)
 
 	if err != nil {
 		t.Error("Matcher construction shouldn't fail")
@@ -51,7 +50,7 @@ func TestMatcherConstruction(t *testing.T) {
 		},
 	}
 
-	matcher2, err := BuildMatcher(&dto2, nil, logger)
+	matcher2, err := BuildMatcher(&dto2, logger)
 
 	if err == nil {
 		t.Error("Matcher construction shoul have failed for invalid matcher")
@@ -69,9 +68,7 @@ func TestMatcherConstruction(t *testing.T) {
 			TrafficType: "something",
 		},
 	}
-	ctx := injection.NewContext()
-	ctx.AddDependency("key1", "sampleString")
-	matcher3, err := BuildMatcher(&dto3, ctx, logger)
+	matcher3, err := BuildMatcher(&dto3, logger)
 
 	if err != nil {
 		t.Error("There shouldn't have been any errors constructing the matcher")
@@ -79,20 +76,6 @@ func TestMatcherConstruction(t *testing.T) {
 
 	if !matcher3.Negate() {
 		t.Error("Matcher should be negated")
-	}
-
-	if matcher3.base().Context != ctx {
-		t.Error("Context not properly received", matcher3.base().Context)
-	}
-
-	dep := matcher3.base().Dependency("key1")
-	asString, ok := dep.(string)
-	if !ok {
-		t.Error("Conversion of string stored in context failed")
-	}
-
-	if asString != "sampleString" {
-		t.Error("Recovered string doesn't match stored one")
 	}
 
 	attrName := "value"
@@ -106,7 +89,7 @@ func TestMatcherConstruction(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher4, err := BuildMatcher(dto4, nil, logger)
+	matcher4, err := BuildMatcher(dto4, logger)
 	if err != nil {
 		t.Error("There shouldn't have been any errors constructing the matcher")
 	}

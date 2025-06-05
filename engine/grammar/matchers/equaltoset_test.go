@@ -22,7 +22,7 @@ func TestEqualToSetMatcher(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -33,15 +33,15 @@ func TestEqualToSetMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.EqualToSetMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four"}}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four"}}, nil, nil) {
 		t.Error("Matcher an equal set")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four", "five"}}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four", "five"}}, nil, nil) {
 		t.Error("Matcher should NOT match a superset")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three"}}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three"}}, nil, nil) {
 		t.Error("Matcher should not match a subset")
 	}
 }

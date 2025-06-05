@@ -22,7 +22,7 @@ func TestStartsWith(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -33,19 +33,19 @@ func TestStartsWith(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.StartsWithMatcher and was %s", matcherType)
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": "zzz"}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": "zzz"}, nil, nil) {
 		t.Errorf("string without any of the prefixes shouldn't match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": ""}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": ""}, nil, nil) {
 		t.Errorf("empty string shouldn't match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "abcpp"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "abcpp"}, nil, nil) {
 		t.Errorf("string containing one of the prefixes should match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": "hdhfabcdefghimklsad"}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": "hdhfabcdefghimklsad"}, nil, nil) {
 		t.Errorf("string containing some substrings but not as prefixes should not match")
 	}
 }

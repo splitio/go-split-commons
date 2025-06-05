@@ -9,7 +9,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -277,7 +276,7 @@ func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 }
 
 // GetSplit returns a cached grammar.Split if it exists, otherwise creates a new one
-func (m *MMSplitStorage) GetSplit(splitName string, ctx *injection.Context, logger logging.LoggerInterface) *grammar.Split {
+func (m *MMSplitStorage) GetSplit(splitName string, logger logging.LoggerInterface) *grammar.Split {
 	m.mutex.RLock()
 	if cached, ok := m.splitCache[splitName]; ok {
 		m.mutex.RUnlock()
@@ -290,7 +289,7 @@ func (m *MMSplitStorage) GetSplit(splitName string, ctx *injection.Context, logg
 		return nil
 	}
 
-	split := grammar.NewSplit(splitDTO, ctx, logger)
+	split := grammar.NewSplit(splitDTO, logger)
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -299,10 +298,10 @@ func (m *MMSplitStorage) GetSplit(splitName string, ctx *injection.Context, logg
 	return split
 }
 
-func (m *MMSplitStorage) GetSplits(splitNames []string, ctx *injection.Context, logger logging.LoggerInterface) iter.Seq2[string, *grammar.Split] {
+func (m *MMSplitStorage) GetSplits(splitNames []string, logger logging.LoggerInterface) iter.Seq2[string, *grammar.Split] {
 	return func(yield func(string, *grammar.Split) bool) {
 		for _, splitName := range splitNames {
-			if !yield(splitName, m.GetSplit(splitName, ctx, logger)) {
+			if !yield(splitName, m.GetSplit(splitName, logger)) {
 				return
 			}
 		}

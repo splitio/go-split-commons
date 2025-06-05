@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // RegexMatcher matches if the supplied key matches the feature flag's regex
@@ -13,7 +15,7 @@ type RegexMatcher struct {
 }
 
 // Match returns true if the supplied key matches the feature flag's regex
-func (m *RegexMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *RegexMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("RegexMatcher: %s", err.Error()))

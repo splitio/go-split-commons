@@ -87,7 +87,10 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		}
 	}
 
-	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes)
+	ctx := injection.NewContext()
+	ctx.AddDependency("segmentStorage", e.segmentStorage)
+	ctx.AddDependency("evaluator", e)
+	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes, ctx)
 	if treatment == nil {
 		e.logger.Warning(fmt.Sprintf(
 			"No condition matched, returning default treatment: %s",
@@ -112,18 +115,10 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	}
 }
 
-func (e *Evaluator) createInjectionContext() *injection.Context {
-	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", e.segmentStorage)
-	ctx.AddDependency("evaluator", e)
-	return ctx
-}
-
 // EvaluateFeature returns a struct with the resulting treatment and extra information for the impression
 func (e *Evaluator) EvaluateFeature(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) *Result {
 	before := time.Now()
-	ctx := e.createInjectionContext()
-	split := e.splitProducer.GetSplit(featureFlag, ctx, e.logger)
+	split := e.splitProducer.GetSplit(featureFlag, e.logger)
 
 	if bucketingKey == nil {
 		bucketingKey = &key
@@ -142,8 +137,7 @@ func (e *Evaluator) EvaluateFeatures(key string, bucketingKey *string, featureFl
 		EvaluationTime: 0,
 	}
 	before := time.Now()
-	ctx := e.createInjectionContext()
-	splits := e.splitProducer.GetSplits(featureFlags, ctx, e.logger)
+	splits := e.splitProducer.GetSplits(featureFlags, e.logger)
 
 	if bucketingKey == nil {
 		bucketingKey = &key

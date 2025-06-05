@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // GreaterThanOrEqualToMatcher will match if two numbers or two datetimes are equal
@@ -14,7 +15,7 @@ type GreaterThanOrEqualToMatcher struct {
 }
 
 // Match will match if the comparisonValue is greater than or equal to the matchingValue
-func (m *GreaterThanOrEqualToMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *GreaterThanOrEqualToMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingRaw, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("GreaterThanOrEqualToMatcher: %s", err.Error()))

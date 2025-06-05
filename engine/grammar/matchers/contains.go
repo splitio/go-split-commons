@@ -3,6 +3,8 @@ package matchers
 import (
 	"fmt"
 	"strings"
+
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // ContainsStringMatcher matches strings contain one of the substrings in the feature flag
@@ -12,7 +14,7 @@ type ContainsStringMatcher struct {
 }
 
 // Match returns true if the key contains one of the substrings in the feature flag
-func (m *ContainsStringMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *ContainsStringMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("ContainsAllOfSetMatcher: %s", err.Error()))

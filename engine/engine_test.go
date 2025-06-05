@@ -85,11 +85,11 @@ func TestTreatmentOnTrafficAllocation1(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger)
+	split := grammar.NewSplit(&splitDTO, logger)
 
 	eng := Engine{}
 	eng.logger = logger
-	treatment, _ := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil)
+	treatment, _ := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil, nil)
 
 	if *treatment == "default" {
 		t.Error("It should not return default treatment.")
@@ -134,11 +134,11 @@ func TestTreatmentOnTrafficAllocation99(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger)
+	split := grammar.NewSplit(&splitDTO, logger)
 
 	eng := Engine{}
 	eng.logger = logger
-	treatment, _ := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil)
+	treatment, _ := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil, nil)
 
 	if *treatment != "default" {
 		t.Error("It should return default treatment.")
@@ -236,13 +236,13 @@ func TestEvaluations(t *testing.T) {
 		t.Error("Data was not added for testing consistency")
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger)
+	split := grammar.NewSplit(&splitDTO, logger)
 
 	eng := Engine{}
 	eng.logger = logger
 
 	for _, tr := range treatmentsResults {
-		treatment, _ := eng.DoEvaluation(split, tr.Key, tr.Key, nil)
+		treatment, _ := eng.DoEvaluation(split, tr.Key, tr.Key, nil, nil)
 
 		if *treatment != tr.Result {
 			t.Error("Checking expected treatment " + tr.Result + " for key: " + tr.Key)
@@ -266,12 +266,12 @@ func TestNoConditionMatched(t *testing.T) {
 		Conditions:            []dtos.ConditionDTO{},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger)
+	split := grammar.NewSplit(&splitDTO, logger)
 
 	eng := Engine{}
 	eng.logger = logger
 
-	treatment, err := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil)
+	treatment, err := eng.DoEvaluation(split, "aaaaaaklmnbv", "aaaaaaklmnbv", nil, nil)
 
 	if treatment != nil {
 		t.Error("It should be nil.")

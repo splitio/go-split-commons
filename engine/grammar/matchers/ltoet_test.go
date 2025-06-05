@@ -23,7 +23,7 @@ func TestLessThanOrEqualToMatcherInt(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -34,15 +34,15 @@ func TestLessThanOrEqualToMatcherInt(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.LessThanOrEqualToMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": 100}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": 100}, nil, nil) {
 		t.Error("Equal should match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": 500}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": 500}, nil, nil) {
 		t.Error("Greater should not match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": 50}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": 50}, nil, nil) {
 		t.Error("Lower should match")
 	}
 }
@@ -61,7 +61,7 @@ func TestLessThanOrEqualToMatcherDatetime(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -74,17 +74,17 @@ func TestLessThanOrEqualToMatcherDatetime(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes["value"] = int64(960293532)
-	if !matcher.Match("asd", attributes, nil) {
+	if !matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Equal should match")
 	}
 
 	attributes["value"] = int64(1275782400)
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Greater should not match")
 	}
 
 	attributes["value"] = int64(293532000)
-	if !matcher.Match("asd", attributes, nil) {
+	if !matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Lower should match")
 	}
 }

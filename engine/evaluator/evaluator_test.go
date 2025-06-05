@@ -11,7 +11,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/producer"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -212,24 +211,22 @@ func (s *mockProducer) split(
 
 func (s *mockProducer) GetSplit(
 	feature string,
-	ctx *injection.Context,
 	logger logging.LoggerInterface,
 ) *grammar.Split {
 	dto := s.split(feature)
 	if dto == nil {
 		return nil
 	}
-	return grammar.NewSplit(dto, ctx, logger)
+	return grammar.NewSplit(dto, logger)
 }
 
 func (s *mockProducer) GetSplits(
 	features []string,
-	ctx *injection.Context,
 	logger logging.LoggerInterface,
 ) iter.Seq2[string, *grammar.Split] {
 	return func(yield func(string, *grammar.Split) bool) {
 		for _, feature := range features {
-			split := s.GetSplit(feature, ctx, logger)
+			split := s.GetSplit(feature, logger)
 			if !yield(feature, split) {
 				return
 			}

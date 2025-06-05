@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -15,7 +16,7 @@ type EqualToSemverMatcher struct {
 }
 
 // Match will match if the comparisonValue is equal to the matchingValue
-func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (e *EqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	if e.semver == nil {
 		return false
 	}
@@ -64,7 +65,7 @@ type GreaterThanOrEqualToSemverMatcher struct {
 }
 
 // Match compares the semver of the key with the semver in the feature flag
-func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (g *GreaterThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	if g.semver == nil {
 		return false
 	}
@@ -113,7 +114,7 @@ type LessThanOrEqualToSemverMatcher struct {
 }
 
 // Match will match if the comparisonValue is less or equal to the matchingValue
-func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (l *LessThanOrEqualToSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	if l.semver == nil {
 		return false
 	}
@@ -163,7 +164,7 @@ type BetweenSemverMatcher struct {
 }
 
 // Match will match if the comparisonValue is between to the matchingValue
-func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (b *BetweenSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	if b.startSemver == nil || b.endSemver == nil {
 		return false
 	}
@@ -217,7 +218,7 @@ type InListSemverMatcher struct {
 }
 
 // Match will match if the comparisonValue is in list to the matchingValue
-func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (i *InListSemverMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	if i.semvers.IsEmpty() {
 		return false
 	}

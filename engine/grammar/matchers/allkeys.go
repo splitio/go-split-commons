@@ -1,12 +1,16 @@
 package matchers
 
+import (
+	"github.com/splitio/go-toolkit/v5/injection"
+)
+
 // AllKeysMatcher matches any given key and set of attributes
 type AllKeysMatcher struct {
 	Matcher
 }
 
 // Match implementation for AllKeysMatcher
-func (m AllKeysMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m AllKeysMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	return true
 }
 

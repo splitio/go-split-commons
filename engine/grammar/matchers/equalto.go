@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // EqualToMatcher will match if two numbers or two datetimes are equal
@@ -15,7 +16,7 @@ type EqualToMatcher struct {
 }
 
 // Match will match if the comparisonValue is equal to the matchingValue
-func (m *EqualToMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *EqualToMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 
 	matchingRaw, err := m.matchingKey(key, attributes)
 	if err != nil {

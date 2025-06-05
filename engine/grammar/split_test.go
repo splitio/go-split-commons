@@ -24,7 +24,7 @@ func TestSplitCreation(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger)
 
 	if split.Algo() != SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
@@ -90,7 +90,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger)
 
 	if split.Algo() != SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
@@ -160,7 +160,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger)
 
 	if split.Algo() != SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")

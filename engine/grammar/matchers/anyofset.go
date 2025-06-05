@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // ContainsAnyOfSetMatcher matches if the set supplied to the getTreatment is a superset of the one in the feature flag
@@ -13,7 +14,7 @@ type ContainsAnyOfSetMatcher struct {
 }
 
 // Match returns true if the set provided is a superset of the one in the feature flag
-func (m *ContainsAnyOfSetMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *ContainsAnyOfSetMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("AnyOfSetMatcher %s", err.Error()))

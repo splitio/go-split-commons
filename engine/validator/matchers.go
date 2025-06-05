@@ -7,7 +7,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -25,7 +24,7 @@ var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.Conditio
 func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
-			_, err := matchers.BuildMatcher(&matcher, &injection.Context{}, logger)
+			_, err := matchers.BuildMatcher(&matcher, logger)
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return true
 			}

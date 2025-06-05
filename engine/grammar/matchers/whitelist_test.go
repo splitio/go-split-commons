@@ -22,7 +22,7 @@ func TestWhitelistMatcherAttr(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -33,11 +33,11 @@ func TestWhitelistMatcherAttr(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.WhitelistMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "aaa"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "aaa"}, nil, nil) {
 		t.Error("Item in whitelist should match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": "ccc"}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": "ccc"}, nil, nil) {
 		t.Error("Item NOT in whitelist should NOT match")
 	}
 }
@@ -51,7 +51,7 @@ func TestWhitelistMatcherKey(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -62,11 +62,11 @@ func TestWhitelistMatcherKey(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.WhitelistMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("aaa", map[string]interface{}{"value": 1}, nil) {
+	if !matcher.Match("aaa", map[string]interface{}{"value": 1}, nil, nil) {
 		t.Error("Item in whitelist should match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": 2}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": 2}, nil, nil) {
 		t.Error("Item NOT in whitelist should NOT match")
 	}
 }

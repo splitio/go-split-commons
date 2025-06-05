@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
+	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -24,6 +25,7 @@ func (e *Engine) DoEvaluation(
 	key string,
 	bucketingKey string,
 	attributes map[string]interface{},
+	ctx *injection.Context,
 ) (*string, string) {
 	inRollOut := false
 	for _, condition := range split.Conditions() {
@@ -42,7 +44,7 @@ func (e *Engine) DoEvaluation(
 			}
 		}
 
-		if condition.Matches(key, &bucketingKey, attributes) {
+		if condition.Matches(key, &bucketingKey, attributes, ctx) {
 			bucket := e.calculateBucket(split.Algo(), bucketingKey, split.Seed())
 			treatment := condition.CalculateTreatment(bucket)
 			return treatment, condition.Label()

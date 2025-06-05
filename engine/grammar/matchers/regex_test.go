@@ -44,7 +44,7 @@ func TestRegexMatcher(t *testing.T) {
 			},
 		}
 
-		matcher, err := BuildMatcher(dto, nil, logger)
+		matcher, err := BuildMatcher(dto, logger)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 			t.Error(err)
@@ -55,7 +55,7 @@ func TestRegexMatcher(t *testing.T) {
 			t.Errorf("Incorrect matcher constructed. Should be *matchers.RegexMatcher and was %s", matcherType)
 		}
 
-		matches := matcher.Match("asd", map[string]interface{}{"value": text}, nil)
+		matches := matcher.Match("asd", map[string]interface{}{"value": text}, nil, nil)
 		if matches != shouldMatch {
 			t.Errorf("Match for text %s and regex %s should be %t", text, regex, shouldMatch)
 		}

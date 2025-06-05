@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -18,21 +17,21 @@ func NewSimpleProducer(splitStorage storage.SplitStorageConsumer) *SimpleProduce
 	return &SimpleProducer{splitStorage: splitStorage}
 }
 
-func (p *SimpleProducer) GetSplit(splitName string, ctx *injection.Context, logger logging.LoggerInterface) *grammar.Split {
+func (p *SimpleProducer) GetSplit(splitName string, logger logging.LoggerInterface) *grammar.Split {
 	dto := p.splitStorage.Split(splitName)
 	if dto == nil {
 		return nil
 	}
-	return grammar.NewSplit(dto, ctx, logger)
+	return grammar.NewSplit(dto, logger)
 }
 
-func (p *SimpleProducer) GetSplits(splitNames []string, ctx *injection.Context, logger logging.LoggerInterface) iter.Seq2[string, *grammar.Split] {
+func (p *SimpleProducer) GetSplits(splitNames []string, logger logging.LoggerInterface) iter.Seq2[string, *grammar.Split] {
 	return func(yield func(string, *grammar.Split) bool) {
 		dtos := p.splitStorage.FetchMany(splitNames)
 		for splitName, dto := range dtos {
 			var split *grammar.Split
 			if dto != nil {
-				split = grammar.NewSplit(dto, ctx, logger)
+				split = grammar.NewSplit(dto, logger)
 			}
 			if !yield(splitName, split) {
 				return
