@@ -1,12 +1,12 @@
-package matchers
+package dependencytests
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
-
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -30,7 +30,7 @@ func TestInSegmentMatcher(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("segmentStorage", segmentStorage)
 
-	matcher, err := BuildMatcher(dto, ctx, logger)
+	matcher, err := matchers.BuildMatcher(dto, ctx, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)

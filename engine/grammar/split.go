@@ -1,6 +1,8 @@
 package grammar
 
 import (
+	"iter"
+
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
@@ -13,6 +15,12 @@ import (
 type Split struct {
 	splitData  *dtos.SplitDTO
 	conditions []*Condition
+}
+
+type SplitProducer interface {
+	GetSplit(splitName string, ctx *injection.Context, logger logging.LoggerInterface) *Split
+	GetSplits(splitNames []string, ctx *injection.Context, logger logging.LoggerInterface) iter.Seq2[string, *Split]
+	GetNamesByFlagSets(sets []string) map[string][]string
 }
 
 var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{

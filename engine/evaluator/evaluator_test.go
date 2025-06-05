@@ -1,18 +1,21 @@
 package evaluator
 
 import (
+	"iter"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/storage/producer"
 
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-type mockStorage struct{}
+type mockProducer struct{}
 
 var mysplittest = &dtos.SplitDTO{
 	Algo:                  2,
@@ -190,7 +193,7 @@ var mysplittest4 = &dtos.SplitDTO{
 	},
 }
 
-func (s *mockStorage) Split(
+func (s *mockProducer) split(
 	feature string,
 ) *dtos.SplitDTO {
 	switch feature {
@@ -206,33 +209,45 @@ func (s *mockStorage) Split(
 	}
 	return nil
 }
-func (s *mockStorage) FetchMany(
-	feature []string,
-) map[string]*dtos.SplitDTO {
-	splits := make(map[string]*dtos.SplitDTO)
-	splits["mysplittest"] = mysplittest
-	splits["mysplittest2"] = mysplittest2
-	splits["mysplittest3"] = mysplittest3
-	splits["mysplittest4"] = mysplittest4
-	splits["mysplittest5"] = nil
-	return splits
+
+func (s *mockProducer) GetSplit(
+	feature string,
+	ctx *injection.Context,
+	logger logging.LoggerInterface,
+) *grammar.Split {
+	dto := s.split(feature)
+	if dto == nil {
+		return nil
+	}
+	return grammar.NewSplit(dto, ctx, logger)
 }
-func (s *mockStorage) All() []dtos.SplitDTO                      { return make([]dtos.SplitDTO, 0) }
-func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet        { return nil }
-func (s *mockStorage) LargeSegmentNames() *set.ThreadUnsafeSet   { return nil }
-func (s *mockStorage) SplitNames() []string                      { return make([]string, 0) }
-func (s *mockStorage) TrafficTypeExists(trafficType string) bool { return true }
-func (s *mockStorage) ChangeNumber() (int64, error)              { return 0, nil }
-func (s *mockStorage) GetNamesByFlagSets(sets []string) map[string][]string {
+
+func (s *mockProducer) GetSplits(
+	features []string,
+	ctx *injection.Context,
+	logger logging.LoggerInterface,
+) iter.Seq2[string, *grammar.Split] {
+	return func(yield func(string, *grammar.Split) bool) {
+		for _, feature := range features {
+			split := s.GetSplit(feature, ctx, logger)
+			if !yield(feature, split) {
+				return
+			}
+		}
+	}
+}
+
+func (s *mockProducer) GetNamesByFlagSets(sets []string) map[string][]string {
 	return make(map[string][]string)
 }
-func (s *mockStorage) GetAllFlagSetNames() []string { return make([]string, 0) }
+
+var _ grammar.SplitProducer = (*mockProducer)(nil)
 
 func TestSplitWithoutConfigurations(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	evaluator := NewEvaluator(
-		&mockStorage{},
+		&mockProducer{},
 		nil,
 		nil,
 		logger)
@@ -253,7 +268,7 @@ func TestSplitWithtConfigurations(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	evaluator := NewEvaluator(
-		&mockStorage{},
+		&mockProducer{},
 		nil,
 		nil,
 		logger)
@@ -274,7 +289,7 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	evaluator := NewEvaluator(
-		&mockStorage{},
+		&mockProducer{},
 		nil,
 		nil,
 		logger)
@@ -295,7 +310,7 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	evaluator := NewEvaluator(
-		&mockStorage{},
+		&mockProducer{},
 		nil,
 		nil,
 		logger)
@@ -316,7 +331,7 @@ func TestMultipleEvaluations(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	evaluator := NewEvaluator(
-		&mockStorage{},
+		&mockProducer{},
 		nil,
 		nil,
 		logger)
@@ -416,7 +431,7 @@ func TestEvaluationByFlagSets(t *testing.T) {
 	}
 
 	evaluator := NewEvaluator(
-		mockedStorage,
+		producer.NewSimpleProducer(mockedStorage),
 		nil,
 		nil,
 		logger)
@@ -478,7 +493,7 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 	}
 
 	evaluator := NewEvaluator(
-		mockedStorage,
+		producer.NewSimpleProducer(mockedStorage),
 		nil,
 		nil,
 		logger)
