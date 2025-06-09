@@ -41,6 +41,7 @@ type Evaluator struct {
 	segmentStorage storage.SegmentStorageConsumer
 	eng            *engine.Engine
 	logger         logging.LoggerInterface
+	ctx            *injection.Context
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
@@ -51,12 +52,17 @@ func NewEvaluator(
 	logger logging.LoggerInterface,
 
 ) *Evaluator {
-	return &Evaluator{
+	e := &Evaluator{
 		splitProducer:  splitProducer,
 		segmentStorage: segmentStorage,
 		eng:            eng,
 		logger:         logger,
+		ctx:            injection.NewContext(),
 	}
+
+	e.ctx.AddDependency("segmentStorage", e.segmentStorage)
+	e.ctx.AddDependency("evaluator", e)
+	return e
 }
 
 func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, split *grammar.Split, attributes map[string]interface{}) *Result {
@@ -87,10 +93,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		}
 	}
 
-	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", e.segmentStorage)
-	ctx.AddDependency("evaluator", e)
-	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes, ctx)
+	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes, e.ctx)
 	if len(treatment) == 0 {
 		e.logger.Warning(fmt.Sprintf(
 			"No condition matched, returning default treatment: %s",
