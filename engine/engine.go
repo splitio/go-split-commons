@@ -9,6 +9,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
+	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -24,7 +25,8 @@ func (e *Engine) DoEvaluation(
 	key string,
 	bucketingKey string,
 	attributes map[string]interface{},
-) (*string, string) {
+	ctx *injection.Context,
+) (string, string) {
 	inRollOut := false
 	for _, condition := range split.Conditions() {
 		if !inRollOut && condition.ConditionType() == grammar.ConditionTypeRollout {
@@ -36,19 +38,19 @@ func (e *Engine) DoEvaluation(
 							" Returning default treatment", split.Name(), key,
 					))
 					defaultTreatment := split.DefaultTreatment()
-					return &defaultTreatment, impressionlabels.NotInSplit
+					return defaultTreatment, impressionlabels.NotInSplit
 				}
 				inRollOut = true
 			}
 		}
 
-		if condition.Matches(key, &bucketingKey, attributes) {
+		if condition.Matches(key, &bucketingKey, attributes, ctx) {
 			bucket := e.calculateBucket(split.Algo(), bucketingKey, split.Seed())
 			treatment := condition.CalculateTreatment(bucket)
 			return treatment, condition.Label()
 		}
 	}
-	return nil, impressionlabels.NoConditionMatched
+	return "", impressionlabels.NoConditionMatched
 }
 
 func (e *Engine) calculateBucket(algo int, bucketingKey string, seed int64) int {

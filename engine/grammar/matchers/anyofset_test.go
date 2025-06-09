@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -22,7 +21,7 @@ func TestAnyOfSetMatcher(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -33,24 +32,23 @@ func TestAnyOfSetMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.ContainsAnyOfSetMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four"}}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four"}}, nil, nil) {
 		t.Error("Matcher should match an equal set")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four", "five"}}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three", "four", "five"}}, nil, nil) {
 		t.Error("Matcher should match a superset")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"setdata": []string{}}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"setdata": []string{}}, nil, nil) {
 		t.Error("Matcher should NOT match an empty set")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three"}}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"setdata": []string{"one", "two", "three"}}, nil, nil) {
 		t.Error("Matcher should match a subset")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"five", "six"}}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"setdata": []string{"five", "six"}}, nil, nil) {
 		t.Error("Matcher hsould not match a non-intersecting set")
 	}
-
 }

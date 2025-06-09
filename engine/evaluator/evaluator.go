@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
@@ -38,39 +37,40 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage   storage.SplitStorageConsumer
+	splitProducer  grammar.SplitProducer
 	segmentStorage storage.SegmentStorageConsumer
 	eng            *engine.Engine
 	logger         logging.LoggerInterface
+	ctx            *injection.Context
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
 func NewEvaluator(
-	splitStorage storage.SplitStorageConsumer,
+	splitProducer grammar.SplitProducer,
 	segmentStorage storage.SegmentStorageConsumer,
 	eng *engine.Engine,
 	logger logging.LoggerInterface,
+
 ) *Evaluator {
-	return &Evaluator{
-		splitStorage:   splitStorage,
+	e := &Evaluator{
+		splitProducer:  splitProducer,
 		segmentStorage: segmentStorage,
 		eng:            eng,
 		logger:         logger,
+		ctx:            injection.NewContext(),
 	}
+
+	e.ctx.AddDependency("segmentStorage", e.segmentStorage)
+	e.ctx.AddDependency("evaluator", e)
+	return e
 }
 
-func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, splitDto *dtos.SplitDTO, attributes map[string]interface{}) *Result {
+func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, split *grammar.Split, attributes map[string]interface{}) *Result {
 	var config *string
-	if splitDto == nil {
+	if split == nil {
 		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning control.", featureFlag))
 		return &Result{Treatment: Control, Label: impressionlabels.SplitNotFound, Config: config}
 	}
-
-	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", e.segmentStorage)
-	ctx.AddDependency("evaluator", e)
-
-	split := grammar.NewSplit(splitDto, ctx, e.logger)
 
 	if split.Killed() {
 		e.logger.Warning(fmt.Sprintf(
@@ -93,24 +93,23 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		}
 	}
 
-	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes)
-	if treatment == nil {
+	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes, e.ctx)
+	if len(treatment) == 0 {
 		e.logger.Warning(fmt.Sprintf(
 			"No condition matched, returning default treatment: %s",
 			split.DefaultTreatment(),
 		))
 		defaultTreatment := split.DefaultTreatment()
-		treatment = &defaultTreatment
+		treatment = defaultTreatment
 		label = impressionlabels.NoConditionMatched
 	}
 
-	if _, ok := split.Configurations()[*treatment]; ok {
-		treatmentConfig := split.Configurations()[*treatment]
+	if treatmentConfig, ok := split.Configurations()[treatment]; ok {
 		config = &treatmentConfig
 	}
 
 	return &Result{
-		Treatment:           *treatment,
+		Treatment:           treatment,
 		Label:               label,
 		SplitChangeNumber:   split.ChangeNumber(),
 		Config:              config,
@@ -121,12 +120,12 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 // EvaluateFeature returns a struct with the resulting treatment and extra information for the impression
 func (e *Evaluator) EvaluateFeature(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) *Result {
 	before := time.Now()
-	splitDto := e.splitStorage.Split(featureFlag)
+	split := e.splitProducer.GetSplit(featureFlag, e.logger)
 
 	if bucketingKey == nil {
 		bucketingKey = &key
 	}
-	result := e.evaluateTreatment(key, *bucketingKey, featureFlag, splitDto, attributes)
+	result := e.evaluateTreatment(key, *bucketingKey, featureFlag, split, attributes)
 	after := time.Now()
 
 	result.EvaluationTime = after.Sub(before)
@@ -136,17 +135,17 @@ func (e *Evaluator) EvaluateFeature(key string, bucketingKey *string, featureFla
 // EvaluateFeatures returns a struct with the resulting treatment and extra information for the impression
 func (e *Evaluator) EvaluateFeatures(key string, bucketingKey *string, featureFlags []string, attributes map[string]interface{}) Results {
 	var results = Results{
-		Evaluations:    make(map[string]Result),
+		Evaluations:    make(map[string]Result, len(featureFlags)),
 		EvaluationTime: 0,
 	}
 	before := time.Now()
-	splits := e.splitStorage.FetchMany(featureFlags)
+	splits := e.splitProducer.GetSplits(featureFlags, e.logger)
 
 	if bucketingKey == nil {
 		bucketingKey = &key
 	}
-	for _, featureFlag := range featureFlags {
-		results.Evaluations[featureFlag] = *e.evaluateTreatment(key, *bucketingKey, featureFlag, splits[featureFlag], attributes)
+	for featureFlag, split := range splits {
+		results.Evaluations[featureFlag] = *e.evaluateTreatment(key, *bucketingKey, featureFlag, split, attributes)
 	}
 
 	after := time.Now()
@@ -166,7 +165,7 @@ func (e *Evaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, 
 // GetFeatureFlagNamesByFlagSets return flags that belong to some flag set
 func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
 	uniqueFlags := make(map[string]struct{})
-	flagsBySets := e.splitStorage.GetNamesByFlagSets(flagSets)
+	flagsBySets := e.splitProducer.GetNamesByFlagSets(flagSets)
 	for set, flags := range flagsBySets {
 		if len(flags) == 0 {
 			e.logger.Warning(fmt.Sprintf("you passed %s Flag Set that does not contain cached feature flag names, please double check what Flag Sets are in use in the Split user interface.", set))

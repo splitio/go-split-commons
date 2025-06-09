@@ -1,5 +1,9 @@
 package matchers
 
+import (
+	"github.com/splitio/go-toolkit/v5/injection"
+)
+
 type dependencyEvaluator interface {
 	EvaluateDependency(key string, bucketingKey *string, feature string, attributes map[string]interface{}) string
 }
@@ -14,8 +18,8 @@ type DependencyMatcher struct {
 
 // Match will return true if the evaluation of another split results in one of the treatments defined in the
 // feature flag
-func (m *DependencyMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	evaluator, ok := m.Context.Dependency("evaluator").(dependencyEvaluator)
+func (m *DependencyMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
+	evaluator, ok := ctx.Dependency("evaluator").(dependencyEvaluator)
 	if !ok {
 		m.logger.Error("DependencyMatcher: Error retrieving matching key")
 		return false

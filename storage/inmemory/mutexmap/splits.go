@@ -1,17 +1,21 @@
 package mutexmap
 
 import (
+	"iter"
 	"sync"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // MMSplitStorage struct contains is an in-memory implementation of split storage
 type MMSplitStorage struct {
 	data          map[string]dtos.SplitDTO
+	splitCache    map[string]*grammar.Split
 	flagSets      flagsets.FeaturesBySet
 	trafficTypes  map[string]int64
 	till          int64
@@ -26,6 +30,7 @@ type MMSplitStorage struct {
 func NewMMSplitStorage(flagSetFilter flagsets.FlagSetFilter) *MMSplitStorage {
 	return &MMSplitStorage{
 		data:          make(map[string]dtos.SplitDTO),
+		splitCache:    make(map[string]*grammar.Split),
 		flagSets:      flagsets.NewFeaturesBySet(nil),
 		trafficTypes:  make(map[string]int64),
 		till:          -1,
@@ -96,6 +101,7 @@ func (m *MMSplitStorage) KillLocally(splitName string, defaultTreatment string, 
 		split.Killed = true
 		split.ChangeNumber = changeNumber
 		m.data[split.Name] = *split
+		delete(m.splitCache, split.Name)
 	}
 }
 
@@ -159,6 +165,7 @@ func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO,
 			m.removeFromFlagSets(existing.Name, existing.Sets)
 		}
 		m.data[split.Name] = split
+		delete(m.splitCache, split.Name)
 		m.increaseTrafficTypeCount(split.TrafficTypeName)
 		m.addToFlagSets(split.Name, split.Sets)
 	}
@@ -167,6 +174,7 @@ func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO,
 		cached, exists := m.data[split.Name]
 		if exists {
 			delete(m.data, split.Name)
+			delete(m.splitCache, split.Name)
 			m.decreaseTrafficTypeCount(cached.TrafficTypeName)
 			m.removeFromFlagSets(cached.Name, cached.Sets)
 		}
@@ -181,6 +189,7 @@ func (m *MMSplitStorage) Remove(splitName string) {
 	split, exists := m.data[splitName]
 	if exists {
 		delete(m.data, splitName)
+		delete(m.splitCache, splitName)
 		m.decreaseTrafficTypeCount(split.TrafficTypeName)
 	}
 }
@@ -266,5 +275,39 @@ func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return toReturn
 }
 
+// GetSplit returns a cached grammar.Split if it exists, otherwise creates a new one
+func (m *MMSplitStorage) GetSplit(splitName string, logger logging.LoggerInterface) *grammar.Split {
+	m.mutex.RLock()
+	if cached, ok := m.splitCache[splitName]; ok {
+		m.mutex.RUnlock()
+		return cached
+	}
+	splitDTO := m._get(splitName)
+	m.mutex.RUnlock()
+
+	if splitDTO == nil {
+		return nil
+	}
+
+	split := grammar.NewSplit(splitDTO, logger)
+
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.splitCache[splitName] = split
+	return split
+}
+
+func (m *MMSplitStorage) GetSplits(splitNames []string, logger logging.LoggerInterface) iter.Seq2[string, *grammar.Split] {
+	return func(yield func(string, *grammar.Split) bool) {
+		for _, splitName := range splitNames {
+			if !yield(splitName, m.GetSplit(splitName, logger)) {
+				return
+			}
+		}
+	}
+}
+
 var _ storage.SplitStorageConsumer = (*MMSplitStorage)(nil)
 var _ storage.SplitStorageProducer = (*MMSplitStorage)(nil)
+var _ grammar.SplitProducer = (*MMSplitStorage)(nil)

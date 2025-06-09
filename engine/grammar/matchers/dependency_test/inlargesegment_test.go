@@ -1,10 +1,11 @@
-package matchers
+package dependencytests
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -29,7 +30,7 @@ func TestInLargeSegmentMatcher(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("largeSegmentStorage", segmentStorage)
 
-	matcher, err := BuildMatcher(dto, ctx, logger)
+	matcher, err := matchers.BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -40,16 +41,16 @@ func TestInLargeSegmentMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.InLargeSegmentMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("item1", nil, nil) {
+	if !matcher.Match("item1", nil, nil, ctx) {
 		t.Error("Should match a key present in the large segment")
 	}
 
-	if matcher.Match("item7", nil, nil) {
+	if matcher.Match("item7", nil, nil, ctx) {
 		t.Error("Should not match a key not present in the large segment")
 	}
 
 	segmentStorage.Update(lsName, []string{}, 123)
-	if matcher.Match("item1", nil, nil) {
+	if matcher.Match("item1", nil, nil, ctx) {
 		t.Error("Should return false for a nonexistent large segment")
 	}
 }

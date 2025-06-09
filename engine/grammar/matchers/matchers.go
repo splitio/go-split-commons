@@ -68,7 +68,7 @@ const (
 
 // MatcherInterface should be implemented by all matchers
 type MatcherInterface interface {
-	Match(key string, attributes map[string]interface{}, bucketingKey *string) bool
+	Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool
 	Negate() bool
 	base() *Matcher // This method is used to return the embedded matcher when iterating over interfaces
 	matchingKey(key string, attributes map[string]interface{}) (interface{}, error)
@@ -76,7 +76,6 @@ type MatcherInterface interface {
 
 // Matcher struct with added logic that wraps around a DTO
 type Matcher struct {
-	*injection.Context
 	negate        bool
 	attributeName *string
 	logger        logging.LoggerInterface
@@ -114,7 +113,7 @@ func (m *Matcher) base() *Matcher {
 }
 
 // BuildMatcher constructs the appropriate matcher based on the MatcherType attribute of the dto
-func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) (MatcherInterface, error) {
+func BuildMatcher(dto *dtos.MatcherDTO, logger logging.LoggerInterface) (MatcherInterface, error) {
 	var matcher MatcherInterface
 
 	var attributeName *string
@@ -443,10 +442,6 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		return nil, datatypes.UnsupportedMatcherError{
 			Message: fmt.Sprintf("Unable to create matcher for matcher type: %s", dto.MatcherType),
 		}
-	}
-
-	if ctx != nil {
-		ctx.Inject(matcher.base())
 	}
 
 	matcher.base().logger = logger

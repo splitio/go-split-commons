@@ -3,6 +3,8 @@ package matchers
 import (
 	"fmt"
 	"strings"
+
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // StartsWithMatcher matches strings which start with one of the prefixes in the feature flag
@@ -12,7 +14,7 @@ type StartsWithMatcher struct {
 }
 
 // Match returns true if the key provided starts with one of the prefixes in the feature flag.
-func (m *StartsWithMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *StartsWithMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("StartsWithMatcher: %s", err.Error()))

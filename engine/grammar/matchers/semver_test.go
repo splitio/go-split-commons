@@ -79,7 +79,7 @@ func TestEqualToSemverMatcher(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -87,7 +87,7 @@ func TestEqualToSemverMatcher(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "1.0.0"
-	if !matcher.Match("asd", attributes, nil) {
+	if !matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Equal should match")
 	}
 }
@@ -103,7 +103,7 @@ func TestPatchDiffers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -111,7 +111,7 @@ func TestPatchDiffers(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "1.0.0"
-	if matcher.Match("sded", map[string]interface{}{}, nil) {
+	if matcher.Match("sded", map[string]interface{}{}, nil, nil) {
 		t.Error("Equal should not match")
 	}
 }
@@ -127,7 +127,7 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -135,7 +135,7 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "1.2.3----RC-SNAPSHOT.12.9.1--.12.88"
-	if !matcher.Match("ass", attributes, nil) {
+	if !matcher.Match("ass", attributes, nil, nil) {
 		t.Error("Equal should match")
 	}
 }
@@ -151,14 +151,14 @@ func TestPreReleaseShouldReturnFalseWhenSemverIsNil(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "1.2.3"
-	if matcher.Match("ass", attributes, nil) {
+	if matcher.Match("ass", attributes, nil, nil) {
 		t.Error("Equal should match")
 	}
 }
@@ -174,7 +174,7 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -182,7 +182,7 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "1.2.3----RC-SNAPSHOT.12.9.1--.12.99"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Equal should not match")
 	}
 }
@@ -198,7 +198,7 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -206,7 +206,7 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2-rc.2+metadata-lalala"
-	if !matcher.Match("asd", attributes, nil) {
+	if !matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Equal should match")
 	}
 }
@@ -222,7 +222,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -230,7 +230,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2-rc.2+metadata"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("Equal should not match")
 	}
 }
@@ -241,7 +241,7 @@ func TestShouldReturnErrorWithNilSemver(t *testing.T) {
 		MatcherType: MatcherEqualToSemver,
 		String:      nil,
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	_, err := BuildMatcher(dto, logger)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -264,7 +264,7 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 			},
 		}
 
-		matcher, err := BuildMatcher(dto, nil, logger)
+		matcher, err := BuildMatcher(dto, logger)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -275,7 +275,7 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 
 		attributes := make(map[string]interface{})
 		attributes[attrName] = twoSemvers.semver2
-		if matcher.Match("asd", attributes, nil) {
+		if matcher.Match("asd", attributes, nil, nil) {
 			t.Error(twoSemvers.semver1, " >= ", twoSemvers.semver2, " should match")
 		}
 	}
@@ -292,14 +292,14 @@ func TestGreaterThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.3.4"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.3.4 should not match")
 	}
 }
@@ -320,7 +320,7 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		matcher, err := BuildMatcher(dto, nil, logger)
+		matcher, err := BuildMatcher(dto, logger)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -332,7 +332,7 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 
 		attributes := make(map[string]interface{})
 		attributes[attrName] = twoSemvers.semver1
-		if matcher.Match("asd", attributes, nil) {
+		if matcher.Match("asd", attributes, nil, nil) {
 			t.Error(twoSemvers.semver2, " <= ", twoSemvers.semver1, " should match")
 		}
 	}
@@ -344,7 +344,7 @@ func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      nil,
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	_, err := BuildMatcher(dto, logger)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -361,14 +361,14 @@ func TestLessThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.3.4"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.3.4 should not match")
 	}
 }
@@ -392,7 +392,7 @@ func TestBetweenSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		matcher, err := BuildMatcher(dto, nil, logger)
+		matcher, err := BuildMatcher(dto, logger)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -404,7 +404,7 @@ func TestBetweenSemverMatcher(t *testing.T) {
 
 		attributes := make(map[string]interface{})
 		attributes[attrName] = threeSemvers.semver2
-		if !matcher.Match("asd", attributes, nil) {
+		if !matcher.Match("asd", attributes, nil, nil) {
 			t.Error(threeSemvers.semver2, " between ", threeSemvers.semver1, "and", threeSemvers.semver3, " should match")
 		}
 	}
@@ -419,7 +419,7 @@ func TestBetweenSemverWithNilSemvers(t *testing.T) {
 			End:   nil,
 		},
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	_, err := BuildMatcher(dto, logger)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -440,14 +440,14 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2-rc.1.2"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.2.2-rc.1.2", " between should not match")
 	}
 }
@@ -466,7 +466,7 @@ func TestInListSemvers(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -478,7 +478,7 @@ func TestInListSemvers(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2-rc.1.2"
-	if !matcher.Match("asd", attributes, nil) {
+	if !matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.2.2-rc.1.2", " in list ", semvers, " should match")
 	}
 }
@@ -497,7 +497,7 @@ func TestInListSemversNotMatch(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -509,7 +509,7 @@ func TestInListSemversNotMatch(t *testing.T) {
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.2.2-rc.1.2", " in list ", semvers, " should not match")
 	}
 }
@@ -529,14 +529,14 @@ func TestInListInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
 
 	attributes := make(map[string]interface{})
 	attributes[attrName] = "2.2.2"
-	if matcher.Match("asd", attributes, nil) {
+	if matcher.Match("asd", attributes, nil, nil) {
 		t.Error("2.2.2", " in list ", semvers, " should not match")
 	}
 }

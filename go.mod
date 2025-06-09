@@ -1,6 +1,6 @@
 module github.com/splitio/go-split-commons/v6
 
-go 1.18
+go 1.23
 
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.3.1

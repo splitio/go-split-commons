@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // InLargeSegmentMatcher matches if the key passed is in the large segment which the matcher was constructed with
@@ -13,8 +14,8 @@ type InLargeSegmentMatcher struct {
 }
 
 // Match returns true if the key is in the matcher's segment
-func (m *InLargeSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	storage, ok := m.Context.Dependency("largeSegmentStorage").(storage.LargeSegmentStorageConsumer)
+func (m *InLargeSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
+	storage, ok := ctx.Dependency("largeSegmentStorage").(storage.LargeSegmentStorageConsumer)
 	if !ok {
 		m.logger.Error("InLargeSegmentMatcher: Unable to retrieve large segment storage!")
 		return false

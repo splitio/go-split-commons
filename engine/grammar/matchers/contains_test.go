@@ -22,7 +22,7 @@ func TestContainsString(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -33,19 +33,19 @@ func TestContainsString(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.ContainsStringMatcher and was %s", matcherType)
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": "zzz"}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": "zzz"}, nil, nil) {
 		t.Errorf("string without any of the substrings shouldn't match")
 	}
 
-	if matcher.Match("asd", map[string]interface{}{"value": ""}, nil) {
+	if matcher.Match("asd", map[string]interface{}{"value": ""}, nil, nil) {
 		t.Errorf("empty string shouldn't match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "ppabc"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "ppabc"}, nil, nil) {
 		t.Errorf("string containing one of the substrings should match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "abcdefghimklsad"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "abcdefghimklsad"}, nil, nil) {
 		t.Errorf("string containing all of the substrings should match")
 	}
 

@@ -3,17 +3,19 @@ package matchers
 import (
 	"fmt"
 
-	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
+
+var keyExists = struct{}{}
 
 // WhitelistMatcher matches if the key received is present in the matcher's whitelist
 type WhitelistMatcher struct {
 	Matcher
-	whitelist *set.ThreadUnsafeSet
+	whitelist map[string]struct{}
 }
 
 // Match returns true if the key is present in the whitelist.
-func (m *WhitelistMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *WhitelistMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("WhitelistMatcher: %s", err.Error()))
@@ -26,14 +28,15 @@ func (m *WhitelistMatcher) Match(key string, attributes map[string]interface{}, 
 		return false
 	}
 
-	return m.whitelist.Has(stringMatchingKey)
+	_, has := m.whitelist[stringMatchingKey]
+	return has
 }
 
 // NewWhitelistMatcher returns a new WhitelistMatcher
 func NewWhitelistMatcher(negate bool, whitelist []string, attributeName *string) *WhitelistMatcher {
-	wlSet := set.NewSet()
+	wlSet := make(map[string]struct{}, len(whitelist))
 	for _, elem := range whitelist {
-		wlSet.Add(elem)
+		wlSet[elem] = keyExists
 	}
 	return &WhitelistMatcher{
 		Matcher: Matcher{

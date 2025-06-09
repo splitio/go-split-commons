@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // BetweenMatcher will match if two numbers or two datetimes are equal
@@ -16,7 +17,7 @@ type BetweenMatcher struct {
 }
 
 // Match will match if the matchingValue is between lowerComparisonValue and upperComparisonValue
-func (m *BetweenMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *BetweenMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingRaw, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("BetweenMatcher: %s", err.Error()))

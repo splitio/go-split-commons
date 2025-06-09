@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // InSegmentMatcher matches if the key passed is in the segment which the matcher was constructed with
@@ -13,8 +14,8 @@ type InSegmentMatcher struct {
 }
 
 // Match returns true if the key is in the matcher's segment
-func (m *InSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	segmentStorage, ok := m.Context.Dependency("segmentStorage").(storage.SegmentStorageConsumer)
+func (m *InSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
+	segmentStorage, ok := ctx.Dependency("segmentStorage").(storage.SegmentStorageConsumer)
 	if !ok {
 		m.logger.Error("InSegmentMatcher: Unable to retrieve segment storage!")
 		return false

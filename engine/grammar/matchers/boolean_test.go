@@ -21,7 +21,7 @@ func TestBooleanMatcherTrue(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -32,15 +32,15 @@ func TestBooleanMatcherTrue(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.BooleanMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": true}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": true}, nil, nil) {
 		t.Errorf("true bool should match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "true"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "true"}, nil, nil) {
 		t.Errorf("\"true\" tringhould match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "tRUe"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "tRUe"}, nil, nil) {
 		t.Errorf("true string with mixed caps should match")
 	}
 }
@@ -57,7 +57,7 @@ func TestBooleanMatcherFalse(t *testing.T) {
 		},
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -68,15 +68,15 @@ func TestBooleanMatcherFalse(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.BooleanMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": false}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": false}, nil, nil) {
 		t.Errorf("false bool should match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "false"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "false"}, nil, nil) {
 		t.Errorf("\"false\" tringhould match")
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "fALse"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "fALse"}, nil, nil) {
 		t.Errorf("fALse bool should match")
 	}
 }

@@ -3,6 +3,8 @@ package matchers
 import (
 	"fmt"
 	"strings"
+
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // EndsWithMatcher matches strings which end with one of the suffixes in the feature flag
@@ -12,7 +14,7 @@ type EndsWithMatcher struct {
 }
 
 // Match returns true if the key provided ends with one of the suffixes in the feature flag.
-func (m *EndsWithMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *EndsWithMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("EndsWithMatcher: %s", err.Error()))

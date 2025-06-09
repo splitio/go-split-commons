@@ -48,7 +48,7 @@ func TestConditionWrapperObject(t *testing.T) {
 		},
 	}
 
-	wrapped, err := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, logger)
 
 	if err != nil {
 		t.Error("err should be nil")
@@ -71,12 +71,12 @@ func TestConditionWrapperObject(t *testing.T) {
 	}
 
 	treatment1 := wrapped.CalculateTreatment(50)
-	if treatment1 != nil && *treatment1 != "on" {
+	if len(treatment1) > 0 && treatment1 != "on" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 
 	treatment2 := wrapped.CalculateTreatment(80)
-	if treatment2 != nil && *treatment2 != "off" {
+	if len(treatment2) > 0 && treatment2 != "off" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 }
@@ -119,7 +119,7 @@ func TestAnotherWrapper(t *testing.T) {
 		},
 	}
 
-	wrapped, err := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, logger)
 	if err != nil {
 		t.Error("err should be nil")
 	}
@@ -141,12 +141,12 @@ func TestAnotherWrapper(t *testing.T) {
 	}
 
 	treatment1 := wrapped.CalculateTreatment(50)
-	if treatment1 != nil && *treatment1 != "on" {
+	if len(treatment1) > 0 && treatment1 != "on" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 
 	treatment2 := wrapped.CalculateTreatment(80)
-	if treatment2 != nil && *treatment2 != "off" {
+	if len(treatment2) > 0 && treatment2 != "off" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 }
@@ -189,7 +189,7 @@ func TestConditionUnsupportedMatcherWrapperObject(t *testing.T) {
 		},
 	}
 
-	_, err := NewCondition(&condition1, nil, logger)
+	_, err := NewCondition(&condition1, logger)
 
 	if err == nil {
 		t.Error("err should not be nil")
@@ -231,7 +231,7 @@ func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
 		},
 	}
 
-	condition, err := NewCondition(&condition1, nil, logger)
+	condition, err := NewCondition(&condition1, logger)
 
 	if err != nil {
 		t.Error("err should be nil")

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // EqualToSetMatcher matches if the set supplied to the getTreatment is equal to the one in the feature flag
@@ -13,7 +14,7 @@ type EqualToSetMatcher struct {
 }
 
 // Match returns true if the match provided and the one in the feature flag are equal
-func (m *EqualToSetMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *EqualToSetMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("EqualToSetMatcher: %s", err.Error()))

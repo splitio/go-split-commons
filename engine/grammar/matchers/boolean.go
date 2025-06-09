@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/splitio/go-toolkit/v5/injection"
 )
 
 // BooleanMatcher returns true if the value supplied can be interpreted as a boolean and is equal to the one stored
@@ -14,7 +16,7 @@ type BooleanMatcher struct {
 }
 
 // Match returns true if the value supplied can be interpreted as a boolean and is equal to the one stored
-func (m *BooleanMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
+func (m *BooleanMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string, ctx *injection.Context) bool {
 	matchingKey, err := m.matchingKey(key, attributes)
 	if err != nil {
 		m.logger.Warning(fmt.Sprintf("BooleanMatcher: %s", err.Error()))

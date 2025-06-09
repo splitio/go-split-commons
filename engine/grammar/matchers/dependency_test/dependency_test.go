@@ -128,7 +128,7 @@ func TestDependencyMatcher(t *testing.T) {
 		),
 	)
 
-	matcher, err := matchers.BuildMatcher(dto, ctx, logger)
+	matcher, err := matchers.BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -139,7 +139,7 @@ func TestDependencyMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.DependencyMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", map[string]interface{}{"value": "something"}, nil) {
+	if !matcher.Match("asd", map[string]interface{}{"value": "something"}, nil, ctx) {
 		t.Errorf("depends on all keys. should match!")
 	}
 
@@ -153,17 +153,17 @@ func TestDependencyMatcher(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err = matchers.BuildMatcher(dto, ctx, logger)
+	matcher, err = matchers.BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
 	}
 
-	if !matcher.Match("VAL1", map[string]interface{}{}, nil) {
+	if !matcher.Match("VAL1", map[string]interface{}{}, nil, ctx) {
 		t.Errorf("depends on whitelist with VAL1. Should match")
 	}
 
-	if matcher.Match("VAL2", map[string]interface{}{}, nil) {
+	if matcher.Match("VAL2", map[string]interface{}{}, nil, ctx) {
 		t.Errorf("depends on whitelist with VAL1. passign VAL2 should fail")
 	}
 }
@@ -239,15 +239,15 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t})
 
-	matcher, err := matchers.BuildMatcher(dto, ctx, logger)
+	matcher, err := matchers.BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
 	}
 
 	bucketingKey := "bucketingKey_1"
-	matcher.Match("asd", map[string]interface{}{"value": "something"}, &bucketingKey)
+	matcher.Match("asd", map[string]interface{}{"value": "something"}, &bucketingKey, ctx)
 
 	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "", t: t})
-	matcher.Match("asd", map[string]interface{}{"value": "something"}, nil)
+	matcher.Match("asd", map[string]interface{}{"value": "something"}, nil, ctx)
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -15,7 +14,7 @@ func TestAllKeysMatcher(t *testing.T) {
 		MatcherType: "ALL_KEYS",
 	}
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := BuildMatcher(dto, logger)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -25,7 +24,7 @@ func TestAllKeysMatcher(t *testing.T) {
 		t.Errorf("Incorrect matcher constructed. Should be *matchers.AllKeysMatcher and was %s", matcherType)
 	}
 
-	if !matcher.Match("asd", nil, nil) {
+	if !matcher.Match("asd", nil, nil, nil) {
 		t.Error("Matcher should match ANY string")
 	}
 }

@@ -18,12 +18,12 @@ type Condition struct {
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
-func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
+func NewCondition(cond *dtos.ConditionDTO, logger logging.LoggerInterface) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
 		partitions = append(partitions, Partition{partitionData: part})
 	}
-	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, logger)
 	if err != nil {
 		//  At this point the only error forwarded is UnsupportedMatcherError
 		return nil, err
@@ -38,10 +38,10 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}, nil
 }
 
-func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) ([]matchers.MatcherInterface, error) {
+func processMatchers(condMatchers []dtos.MatcherDTO, logger logging.LoggerInterface) ([]matchers.MatcherInterface, error) {
 	matcherObjs := make([]matchers.MatcherInterface, 0)
 	for _, matcher := range condMatchers {
-		m, err := matchers.BuildMatcher(&matcher, ctx, logger)
+		m, err := matchers.BuildMatcher(&matcher, logger)
 		if err == nil {
 			matcherObjs = append(matcherObjs, m)
 		} else {
@@ -77,38 +77,33 @@ func (c *Condition) Label() string {
 }
 
 // Matches returns true if the condition matches for a specific key and/or set of attributes
-func (c *Condition) Matches(key string, bucketingKey *string, attributes map[string]interface{}) bool {
-	partial := make([]bool, len(c.matchers))
-	for i, matcher := range c.matchers {
-		partial[i] = matcher.Match(key, attributes, bucketingKey)
-		if matcher.Negate() {
-			partial[i] = !partial[i]
+func (c *Condition) Matches(key string, bucketingKey *string, attributes map[string]interface{}, ctx *injection.Context) bool {
+	switch c.combiner {
+	case "AND":
+		for _, matcher := range c.matchers {
+			result := matcher.Match(key, attributes, bucketingKey, ctx)
+			// false, false -> Fail
+			// true, false -> Continue
+			// false, true -> Continue
+			// true, true -> Fail
+			if result == matcher.Negate() {
+				return false
+			}
 		}
+		return true
+	default:
+		return false
 	}
-	return applyCombiner(partial, c.combiner)
 }
 
 // CalculateTreatment calulates the treatment for a specific condition based on the bucket
-func (c *Condition) CalculateTreatment(bucket int) *string {
+func (c *Condition) CalculateTreatment(bucket int) string {
 	accum := 0
 	for _, partition := range c.partitions {
 		accum += partition.partitionData.Size
 		if bucket <= accum {
-			return &partition.partitionData.Treatment
+			return partition.partitionData.Treatment
 		}
 	}
-	return nil
-}
-
-func applyCombiner(results []bool, combiner string) bool {
-	temp := true
-	switch combiner {
-	case "AND":
-		for _, result := range results {
-			temp = temp && result
-		}
-	default:
-		return false
-	}
-	return temp
+	return ""
 }
