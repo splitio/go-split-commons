@@ -78,14 +78,22 @@ func (c *Condition) Label() string {
 
 // Matches returns true if the condition matches for a specific key and/or set of attributes
 func (c *Condition) Matches(key string, bucketingKey *string, attributes map[string]interface{}, ctx *injection.Context) bool {
-	partial := make([]bool, len(c.matchers))
-	for i, matcher := range c.matchers {
-		partial[i] = matcher.Match(key, attributes, bucketingKey, ctx)
-		if matcher.Negate() {
-			partial[i] = !partial[i]
+	switch c.combiner {
+	case "AND":
+		for _, matcher := range c.matchers {
+			result := matcher.Match(key, attributes, bucketingKey, ctx)
+			// false, false -> Fail
+			// true, false -> Continue
+			// false, true -> Continue
+			// true, true -> Fail
+			if result == matcher.Negate() {
+				return false
+			}
 		}
+		return true
+	default:
+		return false
 	}
-	return applyCombiner(partial, c.combiner)
 }
 
 // CalculateTreatment calulates the treatment for a specific condition based on the bucket
@@ -98,17 +106,4 @@ func (c *Condition) CalculateTreatment(bucket int) string {
 		}
 	}
 	return ""
-}
-
-func applyCombiner(results []bool, combiner string) bool {
-	temp := true
-	switch combiner {
-	case "AND":
-		for _, result := range results {
-			temp = temp && result
-		}
-	default:
-		return false
-	}
-	return temp
 }
