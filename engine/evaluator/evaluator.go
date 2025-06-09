@@ -91,23 +91,22 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	ctx.AddDependency("segmentStorage", e.segmentStorage)
 	ctx.AddDependency("evaluator", e)
 	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes, ctx)
-	if treatment == nil {
+	if len(treatment) == 0 {
 		e.logger.Warning(fmt.Sprintf(
 			"No condition matched, returning default treatment: %s",
 			split.DefaultTreatment(),
 		))
 		defaultTreatment := split.DefaultTreatment()
-		treatment = &defaultTreatment
+		treatment = defaultTreatment
 		label = impressionlabels.NoConditionMatched
 	}
 
-	if _, ok := split.Configurations()[*treatment]; ok {
-		treatmentConfig := split.Configurations()[*treatment]
+	if treatmentConfig, ok := split.Configurations()[treatment]; ok {
 		config = &treatmentConfig
 	}
 
 	return &Result{
-		Treatment:           *treatment,
+		Treatment:           treatment,
 		Label:               label,
 		SplitChangeNumber:   split.ChangeNumber(),
 		Config:              config,

@@ -89,15 +89,15 @@ func (c *Condition) Matches(key string, bucketingKey *string, attributes map[str
 }
 
 // CalculateTreatment calulates the treatment for a specific condition based on the bucket
-func (c *Condition) CalculateTreatment(bucket int) *string {
+func (c *Condition) CalculateTreatment(bucket int) string {
 	accum := 0
 	for _, partition := range c.partitions {
 		accum += partition.partitionData.Size
 		if bucket <= accum {
-			return &partition.partitionData.Treatment
+			return partition.partitionData.Treatment
 		}
 	}
-	return nil
+	return ""
 }
 
 func applyCombiner(results []bool, combiner string) bool {

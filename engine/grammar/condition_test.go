@@ -71,12 +71,12 @@ func TestConditionWrapperObject(t *testing.T) {
 	}
 
 	treatment1 := wrapped.CalculateTreatment(50)
-	if treatment1 != nil && *treatment1 != "on" {
+	if len(treatment1) > 0 && treatment1 != "on" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 
 	treatment2 := wrapped.CalculateTreatment(80)
-	if treatment2 != nil && *treatment2 != "off" {
+	if len(treatment2) > 0 && treatment2 != "off" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 }
@@ -141,12 +141,12 @@ func TestAnotherWrapper(t *testing.T) {
 	}
 
 	treatment1 := wrapped.CalculateTreatment(50)
-	if treatment1 != nil && *treatment1 != "on" {
+	if len(treatment1) > 0 && treatment1 != "on" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 
 	treatment2 := wrapped.CalculateTreatment(80)
-	if treatment2 != nil && *treatment2 != "off" {
+	if len(treatment2) > 0 && treatment2 != "off" {
 		t.Error("CalculateTreatment returned incorrect treatment")
 	}
 }

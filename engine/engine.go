@@ -26,7 +26,7 @@ func (e *Engine) DoEvaluation(
 	bucketingKey string,
 	attributes map[string]interface{},
 	ctx *injection.Context,
-) (*string, string) {
+) (string, string) {
 	inRollOut := false
 	for _, condition := range split.Conditions() {
 		if !inRollOut && condition.ConditionType() == grammar.ConditionTypeRollout {
@@ -38,7 +38,7 @@ func (e *Engine) DoEvaluation(
 							" Returning default treatment", split.Name(), key,
 					))
 					defaultTreatment := split.DefaultTreatment()
-					return &defaultTreatment, impressionlabels.NotInSplit
+					return defaultTreatment, impressionlabels.NotInSplit
 				}
 				inRollOut = true
 			}
@@ -50,7 +50,7 @@ func (e *Engine) DoEvaluation(
 			return treatment, condition.Label()
 		}
 	}
-	return nil, impressionlabels.NoConditionMatched
+	return "", impressionlabels.NoConditionMatched
 }
 
 func (e *Engine) calculateBucket(algo int, bucketingKey string, seed int64) int {
