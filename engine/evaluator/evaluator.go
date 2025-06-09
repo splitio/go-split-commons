@@ -135,7 +135,7 @@ func (e *Evaluator) EvaluateFeature(key string, bucketingKey *string, featureFla
 // EvaluateFeatures returns a struct with the resulting treatment and extra information for the impression
 func (e *Evaluator) EvaluateFeatures(key string, bucketingKey *string, featureFlags []string, attributes map[string]interface{}) Results {
 	var results = Results{
-		Evaluations:    make(map[string]Result),
+		Evaluations:    make(map[string]Result, len(featureFlags)),
 		EvaluationTime: 0,
 	}
 	before := time.Now()
