@@ -9,25 +9,25 @@ const (
 
 // RuleBasedSegment
 type RuleBasedSegment struct {
-	Name            string
-	TrafficTypeName string
-	ChangeNumber    int64
-	Status          string
-	Conditions      []RuleBasedConditionDTO
+	Name            string                  `json:"name"`
+	TrafficTypeName string                  `json:"trafficTypeName"`
+	ChangeNumber    int64                   `json:"changeNumber"`
+	Status          string                  `json:"status"`
+	Conditions      []RuleBasedConditionDTO `json:"conditions"`
 }
 
 type Excluded struct {
-	ExcludedKeys    []string
-	ExcludedSegment []ExcludedSegment
+	ExcludedKeys    []string          `json:"excludedKeys"`
+	ExcludedSegment []ExcludedSegment `json:"ezcludedSegments"`
 }
 
 type ExcludedSegment struct {
-	Name string
-	Type string
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // ConditionDTO structure to map a Condition fetched from JSON message.
 type RuleBasedConditionDTO struct {
-	ConditionType string
-	MatcherGroup  MatcherGroupDTO
+	ConditionType string          `json:"conditionType"`
+	MatcherGroup  MatcherGroupDTO `json:"matcherGroup"`
 }
