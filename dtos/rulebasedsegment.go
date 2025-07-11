@@ -18,8 +18,8 @@ type RuleBasedSegment struct {
 }
 
 type Excluded struct {
-	ExcludedKeys    []string          `json:"excludedKeys"`
-	ExcludedSegment []ExcludedSegment `json:"ezcludedSegments"`
+	Keys     []string          `json:"keys"`
+	Segments []ExcludedSegment `json:"segments"`
 }
 
 type ExcludedSegment struct {

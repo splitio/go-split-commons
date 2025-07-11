@@ -92,7 +92,7 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 				}
 			}
 		}
-		for _, excluded := range ruleBased.Excluded.ExcludedSegment {
+		for _, excluded := range ruleBased.Excluded.Segments {
 			if excluded.Type == dtos.TypeStandard {
 				segments.Add(excluded.Name)
 			}
