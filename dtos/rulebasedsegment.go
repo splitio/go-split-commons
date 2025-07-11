@@ -9,12 +9,12 @@ const (
 
 // RuleBasedSegment
 type RuleBasedSegment struct {
-	Name             string                  `json:"name"`
-	TrafficTypeName  string                  `json:"trafficTypeName"`
-	ChangeNumber     int64                   `json:"changeNumber"`
-	Status           string                  `json:"status"`
-	ExcludedSegments Excluded                `json:"excludedSegments"`
-	Conditions       []RuleBasedConditionDTO `json:"conditions"`
+	Name            string                  `json:"name"`
+	TrafficTypeName string                  `json:"trafficTypeName"`
+	ChangeNumber    int64                   `json:"changeNumber"`
+	Status          string                  `json:"status"`
+	Excluded        Excluded                `json:"excluded"`
+	Conditions      []RuleBasedConditionDTO `json:"conditions"`
 }
 
 type Excluded struct {
