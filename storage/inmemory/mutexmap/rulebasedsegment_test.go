@@ -79,8 +79,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.True(t, segments.Has("excluded1"), "excluded1 should be in segments")
 
 	// Test Contains
-	assert.True(t, storage.Contains([]string{"segment1", "excluded1"}), "should contain segment1 and excluded1")
-	assert.True(t, storage.Contains([]string{"segment2"}), "should contain segment2")
+	assert.True(t, storage.Contains([]string{"rule1", "rule2"}), "should contain rule1 and rule2")
+	assert.True(t, storage.Contains([]string{"rule1"}), "should contain rule1")
 	assert.False(t, storage.Contains([]string{"nonexistent"}))
 
 	// Test Remove

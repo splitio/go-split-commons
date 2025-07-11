@@ -101,14 +101,16 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 	return segments
 }
 
-// Contains returns true or false if all the segment names are in the rule-based segments
+// Contains returns true or false if all the rule-based segment names are present
 func (r *RuleBasedSegmentsStorageImpl) Contains(ruleBasedSegmentNames []string) bool {
 	if len(ruleBasedSegmentNames) == 0 {
 		return false
 	}
-	segments := r.GetSegments()
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
 	for _, name := range ruleBasedSegmentNames {
-		if !segments.Has(name) {
+		_, exists := r.data[name]
+		if !exists {
 			return false
 		}
 	}
