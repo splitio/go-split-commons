@@ -13,12 +13,13 @@ type RuleBasedSegment struct {
 	TrafficTypeName string                  `json:"trafficTypeName"`
 	ChangeNumber    int64                   `json:"changeNumber"`
 	Status          string                  `json:"status"`
+	Excluded        Excluded                `json:"excluded"`
 	Conditions      []RuleBasedConditionDTO `json:"conditions"`
 }
 
 type Excluded struct {
-	ExcludedKeys    []string          `json:"excludedKeys"`
-	ExcludedSegment []ExcludedSegment `json:"ezcludedSegments"`
+	Keys     []string          `json:"keys"`
+	Segments []ExcludedSegment `json:"segments"`
 }
 
 type ExcludedSegment struct {
