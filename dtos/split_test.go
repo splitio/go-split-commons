@@ -22,7 +22,7 @@ func TestSplitDTO(t *testing.T) {
 		t.Error("Error parsing split changes JSON ", err)
 	}
 
-	if dataSerialize, err := splitChangesDtoFromMock.Splits[0].MarshalBinary(); err != nil {
+	if dataSerialize, err := splitChangesDtoFromMock.FeatureFlags.Splits[0].MarshalBinary(); err != nil {
 		t.Error(err)
 	} else {
 		marshalData := fmt.Sprintf(string(splitsMock), dataSerialize)
@@ -31,40 +31,40 @@ func TestSplitDTO(t *testing.T) {
 			t.Error("Error parsing split changes JSON ", err)
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].ChangeNumber !=
-			splitChangesDtoFromMock.Splits[0].ChangeNumber {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].ChangeNumber !=
+			splitChangesDtoFromMock.FeatureFlags.Splits[0].ChangeNumber {
 			t.Error("Marshal struct mal formed [ChangeNumber]")
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].Name !=
-			splitChangesDtoFromMock.Splits[0].Name {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Name !=
+			splitChangesDtoFromMock.FeatureFlags.Splits[0].Name {
 			t.Error("Marshal struct mal formed [Name]")
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].Killed !=
-			splitChangesDtoFromMock.Splits[0].Killed {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Killed !=
+			splitChangesDtoFromMock.FeatureFlags.Splits[0].Killed {
 			t.Error("Marshal struct mal formed [Killed]")
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].Configurations == nil {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Configurations == nil {
 			t.Error("Marshal struct mal formed [Configurations]")
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].Configurations["of"] !=
-			splitChangesDtoFromMock.Splits[0].Configurations["of"] {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Configurations["of"] !=
+			splitChangesDtoFromMock.FeatureFlags.Splits[0].Configurations["of"] {
 			t.Error("Marshal struct mal formed [Configurations]")
 		}
 
-		if splitChangesDtoFromMarshal.Splits[0].Configurations["on"] !=
-			splitChangesDtoFromMock.Splits[0].Configurations["on"] {
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Configurations["on"] !=
+			splitChangesDtoFromMock.FeatureFlags.Splits[0].Configurations["on"] {
 			t.Error("Marshal struct mal formed [Configurations]")
 		}
 
-		if len(splitChangesDtoFromMarshal.Splits[0].Sets) != 0 {
+		if len(splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Sets) != 0 {
 			t.Error("Marshal struct mal formed [Sets]")
 		}
 
-		condition := splitChangesDtoFromMarshal.Splits[0].Conditions[0]
+		condition := splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Conditions[0]
 		if condition.ConditionType != "WHITELIST" {
 			t.Error("Marshal struct mal formed [ConditionType]. Actual: ", condition.ConditionType)
 		}

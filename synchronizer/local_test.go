@@ -66,9 +66,9 @@ func TestLocalSyncAllOk(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+						Since: 3,
+						Till:  3},
 				}, nil
 			},
 		},
@@ -121,9 +121,9 @@ func TestLocalPeriodicFetching(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+						Since: 3,
+						Till:  3},
 				}, nil
 			},
 		},

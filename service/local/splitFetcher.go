@@ -232,10 +232,10 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 		return nil, err
 	}
 	// if the till is less than storage CN and different from the default till ignore the change
-	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
+	if splitChange.FeatureFlags.Till < changeNumber && splitChange.FeatureFlags.Till != defaultTill {
 		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
 	}
-	splitsJson, _ := json.Marshal(splitChange.Splits)
+	splitsJson, _ := json.Marshal(splitChange.FeatureFlags.Splits)
 	currH := sha1.New()
 	currH.Write(splitsJson)
 	// calculate the json sha
@@ -243,15 +243,15 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
-	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == defaultTill {
+	if bytes.Equal(currSum, s.lastHash) || splitChange.FeatureFlags.Till == defaultTill {
 		s.lastHash = currSum
-		splitChange.Till = changeNumber
-		splitChange.Since = changeNumber
+		splitChange.FeatureFlags.Till = changeNumber
+		splitChange.FeatureFlags.Since = changeNumber
 		return splitChange, nil
 	}
 	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
-	splitChange.Since = splitChange.Till
+	splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
 	return splitChange, nil
 }
 
@@ -290,9 +290,11 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos
 
 	s.lastHash = currSum
 	return &dtos.SplitChangesDTO{
-		Splits: splits,
-		Since:  fetchOptions.ChangeNumber(),
-		Till:   till,
+		FeatureFlags: dtos.FeatureFlagsDTO{
+			Splits: splits,
+			Since:  fetchOptions.ChangeNumber(),
+			Till:   till,
+		},
 	}, nil
 }
 

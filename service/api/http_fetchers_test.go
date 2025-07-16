@@ -66,20 +66,20 @@ func TestSpitChangesFetch(t *testing.T) {
 		t.Error(err)
 	}
 
-	if splitChangesDTO.Till != 1491244291288 ||
-		splitChangesDTO.Splits[0].Name != "DEMO_MURMUR2" {
+	if splitChangesDTO.FeatureFlags.Till != 1491244291288 ||
+		splitChangesDTO.FeatureFlags.Splits[0].Name != "DEMO_MURMUR2" {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.Splits[0].Configurations == nil {
+	if splitChangesDTO.FeatureFlags.Splits[0].Configurations == nil {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.Splits[0].Configurations["of"] != "" {
+	if splitChangesDTO.FeatureFlags.Splits[0].Configurations["of"] != "" {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.Splits[0].Configurations["on"] != "{\"color\": \"blue\",\"size\": 13}" {
+	if splitChangesDTO.FeatureFlags.Splits[0].Configurations["on"] != "{\"color\": \"blue\",\"size\": 13}" {
 		t.Error("DTO mal formed")
 	}
 }

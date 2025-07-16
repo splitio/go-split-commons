@@ -64,9 +64,9 @@ func TestSplitSyncTask(t *testing.T) {
 				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-				Since:  3,
-				Till:   3,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+					Since: 3,
+					Till:  3},
 			}, nil
 		},
 	}
