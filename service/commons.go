@@ -14,6 +14,7 @@ const (
 	cacheControlNoCache = "no-cache"
 	sets                = "sets"
 	since               = "since"
+	rbSince             = "rbSince"
 	spec                = "s"
 	till                = "till"
 )
@@ -36,6 +37,7 @@ type baseRequestParams struct {
 type FlagRequestParams struct {
 	baseRequestParams
 	changeNumber   int64
+	changeNumberRB int64
 	flagSetsFilter string
 	specVersion    *string
 	till           *int64
@@ -62,6 +64,12 @@ func (s *FlagRequestParams) WithChangeNumber(changeNumber int64) *FlagRequestPar
 	return s
 }
 
+// WithChangeNumberRB sets the change number for rule-based
+func (s *FlagRequestParams) WithChangeNumberRB(changeNumberRB int64) *FlagRequestParams {
+	s.changeNumberRB = changeNumberRB
+	return s
+}
+
 // WithFlagSetsFilter sets the flag sets filter
 func (s *FlagRequestParams) WithFlagSetsFilter(flagSetsFilter string) *FlagRequestParams {
 	s.flagSetsFilter = flagSetsFilter
@@ -85,6 +93,11 @@ func (s *FlagRequestParams) ChangeNumber() int64 {
 	return s.changeNumber
 }
 
+// ChangeNumberRB returns the change number for rule-based
+func (s *FlagRequestParams) ChangeNumberRB() int64 {
+	return s.changeNumberRB
+}
+
 // Apply applies the request parameters
 func (s *FlagRequestParams) Apply(request *http.Request) error {
 	if s.cacheControlHeaders {
@@ -96,6 +109,7 @@ func (s *FlagRequestParams) Apply(request *http.Request) error {
 		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.specVersion)})
 	}
 	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.changeNumber, 10)})
+	queryParameters = append(queryParameters, queryParamater{key: rbSince, value: strconv.FormatInt(s.changeNumberRB, 10)})
 	if len(s.flagSetsFilter) > 0 {
 		queryParameters = append(queryParameters, queryParamater{key: sets, value: s.flagSetsFilter})
 	}

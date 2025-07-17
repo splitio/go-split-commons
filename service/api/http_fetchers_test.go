@@ -43,7 +43,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		if r.URL.Query().Get("s") != specs.FLAG_V1_1 {
 			t.Error("wrong spec")
 		}
-		if r.URL.RawQuery != "s=1.1&since=123456" {
+		if r.URL.RawQuery != "s=1.1&since=123456&rbSince=123456" {
 			t.Error("wrong query params")
 		}
 		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
@@ -61,7 +61,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456))
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456))
 	if err != nil {
 		t.Error(err)
 	}
@@ -201,7 +201,7 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 		queryParams = r.URL.Query()
 		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
 
-		if r.URL.RawQuery != "s=1.1&since=123456&sets=one%2Ctwo&till=10000" {
+		if r.URL.RawQuery != "s=1.1&since=123456&rbSince=123456&sets=one%2Ctwo&till=10000" {
 			t.Error("wrong query params")
 		}
 	}))
@@ -219,7 +219,7 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000))
+	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000).WithChangeNumberRB(123456))
 	if err != nil {
 		t.Error(err)
 	}
