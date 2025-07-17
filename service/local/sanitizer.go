@@ -8,15 +8,15 @@ import (
 )
 
 func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
-	if splitChange.Till < -1 {
-		splitChange.Till = -1
+	if splitChange.FeatureFlags.Till < -1 {
+		splitChange.FeatureFlags.Till = -1
 	}
-	if splitChange.Since < -1 || splitChange.Since > splitChange.Till {
-		splitChange.Since = splitChange.Till
+	if splitChange.FeatureFlags.Since < -1 || splitChange.FeatureFlags.Since > splitChange.FeatureFlags.Till {
+		splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
 	}
 	var splitResult []dtos.SplitDTO
-	for i := 0; i < len(splitChange.Splits); i++ {
-		split := splitChange.Splits[i]
+	for i := 0; i < len(splitChange.FeatureFlags.Splits); i++ {
+		split := splitChange.FeatureFlags.Splits[i]
 		if split.Name == "" {
 			continue
 		}
@@ -54,7 +54,7 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		}
 		splitResult = append(splitResult, split)
 	}
-	splitChange.Splits = splitResult
+	splitChange.FeatureFlags.Splits = splitResult
 	return &splitChange
 }
 

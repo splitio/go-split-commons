@@ -105,9 +105,9 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				validReqParams(t, fetchOptions)
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+						Since: 3,
+						Till:  3},
 				}, nil
 			},
 		},
@@ -190,9 +190,9 @@ func TestSyncAllOk(t *testing.T) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				validReqParams(t, fetchOptions)
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+						Since: 3,
+						Till:  3},
 				}, nil
 			},
 		},
@@ -294,9 +294,9 @@ func TestPeriodicFetching(t *testing.T) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				validReqParams(t, fetchOptions)
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+						Since: 3,
+						Till:  3},
 				}, nil
 			},
 		},
@@ -704,9 +704,9 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Till:   2,
-					Since:  2,
-					Splits: []dtos.SplitDTO{},
+					FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+						Since:  2,
+						Splits: []dtos.SplitDTO{}},
 				}, nil
 			},
 		},
@@ -779,9 +779,9 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return &dtos.SplitChangesDTO{
-					Till:   4,
-					Since:  4,
-					Splits: []dtos.SplitDTO{},
+					FeatureFlags: dtos.FeatureFlagsDTO{Till: 4,
+						Since:  4,
+						Splits: []dtos.SplitDTO{}},
 				}, nil
 			},
 		},
@@ -847,9 +847,9 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 				atomic.AddInt64(&splitFetchCalled, 1)
 				return &dtos.SplitChangesDTO{
-					Till:   2,
-					Since:  2,
-					Splits: []dtos.SplitDTO{},
+					FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+						Since:  2,
+						Splits: []dtos.SplitDTO{}},
 				}, nil
 			},
 		},

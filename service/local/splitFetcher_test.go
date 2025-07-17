@@ -10,17 +10,17 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-var jsonTest_default = []byte(`{"splits":[],"since":-1,"till":-1}`)
-var jsonTest_0 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
-var jsonTest_1 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
-var jsonTest_2 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":2323}`)
-var jsonTest_3 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":2323}`)
-var jsonTest_4 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":445345}`)
-var jsonTest_5 = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
-var jsonTest = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-2}`)
-var jsonSplitWithoutName = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":-1}`)
-var jsonSplitMatcherEmpty = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{}}],"since":-1,"till":-1}`)
-var jsonSplitSanitization = []byte(`{"splits":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":1000,"status":"ACTIVE","killed":false,"changeNumber":1675443537882,"algo":9,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"since":-1,"till":2323}`)
+var jsonTest_default = []byte(`{"ff":{"s":-1,"t":-1,"d":[]}}`)
+var jsonTest_0 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-1}}`)
+var jsonTest_1 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-1}}`)
+var jsonTest_2 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":2323}}`)
+var jsonTest_3 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":2323}}`)
+var jsonTest_4 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":445345}}`)
+var jsonTest_5 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","name":"SPLIT_2","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-1}}`)
+var jsonTest = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-2}}`)
+var jsonSplitWithoutName = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-1}}`)
+var jsonSplitMatcherEmpty = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{}}],"s":-1,"t":-1}}`)
+var jsonSplitSanitization = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":1000,"status":"ACTIVE","killed":false,"changeNumber":1675443537882,"algo":9,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":2323}}`)
 
 func TestLocalSplitFetcher(t *testing.T) {
 	file, err := ioutil.TempFile("", "localhost_test")
@@ -45,12 +45,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != -1 || res.Till != 0 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	if res.FeatureFlags.Since != -1 || res.FeatureFlags.Till != 0 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
 	}
 
-	if len(res.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", res.Splits)
+	if len(res.FeatureFlags.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
 	}
 
 	// second call -- no change -- since == till
@@ -60,12 +60,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 0 || res.Till != 0 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	if res.FeatureFlags.Since != 0 || res.FeatureFlags.Till != 0 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
 	}
 
-	if len(res.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", res.Splits)
+	if len(res.FeatureFlags.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
 	}
 
 	if _, err := file.Write([]byte("feature3 yes\n")); err != nil {
@@ -79,12 +79,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 0 || res.Till != 1 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	if res.FeatureFlags.Since != 0 || res.FeatureFlags.Till != 1 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
 	}
 
-	if len(res.Splits) != 3 {
-		t.Error("should have 2 splits. has: ", res.Splits)
+	if len(res.FeatureFlags.Splits) != 3 {
+		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
 	}
 
 	// fourth call -- no change -- till != since
@@ -94,12 +94,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 1 || res.Till != 1 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	if res.FeatureFlags.Since != 1 || res.FeatureFlags.Till != 1 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
 	}
 
-	if len(res.Splits) != 3 {
-		t.Error("should have 2 splits. has: ", res.Splits)
+	if len(res.FeatureFlags.Splits) != 3 {
+		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
 	}
 }
 
@@ -113,19 +113,19 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Since != 1660326991072 || res.Till != 1660326991072 {
-		t.Error("Wrong since/till. Got: ", res.Since, res.Till)
+	if res.FeatureFlags.Since != 1660326991072 || res.FeatureFlags.Till != 1660326991072 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
 	}
 
-	if len(res.Splits) != 7 {
-		t.Error("should have 7 splits. has: ", res.Splits)
+	if len(res.FeatureFlags.Splits) != 7 {
+		t.Error("should have 7 splits. has: ", res.FeatureFlags.Splits)
 	}
 
-	if res.Splits[0].Name != "split_1" {
+	if res.FeatureFlags.Splits[0].Name != "split_1" {
 		t.Error("DTO mal formed")
 	}
 
-	if res.Splits[0].Configurations == nil {
+	if res.FeatureFlags.Splits[0].Configurations == nil {
 		t.Error("DTO mal formed")
 	}
 }
@@ -185,61 +185,61 @@ func TestFetchSomeSplits(t *testing.T) {
 	}
 	// 0) The CN from storage is -1, till and since are -1, and sha doesn't exist in the hash. It's going to return a split change with updates.
 	splitChange, _ := mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.Since != -1 || splitChange.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
 	}
 
 	fetches++
 	// 1) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.Since != -1 || splitChange.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 2 {
-		t.Error("should have 1 split. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 2 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
 	}
 
 	fetches++
 	// 2) The CN from storage is -1, till is 2323, and since is -1, and sha is the same as before. It's going to return a split change with the same data.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.Since != -1 || splitChange.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags.Splits)
 	}
 
 	fetches++
 	// 3) The CN from storage is -1, till is 2323, and since is -1, sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.Since != 2323 || splitChange.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
 	}
 
 	fetches++
 	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a split change with same data.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
-	if splitChange.Since != 2323 || splitChange.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
 	}
 
 	fetches++
 	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
-	if splitChange.Since != 2323 || splitChange.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.Since, splitChange.Till)
+	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
 	}
-	if len(splitChange.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", splitChange.Splits)
+	if len(splitChange.FeatureFlags.Splits) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags.Splits)
 	}
 }
 
@@ -267,8 +267,8 @@ func TestSplitWithoutName(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if len(res.Splits) != 1 {
-		t.Error("Should has one split. Got: ", len(res.Splits))
+	if len(res.FeatureFlags.Splits) != 1 {
+		t.Error("Should has one split. Got: ", len(res.FeatureFlags.Splits))
 	}
 }
 
@@ -296,11 +296,11 @@ func TestSplitMatchersEmpty(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if len(res.Splits) != 1 {
-		t.Error("should has one split. Got: ", len(res.Splits))
+	if len(res.FeatureFlags.Splits) != 1 {
+		t.Error("should has one split. Got: ", len(res.FeatureFlags.Splits))
 	}
 
-	split := res.Splits[0]
+	split := res.FeatureFlags.Splits[0]
 	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != "ALL_KEYS" {
 		t.Error("the matcher type should be all keys. Got: ", split.Conditions[0].MatcherGroup.Matchers[0].MatcherType)
 	}
@@ -334,23 +334,23 @@ func TestSplitSanitization(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.Splits[0].Algo != 2 {
-		t.Error("algo should be 2. Got: ", res.Splits[0].Algo)
+	if res.FeatureFlags.Splits[0].Algo != 2 {
+		t.Error("algo should be 2. Got: ", res.FeatureFlags.Splits[0].Algo)
 	}
 
-	if res.Splits[0].TrafficAllocation != 100 {
-		t.Error("traffic allocation should be 100. Got: ", res.Splits[0].TrafficAllocation)
+	if res.FeatureFlags.Splits[0].TrafficAllocation != 100 {
+		t.Error("traffic allocation should be 100. Got: ", res.FeatureFlags.Splits[0].TrafficAllocation)
 	}
 
-	if res.Splits[0].TrafficAllocationSeed == 0 {
+	if res.FeatureFlags.Splits[0].TrafficAllocationSeed == 0 {
 		t.Error("traffic allocation seed can't be 0")
 	}
 
-	if res.Splits[0].Seed == 0 {
+	if res.FeatureFlags.Splits[0].Seed == 0 {
 		t.Error("seed can't be 0")
 	}
 
-	if res.Splits[0].DefaultTreatment != "control" {
+	if res.FeatureFlags.Splits[0].DefaultTreatment != "control" {
 		t.Error("default treatment should be control")
 	}
 }

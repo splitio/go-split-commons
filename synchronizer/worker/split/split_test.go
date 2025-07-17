@@ -168,9 +168,9 @@ func TestSplitSynchronizer(t *testing.T) {
 				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-				Since:  3,
-				Till:   3,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+					Since: 3,
+					Till:  3},
 			}, nil
 		},
 	}
@@ -231,18 +231,18 @@ func TestSplitSyncProcess(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+						Since: 3,
+						Till:  3},
 				}, nil
 			case 2:
 				if fetchOptions.ChangeNumber() != 3 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
+						Since: 3,
+						Till:  3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -333,9 +333,9 @@ func TestSplitTill(t *testing.T) {
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -381,30 +381,30 @@ func TestByPassingCDN(t *testing.T) {
 			case called == 1:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  1,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 1,
+						Till:  2},
 				}, nil
 			case called >= 2 && called <= 11:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			case called == 12:
 				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 3,
+						Till:  3},
 				}, nil
 			}
 
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -448,30 +448,30 @@ func TestByPassingCDNLimit(t *testing.T) {
 			case called == 1:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  1,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 1,
+						Till:  2},
 				}, nil
 			case called >= 2 && called <= 11:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			case called >= 12:
 				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			}
 
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -546,9 +546,9 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
-				Till:   2,
-				Since:  2,
-				Splits: []dtos.SplitDTO{},
+				FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{}},
 			}, nil
 		},
 	}
@@ -673,9 +673,9 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
-				Till:   2,
-				Since:  2,
-				Splits: []dtos.SplitDTO{},
+				FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{}},
 			}, nil
 		},
 	}
@@ -700,7 +700,7 @@ func TestGetActiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -718,7 +718,7 @@ func TestGetInactiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -736,7 +736,8 @@ func TestGetActiveAndInactiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{
+		FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -765,9 +766,9 @@ func TestSplitSyncWithSets(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+						Since: 3,
+						Till:  3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -821,9 +822,10 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{
+						Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
+						Since:  3,
+						Till:   3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -871,38 +873,39 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 
 func TestProcessMatchers(t *testing.T) {
 	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
-	splitChange := &dtos.SplitChangesDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
-		{
-			Name:   "split1",
-			Status: Active,
-			Conditions: []dtos.ConditionDTO{
-				{
-					ConditionType: "NEW_MATCHER",
-					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
-					MatcherGroup: dtos.MatcherGroupDTO{
-						Matchers: []dtos.MatcherDTO{
-							{MatcherType: "NEW_MATCHER", KeySelector: nil},
+	splitChange := &dtos.SplitChangesDTO{
+		FeatureFlags: dtos.FeatureFlagsDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
+			{
+				Name:   "split1",
+				Status: Active,
+				Conditions: []dtos.ConditionDTO{
+					{
+						ConditionType: "NEW_MATCHER",
+						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{
+								{MatcherType: "NEW_MATCHER", KeySelector: nil},
+							},
 						},
 					},
 				},
 			},
-		},
-		{
-			Name:   "split2",
-			Status: Active,
-			Conditions: []dtos.ConditionDTO{
-				{
-					ConditionType: grammar.ConditionTypeRollout,
-					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
-					MatcherGroup: dtos.MatcherGroupDTO{
-						Matchers: []dtos.MatcherDTO{
-							{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+			{
+				Name:   "split2",
+				Status: Active,
+				Conditions: []dtos.ConditionDTO{
+					{
+						ConditionType: grammar.ConditionTypeRollout,
+						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{
+								{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+							},
 						},
 					},
 				},
 			},
-		},
-	}}
+		}}}
 	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
 
 	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
