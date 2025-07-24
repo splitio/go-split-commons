@@ -1,6 +1,7 @@
 package mutexmap
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -9,7 +10,7 @@ import (
 
 // RuleBasedSegmentsStorageImpl implements the RuleBasedSegmentsStorage interface
 type RuleBasedSegmentsStorageImpl struct {
-	data      map[string]dtos.RuleBasedSegment
+	data      map[string]dtos.RuleBasedSegmentDTO
 	till      int64
 	mutex     *sync.RWMutex
 	tillMutex *sync.RWMutex
@@ -18,7 +19,7 @@ type RuleBasedSegmentsStorageImpl struct {
 // NewRuleBasedSegmentsStorage constructs a new RuleBasedSegments cache
 func NewRuleBasedSegmentsStorage() *RuleBasedSegmentsStorageImpl {
 	return &RuleBasedSegmentsStorageImpl{
-		data:      make(map[string]dtos.RuleBasedSegment),
+		data:      make(map[string]dtos.RuleBasedSegmentDTO),
 		till:      -1,
 		mutex:     &sync.RWMutex{},
 		tillMutex: &sync.RWMutex{},
@@ -26,7 +27,7 @@ func NewRuleBasedSegmentsStorage() *RuleBasedSegmentsStorageImpl {
 }
 
 // Update atomically registers new rule-based, removes archived ones and updates the change number
-func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegment, toRemove []dtos.RuleBasedSegment, till int64) {
+func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	for _, ruleBased := range toAdd {
@@ -57,10 +58,10 @@ func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() int64 {
 
 // All returns a list with a copy of each rule-based.
 // NOTE: This method will block any further operations regarding rule-baseds. Use with caution
-func (r *RuleBasedSegmentsStorageImpl) All() []dtos.RuleBasedSegment {
+func (r *RuleBasedSegmentsStorageImpl) All() []dtos.RuleBasedSegmentDTO {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	ruleBasedList := make([]dtos.RuleBasedSegment, 0)
+	ruleBasedList := make([]dtos.RuleBasedSegmentDTO, 0)
 	for _, ruleBased := range r.data {
 		ruleBasedList = append(ruleBasedList, ruleBased)
 	}
@@ -124,5 +125,15 @@ func (r *RuleBasedSegmentsStorageImpl) Clear() {
 
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	r.data = make(map[string]dtos.RuleBasedSegment)
+	r.data = make(map[string]dtos.RuleBasedSegmentDTO)
+}
+
+func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	ruleBased, exists := r.data[name]
+	if exists {
+		return &ruleBased, nil
+	}
+	return nil, fmt.Errorf("rule-based segment %s not found in storage", name)
 }

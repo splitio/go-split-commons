@@ -64,6 +64,8 @@ const (
 	MatcherTypeInListSemver = "IN_LIST_SEMVER"
 	// MatcherInLargeSegment string value
 	MatcherTypeInLargeSegment = "IN_LARGE_SEGMENT"
+	// MatcherInRuleBasedSegment string value
+	MatcherTypeInRuleBasedSegment = "IN_RULE_BASED_SEGMENT"
 )
 
 // MatcherInterface should be implemented by all matchers
@@ -437,6 +439,19 @@ func BuildMatcher(dto *dtos.MatcherDTO, ctx *injection.Context, logger logging.L
 		matcher = NewInLargeSegmentMatcher(
 			dto.Negate,
 			dto.UserDefinedLargeSegment.LargeSegmentName,
+			attributeName,
+		)
+	case MatcherTypeInRuleBasedSegment:
+		if dto.UserDefinedSegment == nil {
+			return nil, errors.New("UserDefinedSegment is required for IN_RULE_BASED_SEGMENT matcher type")
+		}
+		logger.Debug(fmt.Sprintf(
+			"Building InRuleBasedSegmentMatcher with negate=%t, ruleBasedSegmentName=%s, attributeName=%v",
+			dto.Negate, dto.UserDefinedSegment.SegmentName, attributeName,
+		))
+		matcher = NewInRuleBasedSegmentMatcher(
+			dto.Negate,
+			dto.UserDefinedSegment.SegmentName,
 			attributeName,
 		)
 	default:

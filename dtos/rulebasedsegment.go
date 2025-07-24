@@ -8,21 +8,21 @@ const (
 )
 
 // RuleBasedSegment
-type RuleBasedSegment struct {
-	Name            string                  `json:"name"`
-	TrafficTypeName string                  `json:"trafficTypeName"`
+type RuleBasedSegmentDTO struct {
 	ChangeNumber    int64                   `json:"changeNumber"`
+	Name            string                  `json:"name"`
 	Status          string                  `json:"status"`
-	Excluded        Excluded                `json:"excluded"`
+	TrafficTypeName string                  `json:"trafficTypeName"`
+	Excluded        ExcludedDTO             `json:"excluded"`
 	Conditions      []RuleBasedConditionDTO `json:"conditions"`
 }
 
-type Excluded struct {
-	Keys     []string          `json:"keys"`
-	Segments []ExcludedSegment `json:"segments"`
+type ExcludedDTO struct {
+	Keys     []string              `json:"keys"`
+	Segments []ExcluededSegmentDTO `json:"segments"`
 }
 
-type ExcludedSegment struct {
+type ExcluededSegmentDTO struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }

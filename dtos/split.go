@@ -1,6 +1,8 @@
 package dtos
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
@@ -38,25 +40,6 @@ type SplitDTO struct {
 	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
 }
 
-type RuleBasedSegmentDTO struct {
-	ChangeNumber    int64            `json:"changeNumber"`
-	Name            string           `json:"name"`
-	Status          string           `json:"status"`
-	TrafficTypeName string           `json:"trafficTypeName"`
-	Excluded        ExcludedDTO      `json:"excluded"`
-	Condition       []RBConditionDTO `json:"conditions"`
-}
-
-type ExcludedDTO struct {
-	Keys     []string              `json:"keys"`
-	Segments []ExcluededSegmentDTO `json:"segments"`
-}
-
-type ExcluededSegmentDTO struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
 // MarshalBinary exports SplitDTO to JSON string
 func (s SplitDTO) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(s)
@@ -68,12 +51,6 @@ type ConditionDTO struct {
 	MatcherGroup  MatcherGroupDTO `json:"matcherGroup"`
 	Partitions    []PartitionDTO  `json:"partitions"`
 	Label         string          `json:"label"`
-}
-
-// RBConditionDTO structure to map a RBCondition fetched from JSON message.
-type RBConditionDTO struct {
-	ConditionType string          `json:"conditionType"`
-	MatcherGroup  MatcherGroupDTO `json:"matcherGroup"`
 }
 
 // PartitionDTO structure to map a Partition definition fetched from JSON message.
