@@ -1,4 +1,4 @@
-package grammar
+package condition
 
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -10,18 +10,18 @@ import (
 
 // Condition struct with added logic that wraps around a DTO
 type Condition struct {
-	matchers      []matchers.MatcherInterface
-	combiner      string
-	partitions    []Partition
-	label         string
-	conditionType string
+	Matchers       []matchers.MatcherInterface
+	Combiner       string
+	Partitions     []Partition
+	ConditionLabel string
+	CondType       string
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
 func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
-		partitions = append(partitions, Partition{partitionData: part})
+		partitions = append(partitions, Partition{PartitionData: part})
 	}
 	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
 	if err != nil {
@@ -30,11 +30,11 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}
 
 	return &Condition{
-		combiner:      cond.MatcherGroup.Combiner,
-		matchers:      matcherObjs,
-		partitions:    partitions,
-		label:         cond.Label,
-		conditionType: cond.ConditionType,
+		Combiner:       cond.MatcherGroup.Combiner,
+		Matchers:       matcherObjs,
+		Partitions:     partitions,
+		ConditionLabel: cond.Label,
+		CondType:       cond.ConditionType,
 	}, nil
 }
 
@@ -56,12 +56,12 @@ func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, log
 
 // Partition struct with added logic that wraps around a DTO
 type Partition struct {
-	partitionData dtos.PartitionDTO
+	PartitionData dtos.PartitionDTO
 }
 
 // ConditionType returns validated condition type. Whitelist by default
 func (c *Condition) ConditionType() string {
-	switch c.conditionType {
+	switch c.CondType {
 	case ConditionTypeRollout:
 		return ConditionTypeRollout
 	case ConditionTypeWhitelist:
@@ -73,28 +73,28 @@ func (c *Condition) ConditionType() string {
 
 // Label returns the condition's label
 func (c *Condition) Label() string {
-	return c.label
+	return c.ConditionLabel
 }
 
 // Matches returns true if the condition matches for a specific key and/or set of attributes
 func (c *Condition) Matches(key string, bucketingKey *string, attributes map[string]interface{}) bool {
-	partial := make([]bool, len(c.matchers))
-	for i, matcher := range c.matchers {
+	partial := make([]bool, len(c.Matchers))
+	for i, matcher := range c.Matchers {
 		partial[i] = matcher.Match(key, attributes, bucketingKey)
 		if matcher.Negate() {
 			partial[i] = !partial[i]
 		}
 	}
-	return applyCombiner(partial, c.combiner)
+	return applyCombiner(partial, c.Combiner)
 }
 
 // CalculateTreatment calulates the treatment for a specific condition based on the bucket
 func (c *Condition) CalculateTreatment(bucket int) *string {
 	accum := 0
-	for _, partition := range c.partitions {
-		accum += partition.partitionData.Size
+	for _, partition := range c.Partitions {
+		accum += partition.PartitionData.Size
 		if bucket <= accum {
-			return &partition.partitionData.Treatment
+			return &partition.PartitionData.Treatment
 		}
 	}
 	return nil

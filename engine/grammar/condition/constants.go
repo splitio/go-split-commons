@@ -1,4 +1,4 @@
-package grammar
+package condition
 
 const (
 	// SplitStatusActive represents an active feature flag

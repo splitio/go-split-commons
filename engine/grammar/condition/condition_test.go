@@ -1,4 +1,4 @@
-package grammar
+package condition
 
 import (
 	"testing"
@@ -58,11 +58,11 @@ func TestConditionWrapperObject(t *testing.T) {
 		t.Error("Label not set properly")
 	}
 
-	if wrapped.combiner != "AND" {
+	if wrapped.Combiner != "AND" {
 		t.Error("Combiner not set properly")
 	}
 
-	if len(wrapped.matchers) != len(condition1.MatcherGroup.Matchers) {
+	if len(wrapped.Matchers) != len(condition1.MatcherGroup.Matchers) {
 		t.Error("Incorrect number of matchers")
 	}
 
@@ -128,11 +128,11 @@ func TestAnotherWrapper(t *testing.T) {
 		t.Error("Label not set properly")
 	}
 
-	if wrapped.combiner != "AND" {
+	if wrapped.Combiner != "AND" {
 		t.Error("Combiner not set properly")
 	}
 
-	if len(wrapped.matchers) != len(condition1.MatcherGroup.Matchers) {
+	if len(wrapped.Matchers) != len(condition1.MatcherGroup.Matchers) {
 		t.Error("Incorrect number of matchers")
 	}
 
@@ -237,7 +237,7 @@ func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
 		t.Error("err should be nil")
 	}
 
-	if len(condition.matchers) != 0 {
+	if len(condition.Matchers) != 0 {
 		t.Error("matchers should be empty")
 	}
 }
