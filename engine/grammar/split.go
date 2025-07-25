@@ -17,11 +17,10 @@ type Split struct {
 	conditions []*condition.Condition
 }
 
-var cond = condition.BuildCondition(condition.ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
-	[]condition.Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
-	"AND")
 var conditionReplacementUnsupportedMatcher []*condition.Condition = []*condition.Condition{
-	&cond}
+	condition.BuildCondition(condition.ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
+		[]condition.Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
+		"AND")}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
 func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {

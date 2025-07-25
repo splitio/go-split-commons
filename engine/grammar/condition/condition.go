@@ -104,15 +104,14 @@ func (c *Condition) CalculateTreatment(bucket int) *string {
 	return nil
 }
 
-func BuildCondition(conditionType string, label string, partitions []Partition, matchers []matchers.MatcherInterface, combiner string) Condition {
-	conditionReplacementUnsupportedMatcher := Condition{
+func BuildCondition(conditionType string, label string, partitions []Partition, matchers []matchers.MatcherInterface, combiner string) *Condition {
+	return &Condition{
 		conditionType: conditionType,
 		label:         label,
 		partitions:    partitions,
 		matchers:      matchers,
 		combiner:      combiner,
 	}
-	return conditionReplacementUnsupportedMatcher
 }
 
 func applyCombiner(results []bool, combiner string) bool {
