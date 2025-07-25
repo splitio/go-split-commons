@@ -10,11 +10,11 @@ import (
 
 // Condition struct with added logic that wraps around a DTO
 type Condition struct {
-	Matchers       []matchers.MatcherInterface
-	Combiner       string
-	Partitions     []Partition
-	ConditionLabel string
-	CondType       string
+	matchers      []matchers.MatcherInterface
+	combiner      string
+	partitions    []Partition
+	label         string
+	conditionType string
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
@@ -30,11 +30,11 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}
 
 	return &Condition{
-		Combiner:       cond.MatcherGroup.Combiner,
-		Matchers:       matcherObjs,
-		Partitions:     partitions,
-		ConditionLabel: cond.Label,
-		CondType:       cond.ConditionType,
+		combiner:      cond.MatcherGroup.Combiner,
+		matchers:      matcherObjs,
+		partitions:    partitions,
+		label:         cond.Label,
+		conditionType: cond.ConditionType,
 	}, nil
 }
 
@@ -61,7 +61,7 @@ type Partition struct {
 
 // ConditionType returns validated condition type. Whitelist by default
 func (c *Condition) ConditionType() string {
-	switch c.CondType {
+	switch c.conditionType {
 	case ConditionTypeRollout:
 		return ConditionTypeRollout
 	case ConditionTypeWhitelist:
@@ -71,33 +71,48 @@ func (c *Condition) ConditionType() string {
 	}
 }
 
+func (c *Condition) Combiner() string {
+	return c.combiner
+}
+
 // Label returns the condition's label
 func (c *Condition) Label() string {
-	return c.ConditionLabel
+	return c.label
 }
 
 // Matches returns true if the condition matches for a specific key and/or set of attributes
 func (c *Condition) Matches(key string, bucketingKey *string, attributes map[string]interface{}) bool {
-	partial := make([]bool, len(c.Matchers))
-	for i, matcher := range c.Matchers {
+	partial := make([]bool, len(c.matchers))
+	for i, matcher := range c.matchers {
 		partial[i] = matcher.Match(key, attributes, bucketingKey)
 		if matcher.Negate() {
 			partial[i] = !partial[i]
 		}
 	}
-	return applyCombiner(partial, c.Combiner)
+	return applyCombiner(partial, c.combiner)
 }
 
 // CalculateTreatment calulates the treatment for a specific condition based on the bucket
 func (c *Condition) CalculateTreatment(bucket int) *string {
 	accum := 0
-	for _, partition := range c.Partitions {
+	for _, partition := range c.partitions {
 		accum += partition.PartitionData.Size
 		if bucket <= accum {
 			return &partition.PartitionData.Treatment
 		}
 	}
 	return nil
+}
+
+func BuildCondition(conditionType string, label string, partitions []Partition, matchers []matchers.MatcherInterface, combiner string) Condition {
+	conditionReplacementUnsupportedMatcher := Condition{
+		conditionType: conditionType,
+		label:         label,
+		partitions:    partitions,
+		matchers:      matchers,
+		combiner:      combiner,
+	}
+	return conditionReplacementUnsupportedMatcher
 }
 
 func applyCombiner(results []bool, combiner string) bool {

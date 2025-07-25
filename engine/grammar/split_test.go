@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -27,7 +28,7 @@ func TestSplitCreation(t *testing.T) {
 	}
 	split := NewSplit(&dto, nil, logger)
 
-	if split.Algo() != condition.SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -51,7 +52,7 @@ func TestSplitCreation(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != condition.SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -93,7 +94,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 	}
 	split := NewSplit(&dto, nil, logger)
 
-	if split.Algo() != condition.SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -117,7 +118,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != condition.SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -163,7 +164,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 	}
 	split := NewSplit(&dto, nil, logger)
 
-	if split.Algo() != condition.SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -187,7 +188,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != condition.SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -199,7 +200,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		t.Error("conditions length should be 1")
 	}
 
-	if split.conditions[0].Combiner != "AND" {
+	if split.conditions[0].Combiner() != "AND" {
 		t.Error("combiner should be AND")
 	}
 }

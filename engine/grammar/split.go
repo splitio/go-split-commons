@@ -4,6 +4,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/injection"
@@ -16,13 +17,11 @@ type Split struct {
 	conditions []*condition.Condition
 }
 
-var conditionReplacementUnsupportedMatcher []*condition.Condition = []*condition.Condition{{
-	CondType:       condition.ConditionTypeWhitelist,
-	ConditionLabel: impressionlabels.UnsupportedMatcherType,
-	Partitions:     []condition.Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}},
-	Matchers:       []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
-	Combiner:       "AND",
-}}
+var cond = condition.BuildCondition(condition.ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
+	[]condition.Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
+	"AND")
+var conditionReplacementUnsupportedMatcher []*condition.Condition = []*condition.Condition{
+	&cond}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
 func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
@@ -60,8 +59,8 @@ func (s *Split) Seed() int64 {
 // Status returns whether the feature flag is active or arhived
 func (s *Split) Status() string {
 	status := s.splitData.Status
-	if status == "" || (status != condition.SplitStatusActive && status != condition.SplitStatusArchived) {
-		return condition.SplitStatusActive
+	if status == "" || (status != constants.SplitStatusActive && status != constants.SplitStatusArchived) {
+		return constants.SplitStatusActive
 	}
 	return status
 }
@@ -89,12 +88,12 @@ func (s *Split) TrafficAllocationSeed() int64 {
 // Algo returns the hashing algorithm configured for this feature flag
 func (s *Split) Algo() int {
 	switch s.splitData.Algo {
-	case condition.SplitAlgoLegacy:
-		return condition.SplitAlgoLegacy
-	case condition.SplitAlgoMurmur:
-		return condition.SplitAlgoMurmur
+	case constants.SplitAlgoLegacy:
+		return constants.SplitAlgoLegacy
+	case constants.SplitAlgoMurmur:
+		return constants.SplitAlgoMurmur
 	default:
-		return condition.SplitAlgoLegacy
+		return constants.SplitAlgoLegacy
 	}
 }
 
