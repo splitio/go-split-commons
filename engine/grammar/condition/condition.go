@@ -1,4 +1,4 @@
-package grammar
+package condition
 
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
@@ -21,7 +21,7 @@ type Condition struct {
 func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
-		partitions = append(partitions, Partition{partitionData: part})
+		partitions = append(partitions, Partition{PartitionData: part})
 	}
 	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
 	if err != nil {
@@ -56,7 +56,7 @@ func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, log
 
 // Partition struct with added logic that wraps around a DTO
 type Partition struct {
-	partitionData dtos.PartitionDTO
+	PartitionData dtos.PartitionDTO
 }
 
 // ConditionType returns validated condition type. Whitelist by default
@@ -69,6 +69,10 @@ func (c *Condition) ConditionType() string {
 	default:
 		return ConditionTypeWhitelist
 	}
+}
+
+func (c *Condition) Combiner() string {
+	return c.combiner
 }
 
 // Label returns the condition's label
@@ -92,12 +96,22 @@ func (c *Condition) Matches(key string, bucketingKey *string, attributes map[str
 func (c *Condition) CalculateTreatment(bucket int) *string {
 	accum := 0
 	for _, partition := range c.partitions {
-		accum += partition.partitionData.Size
+		accum += partition.PartitionData.Size
 		if bucket <= accum {
-			return &partition.partitionData.Treatment
+			return &partition.PartitionData.Treatment
 		}
 	}
 	return nil
+}
+
+func BuildCondition(conditionType string, label string, partitions []Partition, matchers []matchers.MatcherInterface, combiner string) *Condition {
+	return &Condition{
+		conditionType: conditionType,
+		label:         label,
+		partitions:    partitions,
+		matchers:      matchers,
+		combiner:      combiner,
+	}
 }
 
 func applyCombiner(results []bool, combiner string) bool {

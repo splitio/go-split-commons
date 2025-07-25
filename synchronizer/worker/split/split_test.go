@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
@@ -895,7 +895,7 @@ func TestProcessMatchers(t *testing.T) {
 				Status: Active,
 				Conditions: []dtos.ConditionDTO{
 					{
-						ConditionType: grammar.ConditionTypeRollout,
+						ConditionType: condition.ConditionTypeRollout,
 						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 						MatcherGroup: dtos.MatcherGroupDTO{
 							Matchers: []dtos.MatcherDTO{
@@ -908,14 +908,14 @@ func TestProcessMatchers(t *testing.T) {
 		}}}
 	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
 
-	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
+	if toAdd[0].Conditions[0].ConditionType != condition.ConditionTypeWhitelist {
 		t.Error("ConditionType should be WHITELIST")
 	}
 	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
-	if toAdd[1].Conditions[0].ConditionType != grammar.ConditionTypeRollout {
+	if toAdd[1].Conditions[0].ConditionType != condition.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
 	}
 	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
