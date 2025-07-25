@@ -4,7 +4,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v6/engine/grammar"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
 	"github.com/splitio/go-toolkit/v5/injection"
@@ -13,7 +13,7 @@ import (
 
 // unsupportedMatcherConditionReplacement is the default condition to be used when a matcher is not supported
 var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.ConditionDTO{{
-	ConditionType: grammar.ConditionTypeWhitelist,
+	ConditionType: condition.ConditionTypeWhitelist,
 	Label:         impressionlabels.UnsupportedMatcherType,
 	Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
 	MatcherGroup: dtos.MatcherGroupDTO{
