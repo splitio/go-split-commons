@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 )
 
 type SplitVersionFilter struct {
@@ -10,13 +10,13 @@ type SplitVersionFilter struct {
 }
 
 func NewSplitVersionFilter() SplitVersionFilter {
-	v1_1 := map[string]bool{matchers.MatcherTypeInLargeSegment: true}
+	v1_1 := map[string]bool{grammar.MatcherTypeInLargeSegment: true}
 	v1_0 := mergeMaps(map[string]bool{
-		matchers.MatcherEqualToSemver:                  true,
-		matchers.MatcherTypeLessThanOrEqualToSemver:    true,
-		matchers.MatcherTypeGreaterThanOrEqualToSemver: true,
-		matchers.MatcherTypeBetweenSemver:              true,
-		matchers.MatcherTypeInListSemver:               true,
+		grammar.MatcherEqualToSemver:                  true,
+		grammar.MatcherTypeLessThanOrEqualToSemver:    true,
+		grammar.MatcherTypeGreaterThanOrEqualToSemver: true,
+		grammar.MatcherTypeBetweenSemver:              true,
+		grammar.MatcherTypeInListSemver:               true,
 	}, v1_1)
 
 	return SplitVersionFilter{
