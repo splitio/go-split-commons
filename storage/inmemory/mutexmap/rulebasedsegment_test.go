@@ -18,7 +18,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Empty(t, storage.RuleBasedSegmentNames())
 
 	// Create test data
-	ruleBased1 := dtos.RuleBasedSegment{
+	ruleBased1 := dtos.RuleBasedSegmentDTO{
 		Name: "rule1",
 		Conditions: []dtos.RuleBasedConditionDTO{
 			{
@@ -33,8 +33,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 				},
 			},
 		},
-		Excluded: dtos.Excluded{
-			Segments: []dtos.ExcludedSegment{
+		Excluded: dtos.ExcludedDTO{
+			Segments: []dtos.ExcluededSegmentDTO{
 				{
 					Name: "excluded1",
 					Type: dtos.TypeStandard,
@@ -43,7 +43,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 		},
 	}
 
-	ruleBased2 := dtos.RuleBasedSegment{
+	ruleBased2 := dtos.RuleBasedSegmentDTO{
 		Name: "rule2",
 		Conditions: []dtos.RuleBasedConditionDTO{
 			{
@@ -61,7 +61,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	}
 
 	// Test Update
-	storage.Update([]dtos.RuleBasedSegment{ruleBased1, ruleBased2}, nil, 123)
+	storage.Update([]dtos.RuleBasedSegmentDTO{ruleBased1, ruleBased2}, nil, 123)
 	assert.Equal(t, int64(123), storage.ChangeNumber())
 	assert.Len(t, storage.All(), 2)
 
@@ -84,7 +84,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.False(t, storage.Contains([]string{"nonexistent"}))
 
 	// Test Remove
-	storage.Update(nil, []dtos.RuleBasedSegment{ruleBased1}, 124)
+	storage.Update(nil, []dtos.RuleBasedSegmentDTO{ruleBased1}, 124)
 	assert.Equal(t, int64(124), storage.ChangeNumber())
 	assert.Len(t, storage.All(), 1)
 	assert.Contains(t, storage.RuleBasedSegmentNames(), "rule2")
@@ -104,10 +104,10 @@ func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 	assert.Equal(t, int64(100), storage.ChangeNumber())
 
 	// Test GetSegments with different segment types
-	ruleBased := dtos.RuleBasedSegment{
+	ruleBased := dtos.RuleBasedSegmentDTO{
 		Name: "rule1",
-		Excluded: dtos.Excluded{
-			Segments: []dtos.ExcludedSegment{
+		Excluded: dtos.ExcludedDTO{
+			Segments: []dtos.ExcluededSegmentDTO{
 				{
 					Name: "excluded1",
 					Type: dtos.TypeStandard,
@@ -120,7 +120,7 @@ func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 		},
 	}
 
-	storage.Update([]dtos.RuleBasedSegment{ruleBased}, nil, 101)
+	storage.Update([]dtos.RuleBasedSegmentDTO{ruleBased}, nil, 101)
 	segments := storage.GetSegments()
 	assert.True(t, segments.Has("excluded1"))
 	assert.False(t, segments.Has("excluded2")) // Should not include non-standard segments
@@ -141,7 +141,7 @@ func TestRuleBasedSegmentsStorageConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			ruleBased := dtos.RuleBasedSegment{
+			ruleBased := dtos.RuleBasedSegmentDTO{
 				Name: "rule1",
 				Conditions: []dtos.RuleBasedConditionDTO{
 					{
@@ -157,7 +157,7 @@ func TestRuleBasedSegmentsStorageConcurrent(t *testing.T) {
 					},
 				},
 			}
-			storage.Update([]dtos.RuleBasedSegment{ruleBased}, nil, int64(i))
+			storage.Update([]dtos.RuleBasedSegmentDTO{ruleBased}, nil, int64(i))
 		}(i)
 	}
 

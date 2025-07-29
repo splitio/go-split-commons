@@ -37,6 +37,22 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}, nil
 }
 
+func NewRBCondition(cond *dtos.RuleBasedConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
+	partitions := make([]Partition, 0)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	if err != nil {
+		//  At this point the only error forwarded is UnsupportedMatcherError
+		return nil, err
+	}
+
+	return &Condition{
+		combiner:      cond.MatcherGroup.Combiner,
+		matchers:      matcherObjs,
+		partitions:    partitions,
+		conditionType: cond.ConditionType,
+	}, nil
+}
+
 func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) ([]MatcherInterface, error) {
 	matcherObjs := make([]MatcherInterface, 0)
 	for _, matcher := range condMatchers {

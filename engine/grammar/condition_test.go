@@ -5,8 +5,9 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
-
+	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConditionWrapperObject(t *testing.T) {
@@ -238,5 +239,105 @@ func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
 
 	if len(condition.matchers) != 0 {
 		t.Error("matchers should be empty")
+	}
+}
+
+func TestNewRBCondition(t *testing.T) {
+	tests := []struct {
+		name        string
+		condition   *dtos.RuleBasedConditionDTO
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid condition with ALL_KEYS matcher",
+			condition: &dtos.RuleBasedConditionDTO{
+				ConditionType: "MATCHES_STRING",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							MatcherType: "ALL_KEYS",
+							KeySelector: &dtos.KeySelectorDTO{Attribute: nil},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "unsupported matcher type",
+			condition: &dtos.RuleBasedConditionDTO{
+				ConditionType: "MATCHES_STRING",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							MatcherType: "UNSUPPORTED_TYPE",
+						},
+					},
+				},
+			},
+			wantErr:     true,
+			errContains: "Unable to create matcher for matcher type: UNSUPPORTED_TYPE",
+		},
+		{
+			name: "multiple matchers with AND combiner",
+			condition: &dtos.RuleBasedConditionDTO{
+				ConditionType: "MATCHES_STRING",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							MatcherType: "ALL_KEYS",
+							KeySelector: &dtos.KeySelectorDTO{Attribute: nil},
+						},
+						{
+							MatcherType: "WHITELIST",
+							KeySelector: &dtos.KeySelectorDTO{Attribute: nil},
+							Whitelist: &dtos.WhitelistMatcherDataDTO{
+								Whitelist: []string{"key1"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	ctx := injection.NewContext()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cond, err := NewRBCondition(tt.condition, ctx, logger)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errContains != "" {
+					assert.Contains(t, err.Error(), tt.errContains)
+				}
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, cond)
+
+			// Check fields
+			assert.Equal(t, tt.condition.ConditionType, cond.conditionType)
+			assert.Equal(t, tt.condition.MatcherGroup.Combiner, cond.combiner)
+			assert.Len(t, cond.matchers, len(tt.condition.MatcherGroup.Matchers))
+			assert.Empty(t, cond.partitions)
+
+			// Test condition matches
+			if tt.name == "valid condition with ALL_KEYS matcher" {
+				assert.True(t, cond.Matches("key1", nil, nil))
+				assert.True(t, cond.Matches("key2", nil, nil))
+			} else if tt.name == "multiple matchers with AND combiner" {
+				assert.True(t, cond.Matches("key1", nil, nil))
+				assert.False(t, cond.Matches("key2", nil, nil))
+			}
+		})
 	}
 }
