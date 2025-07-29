@@ -62,6 +62,44 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 			},
 			expectedResult: false,
 		},
+		{
+			name: "key in excluded rule-based segment",
+			key:  "key4",
+			segment: &dtos.RuleBasedSegmentDTO{
+				Excluded: dtos.ExcludedDTO{
+					Keys: []string{},
+					Segments: []dtos.ExcluededSegmentDTO{
+						{Name: "segment3", Type: dtos.TypeRuleBased},
+					},
+				},
+			},
+			expectedResult: false,
+		},
+		{
+			name: "matches condition",
+			key:  "key5",
+			segment: &dtos.RuleBasedSegmentDTO{
+				Excluded: dtos.ExcludedDTO{},
+				Conditions: []dtos.RuleBasedConditionDTO{
+					{
+						ConditionType: "MATCHES_STRING",
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Combiner: "AND",
+							Matchers: []dtos.MatcherDTO{
+								{
+									MatcherType: "EQUAL_TO",
+									KeySelector: &dtos.KeySelectorDTO{Attribute: nil},
+									Whitelist: &dtos.WhitelistMatcherDataDTO{
+										Whitelist: []string{"key5"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedResult: true,
+		},
 	}
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -70,6 +108,16 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage := &mockRuleBasedSegmentStorage{}
 			mockStorage.On("GetRuleBasedSegmentByName", "segment1").Return(tt.segment, nil)
+
+			// For recursive rule-based segment test
+			if tt.name == "key in excluded rule-based segment" {
+				nestedSegment := &dtos.RuleBasedSegmentDTO{
+					Excluded: dtos.ExcludedDTO{
+						Keys: []string{"key4"},
+					},
+				}
+				mockStorage.On("GetRuleBasedSegmentByName", "segment3").Return(nestedSegment, nil)
+			}
 
 			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil)
 			ctx := injection.NewContext()

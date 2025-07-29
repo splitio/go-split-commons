@@ -44,7 +44,7 @@ func (m *InRuleBasedSegmentMatcher) Match(key string, attributes map[string]inte
 		return false
 	}
 
-	return false
+	return m.matchesConditions(*ruleBasedSegment, key, attributes, bucketingKey)
 }
 
 func (m *InRuleBasedSegmentMatcher) keyIsExcluded(ruleBasedSegment dtos.RuleBasedSegmentDTO, key string) bool {
@@ -60,19 +60,29 @@ func (m *InRuleBasedSegmentMatcher) inExcludedSegment(ruleBasedSegment dtos.Rule
 			segmentMatcher.logger = m.logger
 			return segmentMatcher.Match(key, attributes, bucketingKey)
 
-			// case dtos.TypeRuleBased:
-			// 	ruleBasedSegmentMatcher := NewInRuleBasedSegmentMatcher(false, value.Name, m.attributeName)
-			// 	if ruleBasedSegmentMatcher.Match(key, attributes, bucketingKey) {
-			// 		return true
-			// 	}
+		case dtos.TypeRuleBased:
+			ruleBasedSegmentMatcher := NewInRuleBasedSegmentMatcher(false, value.Name, m.attributeName)
+			ruleBasedSegmentMatcher.Context = m.Context
+			ruleBasedSegmentMatcher.logger = m.logger
+			if ruleBasedSegmentMatcher.Match(key, attributes, bucketingKey) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-// func (m *InRuleBasedSegmentMatcher) matchesConditions(ruleBasedSegment dtos.RuleBasedSegmentDTO, key string, attributes map[string]interface{}, bucketingKey *string) bool {
-// 	for _, condition := range ruleBasedSegment.Conditions {
+func (m *InRuleBasedSegmentMatcher) matchesConditions(ruleBasedSegment dtos.RuleBasedSegmentDTO, key string, attributes map[string]interface{}, bucketingKey *string) bool {
+	for _, condition := range ruleBasedSegment.Conditions {
 
-// 		conditionMatcher :=
-// 	}
-// }
+		conditionMatcher, err := NewRBCondition(&condition, m.Context, m.logger)
+		if err != nil {
+			m.logger.Error(fmt.Printf("InRuleBasedSegmentMatcher: error creating new condition"))
+			return false
+		}
+		if conditionMatcher.Matches(key, bucketingKey, attributes) {
+			return true
+		}
+	}
+	return false
+}
