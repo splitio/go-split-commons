@@ -6,7 +6,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v6/engine/hash"
 
@@ -29,7 +28,7 @@ func (e *Engine) DoEvaluation(
 ) (*string, string) {
 	inRollOut := false
 	for _, cond := range split.Conditions() {
-		if !inRollOut && cond.ConditionType() == condition.ConditionTypeRollout {
+		if !inRollOut && cond.ConditionType() == grammar.ConditionTypeRollout {
 			if split.TrafficAllocation() < 100 {
 				bucket := e.calculateBucket(split.Algo(), bucketingKey, split.TrafficAllocationSeed())
 				if bucket > split.TrafficAllocation() {

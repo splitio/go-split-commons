@@ -4,9 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -67,20 +65,20 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 		Algo:         1,
 		ChangeNumber: 123,
 		Conditions: []dtos.ConditionDTO{{
-			ConditionType: condition.ConditionTypeWhitelist,
+			ConditionType: ConditionTypeWhitelist,
 			Label:         "test",
 			Partitions:    []dtos.PartitionDTO{{Treatment: "off", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}, {
-			ConditionType: condition.ConditionTypeWhitelist,
+			ConditionType: ConditionTypeWhitelist,
 			Label:         "test",
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",
@@ -137,7 +135,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		Algo:         1,
 		ChangeNumber: 123,
 		Conditions: []dtos.ConditionDTO{{
-			ConditionType: condition.ConditionTypeWhitelist,
+			ConditionType: ConditionTypeWhitelist,
 			Label:         "test",
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
@@ -145,12 +143,12 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 				Matchers: []dtos.MatcherDTO{{MatcherType: "unssuported", Negate: false}},
 			},
 		}, {
-			ConditionType: condition.ConditionTypeWhitelist,
+			ConditionType: ConditionTypeWhitelist,
 			Label:         "test",
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",
