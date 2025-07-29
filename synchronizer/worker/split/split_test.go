@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v6/service"
@@ -895,11 +894,11 @@ func TestProcessMatchers(t *testing.T) {
 				Status: Active,
 				Conditions: []dtos.ConditionDTO{
 					{
-						ConditionType: condition.ConditionTypeRollout,
+						ConditionType: grammar.ConditionTypeRollout,
 						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 						MatcherGroup: dtos.MatcherGroupDTO{
 							Matchers: []dtos.MatcherDTO{
-								{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+								{MatcherType: grammar.MatcherTypeAllKeys, KeySelector: nil},
 							},
 						},
 					},
@@ -908,17 +907,17 @@ func TestProcessMatchers(t *testing.T) {
 		}}}
 	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
 
-	if toAdd[0].Conditions[0].ConditionType != condition.ConditionTypeWhitelist {
+	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
 		t.Error("ConditionType should be WHITELIST")
 	}
-	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
-	if toAdd[1].Conditions[0].ConditionType != condition.ConditionTypeRollout {
+	if toAdd[1].Conditions[0].ConditionType != grammar.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
 	}
-	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 }

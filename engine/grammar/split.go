@@ -3,9 +3,7 @@ package grammar
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/condition"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -14,12 +12,12 @@ import (
 // Split struct with added logic that wraps around a DTO
 type Split struct {
 	splitData  *dtos.SplitDTO
-	conditions []*condition.Condition
+	conditions []*Condition
 }
 
-var conditionReplacementUnsupportedMatcher []*condition.Condition = []*condition.Condition{
-	condition.BuildCondition(condition.ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
-		[]condition.Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
+var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
+	BuildCondition(ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
+		[]Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []MatcherInterface{NewAllKeysMatcher(false)},
 		"AND")}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
@@ -32,10 +30,10 @@ func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.Lo
 	return &split
 }
 
-func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*condition.Condition {
-	conditionsToReturn := make([]*condition.Condition, 0)
+func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
-		condition, err := condition.NewCondition(&cond, ctx, logger)
+		condition, err := NewCondition(&cond, ctx, logger)
 		if err != nil {
 			logger.Debug("Overriding conditions due unexpected matcher received")
 			return conditionReplacementUnsupportedMatcher
@@ -97,7 +95,7 @@ func (s *Split) Algo() int {
 }
 
 // Conditions returns a slice of Condition objects
-func (s *Split) Conditions() []*condition.Condition {
+func (s *Split) Conditions() []*Condition {
 	return s.conditions
 }
 
