@@ -19,6 +19,7 @@ import (
 const (
 	matcherTypeInSegment           = "IN_SEGMENT"
 	matcherTypeInLargeSegment      = "IN_LARGE_SEGMENT"
+	matcherTypeInRuleBasedSegment  = "IN_RULE_BASED_SEGMENT"
 	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
@@ -56,6 +57,7 @@ type internalSplitSync struct {
 type UpdaterImpl struct {
 	splitStorage                storage.SplitStorage
 	splitFetcher                service.SplitFetcher
+	ruleBasedSegmentStorage     storage.RuleBasedSegmentsStorage
 	logger                      logging.LoggerInterface
 	runtimeTelemetry            storage.TelemetryRuntimeProducer
 	hcMonitor                   application.MonitorProducerInterface
@@ -89,6 +91,9 @@ func (s *UpdaterImpl) processUpdate(splitChanges *dtos.SplitChangesDTO) {
 	activeSplits, inactiveSplits := s.processFeatureFlagChanges(splitChanges)
 	// Add/Update active splits
 	s.splitStorage.Update(activeSplits, inactiveSplits, splitChanges.FeatureFlags.Till)
+	activeRB, inactiveRB := s.processRuleBasedSegmentChanges(splitChanges)
+	// Add/Update active rule-based
+	s.ruleBasedSegmentStorage.Update(activeRB, inactiveRB, splitChanges.RuleBasedSegments.Till)
 }
 
 // fetchUntil Hit endpoint, update storage and return when since==till.
@@ -99,12 +104,14 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	largeSegmentReferences := make([]string, 0, 10)
 	var err error
 	var currentSince int64
+	var currentRBSince int64
 
 	for { // Fetch until since==till
 		currentSince, _ = s.splitStorage.ChangeNumber()
+		currentRBSince = s.ruleBasedSegmentStorage.ChangeNumber()
 		before := time.Now()
 		var splitChanges *dtos.SplitChangesDTO
-		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince))
+		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				if httpError.Code == scRequestURITooLong {
@@ -154,7 +161,8 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FlagRequestParams, 
 func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	s.hcMonitor.NotifyEvent(application.Splits)
 	currentSince, _ := s.splitStorage.ChangeNumber()
-	if till != nil && *till < currentSince { // the passed till is less than change_number, no need to perform updates
+	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
+	if till != nil && *till < currentSince && *till < currentRBSince { // the passed till is less than change_number, no need to perform updates
 		return &UpdateResult{}, nil
 	}
 
@@ -215,6 +223,19 @@ func appendLargeSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) [
 	return dst
 }
 
+func appendRuleBasedSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) []string {
+	for _, split := range splitChanges.FeatureFlags.Splits {
+		for _, cond := range split.Conditions {
+			for _, matcher := range cond.MatcherGroup.Matchers {
+				if matcher.MatcherType == matcherTypeInRuleBasedSegment && matcher.UserDefinedSegment != nil {
+					dst = append(dst, matcher.UserDefinedSegment.SegmentName)
+				}
+			}
+		}
+	}
+	return dst
+}
+
 func (s *UpdaterImpl) processFeatureFlagChanges(splitChanges *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
 	toRemove := make([]dtos.SplitDTO, 0, len(splitChanges.FeatureFlags.Splits))
 	toAdd := make([]dtos.SplitDTO, 0, len(splitChanges.FeatureFlags.Splits))
@@ -224,6 +245,20 @@ func (s *UpdaterImpl) processFeatureFlagChanges(splitChanges *dtos.SplitChangesD
 			toAdd = append(toAdd, splitChanges.FeatureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, splitChanges.FeatureFlags.Splits[idx])
+		}
+	}
+	return toAdd, toRemove
+}
+
+func (s *UpdaterImpl) processRuleBasedSegmentChanges(splitChanges *dtos.SplitChangesDTO) ([]dtos.RuleBasedSegmentDTO, []dtos.RuleBasedSegmentDTO) {
+	toRemove := make([]dtos.RuleBasedSegmentDTO, 0, len(splitChanges.RuleBasedSegments.RuleBasedSegments))
+	toAdd := make([]dtos.RuleBasedSegmentDTO, 0, len(splitChanges.RuleBasedSegments.RuleBasedSegments))
+	for idx := range splitChanges.RuleBasedSegments.RuleBasedSegments {
+		if splitChanges.RuleBasedSegments.RuleBasedSegments[idx].Status == Active {
+			validator.ProcessRBMatchers(&splitChanges.RuleBasedSegments.RuleBasedSegments[idx], s.logger)
+			toAdd = append(toAdd, splitChanges.RuleBasedSegments.RuleBasedSegments[idx])
+		} else {
+			toRemove = append(toRemove, splitChanges.RuleBasedSegments.RuleBasedSegments[idx])
 		}
 	}
 	return toAdd, toRemove
@@ -248,6 +283,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 		segmentReferences := make([]string, 0, 10)
 		updatedSplitNames := make([]string, 0, 1)
 		largeSegmentReferences := make([]string, 0, 10)
+		ruleBasedSegmentReferences := make([]string, 0, 10)
 		s.logger.Debug(fmt.Sprintf("updating feature flag %s", ffChange.FeatureFlag().Name))
 		featureFlags := make([]dtos.SplitDTO, 0, 1)
 		featureFlags = append(featureFlags, *ffChange.FeatureFlag())
@@ -258,17 +294,23 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 		updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
 		segmentReferences = appendSegmentNames(segmentReferences, &featureFlagChange)
 		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, &featureFlagChange)
+		ruleBasedSegmentReferences = appendRuleBasedSegmentNames(ruleBasedSegmentReferences, &featureFlagChange)
+		requiresFetch := false
+		if !s.ruleBasedSegmentStorage.Contains(ruleBasedSegmentReferences) {
+			requiresFetch = true
+		}
 		return &UpdateResult{
 			UpdatedSplits:           updatedSplitNames,
 			ReferencedSegments:      segmentReferences,
 			NewChangeNumber:         ffChange.BaseUpdate.ChangeNumber(),
-			RequiresFetch:           false,
+			RequiresFetch:           requiresFetch,
 			ReferencedLargeSegments: largeSegmentReferences,
 		}
 	}
 	s.logger.Debug("the feature flag was nil or the previous change number wasn't equal to the feature flag storage's change number")
 	return &UpdateResult{RequiresFetch: true}
 }
+
 func (s *UpdaterImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) (*UpdateResult, error) {
 	result := s.processFFChange(*ffChange)
 	if result.RequiresFetch {

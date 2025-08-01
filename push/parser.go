@@ -140,6 +140,13 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 		return nil, p.onLargeSegmentUpdate(dtos.NewLargeSegmentChangeUpdate(base, largeSegments))
 	case dtos.UpdateTypeContol:
 		return p.onControlUpdate(dtos.NewControlUpdate(base.BaseMessage, nested.ControlType)), nil
+	//case dtos.UpdateTypeRuleBasedChange:
+	//ruleBased := p.processRuleBasedMessage(nested)
+	//to do:
+	// if ruleBased == nil {
+	// 	return nil, p.onSplitUpdate(dtos.NewRuleBasedChangeUpdate(base, nil, nil))
+	// }
+	// return nil, p.onSplitUpdate(dtos.NewRuleBasedChangeUpdate(base, &nested.PreviousChangeNumber, ruleBased))
 	default:
 		// TODO: log full event in debug mode
 		return nil, fmt.Errorf("invalid update type: %s", nested.Type)
@@ -157,10 +164,10 @@ func (p *NotificationParserImpl) processLargeSegmentMessage(nested *genericMessa
 
 func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dtos.SplitDTO {
 	compressType := getCompressType(nested.CompressType)
-	if nested.FeatureFlagDefinition == nil || compressType == nil {
+	if nested.Definition == nil || compressType == nil {
 		return nil
 	}
-	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.FeatureFlagDefinition))
+	ffDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.Definition))
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error decoding FeatureFlagDefinition: '%s'", err.Error()))
 		return nil
@@ -180,6 +187,33 @@ func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dto
 		return nil
 	}
 	return &featureFlag
+}
+
+func (p *NotificationParserImpl) processRuleBasedMessage(nested *genericMessageData) *dtos.RuleBasedSegmentDTO {
+	compressType := getCompressType(nested.CompressType)
+	if nested.Definition == nil || compressType == nil {
+		return nil
+	}
+	ruleBasedDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.Definition))
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error decoding RuleBasedSegmentDefinition: '%s'", err.Error()))
+		return nil
+	}
+	if common.IntFromRef(compressType) != datautils.None {
+		ruleBasedDecoded, err = p.dataUtils.Decompress(ruleBasedDecoded, common.IntFromRef(compressType))
+		if err != nil {
+			p.logger.Debug(fmt.Sprintf("error decompressing RulebasedSegmentDefinition: '%s'", err.Error()))
+			return nil
+		}
+	}
+
+	var ruleBased dtos.RuleBasedSegmentDTO
+	err = json.Unmarshal([]byte(ruleBasedDecoded), &ruleBased)
+	if err != nil {
+		p.logger.Debug(fmt.Sprintf("error parsing rule-based segment json definition: '%s'", err.Error()))
+		return nil
+	}
+	return &ruleBased
 }
 
 type genericData struct {
@@ -207,17 +241,17 @@ type metrics struct {
 }
 
 type genericMessageData struct {
-	Metrics               metrics                           `json:"metrics"`
-	Type                  string                            `json:"type"`
-	ChangeNumber          int64                             `json:"changeNumber"`
-	SplitName             string                            `json:"splitName"`
-	DefaultTreatment      string                            `json:"defaultTreatment"`
-	SegmentName           string                            `json:"segmentName"`
-	ControlType           string                            `json:"controlType"`
-	PreviousChangeNumber  int64                             `json:"pcn"`
-	CompressType          *int                              `json:"c"`
-	FeatureFlagDefinition *string                           `json:"d"`
-	LargeSegments         []dtos.LargeSegmentRFDResponseDTO `json:"ls"`
+	Metrics              metrics                           `json:"metrics"`
+	Type                 string                            `json:"type"`
+	ChangeNumber         int64                             `json:"changeNumber"`
+	SplitName            string                            `json:"splitName"`
+	DefaultTreatment     string                            `json:"defaultTreatment"`
+	SegmentName          string                            `json:"segmentName"`
+	ControlType          string                            `json:"controlType"`
+	PreviousChangeNumber int64                             `json:"pcn"`
+	CompressType         *int                              `json:"c"`
+	Definition           *string                           `json:"d"`
+	LargeSegments        []dtos.LargeSegmentRFDResponseDTO `json:"ls"`
 
 	// {\"type\":\"SPLIT_UPDATE\",\"changeNumber\":1612909342671}"}
 }

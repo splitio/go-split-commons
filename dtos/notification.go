@@ -19,6 +19,7 @@ const (
 	UpdateTypeSegmentChange      = "SEGMENT_UPDATE"
 	UpdateTypeContol             = "CONTROL"
 	UpdateTypeLargeSegmentChange = "LS_DEFINITION_UPDATE"
+	UpdateTypeRuleBasedChange    = "RB_SEGMENT_UPDATE"
 )
 
 // Control type constants
@@ -332,6 +333,36 @@ func (u *LargeSegmentChangeUpdate) String() string {
 		u.Channel(), u.ChangeNumber(), len(u.LargeSegments), u.Timestamp())
 }
 
+// SplitChangeUpdate represents a SplitChange notification generated in the split servers
+type RuleBasedChangeUpdate struct {
+	BaseUpdate
+	previousChangeNumber *int64
+	ruleBasedSegment     *RuleBasedSegmentDTO
+}
+
+func NewRuleBasedChangeUpdate(baseUpdate BaseUpdate, pcn *int64, ruleBasedSegment *RuleBasedSegmentDTO) *RuleBasedChangeUpdate {
+	return &RuleBasedChangeUpdate{
+		BaseUpdate:           baseUpdate,
+		previousChangeNumber: pcn,
+		ruleBasedSegment:     ruleBasedSegment,
+	}
+}
+
+// UpdateType is always UpdateTypeRuleBasedSegmentChange for Rule-based Segmet Updates
+func (u *RuleBasedChangeUpdate) UpdateType() string { return UpdateTypeRuleBasedChange }
+
+// String returns the string representation of a segment update notification
+func (u *RuleBasedChangeUpdate) String() string {
+	return fmt.Sprintf("LargeSegmentChange(channel=%s,changeNumber=%d,timestamp=%d)",
+		u.Channel(), u.ChangeNumber(), u.Timestamp())
+}
+
+// PreviousChangeNumber returns previous change number
+func (u *RuleBasedChangeUpdate) PreviousChangeNumber() *int64 { return u.previousChangeNumber }
+
+// RuleBasedSegment returns rule-based segment definiiton or nil
+func (u *RuleBasedChangeUpdate) RuleBasedsegment() *RuleBasedSegmentDTO { return u.ruleBasedSegment }
+
 // Compile-type assertions of interface requirements
 var _ Event = &AblyError{}
 var _ Message = &OccupancyMessage{}
@@ -340,7 +371,9 @@ var _ Message = &SplitKillUpdate{}
 var _ Message = &SegmentChangeUpdate{}
 var _ Message = &ControlUpdate{}
 var _ Message = &LargeSegmentChangeUpdate{}
+var _ Message = &RuleBasedChangeUpdate{}
 var _ Update = &SplitChangeUpdate{}
 var _ Update = &SplitKillUpdate{}
 var _ Update = &SegmentChangeUpdate{}
 var _ Update = &LargeSegmentChangeUpdate{}
+var _ Update = &RuleBasedChangeUpdate{}

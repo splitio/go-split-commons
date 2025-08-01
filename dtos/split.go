@@ -6,8 +6,8 @@ import (
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
-	FeatureFlags      FeatureFlagsDTO        `json:"ff"`
-	RuleBasedSegments []RuleBasedSegmentsDTO `json:"rbs"`
+	FeatureFlags      FeatureFlagsDTO      `json:"ff"`
+	RuleBasedSegments RuleBasedSegmentsDTO `json:"rbs"`
 }
 
 type FeatureFlagsDTO struct {

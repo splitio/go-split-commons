@@ -53,6 +53,8 @@ func (r *RuleBasedSegmentsStorageImpl) SetChangeNumber(till int64) error {
 
 // ChangeNumber return the actual rule-based till
 func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() int64 {
+	r.tillMutex.RLock()
+	defer r.tillMutex.RUnlock()
 	return r.till
 }
 
