@@ -4,7 +4,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/validator"
 	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-toolkit/v3/logging"
+	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 const (
