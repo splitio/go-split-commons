@@ -6,6 +6,7 @@ import "github.com/splitio/go-split-commons/v6/dtos"
 type synchronizerInterface interface {
 	SyncAll() error
 	SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error
+	SynchronizeRuleBasedSegments(ruleBasedChange *dtos.RuleBasedChangeUpdate) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()

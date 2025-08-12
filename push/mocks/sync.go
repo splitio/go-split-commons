@@ -7,6 +7,7 @@ import (
 type LocalSyncMock struct {
 	SyncAllCall                       func() error
 	SynchronizeFeatureFlagsCall       func(ffChange *dtos.SplitChangeUpdate) error
+	SynchronizeRuleBasedSegmentsCall  func(rbChange *dtos.RuleBasedChangeUpdate) error
 	LocalKillCall                     func(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegmentCall            func(segmentName string, till *int64) error
 	StartPeriodicFetchingCall         func()
@@ -47,6 +48,10 @@ func (l *LocalSyncMock) StopPeriodicDataRecording() {
 
 func (l *LocalSyncMock) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	return l.SynchronizeFeatureFlagsCall(ffChange)
+}
+
+func (l *LocalSyncMock) SynchronizeRuleBasedSegments(rbChange *dtos.RuleBasedChangeUpdate) error {
+	return l.SynchronizeRuleBasedSegmentsCall(rbChange)
 }
 
 func (l *LocalSyncMock) SynchronizeLargeSegment(name string, till *int64) error {

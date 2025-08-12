@@ -78,7 +78,7 @@ func NewManager(
 
 	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
 	parser := NewNotificationParserImpl(logger, processor.ProcessSplitChangeUpdate, processor.ProcessSplitKillUpdate, processor.ProcessSegmentChangeUpdate,
-		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate)
+		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate, processor.ProcessorRuleBasedSegmentChangeUpdate)
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,

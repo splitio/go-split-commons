@@ -12,6 +12,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/service"
 	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/rulebasedsegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -20,6 +21,7 @@ import (
 func TestSplitSyncTask(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
+	var updateRBCalled int64
 
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
@@ -90,8 +92,21 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
+	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
+		ChangeNumberCall: func() int64 {
+			return -1
+		},
+		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
+			atomic.AddInt64(&updateRBCalled, 1)
+		},
+	}
+
+	ruleBasedSegmentUpdater := rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logging.NewLogger(&logging.LoggerOptions{}))
+
+	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, *ruleBasedSegmentUpdater, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+
 	splitTask := NewFetchSplitsTask(
-		split.NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		splitUpdater,
 		1,
 		logging.NewLogger(&logging.LoggerOptions{}),
 	)
@@ -112,5 +127,8 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) < 1 {
 		t.Error("It should be called at least once")
+	}
+	if atomic.LoadInt64(&updateRBCalled) != 1 {
+		t.Error("It should update the storage")
 	}
 }

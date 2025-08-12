@@ -26,19 +26,21 @@ type Processor interface {
 	ProcessSplitKillUpdate(update *dtos.SplitKillUpdate) error
 	ProcessSegmentChangeUpdate(update *dtos.SegmentChangeUpdate) error
 	ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmentChangeUpdate) error
+	ProcessorRuleBasedSegmentChangeUpdate(update *dtos.RuleBasedChangeUpdate) error
 	StartWorkers()
 	StopWorkers()
 }
 
 // ProcessorImpl struct for notification processor
 type ProcessorImpl struct {
-	segmentQueue  chan dtos.SegmentChangeUpdate
-	splitQueue    chan dtos.SplitChangeUpdate
-	splitWorker   *SplitUpdateWorker
-	segmentWorker *SegmentUpdateWorker
-	synchronizer  synchronizerInterface
-	logger        logging.LoggerInterface
-	largeSegment  *LargeSegment
+	segmentQueue   chan dtos.SegmentChangeUpdate
+	splitQueue     chan dtos.SplitChangeUpdate
+	ruleBasedQueue chan dtos.RuleBasedChangeUpdate
+	splitWorker    *SplitUpdateWorker
+	segmentWorker  *SegmentUpdateWorker
+	synchronizer   synchronizerInterface
+	logger         logging.LoggerInterface
+	largeSegment   *LargeSegment
 }
 
 // NewProcessor creates new processor
@@ -132,6 +134,14 @@ func (p *ProcessorImpl) ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmen
 		return errors.New("large segment change update cannot be nil")
 	}
 	p.largeSegment.queue <- *update
+	return nil
+}
+
+func (p *ProcessorImpl) ProcessorRuleBasedSegmentChangeUpdate(update *dtos.RuleBasedChangeUpdate) error {
+	if update == nil {
+		return errors.New("rule-based segment change update cannot be nil")
+	}
+	p.ruleBasedQueue <- *update
 	return nil
 }
 

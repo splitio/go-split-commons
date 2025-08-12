@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service/api"
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/rulebasedsegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v6/tasks"
@@ -32,10 +33,14 @@ type LocalConfig struct {
 }
 
 // NewLocal creates new Local
-func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
+func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, ruleBasedStorage storage.RuleBasedSegmentsStorage, ruleBasedSegmentUpdater rulebasedsegment.UpdaterImpl, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
+	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, ruleBasedSegmentUpdater, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets))
+	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedStorage)
+
 	workers := Workers{
-		SplitUpdater: split.NewSplitUpdater(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets)),
+		SplitUpdater: splitUpdater,
 	}
+	workers.RuleBasedSegmentUpdater = rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedStorage, logger)
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentUpdater = segment.NewSegmentUpdater(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
 	}
@@ -121,3 +126,6 @@ func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumbe
 
 // SynchronizeFeatureFlags no logic attached for localhost mode
 func (s *Local) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error { return nil }
+
+// SynchronizeRuleBasedsegments no logic attached for localhost mode
+func (s *Local) SynchronizeRuleBasedSegments(rbChange *dtos.RuleBasedChangeUpdate) error { return nil }
