@@ -19,7 +19,6 @@ type MockSynchronizer struct {
 	RefreshRatesCall                  func() (time.Duration, time.Duration)
 	SynchronizeLargeSegmentCall       func(name string, till *int64) error
 	SynchronizeLargeSegmentUpdateCall func(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
-	SynchronizeRuleBasedSegmentsCall  func(rbChange *dtos.RuleBasedChangeUpdate) error
 }
 
 // SyncAll mock
@@ -75,9 +74,4 @@ func (m *MockSynchronizer) SynchronizeLargeSegment(name string, till *int64) err
 // SynchronizeLargeSegmentUpdate call
 func (m *MockSynchronizer) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
 	return m.SynchronizeLargeSegmentUpdateCall(lsRFDResponseDTO)
-}
-
-// SynchronizeRuleBasedSegments call
-func (m *MockSynchronizer) SynchronizeRuleBasedSegments(rbChange *dtos.RuleBasedChangeUpdate) error {
-	return m.SynchronizeRuleBasedSegmentsCall(rbChange)
 }

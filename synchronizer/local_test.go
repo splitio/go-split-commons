@@ -13,7 +13,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/rulebasedsegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -49,12 +48,9 @@ func TestLocalSyncAllError(t *testing.T) {
 			return -1
 		},
 	}
-	ruleBasedSegmentUpdater := rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logging.NewLogger(&logging.LoggerOptions{}))
-
 	splitUpdater := split.NewSplitUpdater(
 		splitMockStorage,
 		ruleBasedSegmentMockStorage,
-		*ruleBasedSegmentUpdater,
 		splitAPI.SplitFetcher,
 		logger,
 		telemetryMockStorage,
@@ -64,8 +60,7 @@ func TestLocalSyncAllError(t *testing.T) {
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 
 	workers := Workers{
-		SplitUpdater:            splitUpdater,
-		RuleBasedSegmentUpdater: rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logger),
+		SplitUpdater: splitUpdater,
 	}
 
 	syncForTest := &Local{
@@ -136,9 +131,7 @@ func TestLocalSyncAllOk(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentUpdater := rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logging.NewLogger(&logging.LoggerOptions{}))
-
-	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, *ruleBasedSegmentUpdater, logger, telemetryMockStorage, appMonitorMock)
+	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
 	if err != nil {
 		t.Error("It should not return error")
@@ -203,9 +196,8 @@ func TestLocalPeriodicFetching(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-	ruleBasedSegmentUpdater := rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logging.NewLogger(&logging.LoggerOptions{}))
 
-	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, *ruleBasedSegmentUpdater, logger, telemetryMockStorage, appMonitorMock)
+	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 1500)
 	if atomic.LoadInt64(&splitFetchCalled) != 1 {

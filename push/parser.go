@@ -34,16 +34,15 @@ type NotificationParser interface {
 
 // NotificationParserImpl implementas the NotificationParser interface
 type NotificationParserImpl struct {
-	dataUtils                DataUtils
-	logger                   logging.LoggerInterface
-	onSplitUpdate            func(*dtos.SplitChangeUpdate) error
-	onSplitKill              func(*dtos.SplitKillUpdate) error
-	onSegmentUpdate          func(*dtos.SegmentChangeUpdate) error
-	onLargeSegmentUpdate     func(*dtos.LargeSegmentChangeUpdate) error
-	onRuleBasedsegmentUpdate func(*dtos.RuleBasedChangeUpdate) error
-	onControlUpdate          func(*dtos.ControlUpdate) *int64
-	onOccupancyMesage        func(*dtos.OccupancyMessage) *int64
-	onAblyError              func(*dtos.AblyError) *int64
+	dataUtils            DataUtils
+	logger               logging.LoggerInterface
+	onSplitUpdate        func(*dtos.SplitChangeUpdate) error
+	onSplitKill          func(*dtos.SplitKillUpdate) error
+	onSegmentUpdate      func(*dtos.SegmentChangeUpdate) error
+	onLargeSegmentUpdate func(*dtos.LargeSegmentChangeUpdate) error
+	onControlUpdate      func(*dtos.ControlUpdate) *int64
+	onOccupancyMesage    func(*dtos.OccupancyMessage) *int64
+	onAblyError          func(*dtos.AblyError) *int64
 }
 
 func NewNotificationParserImpl(
@@ -54,19 +53,17 @@ func NewNotificationParserImpl(
 	onControlUpdate func(*dtos.ControlUpdate) *int64,
 	onOccupancyMessage func(*dtos.OccupancyMessage) *int64,
 	onAblyError func(*dtos.AblyError) *int64,
-	onLargeSegmentUpdate func(*dtos.LargeSegmentChangeUpdate) error,
-	onRuleBasedSegmentUpdate func(*dtos.RuleBasedChangeUpdate) error) *NotificationParserImpl {
+	onLargeSegmentUpdate func(*dtos.LargeSegmentChangeUpdate) error) *NotificationParserImpl {
 	return &NotificationParserImpl{
-		dataUtils:                NewDataUtilsImpl(),
-		logger:                   loggerInterface,
-		onSplitUpdate:            onSplitUpdate,
-		onSplitKill:              onSplitKill,
-		onSegmentUpdate:          onSegmentUpdate,
-		onControlUpdate:          onControlUpdate,
-		onOccupancyMesage:        onOccupancyMessage,
-		onAblyError:              onAblyError,
-		onLargeSegmentUpdate:     onLargeSegmentUpdate,
-		onRuleBasedsegmentUpdate: onRuleBasedSegmentUpdate,
+		dataUtils:            NewDataUtilsImpl(),
+		logger:               loggerInterface,
+		onSplitUpdate:        onSplitUpdate,
+		onSplitKill:          onSplitKill,
+		onSegmentUpdate:      onSegmentUpdate,
+		onControlUpdate:      onControlUpdate,
+		onOccupancyMesage:    onOccupancyMessage,
+		onAblyError:          onAblyError,
+		onLargeSegmentUpdate: onLargeSegmentUpdate,
 	}
 }
 
@@ -146,9 +143,9 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	case dtos.UpdateTypeRuleBasedChange:
 		ruleBased := p.processRuleBasedMessage(nested)
 		if ruleBased == nil {
-			return nil, p.onRuleBasedsegmentUpdate(dtos.NewRuleBasedChangeUpdate(base, nil, nil))
+			return nil, p.onSplitUpdate(dtos.NewRuleBasedSegmentChangeUpdate(base, nil, nil))
 		}
-		return nil, p.onRuleBasedsegmentUpdate(dtos.NewRuleBasedChangeUpdate(base, &nested.PreviousChangeNumber, ruleBased))
+		return nil, p.onSplitUpdate(dtos.NewRuleBasedSegmentChangeUpdate(base, &nested.PreviousChangeNumber, ruleBased))
 	default:
 		// TODO: log full event in debug mode
 		return nil, fmt.Errorf("invalid update type: %s", nested.Type)

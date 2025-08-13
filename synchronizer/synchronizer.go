@@ -9,7 +9,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/impression"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/impressionscount"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/largesegment"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/rulebasedsegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v6/tasks"
@@ -38,7 +37,6 @@ type Workers struct {
 	SplitUpdater             split.Updater
 	SegmentUpdater           segment.Updater
 	LargeSegmentUpdater      largesegment.Updater
-	RuleBasedSegmentUpdater  rulebasedsegment.Updater
 	TelemetryRecorder        telemetry.TelemetrySynchronizer
 	ImpressionRecorder       impression.ImpressionRecorder
 	EventRecorder            event.EventRecorder
@@ -49,7 +47,6 @@ type Workers struct {
 type Synchronizer interface {
 	SyncAll() error
 	SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error
-	SynchronizeRuleBasedSegments(rbChange *dtos.RuleBasedChangeUpdate) error
 	LocalKill(splitName string, defaultTreatment string, changeNumber int64)
 	SynchronizeSegment(segmentName string, till *int64) error
 	StartPeriodicFetching()
@@ -238,13 +235,6 @@ func (s *SynchronizerImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpd
 	result, err := s.workers.SplitUpdater.SynchronizeFeatureFlags(ffChange)
 	s.synchronizeSegmentsAfterSplitAndRBSync(result.ReferencedSegments)
 	s.synchronizeLargeSegmentsAfterSplitSync(result.ReferencedLargeSegments)
-	return err
-}
-
-// SynchronizeRuleBasedSegments syncs rule-based segments
-func (s *SynchronizerImpl) SynchronizeRuleBasedSegments(rbChange *dtos.RuleBasedChangeUpdate) error {
-	result, err := s.workers.RuleBasedSegmentUpdater.SynchronizeRuleBasedSegment(rbChange)
-	s.synchronizeSegmentsAfterSplitAndRBSync(result.ReferencedSegments)
 	return err
 }
 

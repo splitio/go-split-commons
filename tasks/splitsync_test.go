@@ -12,7 +12,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/service"
 	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/rulebasedsegment"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -101,9 +100,7 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentUpdater := rulebasedsegment.NewRuleBasedSegmentUpdater(ruleBasedSegmentMockStorage, logging.NewLogger(&logging.LoggerOptions{}))
-
-	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, *ruleBasedSegmentUpdater, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
 	splitTask := NewFetchSplitsTask(
 		splitUpdater,

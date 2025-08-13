@@ -1,7 +1,6 @@
 package push
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"testing"
 
@@ -19,174 +18,6 @@ const ERROR_SHOULD_RETURNED = "no error should have been returned. Got: "
 const FF_SHOULD_BE_MAURO_JAVA = "feature flag should be mauro_java"
 const FF_DEFINITION_ZLIB = "eJzMk99u2kwQxV8lOtdryQZj8N6hD5QPlThSTVNVEUKDPYZt1jZar1OlyO9emf8lVFWv2ss5zJyd82O8hTWUZSqZvW04opwhUVdsIKBSSKR+10vS1HWW7pIdz2NyBjRwHS8IXEopTLgbQqDYT+ZUm3LxlV4J4mg81LpMyKqygPRc94YeM6eQTtjphp4fegLVXvD6Qdjt9wPXF6gs2bqCxPC/2eRpDIEXpXXblpGuWCDljGptZ4bJ5lxYSJRZBoFkTcWKozpfsoH0goHfCXpB6PfcngDpVQnZEUjKIlOr2uwWqiC3zU5L1aF+3p7LFhUkPv8/mY2nk3gGgZxssmZzb8p6A9n25ktVtA9iGI3ODXunQ3HDp+AVWT6F+rZWlrWq7MN+YkSWWvuTDvkMSnNV7J6oTdl6qKTEvGnmjcCGjL2IYC/ovPYgUKnvvPtbmrmApiVryLM7p2jE++AfH6fTx09/HvuF32LWnNjStM0Xh3c8ukZcsZlEi3h8/zCObsBpJ0acqYLTmFdtqitK1V6NzrfpdPBbLmVx4uK26e27izpDu/r5yf/16AXun2Cr4u6w591xw7+LfDidLj6Mv8TXwP8xbofv/c7UmtHMmx8BAAD//0fclvU="
 const FF_DEFINITION_GZIP = "H4sIAAAAAAAA/8yT327aTBDFXyU612vJxoTgvUMfKB8qcaSapqoihAZ7DNusvWi9TpUiv3tl/pdQVb1qL+cwc3bOj/EGzlKeq3T6tuaYCoZEXbGFgMogkXXDIM0y31v4C/aCgMnrU9/3gl7Pp4yilMMIAuVusqDamvlXeiWIg/FAa5OSU6aEDHz/ip4wZ5Be1AmjoBsFAtVOCO56UXh31/O7ApUjV1eQGPw3HT+NIPCitG7bctIVC2ScU63d1DK5gksHCZPnEEhXVC45rosFW8ig1++GYej3g85tJEB6aSA7Aqkpc7Ws7XahCnLTbLVM7evnzalsUUHi8//j6WgyTqYQKMilK7b31tRryLa3WKiyfRCDeHhq2Dntiys+JS/J8THUt5VyrFXlHnYTQ3LU2h91yGdQVqhy+0RtTeuhUoNZ08wagTVZdxbBndF5vYVApb7z9m9pZgKaFqwhT+6coRHvg398nEweP/157Bd+S1hz6oxtm88O73B0jbhgM47nyej+YRRfgdNODDlXJWcJL9tUF5SqnRqfbtPr4LdcTHnk4rfp3buLOkG7+Pmp++vRM9w/wVblzX7Pm8OGfxf5YDKZfxh9SS6B/2Pc9t/7ja01o5k1PwIAAP//uTipVskEAAA="
-
-func TestParseRuleBasedSegmentUpdate(t *testing.T) {
-	event := &sseMocks.RawEventMock{
-		IDCall:    func() string { return "abc" },
-		EventCall: func() string { return dtos.SSEEventTypeMessage },
-		DataCall: func() string {
-			ruleBasedSegment := dtos.RuleBasedSegmentDTO{
-				Name:   "rb1",
-				Status: "ACTIVE",
-				Conditions: []dtos.RuleBasedConditionDTO{
-					{
-						MatcherGroup: dtos.MatcherGroupDTO{
-							Matchers: []dtos.MatcherDTO{
-								{
-									MatcherType: "IN_SEGMENT",
-									UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
-										SegmentName: "segment1",
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-			ruleBasedJSON, _ := json.Marshal(ruleBasedSegment)
-			def := base64.StdEncoding.EncodeToString(ruleBasedJSON)
-			compressType := 0
-			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:         dtos.UpdateTypeRuleBasedChange,
-				ChangeNumber: 123,
-				Definition:   &def,
-				CompressType: &compressType,
-			})
-			mainJSON, _ := json.Marshal(genericData{
-				Timestamp: 123,
-				Data:      string(updateJSON),
-				Channel:   "sarasa_rule_based_segments",
-			})
-			return string(mainJSON)
-		},
-		IsErrorCall: func() bool { return false },
-		IsEmptyCall: func() bool { return false },
-		RetryCall:   func() int64 { return 0 },
-	}
-
-	logger := logging.NewLogger(nil)
-	parser := &NotificationParserImpl{
-		dataUtils: NewDataUtilsImpl(),
-		logger: logger,
-		onRuleBasedsegmentUpdate: func(u *dtos.RuleBasedChangeUpdate) error {
-			if u.ChangeNumber() != 123 {
-				t.Error("Change number should be 123. Got:", u.ChangeNumber())
-			}
-			if u.Channel() != "sarasa_rule_based_segments" {
-				t.Error("Channel should be sarasa_rule_based_segments. Got:", u.Channel())
-			}
-			if u.RuleBasedSegment() == nil {
-				t.Error("Rule-based segment should not be nil")
-			}
-			if u.RuleBasedSegment().Name != "rb1" {
-				t.Error("Rule-based segment name should be rb1. Got:", u.RuleBasedSegment().Name)
-			}
-			if len(u.RuleBasedSegment().Conditions) != 1 {
-				t.Error("Rule-based segment should have 1 condition. Got:", len(u.RuleBasedSegment().Conditions))
-			}
-			return nil
-		},
-	}
-
-	_, err := parser.ParseAndForward(event)
-	if err != nil {
-		t.Error("No error should have been returned. Got:", err)
-	}
-}
-
-func TestParseRuleBasedSegmentUpdateWithPreviousChangeNumber(t *testing.T) {
-	event := &sseMocks.RawEventMock{
-		IDCall:    func() string { return "abc" },
-		EventCall: func() string { return dtos.SSEEventTypeMessage },
-		DataCall: func() string {
-			ruleBasedSegment := dtos.RuleBasedSegmentDTO{
-				Name:   "rb1",
-				Status: "ACTIVE",
-			}
-			var previousChangeNumber int64 = 100
-			ruleBasedJSON, _ := json.Marshal(ruleBasedSegment)
-			def := base64.StdEncoding.EncodeToString(ruleBasedJSON)
-			compressType := 0
-			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                dtos.UpdateTypeRuleBasedChange,
-				ChangeNumber:        123,
-				PreviousChangeNumber: previousChangeNumber,
-				Definition:          &def,
-				CompressType:        &compressType,
-			})
-			mainJSON, _ := json.Marshal(genericData{
-				Timestamp: 123,
-				Data:      string(updateJSON),
-				Channel:   "sarasa_rule_based_segments",
-			})
-			return string(mainJSON)
-		},
-		IsErrorCall: func() bool { return false },
-		IsEmptyCall: func() bool { return false },
-		RetryCall:   func() int64 { return 0 },
-	}
-
-	logger := logging.NewLogger(nil)
-	parser := &NotificationParserImpl{
-		dataUtils: NewDataUtilsImpl(),
-		logger: logger,
-		onRuleBasedsegmentUpdate: func(u *dtos.RuleBasedChangeUpdate) error {
-			if u.ChangeNumber() != 123 {
-				t.Error("Change number should be 123. Got:", u.ChangeNumber())
-			}
-			if u.PreviousChangeNumber() == nil {
-				t.Error("Previous change number should not be nil")
-			} else if *u.PreviousChangeNumber() != 100 {
-				t.Error("Previous change number should be 100. Got:", *u.PreviousChangeNumber())
-			}
-			return nil
-		},
-	}
-
-	_, err := parser.ParseAndForward(event)
-	if err != nil {
-		t.Error("No error should have been returned. Got:", err)
-	}
-}
-
-func TestParseRuleBasedSegmentUpdateWithNilSegment(t *testing.T) {
-	event := &sseMocks.RawEventMock{
-		IDCall:    func() string { return "abc" },
-		EventCall: func() string { return dtos.SSEEventTypeMessage },
-		DataCall: func() string {
-			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:         dtos.UpdateTypeRuleBasedChange,
-				ChangeNumber: 123,
-			})
-			mainJSON, _ := json.Marshal(genericData{
-				Timestamp: 123,
-				Data:      string(updateJSON),
-				Channel:   "sarasa_rule_based_segments",
-			})
-			return string(mainJSON)
-		},
-		IsErrorCall: func() bool { return false },
-		IsEmptyCall: func() bool { return false },
-		RetryCall:   func() int64 { return 0 },
-	}
-
-	logger := logging.NewLogger(nil)
-	parser := &NotificationParserImpl{
-		dataUtils: NewDataUtilsImpl(),
-		logger: logger,
-		onRuleBasedsegmentUpdate: func(u *dtos.RuleBasedChangeUpdate) error {
-			if u.RuleBasedSegment() != nil {
-				t.Error("Rule-based segment should be nil")
-			}
-			return nil
-		},
-	}
-
-	_, err := parser.ParseAndForward(event)
-	if err != nil {
-		t.Error("No error should have been returned. Got:", err)
-	}
-}
 
 func TestParseSplitUpdate(t *testing.T) {
 	event := &sseMocks.RawEventMock{
@@ -810,7 +641,6 @@ func TestNewNotificationParserImpl(t *testing.T) {
 			}
 			return common.Int64Ref(123)
 		},
-		nil,
 		nil,
 		nil)
 
