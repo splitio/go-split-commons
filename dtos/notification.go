@@ -352,36 +352,6 @@ func (u *LargeSegmentChangeUpdate) String() string {
 		u.Channel(), u.ChangeNumber(), len(u.LargeSegments), u.Timestamp())
 }
 
-// RuleBasedChangeUpdate represents a RuleBasedChange notification generated in the split servers
-type RuleBasedChangeUpdate struct {
-	BaseUpdate
-	previousChangeNumber *int64
-	ruleBasedSegment     *RuleBasedSegmentDTO
-}
-
-func NewRuleBasedChangeUpdate(baseUpdate BaseUpdate, pcn *int64, ruleBasedSegment *RuleBasedSegmentDTO) *RuleBasedChangeUpdate {
-	return &RuleBasedChangeUpdate{
-		BaseUpdate:           baseUpdate,
-		previousChangeNumber: pcn,
-		ruleBasedSegment:     ruleBasedSegment,
-	}
-}
-
-// UpdateType always returns UpdateTypeRuleBasedChange for RuleBasedUpdate messages
-func (u *RuleBasedChangeUpdate) UpdateType() string { return UpdateTypeRuleBasedChange }
-
-// String returns the String representation of a split change notification
-func (u *RuleBasedChangeUpdate) String() string {
-	return fmt.Sprintf("SplitChange(channel=%s,changeNumber=%d,timestamp=%d)",
-		u.Channel(), u.ChangeNumber(), u.Timestamp())
-}
-
-// PreviousChangeNumber returns previous change number
-func (u *RuleBasedChangeUpdate) PreviousChangeNumber() *int64 { return u.previousChangeNumber }
-
-// FeatureFlag returns feature flag definiiton or nil
-func (u *RuleBasedChangeUpdate) RuleBasedSegment() *RuleBasedSegmentDTO { return u.ruleBasedSegment }
-
 // Compile-type assertions of interface requirements
 var _ Event = &AblyError{}
 var _ Message = &OccupancyMessage{}
@@ -390,9 +360,7 @@ var _ Message = &SplitKillUpdate{}
 var _ Message = &SegmentChangeUpdate{}
 var _ Message = &ControlUpdate{}
 var _ Message = &LargeSegmentChangeUpdate{}
-var _ Message = &RuleBasedChangeUpdate{}
 var _ Update = &SplitChangeUpdate{}
 var _ Update = &SplitKillUpdate{}
 var _ Update = &SegmentChangeUpdate{}
 var _ Update = &LargeSegmentChangeUpdate{}
-var _ Update = &RuleBasedChangeUpdate{}
