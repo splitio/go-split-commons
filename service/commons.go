@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -98,6 +99,11 @@ func (s *FlagRequestParams) ChangeNumberRB() int64 {
 	return s.changeNumberRB
 }
 
+// Till returns the till value
+func (s *FlagRequestParams) Till() *int64 {
+	return s.till
+}
+
 // Apply applies the request parameters
 func (s *FlagRequestParams) Apply(request *http.Request) error {
 	if s.cacheControlHeaders {
@@ -108,13 +114,13 @@ func (s *FlagRequestParams) Apply(request *http.Request) error {
 	if s.specVersion != nil {
 		queryParameters = append(queryParameters, queryParamater{key: spec, value: common.StringFromRef(s.specVersion)})
 	}
-	queryParameters = append(queryParameters, queryParamater{key: since, value: strconv.FormatInt(s.changeNumber, 10)})
-	queryParameters = append(queryParameters, queryParamater{key: rbSince, value: strconv.FormatInt(s.changeNumberRB, 10)})
+	queryParameters = append(queryParameters, queryParamater{key: since, value: fmt.Sprint(s.changeNumber)})
+	queryParameters = append(queryParameters, queryParamater{key: rbSince, value: fmt.Sprint(s.changeNumberRB)})
 	if len(s.flagSetsFilter) > 0 {
 		queryParameters = append(queryParameters, queryParamater{key: sets, value: s.flagSetsFilter})
 	}
 	if s.till != nil {
-		queryParameters = append(queryParameters, queryParamater{key: till, value: strconv.FormatInt(*s.till, 10)})
+		queryParameters = append(queryParameters, queryParamater{key: till, value: fmt.Sprint(*s.till)})
 	}
 
 	request.URL.RawQuery = encode(queryParameters)

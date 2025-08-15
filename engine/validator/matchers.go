@@ -21,7 +21,28 @@ var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.Conditio
 	},
 }}
 
+// unsupportedMatcherRBConditionReplacement is the default condition to be used when a matcher is not supported
+var unsupportedMatcherRBConditionReplacement []dtos.RuleBasedConditionDTO = []dtos.RuleBasedConditionDTO{{
+	ConditionType: grammar.ConditionTypeWhitelist,
+	MatcherGroup: dtos.MatcherGroupDTO{
+		Combiner: "AND",
+		Matchers: []dtos.MatcherDTO{{MatcherType: grammar.MatcherTypeAllKeys, Negate: false}},
+	},
+}}
+
 func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
+	for _, condition := range conditions {
+		for _, matcher := range condition.MatcherGroup.Matchers {
+			_, err := grammar.BuildMatcher(&matcher, &injection.Context{}, logger)
+			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
 			_, err := grammar.BuildMatcher(&matcher, &injection.Context{}, logger)
@@ -37,6 +58,13 @@ func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.Log
 func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
 	if shouldOverrideConditions(split.Conditions, logger) {
 		split.Conditions = unsupportedMatcherConditionReplacement
+	}
+}
+
+// ProcessMatchers processes the matchers of a rule-based and validates them
+func ProcessRBMatchers(ruleBased *dtos.RuleBasedSegmentDTO, logger logging.LoggerInterface) {
+	if shouldOverrideRBConditions(ruleBased.Conditions, logger) {
+		ruleBased.Conditions = unsupportedMatcherRBConditionReplacement
 	}
 }
 

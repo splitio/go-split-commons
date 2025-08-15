@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-toolkit/v5/datautils"
 	"github.com/splitio/go-toolkit/v5/logging"
 	sseMocks "github.com/splitio/go-toolkit/v5/sse/mocks"
 )
@@ -42,7 +43,8 @@ func TestParseSplitUpdate(t *testing.T) {
 
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
-		logger: logger,
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
 		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
 				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
@@ -67,11 +69,11 @@ func TestParseInstantFF(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                  dtos.UpdateTypeSplitChange,
-				ChangeNumber:          123,
-				PreviousChangeNumber:  1,
-				CompressType:          common.IntRef(compressType),
-				FeatureFlagDefinition: common.StringRef(ffDefinition),
+				Type:                 dtos.UpdateTypeSplitChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				CompressType:         common.IntRef(compressType),
+				Definition:           common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -119,11 +121,11 @@ func TestParseInstantFFCompressTypeZlib(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                  dtos.UpdateTypeSplitChange,
-				ChangeNumber:          123,
-				PreviousChangeNumber:  1,
-				CompressType:          common.IntRef(compressType),
-				FeatureFlagDefinition: common.StringRef(ffDefinition),
+				Type:                 dtos.UpdateTypeSplitChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				CompressType:         common.IntRef(compressType),
+				Definition:           common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -171,11 +173,11 @@ func TestParseInstantFFCompressTypeGzip(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                  dtos.UpdateTypeSplitChange,
-				ChangeNumber:          123,
-				PreviousChangeNumber:  1,
-				CompressType:          common.IntRef(compressType),
-				FeatureFlagDefinition: common.StringRef(ffDefinition),
+				Type:                 dtos.UpdateTypeSplitChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				CompressType:         common.IntRef(compressType),
+				Definition:           common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -222,10 +224,10 @@ func TestParseInstantFFCompressTypeNil(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                  dtos.UpdateTypeSplitChange,
-				ChangeNumber:          123,
-				PreviousChangeNumber:  1,
-				FeatureFlagDefinition: common.StringRef(ffDefinition),
+				Type:                 dtos.UpdateTypeSplitChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				Definition:           common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -270,11 +272,11 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:                  dtos.UpdateTypeSplitChange,
-				ChangeNumber:          123,
-				PreviousChangeNumber:  1,
-				CompressType:          common.IntRef(compressType),
-				FeatureFlagDefinition: common.StringRef(ffDefinition),
+				Type:                 dtos.UpdateTypeSplitChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				CompressType:         common.IntRef(compressType),
+				Definition:           common.StringRef(ffDefinition),
 			})
 			mainJSON, _ := json.Marshal(genericData{
 				Timestamp: 123,
@@ -304,6 +306,119 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestParseRuleBasedSegmentUpdate(t *testing.T) {
+	// Test case 1: With rule-based segment data
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			ruleBasedSegment := dtos.RuleBasedSegmentDTO{
+				Name:         "test-segment",
+				ChangeNumber: 123,
+				Conditions: []dtos.RuleBasedConditionDTO{
+					{
+						ConditionType: "WHITELIST",
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{},
+						},
+					},
+				},
+			}
+			ruleBasedJSON, _ := json.Marshal(ruleBasedSegment)
+			base64JSON, _ := datautils.Encode(ruleBasedJSON, datautils.Base64)
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                 dtos.UpdateTypeRuleBasedChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 100,
+				CompressType:         common.IntRef(0),
+				Definition:           common.StringRef(base64JSON),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
+		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
+			}
+			if u.UpdateType() != dtos.UpdateTypeRuleBasedChange {
+				t.Error("update type should be RB_SEGMENT_UPDATE. Is: ", u.UpdateType())
+			}
+			if u.RuleBasedSegment() == nil {
+				t.Error("rule-based segment should not be nil")
+			}
+			if u.RuleBasedSegment().Name != "test-segment" {
+				t.Error("rule-based segment name should be test-segment. Is: ", u.RuleBasedSegment().Name)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+
+	// Test case 2: Without rule-based segment data
+	eventNoSegment := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:         dtos.UpdateTypeRuleBasedChange,
+				ChangeNumber: 123,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	parserNoSegment := &NotificationParserImpl{
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
+		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
+			}
+			if u.UpdateType() != dtos.UpdateTypeSplitChange {
+				t.Error("update type should be SPLIT_UPDATE. Is: ", u.UpdateType())
+			}
+			if u.RuleBasedSegment() != nil {
+				t.Error("rule-based segment should be nil")
+			}
+			return nil
+		},
+	}
+
+	if status, err := parserNoSegment.ParseAndForward(eventNoSegment); status != nil || err != nil {
 		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
@@ -407,7 +522,7 @@ func TestControl(t *testing.T) {
 		EventCall: func() string { return dtos.SSEEventTypeMessage },
 		DataCall: func() string {
 			updateJSON, _ := json.Marshal(genericMessageData{
-				Type:        dtos.UpdateTypeContol,
+				Type:        dtos.UpdateTypeControl,
 				ControlType: dtos.ControlTypeStreamingDisabled,
 			})
 			mainJSON, _ := json.Marshal(genericData{
@@ -653,11 +768,11 @@ func TestParseFFDtoNotCompress(t *testing.T) {
 	compressType := 0
 	ffDefinition := "eyJ0cmFmZmljVHlwZU5hbWUiOiJ1c2VyIiwiaWQiOiJkNDMxY2RkMC1iMGJlLTExZWEtOGE4MC0xNjYwYWRhOWNlMzkiLCJuYW1lIjoibWF1cm9famF2YSIsInRyYWZmaWNBbGxvY2F0aW9uIjoxMDAsInRyYWZmaWNBbGxvY2F0aW9uU2VlZCI6LTkyMzkxNDkxLCJzZWVkIjotMTc2OTM3NzYwNCwic3RhdHVzIjoiQUNUSVZFIiwia2lsbGVkIjpmYWxzZSwiZGVmYXVsdFRyZWF0bWVudCI6Im9mZiIsImNoYW5nZU51bWJlciI6MTY4NDMyOTg1NDM4NSwiYWxnbyI6MiwiY29uZmlndXJhdGlvbnMiOnt9LCJjb25kaXRpb25zIjpbeyJjb25kaXRpb25UeXBlIjoiV0hJVEVMSVNUIiwibWF0Y2hlckdyb3VwIjp7ImNvbWJpbmVyIjoiQU5EIiwibWF0Y2hlcnMiOlt7Im1hdGNoZXJUeXBlIjoiV0hJVEVMSVNUIiwibmVnYXRlIjpmYWxzZSwid2hpdGVsaXN0TWF0Y2hlckRhdGEiOnsid2hpdGVsaXN0IjpbImFkbWluIiwibWF1cm8iLCJuaWNvIl19fV19LCJwYXJ0aXRpb25zIjpbeyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9XSwibGFiZWwiOiJ3aGl0ZWxpc3RlZCJ9LHsiY29uZGl0aW9uVHlwZSI6IlJPTExPVVQiLCJtYXRjaGVyR3JvdXAiOnsiY29tYmluZXIiOiJBTkQiLCJtYXRjaGVycyI6W3sia2V5U2VsZWN0b3IiOnsidHJhZmZpY1R5cGUiOiJ1c2VyIn0sIm1hdGNoZXJUeXBlIjoiSU5fU0VHTUVOVCIsIm5lZ2F0ZSI6ZmFsc2UsInVzZXJEZWZpbmVkU2VnbWVudE1hdGNoZXJEYXRhIjp7InNlZ21lbnROYW1lIjoibWF1ci0yIn19XX0sInBhcnRpdGlvbnMiOlt7InRyZWF0bWVudCI6Im9uIiwic2l6ZSI6MH0seyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9LHsidHJlYXRtZW50IjoiVjQiLCJzaXplIjowfSx7InRyZWF0bWVudCI6InY1Iiwic2l6ZSI6MH1dLCJsYWJlbCI6ImluIHNlZ21lbnQgbWF1ci0yIn0seyJjb25kaXRpb25UeXBlIjoiUk9MTE9VVCIsIm1hdGNoZXJHcm91cCI6eyJjb21iaW5lciI6IkFORCIsIm1hdGNoZXJzIjpbeyJrZXlTZWxlY3RvciI6eyJ0cmFmZmljVHlwZSI6InVzZXIifSwibWF0Y2hlclR5cGUiOiJBTExfS0VZUyIsIm5lZ2F0ZSI6ZmFsc2V9XX0sInBhcnRpdGlvbnMiOlt7InRyZWF0bWVudCI6Im9uIiwic2l6ZSI6MH0seyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9LHsidHJlYXRtZW50IjoiVjQiLCJzaXplIjowfSx7InRyZWF0bWVudCI6InY1Iiwic2l6ZSI6MH1dLCJsYWJlbCI6ImRlZmF1bHQgcnVsZSJ9XX0="
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -674,11 +789,11 @@ func TestParseFFDtoNotCompressWrongDefinition(t *testing.T) {
 	compressType := 0
 	ffDefinition := "eyJ0cmFmZmldfsfsfjVHlwZU5hbWUiOiJ1c2VyIiwiaWQiOiJkNDMxY2RkMC1iMGJlLTExZWEtOGE4MC0xNjYwYWRhOWNlMzkiLCJuYW1lIjoibWF1cm9famF2YSIsInRyYWZmaWNBbGxvY2F0aW9uIjoxMDAsInRyYWZmaWNBbGxvY2F0aW9uU2VlZCI6LTkyMzkxNDkxLCJzZWVkIjotMTc2OTM3NzYwNCwic3RhdHVzIjoiQUNUSVZFIiwia2lsbGVkIjpmYWxzZSwiZGVmYXVsdFRyZWF0bWVudCI6Im9mZiIsImNoYW5nZU51bWJlciI6MTY4NDMyOTg1NDM4NSwiYWxnbyI6MiwiY29uZmlndXJhdGlvbnMiOnt9LCJjb25kaXRpb25zIjpbeyJjb25kaXRpb25UeXBlIjoiV0hJVEVMSVNUIiwibWF0Y2hlckdyb3VwIjp7ImNvbWJpbmVyIjoiQU5EIiwibWF0Y2hlcnMiOlt7Im1hdGNoZXJUeXBlIjoiV0hJVEVMSVNUIiwibmVnYXRlIjpmYWxzZSwid2hpdGVsaXN0TWF0Y2hlckRhdGEiOnsid2hpdGVsaXN0IjpbImFkbWluIiwibWF1cm8iLCJuaWNvIl19fV19LCJwYXJ0aXRpb25zIjpbeyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9XSwibGFiZWwiOiJ3aGl0ZWxpc3RlZCJ9LHsiY29uZGl0aW9uVHlwZSI6IlJPTExPVVQiLCJtYXRjaGVyR3JvdXAiOnsiY29tYmluZXIiOiJBTkQiLCJtYXRjaGVycyI6W3sia2V5U2VsZWN0b3IiOnsidHJhZmZpY1R5cGUiOiJ1c2VyIn0sIm1hdGNoZXJUeXBlIjoiSU5fU0VHTUVOVCIsIm5lZ2F0ZSI6ZmFsc2UsInVzZXJEZWZpbmVkU2VnbWVudE1hdGNoZXJEYXRhIjp7InNlZ21lbnROYW1lIjoibWF1ci0yIn19XX0sInBhcnRpdGlvbnMiOlt7InRyZWF0bWVudCI6Im9uIiwic2l6ZSI6MH0seyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9LHsidHJlYXRtZW50IjoiVjQiLCJzaXplIjowfSx7InRyZWF0bWVudCI6InY1Iiwic2l6ZSI6MH1dLCJsYWJlbCI6ImluIHNlZ21lbnQgbWF1ci0yIn0seyJjb25kaXRpb25UeXBlIjoiUk9MTE9VVCIsIm1hdGNoZXJHcm91cCI6eyJjb21iaW5lciI6IkFORCIsIm1hdGNoZXJzIjpbeyJrZXlTZWxlY3RvciI6eyJ0cmFmZmljVHlwZSI6InVzZXIifSwibWF0Y2hlclR5cGUiOiJBTExfS0VZUyIsIm5lZ2F0ZSI6ZmFsc2V9XX0sInBhcnRpdGlvbnMiOlt7InRyZWF0bWVudCI6Im9uIiwic2l6ZSI6MH0seyJ0cmVhdG1lbnQiOiJvZmYiLCJzaXplIjoxMDB9LHsidHJlYXRtZW50IjoiVjQiLCJzaXplIjowfSx7InRyZWF0bWVudCI6InY1Iiwic2l6ZSI6MH1dLCJsYWJlbCI6ImRlZmF1bHQgcnVsZSJ9XX0="
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -695,11 +810,11 @@ func TestParseFFDtoGzipCompress(t *testing.T) {
 	compressType := 1
 	ffDefinition := FF_DEFINITION_GZIP
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -716,11 +831,11 @@ func TestParseFFDtoZlibCompressWrongCompressType(t *testing.T) {
 	compressType := 2
 	ffDefinition := FF_DEFINITION_GZIP
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -737,11 +852,11 @@ func TestParseFFDtoZlibCompress(t *testing.T) {
 	compressType := 2
 	ffDefinition := FF_DEFINITION_ZLIB
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -758,11 +873,11 @@ func TestParseFFDtoGzipCompressWrongDefinition(t *testing.T) {
 	compressType := 1
 	ffDefinition := FF_DEFINITION_ZLIB
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		CompressType:          common.IntRef(compressType),
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
@@ -778,10 +893,10 @@ func TestParseFFDtoGzipCompressWrongDefinition(t *testing.T) {
 func TestParseFFDtoCompressTypeNil(t *testing.T) {
 	ffDefinition := FF_DEFINITION_ZLIB
 	data := genericMessageData{
-		Type:                  dtos.UpdateTypeSplitChange,
-		ChangeNumber:          123,
-		PreviousChangeNumber:  1,
-		FeatureFlagDefinition: common.StringRef(ffDefinition),
+		Type:                 dtos.UpdateTypeSplitChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		Definition:           common.StringRef(ffDefinition),
 	}
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{

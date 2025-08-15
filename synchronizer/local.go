@@ -32,9 +32,12 @@ type LocalConfig struct {
 }
 
 // NewLocal creates new Local
-func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
+func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, ruleBasedStorage storage.RuleBasedSegmentsStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
+	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets))
+	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedStorage)
+
 	workers := Workers{
-		SplitUpdater: split.NewSplitUpdater(splitStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets)),
+		SplitUpdater: splitUpdater,
 	}
 	if cfg.SegmentDirectory != "" {
 		workers.SegmentUpdater = segment.NewSegmentUpdater(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)

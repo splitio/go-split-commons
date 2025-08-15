@@ -7,12 +7,15 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v6/service"
 	"github.com/splitio/go-split-commons/v6/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestLocalSyncAllError(t *testing.T) {
@@ -33,14 +36,38 @@ func TestLocalSyncAllError(t *testing.T) {
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) { return -1, nil },
 	}
-	segmentMockStorage := mocks.MockSegmentStorage{}
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
 	appMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
+
+	flagSetFilter := flagsets.NewFlagSetFilter(nil)
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
+	splitUpdater := split.NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitAPI.SplitFetcher,
+		logger,
+		telemetryMockStorage,
+		appMonitorMock,
+		flagSetFilter,
+	)
+	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
+
+	workers := Workers{
+		SplitUpdater: splitUpdater,
+	}
+
+	syncForTest := &Local{
+		splitTasks: SplitTasks{},
+		workers:    workers,
+		logger:     logger,
+	}
+
 	err := syncForTest.SyncAll()
 	if err == nil {
 		t.Error("It should return error")
@@ -86,6 +113,9 @@ func TestLocalSyncAllOk(t *testing.T) {
 	}
 	var notifyEventCalled int64
 	segmentMockStorage := mocks.MockSegmentStorage{}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
@@ -95,7 +125,8 @@ func TestLocalSyncAllOk(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
+
+	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
 	if err != nil {
 		t.Error("It should not return error")
@@ -140,6 +171,9 @@ func TestLocalPeriodicFetching(t *testing.T) {
 		},
 	}
 	segmentMockStorage := mocks.MockSegmentStorage{}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
@@ -150,7 +184,8 @@ func TestLocalPeriodicFetching(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
+
+	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 1500)
 	if atomic.LoadInt64(&splitFetchCalled) != 1 {

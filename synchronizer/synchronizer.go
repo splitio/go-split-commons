@@ -233,7 +233,7 @@ func (s *SynchronizerImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.
 // SynchronizeFeatureFlags syncs featureFlags
 func (s *SynchronizerImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	result, err := s.workers.SplitUpdater.SynchronizeFeatureFlags(ffChange)
-	s.synchronizeSegmentsAfterSplitSync(result.ReferencedSegments)
+	s.synchronizeSegmentsAfterSplitAndRBSync(result.ReferencedSegments)
 	s.synchronizeLargeSegmentsAfterSplitSync(result.ReferencedLargeSegments)
 	return err
 }
@@ -268,7 +268,7 @@ func (s *SynchronizerImpl) filterCachedSegments(segmentsReferenced []string) []s
 	return toRet
 }
 
-func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitSync(referencedSegments []string) {
+func (s *SynchronizerImpl) synchronizeSegmentsAfterSplitAndRBSync(referencedSegments []string) {
 	for _, segment := range s.filterCachedSegments(referencedSegments) {
 		go s.SynchronizeSegment(segment, nil) // send segment to workerpool (queue is bypassed)
 	}

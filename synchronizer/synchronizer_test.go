@@ -16,6 +16,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/service/api"
 	httpMocks "github.com/splitio/go-split-commons/v6/service/mocks"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory"
+	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	storageMock "github.com/splitio/go-split-commons/v6/storage/mocks"
 	syncMocks "github.com/splitio/go-split-commons/v6/synchronizer/mocks"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/event"
@@ -27,6 +28,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
 
 func validReqParams(t *testing.T, fetchOptions service.RequestParams) {
@@ -38,6 +40,15 @@ func validReqParams(t *testing.T, fetchOptions service.RequestParams) {
 	if req.URL.Query().Get("since") != "-1" {
 		t.Error("Wrong since")
 	}
+}
+
+func createSplitUpdater(splitMockStorage storageMock.MockSplitStorage, splitAPI api.SplitAPI, logger logging.LoggerInterface, telemetryMockStorage storageMock.MockTelemetryStorage, appMonitorMock hcMock.MockApplicationMonitor) split.Updater {
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
+
+	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	return splitUpdater
 }
 
 func TestSyncAllErrorSplits(t *testing.T) {
@@ -65,8 +76,13 @@ func TestSyncAllErrorSplits(t *testing.T) {
 		},
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
+	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:       splitUpdater,
 		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, storageMock.MockSegmentStorage{}, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
@@ -148,7 +164,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:       createSplitUpdater(splitMockStorage, splitAPI, logger, telemetryMockStorage, appMonitorMock),
 		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
@@ -252,7 +268,7 @@ func TestSyncAllOk(t *testing.T) {
 
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:       createSplitUpdater(splitMockStorage, splitAPI, logger, telemetryMockStorage, appMonitorMock),
 		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
@@ -356,7 +372,7 @@ func TestPeriodicFetching(t *testing.T) {
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:       createSplitUpdater(splitMockStorage, splitAPI, logger, telemetryMockStorage, appMonitorMock),
 		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
@@ -480,7 +496,7 @@ func TestPeriodicRecording(t *testing.T) {
 	}
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:       createSplitUpdater(splitMockStorage, splitAPI, logger, telemetryMockStorage, appMonitorMock),
 		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:      event.NewEventRecorderSingle(eventMockStorage, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		ImpressionRecorder: impression.NewRecorderSingle(impressionMockStorage, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
@@ -542,8 +558,11 @@ func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
 	telemetryMockStorage := storageMock.MockTelemetryStorage{}
 	appMonitorMock := hcMock.MockApplicationMonitor{}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -595,8 +614,11 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 	telemetryMockStorage := storageMock.MockTelemetryStorage{}
 	appMonitorMock := hcMock.MockApplicationMonitor{}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -655,8 +677,11 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -737,8 +762,12 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -805,9 +834,12 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 	hcMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {},
 	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -859,8 +891,8 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 			return 1, nil
 		},
 		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
-			if changeNumber != 2 {
-				t.Error("It should be 2")
+			if changeNumber != 5 {
+				t.Error("It should be 5")
 			}
 			atomic.AddInt64(&updateCalled, 1)
 		},
@@ -869,13 +901,18 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
+		RecordUpdatesFromSSECall: func(updateType int) {},
 	}
 	hcMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {},
 	}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
 	}
 	splitTasks := SplitTasks{
@@ -899,7 +936,7 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 		t.Error("It should be running")
 	}
 
-	if c := atomic.LoadInt64(&splitFetchCalled); c != 1 {
+	if c := atomic.LoadInt64(&splitFetchCalled); c != 0 {
 		t.Error("should have been called once. got: ", c)
 	}
 	if u := atomic.LoadInt64(&updateCalled); u != 1 {
@@ -923,8 +960,11 @@ func TestLocalKill(t *testing.T) {
 			}
 		},
 	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater: split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, storageMock.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater: split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, storageMock.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil)),
 	}
 	splitTasks := SplitTasks{
 		SplitSyncTask: tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
@@ -932,7 +972,6 @@ func TestLocalKill(t *testing.T) {
 	syncForTest := NewSynchronizer(conf.AdvancedConfig{}, splitTasks, workers, logger, nil)
 	syncForTest.LocalKill("split", "default_treatment", 123456789)
 }
-
 func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	var ffUpdateCalled int64
 	var segmentUpdateCalled int64
@@ -976,6 +1015,7 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 				t.Error("the segment name should be segment1")
 			}
 			return -1, nil
+
 		},
 		UpdateCall: func(name string, toAdd *set.ThreadUnsafeSet, toRemove *set.ThreadUnsafeSet, changeNumber int64) error {
 			atomic.AddInt64(&segmentUpdateCalled, 1)
@@ -996,8 +1036,11 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+
 	workers := Workers{
-		SplitUpdater:      split.NewSplitUpdater(splitMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
+		SplitUpdater:      split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil)),
 		SegmentUpdater:    segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 		EventRecorder:     event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
 		TelemetryRecorder: telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
