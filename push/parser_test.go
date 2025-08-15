@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-toolkit/v5/common"
+	"github.com/splitio/go-toolkit/v5/datautils"
 	"github.com/splitio/go-toolkit/v5/logging"
 	sseMocks "github.com/splitio/go-toolkit/v5/sse/mocks"
 )
@@ -42,7 +43,8 @@ func TestParseSplitUpdate(t *testing.T) {
 
 	logger := logging.NewLogger(nil)
 	parser := &NotificationParserImpl{
-		logger: logger,
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
 		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
 			if u.ChangeNumber() != 123 {
 				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
@@ -304,6 +306,119 @@ func TestParseInstantFFCompressTypeGreaterTwo(t *testing.T) {
 	}
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestParseRuleBasedSegmentUpdate(t *testing.T) {
+	// Test case 1: With rule-based segment data
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			ruleBasedSegment := dtos.RuleBasedSegmentDTO{
+				Name:         "test-segment",
+				ChangeNumber: 123,
+				Conditions: []dtos.RuleBasedConditionDTO{
+					{
+						ConditionType: "WHITELIST",
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{},
+						},
+					},
+				},
+			}
+			ruleBasedJSON, _ := json.Marshal(ruleBasedSegment)
+			base64JSON, _ := datautils.Encode(ruleBasedJSON, datautils.Base64)
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                 dtos.UpdateTypeRuleBasedChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 100,
+				CompressType:         common.IntRef(0),
+				Definition:           common.StringRef(base64JSON),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
+		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
+			}
+			if u.UpdateType() != dtos.UpdateTypeRuleBasedChange {
+				t.Error("update type should be RB_SEGMENT_UPDATE. Is: ", u.UpdateType())
+			}
+			if u.RuleBasedSegment() == nil {
+				t.Error("rule-based segment should not be nil")
+			}
+			if u.RuleBasedSegment().Name != "test-segment" {
+				t.Error("rule-based segment name should be test-segment. Is: ", u.RuleBasedSegment().Name)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+
+	// Test case 2: Without rule-based segment data
+	eventNoSegment := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:         dtos.UpdateTypeRuleBasedChange,
+				ChangeNumber: 123,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_splits",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	parserNoSegment := &NotificationParserImpl{
+		logger:    logger,
+		dataUtils: NewDataUtilsImpl(),
+		onSplitUpdate: func(u *dtos.SplitChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.Channel() != "sarasa_splits" {
+				t.Error(CHANNEL_SHOULD_BE, u.Channel())
+			}
+			if u.UpdateType() != dtos.UpdateTypeSplitChange {
+				t.Error("update type should be SPLIT_UPDATE. Is: ", u.UpdateType())
+			}
+			if u.RuleBasedSegment() != nil {
+				t.Error("rule-based segment should be nil")
+			}
+			return nil
+		},
+	}
+
+	if status, err := parserNoSegment.ParseAndForward(eventNoSegment); status != nil || err != nil {
 		t.Error(ERROR_SHOULD_RETURNED, err)
 	}
 }
