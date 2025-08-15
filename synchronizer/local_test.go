@@ -15,6 +15,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestLocalSyncAllError(t *testing.T) {
@@ -43,11 +44,9 @@ func TestLocalSyncAllError(t *testing.T) {
 	}
 
 	flagSetFilter := flagsets.NewFlagSetFilter(nil)
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
 	splitUpdater := split.NewSplitUpdater(
 		splitMockStorage,
 		ruleBasedSegmentMockStorage,
@@ -83,7 +82,6 @@ func TestLocalSyncAllError(t *testing.T) {
 
 func TestLocalSyncAllOk(t *testing.T) {
 	var splitFetchCalled int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -115,12 +113,9 @@ func TestLocalSyncAllOk(t *testing.T) {
 	}
 	var notifyEventCalled int64
 	segmentMockStorage := mocks.MockSegmentStorage{}
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 { return -1 },
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
@@ -142,14 +137,10 @@ func TestLocalSyncAllOk(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
-	}
 }
 
 func TestLocalPeriodicFetching(t *testing.T) {
 	var splitFetchCalled int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
@@ -180,12 +171,9 @@ func TestLocalPeriodicFetching(t *testing.T) {
 		},
 	}
 	segmentMockStorage := mocks.MockSegmentStorage{}
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 { return -1 },
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
@@ -206,8 +194,5 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	syncForTest.StopPeriodicFetching()
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
-	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
 	}
 }

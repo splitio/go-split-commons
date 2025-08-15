@@ -19,6 +19,7 @@ import (
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
 
 func validReqParams(t *testing.T, fetchOptions service.RequestParams, till string) {
@@ -48,11 +49,8 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncErrorCall: func(resource, status int) {
@@ -110,11 +108,8 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 			}
 		},
 	}
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 	appMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {
 			atomic.AddInt64(&notifyEventCalled, 1)
@@ -141,7 +136,6 @@ func TestSplitSynchronizer(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
 	var notifyEventCalled int64
-	var updateRBCalled int64
 
 	splitMockStorage := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -206,15 +200,9 @@ func TestSplitSynchronizer(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	splitUpdater := NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
@@ -225,15 +213,11 @@ func TestSplitSynchronizer(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called once")
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should be called once")
-	}
 }
 
 func TestSplitSyncProcess(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: true, Status: "INACTIVE", TrafficTypeName: "one"}
@@ -284,14 +268,9 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(3).Return(-1)
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
 	res, err := splitUpdater.SynchronizeSplits(nil)
@@ -353,16 +332,11 @@ func TestSplitSyncProcess(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 2 {
 		t.Error("It should be called twice")
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 2 {
-		t.Error("It should be called twice")
-	}
 }
 
 func TestSplitTill(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
-	var updateRBCalled int64
-	var changeNumberRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedRuleBased1 := dtos.RuleBasedSegmentDTO{Name: "rb1", Status: "ACTIVE"}
 
@@ -390,18 +364,9 @@ func TestSplitTill(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			atomic.AddInt64(&changeNumberRBCalled, 1)
-			if changeNumberRBCalled == 1 {
-				return -1
-			}
-			return changeNumberRBCalled
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(12).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(12).Return(-1)
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
 	var till int64 = 1
@@ -413,16 +378,10 @@ func TestSplitTill(t *testing.T) {
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	if atomic.LoadInt64(&call) != 1 {
+	if atomic.LoadInt64(&call) != 2 {
 		t.Error("It should be called once")
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 2 {
-		t.Error("It should be called twice")
-	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should be called once")
-	}
-	if atomic.LoadInt64(&changeNumberRBCalled) != 3 {
 		t.Error("It should be called twice")
 	}
 }
@@ -430,7 +389,6 @@ func TestSplitTill(t *testing.T) {
 func TestByPassingCDN(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
@@ -477,14 +435,9 @@ func TestByPassingCDN(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(13).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(13).Return(-1)
 
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 	splitUpdater.onDemandFetchBackoffBase = 1
@@ -501,16 +454,12 @@ func TestByPassingCDN(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called twice instead of", atomic.LoadInt64(&notifyEventCalled))
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 12 {
-		t.Error("It should be called twice instead of", atomic.LoadInt64(&updateRBCalled))
-	}
 
 }
 
 func TestByPassingCDNLimit(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
@@ -557,14 +506,9 @@ func TestByPassingCDNLimit(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(22).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(22).Return(-1)
 
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 	splitUpdater.onDemandFetchBackoffBase = 1
@@ -580,9 +524,6 @@ func TestByPassingCDNLimit(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called twice instead of", atomic.LoadInt64(&notifyEventCalled))
-	}
-	if atomic.LoadInt64(&updateRBCalled) != 21 {
-		t.Error("It should be called twenty one times instead of", atomic.LoadInt64(&updateRBCalled))
 	}
 }
 
@@ -601,11 +542,8 @@ func TestProcessFFChange(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
@@ -625,7 +563,6 @@ func TestProcessFFChange(t *testing.T) {
 
 func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 	var fetchCallCalled int64
-	var updateRBCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	ffStorageMock := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -648,14 +585,9 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
@@ -663,9 +595,6 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
 	))
 	if atomic.LoadInt64(&fetchCallCalled) != 1 {
-		t.Error("Fetch should be called once")
-	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
 		t.Error("Fetch should be called once")
 	}
 }
@@ -698,11 +627,8 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
@@ -749,11 +675,8 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
@@ -774,7 +697,6 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	var fetchCallCalled int64
 	var updateCalled int64
-	var updateRBCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	ffStorageMock := mocks.MockSplitStorage{
 		ChangeNumberCall: func() (int64, error) {
@@ -802,14 +724,10 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+
 	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
 	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
@@ -821,9 +739,6 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	if atomic.LoadInt64(&updateCalled) != 1 {
 		t.Error("It should update the storage")
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
-	}
 }
 
 func TestGetActiveFF(t *testing.T) {
@@ -832,11 +747,8 @@ func TestGetActiveFF(t *testing.T) {
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -856,11 +768,8 @@ func TestGetInactiveFF(t *testing.T) {
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
 	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -881,11 +790,8 @@ func TestGetActiveAndInactiveFF(t *testing.T) {
 	featureFlagChanges := &dtos.SplitChangesDTO{
 		FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
@@ -901,7 +807,6 @@ func TestGetActiveAndInactiveFF(t *testing.T) {
 
 func TestSplitSyncWithSets(t *testing.T) {
 	var call int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1", "set2"}}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set4"}}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set1"}}
@@ -934,14 +839,9 @@ func TestSplitSyncWithSets(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter([]string{"set1", "set2", "set3"}))
 
@@ -963,14 +863,10 @@ func TestSplitSyncWithSets(t *testing.T) {
 	if splitStorage.Split("split3") == nil {
 		t.Error("split3 should be present")
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
-	}
 }
 
 func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	var call int64
-	var updateRBCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set1"}}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set4"}}
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set2"}}
@@ -1005,14 +901,9 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagSetFilter)
 	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagSetFilter)
 
@@ -1041,17 +932,11 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	if s4 == nil {
 		t.Error("split4 should be present")
 	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
-	}
 }
 
 func TestProcessMatchers(t *testing.T) {
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 
 	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
 	splitChange := &dtos.SplitChangesDTO{

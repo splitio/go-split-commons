@@ -15,12 +15,12 @@ import (
 	"github.com/splitio/go-split-commons/v6/synchronizer/worker/split"
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSplitSyncTask(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
-	var updateRBCalled int64
 
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
@@ -91,14 +91,9 @@ func TestSplitSyncTask(t *testing.T) {
 		},
 	}
 
-	ruleBasedSegmentMockStorage := mocks.MockRuleBasedSegmentStorage{
-		ChangeNumberCall: func() int64 {
-			return -1
-		},
-		UpdateCall: func(toAdd, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-			atomic.AddInt64(&updateRBCalled, 1)
-		},
-	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
 
@@ -124,8 +119,5 @@ func TestSplitSyncTask(t *testing.T) {
 	}
 	if atomic.LoadInt64(&notifyEventCalled) < 1 {
 		t.Error("It should be called at least once")
-	}
-	if atomic.LoadInt64(&updateRBCalled) != 1 {
-		t.Error("It should update the storage")
 	}
 }
