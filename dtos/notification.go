@@ -221,10 +221,10 @@ func NewRuleBasedSegmentChangeUpdate(baseUpdate BaseUpdate, pcn *int64, ruleBase
 	}
 }
 
-// UpdateType always returns UpdateTypeSplitChange for SplitUpdate messages
+// UpdateType returns the type of update
 func (u *SplitChangeUpdate) UpdateType() string {
 	if u.ruleBasedSegment != nil {
-		return TypeRuleBased
+		return UpdateTypeRuleBasedChange
 	}
 	return UpdateTypeSplitChange
 }

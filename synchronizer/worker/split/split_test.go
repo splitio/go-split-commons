@@ -934,6 +934,277 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	}
 }
 
+func TestSynchronizeSplitsWithLowerTill(t *testing.T) {
+	// Mock split storage with higher change number
+	currentSince := int64(100)
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return currentSince, nil },
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {},
+	}
+
+	// Mock rule based segment storage with higher change number
+	currentRBSince := int64(150)
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(currentRBSince))
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return()
+
+	// Mock fetcher
+	var fetchCalled bool
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(requestParams *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+			fetchCalled = true
+			return &dtos.SplitChangesDTO{
+				FeatureFlags: dtos.FeatureFlagsDTO{
+					Since: currentSince,
+					Till:  currentSince,
+					Splits: []dtos.SplitDTO{},
+				},
+				RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+					Since: currentRBSince,
+					Till:  currentRBSince,
+					RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+				},
+			}, nil
+		},
+	}
+
+	// Mock telemetry storage
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, timestamp time.Time) {},
+	}
+
+	// Mock app monitor
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	// Create split updater
+	splitUpdater := NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+	)
+
+	// Test case 1: till is less than both currentSince and currentRBSince
+	till := int64(50)
+	result, err := splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when till is less than both currentSince and currentRBSince")
+	}
+
+	// Test case 2: till is equal to currentSince but less than currentRBSince
+	till = currentSince
+	result, err = splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error when till equals currentSince, got:", err)
+	}
+
+	if !fetchCalled {
+		t.Error("Fetcher should have been called when till equals currentSince (since currentRBSince is higher)")
+	}
+
+	// Test case 3: till is equal to currentRBSince but greater than currentSince
+	till = currentRBSince
+	result, err = splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error when till equals currentRBSince, got:", err)
+	}
+
+	if !fetchCalled {
+		t.Error("Fetcher should have been called when till equals currentRBSince")
+	}
+}
+
+func TestSynchronizeFeatureFlagsRuleBasedUpdate(t *testing.T) {
+	// Mock rule based segment storage with testify/mock
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+
+	// Mock split storage
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return 200, nil },
+		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {},
+		AllCall: func() []dtos.SplitDTO { return []dtos.SplitDTO{} },
+	}
+
+	// Mock fetcher
+	var fetchCalled bool
+	var fetchCount int
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(requestParams *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+			fetchCalled = true
+			fetchCount++
+			if fetchCount == 1 {
+				return &dtos.SplitChangesDTO{
+					FeatureFlags: dtos.FeatureFlagsDTO{
+						Since: 100,
+						Till:  200,
+						Splits: []dtos.SplitDTO{},
+					},
+					RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+						Since: 100,
+						Till:  200,
+						RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+					},
+				}, nil
+			}
+			return &dtos.SplitChangesDTO{
+				FeatureFlags: dtos.FeatureFlagsDTO{
+					Since: 200,
+					Till:  200,
+					Splits: []dtos.SplitDTO{},
+				},
+				RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+					Since: 200,
+					Till:  200,
+					RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+				},
+			}, nil
+		},
+	}
+
+	// Mock telemetry storage
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall: func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, timestamp time.Time) {},
+		RecordSyncErrorCall: func(resource, status int) {},
+	}
+
+	// Mock app monitor
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	// Create split updater
+	splitUpdater := NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+	)
+
+	// Test case 1: When rule-based segment change number is lower than current
+	lowerChangeNumber := int64(100)
+	ruleBasedSegment := &dtos.RuleBasedSegmentDTO{
+		Name:         "test-segment",
+		ChangeNumber: lowerChangeNumber,
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{},
+				},
+			},
+		},
+	}
+	baseMessage := dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
+	baseUpdate := dtos.NewBaseUpdate(baseMessage, lowerChangeNumber)
+	ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, nil, ruleBasedSegment)
+
+	// Reset fetchCalled
+	fetchCalled = false
+
+	// Set up expectations for the first test case
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(200))
+	ruleBasedSegmentMockStorage.On("Update",
+		mock.MatchedBy(func(toAdd []dtos.RuleBasedSegmentDTO) bool { return len(toAdd) == 0 }),
+		mock.MatchedBy(func(toRemove []dtos.RuleBasedSegmentDTO) bool { return len(toRemove) == 0 }),
+		int64(200)).Return()
+
+	result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result.RequiresFetch {
+		t.Error("Expected RequiresFetch to be false when change number is lower than current")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when change number is lower than current")
+	}
+
+	// Test case 2: When rule-based segment change number is higher than current
+	higherChangeNumber := int64(300)
+	ruleBasedSegment = &dtos.RuleBasedSegmentDTO{
+		Name:         "test-segment",
+		ChangeNumber: higherChangeNumber,
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{},
+				},
+			},
+		},
+	}
+	baseMessage = dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
+	baseUpdate = dtos.NewBaseUpdate(baseMessage, higherChangeNumber)
+	ffChange = *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, nil, ruleBasedSegment)
+
+	// Reset fetchCalled
+	fetchCalled = false
+
+	// Set up expectations for the second test case
+	ruleBasedSegmentMockStorage = &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(100))
+	ruleBasedSegmentMockStorage.On("Update",
+		mock.MatchedBy(func(toAdd []dtos.RuleBasedSegmentDTO) bool { return len(toAdd) == 1 && toAdd[0].ChangeNumber == higherChangeNumber }),
+		mock.MatchedBy(func(toRemove []dtos.RuleBasedSegmentDTO) bool { return len(toRemove) == 0 }),
+		higherChangeNumber).Return()
+
+	// Create a new split updater for the second test case
+	splitUpdater = NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+	)
+
+	result, err = splitUpdater.SynchronizeFeatureFlags(&ffChange)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result.RequiresFetch {
+		t.Error("Expected RequiresFetch to be false when change number is higher than current")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when change number is higher than current")
+	}
+
+	if result.NewChangeNumber != higherChangeNumber {
+		t.Errorf("Expected NewChangeNumber to be %d, got %d", higherChangeNumber, result.NewChangeNumber)
+	}
+
+	// Verify that the rule-based segment storage was updated with the higher change number
+	ruleBasedSegmentMockStorage.AssertCalled(t, "Update", mock.Anything, mock.Anything, higherChangeNumber)
+}
+
 func TestProcessMatchers(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
