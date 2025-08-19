@@ -278,10 +278,10 @@ type RuleBasedSegmentStorageConsumer interface {
 	ChangeNumber() int64
 	All() []dtos.RuleBasedSegmentDTO
 	RuleBasedSegmentNames() []string
-	Count() int
-	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
 	Contains(ruleBasedSegmentNames []string) bool
 	GetSegments() []string
+	Count() int
+	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
 }
 
 // RuleBasedSegmentsStorage defines the interface for a per-user rule-based segments storage
