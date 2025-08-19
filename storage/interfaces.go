@@ -271,8 +271,6 @@ type RuleBasedSegmentStorageProducer interface {
 	SetChangeNumber(name string, till int64)
 	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
 	Clear()
-	Contains(ruleBasedSegmentNames []string) bool
-	GetSegments() []string
 }
 
 // RuleBasedStorageConsumer interface should be implemented by all structs that ofer reading rule-based segments
@@ -282,6 +280,8 @@ type RuleBasedSegmentStorageConsumer interface {
 	RuleBasedSegmentNames() []string
 	Count() int
 	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
+	Contains(ruleBasedSegmentNames []string) bool
+	GetSegments() []string
 }
 
 // RuleBasedSegmentsStorage defines the interface for a per-user rule-based segments storage
