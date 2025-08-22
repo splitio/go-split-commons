@@ -28,6 +28,147 @@ var jsonSplitWithOldTill = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":
 
 var jsonSplitWithOldRBSTill = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":50,"t":50}}`)
 
+var jsonSplitWithRBSDefaultTill = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":25,"t":25}}`)
+
+var jsonSplitWithRBSEmptySegments = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[],"s":50,"t":50}}`)
+
+var jsonSplitWithRBSNilSegments = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":null,"s":50,"t":50}}`)
+
+var jsonSplitWithRBSDifferentSegments = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":true}]}}]}],"s":50,"t":50}}`)
+
+var jsonSplitWithRBSNoHash = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":50,"t":50}}`)
+
+var jsonSplitWithRBSHashMatch = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":50,"t":50}}`)
+
+func TestProcessSplitJson(t *testing.T) {
+	file, err := ioutil.TempFile("", "localhost_test-*.json")
+	if err != nil {
+		t.Error("should not fail to open temp file. Got: ", err)
+	}
+	defer os.Remove(file.Name())
+
+	// Test case 1: RBS with defaultTill (-1)
+	if _, err := file.Write(jsonSplitWithRBSDefaultTill); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	if err := file.Sync(); err != nil {
+		t.Error("syncing the file should not fail")
+	}
+
+	logger := logging.NewLogger(nil)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
+
+	// First fetch - RBS has defaultTill (-1)
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+		return
+	}
+
+	// Since RBS has defaultTill, both since/till should be updated to changeNumber
+	if res.RuleBasedSegments.Since != 25 || res.RuleBasedSegments.Till != 25 {
+		t.Error("Expected RBS since/till to be 25 (change number), got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+
+	// Test case 2: RBS with different hash and till = 50
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSNoHash, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 25 (less than till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when change number is less than till, got:", err)
+		return
+	}
+
+	// Since RBS has different hash and till > changeNumber, since should be updated to till
+	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+
+	// Test case 3: RBS with same hash and till = 50
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSHashMatch, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 75 (greater than till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(75))
+	if err == nil {
+		t.Error("Expected error when change number is greater than till")
+		return
+	}
+
+	// Test case 4: RBS with same hash and till = 50
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSHashMatch, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 50 (equal to till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(50))
+	if err != nil {
+		t.Error("Expected no error when change number equals till, got:", err)
+		return
+	}
+
+	// Since RBS has same hash and till = changeNumber, since should be updated to till
+	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+
+	// Test case 5: RBS with empty segments
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSEmptySegments, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 25 (less than till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when change number is less than till, got:", err)
+		return
+	}
+
+	// Since RBS has empty segments, since should be updated to till
+	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+
+	// Test case 6: RBS with nil segments
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSNilSegments, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 25 (less than till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when change number is less than till, got:", err)
+		return
+	}
+
+	// Since RBS has nil segments, since should be updated to till
+	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+
+	// Test case 7: RBS with different segments
+	if err := ioutil.WriteFile(file.Name(), jsonSplitWithRBSDifferentSegments, 0644); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	// Fetch with change number = 25 (less than till)
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when change number is less than till, got:", err)
+		return
+	}
+
+	// Since RBS has different segments, since should be updated to till
+	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	}
+}
+
 func TestLocalSplitFetcher(t *testing.T) {
 	file, err := ioutil.TempFile("", "localhost_test")
 	if err != nil {
