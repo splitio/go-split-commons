@@ -11,8 +11,14 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 	if splitChange.FeatureFlags.Till < -1 {
 		splitChange.FeatureFlags.Till = -1
 	}
+	if splitChange.RuleBasedSegments.Till < -1 {
+		splitChange.RuleBasedSegments.Till = -1
+	}
 	if splitChange.FeatureFlags.Since < -1 || splitChange.FeatureFlags.Since > splitChange.FeatureFlags.Till {
 		splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
+	}
+	if splitChange.RuleBasedSegments.Since < -1 || splitChange.RuleBasedSegments.Since > splitChange.RuleBasedSegments.Till {
+		splitChange.RuleBasedSegments.Since = splitChange.RuleBasedSegments.Till
 	}
 	var splitResult []dtos.SplitDTO
 	for i := 0; i < len(splitChange.FeatureFlags.Splits); i++ {
@@ -54,7 +60,26 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		}
 		splitResult = append(splitResult, split)
 	}
+	var ruleBasedSegmentResult []dtos.RuleBasedSegmentDTO
+	for i := 0; i < len(splitChange.RuleBasedSegments.RuleBasedSegments); i++ {
+		ruleBased := splitChange.RuleBasedSegments.RuleBasedSegments[i]
+		if ruleBased.Name == "" {
+			continue
+		}
+		if ruleBased.TrafficTypeName == "" {
+			ruleBased.TrafficTypeName = "user"
+		}
+		if ruleBased.Status == "" || ruleBased.Status != "ARCHIVED" && ruleBased.Status != "ACTIVE" {
+			ruleBased.Status = "ACTIVE"
+		}
+		if ruleBased.ChangeNumber < 0 {
+			ruleBased.ChangeNumber = 0
+		}
+		ruleBasedSegmentResult = append(ruleBasedSegmentResult, ruleBased)
+	}
+
 	splitChange.FeatureFlags.Splits = splitResult
+	splitChange.RuleBasedSegments.RuleBasedSegments = ruleBasedSegmentResult
 	return &splitChange
 }
 

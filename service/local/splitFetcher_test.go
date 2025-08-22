@@ -20,6 +20,8 @@ var jsonTest_5 = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1",
 var jsonTest = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-2}}`)
 var jsonSplitWithoutName = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]},{"trafficTypeName":"user","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":-1}}`)
 var jsonSplitMatcherEmpty = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{}}],"s":-1,"t":-1}}`)
+var jsonSplitWithRuleBasedSegment = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":-1,"t":-1}}`)
+
 var jsonSplitSanitization = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":1000,"status":"ACTIVE","killed":false,"changeNumber":1675443537882,"algo":9,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":2323}}`)
 
 func TestLocalSplitFetcher(t *testing.T) {
@@ -307,6 +309,114 @@ func TestSplitMatchersEmpty(t *testing.T) {
 
 	if split.Conditions[0].MatcherGroup.Matchers[0].KeySelector.TrafficType != "user" {
 		t.Error("the matcher type should be user. Got: ", split.Conditions[0].MatcherGroup.Matchers[0].KeySelector.TrafficType)
+	}
+}
+
+func TestSplitWithRuleBasedSegment(t *testing.T) {
+	file, err := ioutil.TempFile("", "localhost_test-*.json")
+	if err != nil {
+		t.Error("should not fail to open temp file. Got: ", err)
+	}
+	defer os.Remove(file.Name())
+
+	if _, err := file.Write(jsonSplitWithRuleBasedSegment); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	if err := file.Sync(); err != nil {
+		t.Error("syncing the file should not fail")
+	}
+
+	logger := logging.NewLogger(nil)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
+
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
+	if err != nil {
+		t.Error("fetching should not fail")
+		return
+	}
+
+	if len(res.FeatureFlags.Splits) != 1 {
+		t.Error("should have 1 split, got:", len(res.FeatureFlags.Splits))
+		return
+	}
+
+	split := res.FeatureFlags.Splits[0]
+	if split.Name != "SPLIT_WITH_RULE" {
+		t.Error("Expected split name SPLIT_WITH_RULE, got", split.Name)
+	}
+
+	if len(split.Conditions) != 2 {
+		t.Error("Expected 2 conditions (rule based + default), got", len(split.Conditions))
+		return
+	}
+
+	// First condition should be our rule based segment condition
+	ruleBasedCondition := split.Conditions[0]
+	if len(ruleBasedCondition.MatcherGroup.Matchers) != 1 {
+		t.Error("Expected 1 matcher in first condition, got", len(ruleBasedCondition.MatcherGroup.Matchers))
+		return
+	}
+
+	ruleBasedMatcher := ruleBasedCondition.MatcherGroup.Matchers[0]
+	if ruleBasedMatcher.MatcherType != "IN_SEGMENT" {
+		t.Error("Expected matcher type IN_SEGMENT in first condition, got", ruleBasedMatcher.MatcherType)
+	}
+
+	if ruleBasedMatcher.UserDefinedSegment == nil {
+		t.Error("Expected non-nil UserDefinedSegment in first condition")
+		return
+	}
+
+	if ruleBasedMatcher.UserDefinedSegment.SegmentName != "test-segment" {
+		t.Error("Expected segment name test-segment in first condition, got", ruleBasedMatcher.UserDefinedSegment.SegmentName)
+	}
+
+	// Second condition should be the default ALL_KEYS condition
+	defaultCondition := split.Conditions[1]
+	if len(defaultCondition.MatcherGroup.Matchers) != 1 {
+		t.Error("Expected 1 matcher in default condition, got", len(defaultCondition.MatcherGroup.Matchers))
+		return
+	}
+
+	defaultMatcher := defaultCondition.MatcherGroup.Matchers[0]
+	if defaultMatcher.MatcherType != "ALL_KEYS" {
+		t.Error("Expected matcher type ALL_KEYS in default condition, got", defaultMatcher.MatcherType)
+	}
+
+	// Verify rule based segments
+	if len(res.RuleBasedSegments.RuleBasedSegments) != 1 {
+		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments.RuleBasedSegments))
+		return
+	}
+
+	ruleBasedSegment := res.RuleBasedSegments.RuleBasedSegments[0]
+	if ruleBasedSegment.Name != "test-segment" {
+		t.Error("Expected rule based segment name test-segment, got", ruleBasedSegment.Name)
+	}
+
+	if ruleBasedSegment.TrafficTypeName != "user" {
+		t.Error("Expected traffic type user, got", ruleBasedSegment.TrafficTypeName)
+	}
+
+	if ruleBasedSegment.Status != "ACTIVE" {
+		t.Error("Expected status ACTIVE, got", ruleBasedSegment.Status)
+	}
+
+	if len(ruleBasedSegment.Conditions) != 1 {
+		t.Error("Expected 1 condition in rule based segment, got", len(ruleBasedSegment.Conditions))
+		return
+	}
+
+	rbsCondition := ruleBasedSegment.Conditions[0]
+	if len(rbsCondition.MatcherGroup.Matchers) != 1 {
+		t.Error("Expected 1 matcher in rule based segment condition, got", len(rbsCondition.MatcherGroup.Matchers))
+		return
+	}
+
+	rbsMatcher := rbsCondition.MatcherGroup.Matchers[0]
+	if rbsMatcher.MatcherType != "ALL_KEYS" {
+		t.Error("Expected matcher type ALL_KEYS in rule based segment, got", rbsMatcher.MatcherType)
 	}
 }
 
