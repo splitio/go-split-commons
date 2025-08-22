@@ -24,6 +24,10 @@ var jsonSplitWithRuleBasedSegment = []byte(`{"ff":{"d":[{"trafficTypeName":"user
 
 var jsonSplitSanitization = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":1000,"status":"ACTIVE","killed":false,"changeNumber":1675443537882,"algo":9,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":-1,"t":2323}}`)
 
+var jsonSplitWithOldTill = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_1","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"ALL_KEYS","negate":false,"userDefinedSegmentMatcherData":null,"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":0},{"treatment":"off","size":100}],"label":"default rule"}]}],"s":1,"t":50}}`)
+
+var jsonSplitWithOldRBSTill = []byte(`{"ff":{"d":[{"trafficTypeName":"user","name":"SPLIT_WITH_RULE","trafficAllocation":100,"trafficAllocationSeed":-1780071202,"seed":-1442762199,"status":"ACTIVE","killed":false,"defaultTreatment":"off","changeNumber":1675443537882,"algo":2,"configurations":{},"conditions":[{"conditionType":"ROLLOUT","matcherGroup":{"combiner":"AND","matchers":[{"keySelector":{"trafficType":"user","attribute":null},"matcherType":"IN_SEGMENT","negate":false,"userDefinedSegmentMatcherData":{"segmentName":"test-segment"},"whitelistMatcherData":null,"unaryNumericMatcherData":null,"betweenMatcherData":null,"booleanMatcherData":null,"dependencyMatcherData":null,"stringMatcherData":null}]},"partitions":[{"treatment":"on","size":100}],"label":"rule based segment"}]}],"s":-1,"t":-1},"rbs":{"d":[{"name":"test-segment","trafficTypeName":"user","status":"ACTIVE","changeNumber":1675443537882,"conditions":[{"matcherGroup":{"combiner":"AND","matchers":[{"matcherType":"ALL_KEYS","negate":false}]}}]}],"s":50,"t":50}}`)
+
 func TestLocalSplitFetcher(t *testing.T) {
 	file, err := ioutil.TempFile("", "localhost_test")
 	if err != nil {
@@ -417,6 +421,108 @@ func TestSplitWithRuleBasedSegment(t *testing.T) {
 	rbsMatcher := rbsCondition.MatcherGroup.Matchers[0]
 	if rbsMatcher.MatcherType != "ALL_KEYS" {
 		t.Error("Expected matcher type ALL_KEYS in rule based segment, got", rbsMatcher.MatcherType)
+	}
+}
+
+func TestSplitWithOldTill(t *testing.T) {
+	file, err := ioutil.TempFile("", "localhost_test-*.json")
+	if err != nil {
+		t.Error("should not fail to open temp file. Got: ", err)
+	}
+	defer os.Remove(file.Name())
+
+	if _, err := file.Write(jsonSplitWithOldTill); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	if err := file.Sync(); err != nil {
+		t.Error("syncing the file should not fail")
+	}
+
+	logger := logging.NewLogger(nil)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
+
+	// Test with a change number higher than the till value
+	_, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(100))
+	if err == nil {
+		t.Error("Expected error when till is less than change number, got nil")
+	} else if err.Error() != "ignoring change, the till is less than storage change number" {
+		t.Error("Unexpected error message:", err.Error())
+	}
+
+	// Test with a change number equal to the till value
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(50))
+	if err != nil {
+		t.Error("Expected no error when till equals change number, got:", err)
+	}
+	if res.FeatureFlags.Till != 50 {
+		t.Error("Expected till value 50, got:", res.FeatureFlags.Till)
+	}
+
+	// Test with a change number less than the till value
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when till is greater than change number, got:", err)
+	}
+	if res.FeatureFlags.Till != 25 {
+		t.Error("Expected till value to match change number 25, got:", res.FeatureFlags.Till)
+	}
+}
+
+func TestSplitWithOldRBSTill(t *testing.T) {
+	file, err := ioutil.TempFile("", "localhost_test-*.json")
+	if err != nil {
+		t.Error("should not fail to open temp file. Got: ", err)
+	}
+	defer os.Remove(file.Name())
+
+	if _, err := file.Write(jsonSplitWithOldRBSTill); err != nil {
+		t.Error("writing to the file should not fail")
+	}
+
+	if err := file.Sync(); err != nil {
+		t.Error("syncing the file should not fail")
+	}
+
+	logger := logging.NewLogger(nil)
+	fetcher := NewFileSplitFetcher(file.Name(), logger, SplitFileFormatJSON)
+
+	// Test with a change number higher than the RBS till value
+	_, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(100))
+	if err == nil {
+		t.Error("Expected error when RBS till is less than change number, got nil")
+	} else if err.Error() != "ignoring change, the till is less than storage change number" {
+		t.Error("Unexpected error message:", err.Error())
+	}
+
+	// Test with a change number equal to the RBS till value
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(50))
+	if err != nil {
+		t.Error("Expected no error when RBS till equals change number, got:", err)
+	}
+	if res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS till value 50, got:", res.RuleBasedSegments.Till)
+	}
+
+	// Test with a change number less than the RBS till value
+	res, err = fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(25))
+	if err != nil {
+		t.Error("Expected no error when RBS till is greater than change number, got:", err)
+	}
+	if res.RuleBasedSegments.Till != 50 {
+		t.Error("Expected RBS till value to remain at 50, got:", res.RuleBasedSegments.Till)
+	}
+	if res.RuleBasedSegments.Since != 50 {
+		t.Error("Expected RBS since value to be 50, got:", res.RuleBasedSegments.Since)
+	}
+
+	// Verify that the rule based segments are present
+	if len(res.RuleBasedSegments.RuleBasedSegments) != 1 {
+		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments.RuleBasedSegments))
+	}
+	ruleBasedSegment := res.RuleBasedSegments.RuleBasedSegments[0]
+	if ruleBasedSegment.Name != "test-segment" {
+		t.Error("Expected rule based segment name test-segment, got", ruleBasedSegment.Name)
 	}
 }
 
