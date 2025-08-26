@@ -3,6 +3,7 @@ package mocks
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -36,9 +37,9 @@ func (m *MockRuleBasedSegmentStorage) Contains(ruleBasedSegmentNames []string) b
 }
 
 // GetSegments mock
-func (m *MockRuleBasedSegmentStorage) GetSegments() []string {
+func (m *MockRuleBasedSegmentStorage) GetSegments() *set.ThreadUnsafeSet {
 	args := m.Called()
-	return args.Get(0).([]string)
+	return args.Get(0).(*set.ThreadUnsafeSet)
 }
 
 // Count mock
@@ -54,9 +55,9 @@ func (m *MockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 }
 
 // SetChangeNumber mock
-func (m *MockRuleBasedSegmentStorage) SetChangeNumber(name string, till int64) {
-	m.Called(name, till)
-	return
+func (m *MockRuleBasedSegmentStorage) SetChangeNumber(till int64) error {
+	m.Called(till)
+	return nil
 }
 
 // Update mock

@@ -268,7 +268,7 @@ type LargeSegmentsStorage interface {
 
 // RuleBasedSegmentStorageProducer interface should be implemented by all structs that offer writing rule-based segments
 type RuleBasedSegmentStorageProducer interface {
-	SetChangeNumber(name string, till int64)
+	SetChangeNumber(till int64) error
 	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
 	Clear()
 }
@@ -279,8 +279,7 @@ type RuleBasedSegmentStorageConsumer interface {
 	All() []dtos.RuleBasedSegmentDTO
 	RuleBasedSegmentNames() []string
 	Contains(ruleBasedSegmentNames []string) bool
-	GetSegments() []string
-	Count() int
+	GetSegments() *set.ThreadUnsafeSet
 	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
 }
 
