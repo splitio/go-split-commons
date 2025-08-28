@@ -235,6 +235,7 @@ func TestSplitWithoutConfigurations(t *testing.T) {
 		&mockStorage{},
 		nil,
 		nil,
+		nil,
 		logger)
 
 	key := "test"
@@ -254,6 +255,7 @@ func TestSplitWithtConfigurations(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		&mockStorage{},
+		nil,
 		nil,
 		nil,
 		logger)
@@ -277,6 +279,7 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 		&mockStorage{},
 		nil,
 		nil,
+		nil,
 		logger)
 
 	key := "test"
@@ -298,6 +301,7 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 		&mockStorage{},
 		nil,
 		nil,
+		nil,
 		logger)
 
 	key := "test"
@@ -317,6 +321,7 @@ func TestMultipleEvaluations(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		&mockStorage{},
+		nil,
 		nil,
 		nil,
 		logger)
@@ -374,6 +379,7 @@ func TestNoConditionMatched(t *testing.T) {
 		splitStorage,
 		nil,
 		nil,
+		nil,
 		logger)
 
 	key := "test"
@@ -417,6 +423,7 @@ func TestEvaluationByFlagSets(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		mockedStorage,
+		nil,
 		nil,
 		nil,
 		logger)
@@ -479,6 +486,7 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		mockedStorage,
+		nil,
 		nil,
 		nil,
 		logger)

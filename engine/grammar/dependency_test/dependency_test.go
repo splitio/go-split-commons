@@ -116,6 +116,7 @@ func TestDependencyMatcher(t *testing.T) {
 		},
 	}, nil, 1)
 	segmentStorage := mutexmap.NewMMSegmentStorage()
+	ruleBasedSegmentStorage := mutexmap.NewRuleBasedSegmentsStorage()
 
 	ctx := injection.NewContext()
 	ctx.AddDependency(
@@ -123,6 +124,7 @@ func TestDependencyMatcher(t *testing.T) {
 		evaluator.NewEvaluator(
 			splitStorage,
 			segmentStorage,
+			ruleBasedSegmentStorage,
 			engine.NewEngine(logger),
 			logger,
 		),

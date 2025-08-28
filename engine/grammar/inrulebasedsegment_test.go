@@ -44,7 +44,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 			segment: &dtos.RuleBasedSegmentDTO{
 				Excluded: dtos.ExcludedDTO{
 					Keys:     []string{"key1", "key2"},
-					Segments: []dtos.ExcluededSegmentDTO{},
+					Segments: []dtos.ExcludedSegmentDTO{},
 				},
 			},
 			expectedResult: false,
@@ -55,7 +55,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 			segment: &dtos.RuleBasedSegmentDTO{
 				Excluded: dtos.ExcludedDTO{
 					Keys: []string{},
-					Segments: []dtos.ExcluededSegmentDTO{
+					Segments: []dtos.ExcludedSegmentDTO{
 						{Name: "segment2", Type: dtos.TypeStandard},
 					},
 				},
@@ -68,7 +68,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 			segment: &dtos.RuleBasedSegmentDTO{
 				Excluded: dtos.ExcludedDTO{
 					Keys: []string{},
-					Segments: []dtos.ExcluededSegmentDTO{
+					Segments: []dtos.ExcludedSegmentDTO{
 						{Name: "segment3", Type: dtos.TypeRuleBased},
 					},
 				},
