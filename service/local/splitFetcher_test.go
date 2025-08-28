@@ -277,6 +277,33 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 	}
 }
 
+func TestLocalSplitFetcherJsonWithRbs(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	fetcher := NewFileSplitFetcher("../../testdata/splitChange_mock_1.json", logger, SplitFileFormatJSON)
+
+	res, err := fetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
+	if err != nil {
+		t.Error("fetching should not fail. Got: ", err)
+	}
+
+	if res.FeatureFlags.Since != 10 || res.FeatureFlags.Till != 10 {
+		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	}
+
+	if len(res.FeatureFlags.Splits) != 1 {
+		t.Error("should have 1 splits. has: ", res.FeatureFlags.Splits)
+	}
+
+	if res.FeatureFlags.Splits[0].Name != "rbs_split" {
+		t.Error("DTO mal formed")
+	}
+
+	if res.FeatureFlags.Splits[0].Configurations == nil {
+		t.Error("DTO mal formed")
+	}
+}
+
 func TestLocalSplitFetcherJsonTest1(t *testing.T) {
 	file, err := ioutil.TempFile("", "localhost_test-*.json")
 	if err != nil {

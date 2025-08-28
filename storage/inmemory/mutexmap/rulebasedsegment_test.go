@@ -34,7 +34,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 			},
 		},
 		Excluded: dtos.ExcludedDTO{
-			Segments: []dtos.ExcluededSegmentDTO{
+			Segments: []dtos.ExcludedSegmentDTO{
 				{
 					Name: "excluded1",
 					Type: dtos.TypeStandard,
@@ -107,7 +107,7 @@ func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 	ruleBased := dtos.RuleBasedSegmentDTO{
 		Name: "rule1",
 		Excluded: dtos.ExcludedDTO{
-			Segments: []dtos.ExcluededSegmentDTO{
+			Segments: []dtos.ExcludedSegmentDTO{
 				{
 					Name: "excluded1",
 					Type: dtos.TypeStandard,

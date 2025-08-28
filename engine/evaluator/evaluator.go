@@ -38,24 +38,27 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage   storage.SplitStorageConsumer
-	segmentStorage storage.SegmentStorageConsumer
-	eng            *engine.Engine
-	logger         logging.LoggerInterface
+	splitStorage            storage.SplitStorageConsumer
+	segmentStorage          storage.SegmentStorageConsumer
+	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer
+	eng                     *engine.Engine
+	logger                  logging.LoggerInterface
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
 func NewEvaluator(
 	splitStorage storage.SplitStorageConsumer,
 	segmentStorage storage.SegmentStorageConsumer,
+	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer,
 	eng *engine.Engine,
 	logger logging.LoggerInterface,
 ) *Evaluator {
 	return &Evaluator{
-		splitStorage:   splitStorage,
-		segmentStorage: segmentStorage,
-		eng:            eng,
-		logger:         logger,
+		splitStorage:            splitStorage,
+		segmentStorage:          segmentStorage,
+		eng:                     eng,
+		logger:                  logger,
+		ruleBasedSegmentStorage: ruleBasedSegmentStorage,
 	}
 }
 
@@ -69,6 +72,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	ctx := injection.NewContext()
 	ctx.AddDependency("segmentStorage", e.segmentStorage)
 	ctx.AddDependency("evaluator", e)
+	ctx.AddDependency("ruleBasedSegmentStorage", e.ruleBasedSegmentStorage)
 
 	split := grammar.NewSplit(splitDto, ctx, e.logger)
 

@@ -26,7 +26,8 @@ type FileSplitFetcher struct {
 	lastHash   []byte
 	lastHashRB []byte
 	logger     logging.LoggerInterface
-	mutex      sync.Mutex
+	mutexFF    sync.Mutex
+	mutexRB    sync.Mutex
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
@@ -36,7 +37,8 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface, fileF
 		fileFormat: fileFormat,
 		logger:     logger,
 		reader:     NewFileReader(),
-		mutex:      sync.Mutex{},
+		mutexFF:    sync.Mutex{},
+		mutexRB:    sync.Mutex{},
 	}
 }
 
@@ -242,8 +244,8 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	currH.Write(splitsJson)
 	// calculate the json sha
 	currSum := currH.Sum(nil)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.mutexFF.Lock()
+	defer s.mutexFF.Unlock()
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
 	if bytes.Equal(currSum, s.lastHash) || splitChange.FeatureFlags.Till == defaultTill {
 		s.lastHash = currSum
@@ -260,8 +262,8 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 		currHRB.Write(ruleBasedJson)
 		// calculate the json sha
 		currSumRB := currHRB.Sum(nil)
-		s.mutex.Lock()
-		defer s.mutex.Unlock()
+		s.mutexRB.Lock()
+		defer s.mutexRB.Unlock()
 		//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
 		if bytes.Equal(currSumRB, s.lastHashRB) || splitChange.RuleBasedSegments.Till == defaultTill {
 			s.lastHashRB = currSumRB

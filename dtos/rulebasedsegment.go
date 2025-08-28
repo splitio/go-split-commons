@@ -18,11 +18,11 @@ type RuleBasedSegmentDTO struct {
 }
 
 type ExcludedDTO struct {
-	Keys     []string              `json:"keys"`
-	Segments []ExcluededSegmentDTO `json:"segments"`
+	Keys     []string             `json:"keys"`
+	Segments []ExcludedSegmentDTO `json:"segments"`
 }
 
-type ExcluededSegmentDTO struct {
+type ExcludedSegmentDTO struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
