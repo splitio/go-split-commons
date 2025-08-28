@@ -2,7 +2,8 @@ package specs
 
 import (
 	"fmt"
-	"slices"
+
+	"golang.org/x/exp/slices"
 )
 
 const (
