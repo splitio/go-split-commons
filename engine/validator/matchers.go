@@ -6,9 +6,20 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
+
+type Validator struct {
+	ffAcceptedMatchers []string
+	rbAcceptedMatchers []string
+}
+
+func NewValidator(ffAcceptedMatchers []string, rbAcceptedMatchers []string) Validator {
+	return Validator{
+		ffAcceptedMatchers: ffAcceptedMatchers,
+		rbAcceptedMatchers: rbAcceptedMatchers,
+	}
+}
 
 // unsupportedMatcherConditionReplacement is the default condition to be used when a matcher is not supported
 var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.ConditionDTO{{
@@ -30,10 +41,11 @@ var unsupportedMatcherRBConditionReplacement []dtos.RuleBasedConditionDTO = []dt
 	},
 }}
 
-func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
+func (v Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
-			_, err := grammar.BuildMatcher(&matcher, &injection.Context{}, logger)
+			ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, v.ffAcceptedMatchers, v.rbAcceptedMatchers, logger)
+			_, err := ruleBuilder.BuildMatcher(&matcher)
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return true
 			}
@@ -42,10 +54,11 @@ func shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.Log
 	return false
 }
 
-func shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
+func (v Validator) shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
-			_, err := grammar.BuildMatcher(&matcher, &injection.Context{}, logger)
+			ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, v.ffAcceptedMatchers, v.rbAcceptedMatchers, logger)
+			_, err := ruleBuilder.BuildMatcher(&matcher)
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return true
 			}
@@ -55,15 +68,15 @@ func shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger 
 }
 
 // ProcessMatchers processes the matchers of a split and validates them
-func ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
-	if shouldOverrideConditions(split.Conditions, logger) {
+func (v Validator) ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
+	if v.shouldOverrideConditions(split.Conditions, logger) {
 		split.Conditions = unsupportedMatcherConditionReplacement
 	}
 }
 
 // ProcessMatchers processes the matchers of a rule-based and validates them
-func ProcessRBMatchers(ruleBased *dtos.RuleBasedSegmentDTO, logger logging.LoggerInterface) {
-	if shouldOverrideRBConditions(ruleBased.Conditions, logger) {
+func (v Validator) ProcessRBMatchers(ruleBased *dtos.RuleBasedSegmentDTO, logger logging.LoggerInterface) {
+	if v.shouldOverrideRBConditions(ruleBased.Conditions, logger) {
 		ruleBased.Conditions = unsupportedMatcherRBConditionReplacement
 	}
 }

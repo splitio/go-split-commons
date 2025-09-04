@@ -30,7 +30,9 @@ func TestInSegmentMatcher(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("segmentStorage", segmentStorage)
 
-	matcher, err := BuildMatcher(dto, ctx, logger)
+	ruleBuilder := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)

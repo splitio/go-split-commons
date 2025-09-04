@@ -57,7 +57,10 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matcher, err := BuildMatcher(tt.dto, ctx, logger)
+
+			ruleBuilder := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+			matcher, err := ruleBuilder.BuildMatcher(tt.dto)
 
 			if tt.wantErr {
 				assert.Error(t, err)

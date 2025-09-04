@@ -3,7 +3,6 @@ package grammar
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -17,12 +16,12 @@ type Condition struct {
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
-func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
+func NewCondition(cond *dtos.ConditionDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
 		partitions = append(partitions, Partition{PartitionData: part})
 	}
-	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, logger, ruleBuilder)
 	if err != nil {
 		//  At this point the only error forwarded is UnsupportedMatcherError
 		return nil, err
@@ -37,9 +36,9 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}, nil
 }
 
-func NewRBCondition(cond *dtos.RuleBasedConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
+func NewRBCondition(cond *dtos.RuleBasedConditionDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) (*Condition, error) {
 	partitions := make([]Partition, 0)
-	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, logger, ruleBuilder)
 	if err != nil {
 		//  At this point the only error forwarded is UnsupportedMatcherError
 		return nil, err
@@ -53,10 +52,10 @@ func NewRBCondition(cond *dtos.RuleBasedConditionDTO, ctx *injection.Context, lo
 	}, nil
 }
 
-func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) ([]MatcherInterface, error) {
+func processMatchers(condMatchers []dtos.MatcherDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) ([]MatcherInterface, error) {
 	matcherObjs := make([]MatcherInterface, 0)
 	for _, matcher := range condMatchers {
-		m, err := BuildMatcher(&matcher, ctx, logger)
+		m, err := ruleBuilder.BuildMatcher(&matcher)
 		if err == nil {
 			matcherObjs = append(matcherObjs, m)
 		} else {

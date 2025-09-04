@@ -43,6 +43,8 @@ type Evaluator struct {
 	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer
 	eng                     *engine.Engine
 	logger                  logging.LoggerInterface
+	featureFlagRules        []string
+	ruleBasedSegmentRules   []string
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
@@ -52,6 +54,8 @@ func NewEvaluator(
 	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer,
 	eng *engine.Engine,
 	logger logging.LoggerInterface,
+	featureFlagRules []string,
+	ruleBasedSegmentRules []string,
 ) *Evaluator {
 	return &Evaluator{
 		splitStorage:            splitStorage,
@@ -59,6 +63,8 @@ func NewEvaluator(
 		eng:                     eng,
 		logger:                  logger,
 		ruleBasedSegmentStorage: ruleBasedSegmentStorage,
+		featureFlagRules:        featureFlagRules,
+		ruleBasedSegmentRules:   ruleBasedSegmentRules,
 	}
 }
 
@@ -74,7 +80,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	ctx.AddDependency("evaluator", e)
 	ctx.AddDependency("ruleBasedSegmentStorage", e.ruleBasedSegmentStorage)
 
-	split := grammar.NewSplit(splitDto, ctx, e.logger)
+	split := grammar.NewSplit(splitDto, ctx, e.logger, grammar.NewRuleBuilder(ctx, e.segmentStorage, e.ruleBasedSegmentStorage, e.featureFlagRules, e.ruleBasedSegmentRules, e.logger))
 
 	if split.Killed() {
 		e.logger.Warning(fmt.Sprintf(

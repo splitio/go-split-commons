@@ -21,7 +21,9 @@ func TestMatcherConstruction(t *testing.T) {
 		},
 	}
 
-	matcher1, err := BuildMatcher(&dto1, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher1, err := ruleBuilder.BuildMatcher(&dto1)
 
 	if err != nil {
 		t.Error("Matcher construction shouldn't fail")
@@ -51,7 +53,7 @@ func TestMatcherConstruction(t *testing.T) {
 		},
 	}
 
-	matcher2, err := BuildMatcher(&dto2, nil, logger)
+	matcher2, err := ruleBuilder.BuildMatcher(&dto2)
 
 	if err == nil {
 		t.Error("Matcher construction shoul have failed for invalid matcher")
@@ -71,7 +73,10 @@ func TestMatcherConstruction(t *testing.T) {
 	}
 	ctx := injection.NewContext()
 	ctx.AddDependency("key1", "sampleString")
-	matcher3, err := BuildMatcher(&dto3, ctx, logger)
+
+	ruleBuilder1 := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher3, err := ruleBuilder1.BuildMatcher(&dto3)
 
 	if err != nil {
 		t.Error("There shouldn't have been any errors constructing the matcher")
@@ -106,7 +111,8 @@ func TestMatcherConstruction(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher4, err := BuildMatcher(dto4, nil, logger)
+
+	matcher4, err := ruleBuilder.BuildMatcher(dto4)
 	if err != nil {
 		t.Error("There shouldn't have been any errors constructing the matcher")
 	}

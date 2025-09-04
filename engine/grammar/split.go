@@ -21,19 +21,19 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
 		"AND")}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
-func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
+func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface, ruleBuilder RuleBuilder) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO, ctx, logger),
+		conditions: processConditions(splitDTO, ctx, logger, ruleBuilder),
 		splitData:  splitDTO,
 	}
 
 	return &split
 }
 
-func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface, ruleBuilder RuleBuilder) []*Condition {
 	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
-		condition, err := NewCondition(&cond, ctx, logger)
+		condition, err := NewCondition(&cond, logger, ruleBuilder)
 		if err != nil {
 			logger.Debug("Overriding conditions due unexpected matcher received")
 			return conditionReplacementUnsupportedMatcher

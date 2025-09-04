@@ -44,7 +44,9 @@ func TestRegexMatcher(t *testing.T) {
 			},
 		}
 
-		matcher, err := BuildMatcher(dto, nil, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 			t.Error(err)

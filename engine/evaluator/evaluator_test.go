@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
@@ -236,7 +237,9 @@ func TestSplitWithoutConfigurations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest", nil)
@@ -258,7 +261,9 @@ func TestSplitWithtConfigurations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest2", nil)
@@ -280,7 +285,9 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest3", nil)
@@ -302,7 +309,9 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest4", nil)
@@ -324,7 +333,9 @@ func TestMultipleEvaluations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	splits := []string{"mysplittest", "mysplittest2", "mysplittest3", "mysplittest4", "mysplittest5"}
@@ -380,7 +391,9 @@ func TestNoConditionMatched(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "some", nil)
@@ -426,7 +439,9 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set1", "set2", "set3"}, nil)
 
 	if result.Evaluations["mysplittest"].Treatment != "off" {
@@ -489,7 +504,9 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		grammar.SyncProxyFeatureFlagsRules,
+		grammar.SyncProxyRuleBasedSegmentRules)
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set2"}, nil)
 
 	if len(result.Evaluations) != 0 {

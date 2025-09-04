@@ -5,7 +5,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,7 +47,7 @@ func TestConditionWrapperObject(t *testing.T) {
 		},
 	}
 
-	wrapped, err := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
 
 	if err != nil {
 		t.Error("err should be nil")
@@ -119,7 +118,7 @@ func TestAnotherWrapper(t *testing.T) {
 		},
 	}
 
-	wrapped, err := NewCondition(&condition1, nil, logger)
+	wrapped, err := NewCondition(&condition1, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
 	if err != nil {
 		t.Error("err should be nil")
 	}
@@ -189,7 +188,7 @@ func TestConditionUnsupportedMatcherWrapperObject(t *testing.T) {
 		},
 	}
 
-	_, err := NewCondition(&condition1, nil, logger)
+	_, err := NewCondition(&condition1, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
 
 	if err == nil {
 		t.Error("err should not be nil")
@@ -231,7 +230,7 @@ func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
 		},
 	}
 
-	condition, err := NewCondition(&condition1, nil, logger)
+	condition, err := NewCondition(&condition1, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
 
 	if err != nil {
 		t.Error("err should be nil")
@@ -307,11 +306,10 @@ func TestNewRBCondition(t *testing.T) {
 	}
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	ctx := injection.NewContext()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cond, err := NewRBCondition(tt.condition, ctx, logger)
+			cond, err := NewRBCondition(tt.condition, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
 
 			if tt.wantErr {
 				assert.Error(t, err)

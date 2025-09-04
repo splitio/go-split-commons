@@ -127,10 +127,13 @@ func TestDependencyMatcher(t *testing.T) {
 			ruleBasedSegmentStorage,
 			engine.NewEngine(logger),
 			logger,
+			grammar.SyncProxyFeatureFlagsRules,
+			grammar.SyncProxyRuleBasedSegmentRules,
 		),
 	)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.SyncProxyRuleBasedSegmentRules, logger)
 
-	matcher, err := grammar.BuildMatcher(dto, ctx, logger)
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -155,7 +158,7 @@ func TestDependencyMatcher(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err = grammar.BuildMatcher(dto, ctx, logger)
+	matcher, err = ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -241,7 +244,9 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t})
 
-	matcher, err := grammar.BuildMatcher(dto, ctx, logger)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)

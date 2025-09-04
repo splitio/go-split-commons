@@ -20,8 +20,9 @@ func TestBooleanMatcherTrue(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -56,8 +57,9 @@ func TestBooleanMatcherFalse(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
 
-	matcher, err := BuildMatcher(dto, nil, logger)
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)

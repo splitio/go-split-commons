@@ -25,7 +25,8 @@ func TestProcessRBMatchers(t *testing.T) {
 			},
 		},
 	}
-	ProcessRBMatchers(ruleBased, logging.NewLogger(nil))
+	validator := NewValidator(grammar.GoClientFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules)
+	validator.ProcessRBMatchers(ruleBased, logging.NewLogger(nil))
 	if len(ruleBased.Conditions) != 1 {
 		t.Error("Conditions should have been overridden")
 	}
@@ -51,7 +52,7 @@ func TestProcessRBMatchers(t *testing.T) {
 			},
 		},
 	}
-	ProcessRBMatchers(ruleBased, logging.NewLogger(nil))
+	validator.ProcessRBMatchers(ruleBased, logging.NewLogger(nil))
 	if len(ruleBased.Conditions) != 1 {
 		t.Error("Conditions should not have been overridden")
 	}
@@ -86,7 +87,8 @@ func TestProcessMatchers(t *testing.T) {
 			},
 		},
 	}
-	ProcessMatchers(split, logging.NewLogger(nil))
+	validator := NewValidator(grammar.GoClientFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules)
+	validator.ProcessMatchers(split, logging.NewLogger(nil))
 	if len(split.Conditions) != 1 {
 		t.Error("Conditions should have been overridden")
 	}
@@ -110,7 +112,7 @@ func TestProcessMatchers(t *testing.T) {
 			},
 		},
 	}
-	ProcessMatchers(split, logging.NewLogger(nil))
+	validator.ProcessMatchers(split, logging.NewLogger(nil))
 
 	if split.Conditions[0].ConditionType != grammar.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
