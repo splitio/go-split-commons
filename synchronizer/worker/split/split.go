@@ -81,6 +81,7 @@ func NewSplitUpdater(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
 	flagSetsFilter flagsets.FlagSetFilter,
+	ruleBuilder grammar.RuleBuilder,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -92,7 +93,7 @@ func NewSplitUpdater(
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 		flagSetsFilter:              flagSetsFilter,
 		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
-		validator:                   validator.NewValidator(grammar.GoClientFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules),
+		validator:                   validator.NewValidator(ruleBuilder),
 	}
 }
 

@@ -16,6 +16,15 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+
 func TestProperHashFunctionIsUsed(t *testing.T) {
 	eng := Engine{}
 
@@ -86,7 +95,7 @@ func TestTreatmentOnTrafficAllocation1(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -135,7 +144,7 @@ func TestTreatmentOnTrafficAllocation99(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -237,7 +246,7 @@ func TestEvaluations(t *testing.T) {
 		t.Error("Data was not added for testing consistency")
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -267,7 +276,7 @@ func TestNoConditionMatched(t *testing.T) {
 		Conditions:            []dtos.ConditionDTO{},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.GoClientRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
 
 	eng := Engine{}
 	eng.logger = logger

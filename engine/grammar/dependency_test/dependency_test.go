@@ -18,6 +18,15 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+
 type mockEvaluator struct {
 	t                    *testing.T
 	expectedBucketingKey string
@@ -127,11 +136,11 @@ func TestDependencyMatcher(t *testing.T) {
 			ruleBasedSegmentStorage,
 			engine.NewEngine(logger),
 			logger,
-			grammar.SyncProxyFeatureFlagsRules,
-			grammar.SyncProxyRuleBasedSegmentRules,
+			syncProxyFeatureFlagsRules,
+			syncProxyRuleBasedSegmentRules,
 		),
 	)
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -244,7 +253,7 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t})
 
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, grammar.SyncProxyFeatureFlagsRules, grammar.SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

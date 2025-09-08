@@ -10,14 +10,12 @@ import (
 )
 
 type Validator struct {
-	ffAcceptedMatchers []string
-	rbAcceptedMatchers []string
+	ruleBuilder grammar.RuleBuilder
 }
 
-func NewValidator(ffAcceptedMatchers []string, rbAcceptedMatchers []string) Validator {
+func NewValidator(ruleBuilder grammar.RuleBuilder) Validator {
 	return Validator{
-		ffAcceptedMatchers: ffAcceptedMatchers,
-		rbAcceptedMatchers: rbAcceptedMatchers,
+		ruleBuilder: ruleBuilder,
 	}
 }
 
@@ -44,8 +42,7 @@ var unsupportedMatcherRBConditionReplacement []dtos.RuleBasedConditionDTO = []dt
 func (v Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
-			ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, v.ffAcceptedMatchers, v.rbAcceptedMatchers, logger)
-			_, err := ruleBuilder.BuildMatcher(&matcher)
+			_, err := v.ruleBuilder.BuildMatcher(&matcher)
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return true
 			}
@@ -57,8 +54,7 @@ func (v Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logg
 func (v Validator) shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
-			ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, v.ffAcceptedMatchers, v.rbAcceptedMatchers, logger)
-			_, err := ruleBuilder.BuildMatcher(&matcher)
+			_, err := v.ruleBuilder.BuildMatcher(&matcher)
 			if _, ok := err.(datatypes.UnsupportedMatcherError); ok {
 				return true
 			}

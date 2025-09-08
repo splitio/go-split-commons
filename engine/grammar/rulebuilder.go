@@ -376,7 +376,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			dto.Negate,
 			dto.UserDefinedSegment.SegmentName,
 			attributeName,
-			NewRuleBuilder(r.ctx, r.segmentStorage, r.ruleBasedSegmentStorage, r.ffAcceptedMatchers, r.rbAcceptedMatchers, r.logger),
+			r,
 		)
 	default:
 		return nil, datatypes.UnsupportedMatcherError{

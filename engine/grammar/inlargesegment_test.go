@@ -10,6 +10,15 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+var SyncProxyFeatureFlagsRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
+	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString, MatcherTypeInSplitTreatment,
+	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
+	MatcherTypeInRuleBasedSegment}
+var SyncProxyRuleBasedSegmentRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
+	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString,
+	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
+	MatcherTypeInRuleBasedSegment}
+
 func TestInLargeSegmentMatcher(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 

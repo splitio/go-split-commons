@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
 	"github.com/splitio/go-split-commons/v6/service/api"
@@ -29,11 +30,14 @@ type LocalConfig struct {
 	SegmentDirectory string
 	RefreshEnabled   bool
 	FlagSets         []string
+	ffRulesAccepted  []string
+	rbRulesAccepted  []string
 }
 
 // NewLocal creates new Local
 func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, ruleBasedStorage storage.RuleBasedSegmentsStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
-	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets))
+	ruleBuilder := grammar.NewRuleBuilder(nil, segmentStorage, ruleBasedStorage, cfg.ffRulesAccepted, cfg.rbRulesAccepted, logger)
+	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets), ruleBuilder)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedStorage)
 
 	workers := Workers{

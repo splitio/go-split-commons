@@ -13,22 +13,6 @@ var ErrInvalidGTOESemver = errors.New("semver is required for GREATER_THAN_OR_EQ
 var ErrInvalidLTOESemver = errors.New("semver is required for LESS_THAN_OR_EQUAL_TO_SEMVER matcher type")
 var ErrInvalidLBetweenSemver = errors.New("semver is required for BETWEEN_SEMVER matcher type")
 var ErrInvalidLInListSemver = errors.New("semver is required for IN_LIST_SEMVER matcher type")
-var GoClientFeatureFlagsRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString, MatcherTypeInSplitTreatment,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver,
-	MatcherTypeInRuleBasedSegment}
-var GoClientRuleBasedSegmentRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver,
-	MatcherTypeInRuleBasedSegment}
-var SyncProxyFeatureFlagsRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString, MatcherTypeInSplitTreatment,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
-	MatcherTypeInRuleBasedSegment}
-var SyncProxyRuleBasedSegmentRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
-	MatcherTypeInRuleBasedSegment}
 
 const (
 	// MatcherTypeAllKeys string value
