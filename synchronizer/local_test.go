@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v6/service"
@@ -17,6 +18,15 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/mock"
 )
+
+var goClientFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
+	grammar.MatcherTypeInRuleBasedSegment}
+var goClientRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
+	grammar.MatcherTypeInRuleBasedSegment}
 
 func TestLocalSyncAllError(t *testing.T) {
 	var splitFetchCalled int64
@@ -46,7 +56,7 @@ func TestLocalSyncAllError(t *testing.T) {
 	flagSetFilter := flagsets.NewFlagSetFilter(nil)
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
-
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	splitUpdater := split.NewSplitUpdater(
 		splitMockStorage,
 		ruleBasedSegmentMockStorage,
@@ -55,6 +65,7 @@ func TestLocalSyncAllError(t *testing.T) {
 		telemetryMockStorage,
 		appMonitorMock,
 		flagSetFilter,
+		ruleBuilder,
 	)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 

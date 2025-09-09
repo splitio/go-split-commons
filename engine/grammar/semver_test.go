@@ -79,7 +79,9 @@ func TestEqualToSemverMatcher(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -103,7 +105,9 @@ func TestPatchDiffers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -127,7 +131,9 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -151,7 +157,9 @@ func TestPreReleaseShouldReturnFalseWhenSemverIsNil(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -174,7 +182,9 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -198,7 +208,9 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -222,7 +234,9 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 		t.Error(err)
@@ -241,7 +255,9 @@ func TestShouldReturnErrorWithNilSemver(t *testing.T) {
 		MatcherType: MatcherEqualToSemver,
 		String:      nil,
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -264,7 +280,9 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 			},
 		}
 
-		matcher, err := BuildMatcher(dto, nil, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -292,7 +310,9 @@ func TestGreaterThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
@@ -320,7 +340,9 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		matcher, err := BuildMatcher(dto, nil, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -344,7 +366,9 @@ func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      nil,
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -361,7 +385,9 @@ func TestLessThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
@@ -392,7 +418,9 @@ func TestBetweenSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		matcher, err := BuildMatcher(dto, nil, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
 			t.Error("There should be no errors when building the matcher")
 		}
@@ -419,7 +447,9 @@ func TestBetweenSemverWithNilSemvers(t *testing.T) {
 			End:   nil,
 		},
 	}
-	_, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
 		t.Error("There should be errors when building the matcher")
 	}
@@ -440,7 +470,9 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}
@@ -466,7 +498,9 @@ func TestInListSemvers(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -497,7 +531,9 @@ func TestInListSemversNotMatch(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should be no errors when building the matcher")
 	}
@@ -529,7 +565,9 @@ func TestInListInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	matcher, err := BuildMatcher(dto, nil, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+
+	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
 		t.Error("There should not be errors when building the matcher")
 	}

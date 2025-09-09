@@ -23,7 +23,7 @@ func (m *mockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 
 func TestNewInRuleBasedSegmentMatcher(t *testing.T) {
 	attributeName := "attr1"
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName)
+	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
 
 	assert.NotNil(t, matcher)
 	assert.Equal(t, false, matcher.negate)
@@ -119,7 +119,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 				mockStorage.On("GetRuleBasedSegmentByName", "segment3").Return(nestedSegment, nil)
 			}
 
-			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil)
+			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
 			ctx := injection.NewContext()
 			ctx.AddDependency("ruleBasedSegmentStorage", mockStorage)
 			matcher.Context = ctx
@@ -134,7 +134,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 
 func TestInRuleBasedSegmentMatcher_MissingStorage(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil)
+	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
 	matcher.Context = injection.NewContext()
 	matcher.logger = logger
 

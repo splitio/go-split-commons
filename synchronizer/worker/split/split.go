@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/engine/validator"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/healthcheck/application"
@@ -68,6 +69,7 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffBase    int64
 	onDemandFetchBackoffMaxWait time.Duration
 	flagSetsFilter              flagsets.FlagSetFilter
+	validator                   validator.Validator
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -79,6 +81,7 @@ func NewSplitUpdater(
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
 	hcMonitor application.MonitorProducerInterface,
 	flagSetsFilter flagsets.FlagSetFilter,
+	ruleBuilder grammar.RuleBuilder,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -90,6 +93,7 @@ func NewSplitUpdater(
 		onDemandFetchBackoffMaxWait: onDemandFetchBackoffMaxWait,
 		flagSetsFilter:              flagSetsFilter,
 		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
+		validator:                   validator.NewValidator(ruleBuilder),
 	}
 }
 
@@ -272,7 +276,7 @@ func (s *UpdaterImpl) processFeatureFlagChanges(splitChanges *dtos.SplitChangesD
 	toAdd := make([]dtos.SplitDTO, 0, len(splitChanges.FeatureFlags.Splits))
 	for idx := range splitChanges.FeatureFlags.Splits {
 		if splitChanges.FeatureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(splitChanges.FeatureFlags.Splits[idx].Sets) {
-			validator.ProcessMatchers(&splitChanges.FeatureFlags.Splits[idx], s.logger)
+			s.validator.ProcessMatchers(&splitChanges.FeatureFlags.Splits[idx], s.logger)
 			toAdd = append(toAdd, splitChanges.FeatureFlags.Splits[idx])
 		} else {
 			toRemove = append(toRemove, splitChanges.FeatureFlags.Splits[idx])
@@ -357,7 +361,7 @@ func (s *UpdaterImpl) processRuleBasedSegmentChanges(splitChanges *dtos.SplitCha
 	segments := make([]string, 0)
 	for _, rbSegment := range splitChanges.RuleBasedSegments.RuleBasedSegments {
 		if rbSegment.Status == Active {
-			validator.ProcessRBMatchers(&rbSegment, s.logger)
+			s.validator.ProcessRBMatchers(&rbSegment, s.logger)
 			toAdd = append(toAdd, rbSegment)
 			segments = append(segments, s.getSegments(&rbSegment)...)
 		} else {

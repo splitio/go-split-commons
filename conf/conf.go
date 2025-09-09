@@ -88,6 +88,7 @@ type AdvancedConfig struct {
 	AuthSpecVersion        string
 	FlagsSpecVersion       string
 	LargeSegment           *LargeSegmentConfig
+	RulesConfig            *RulesConfig
 }
 
 type LargeSegmentConfig struct {
@@ -98,4 +99,9 @@ type LargeSegmentConfig struct {
 	UpdateQueueSize int64
 	QueueSize       int
 	RefreshRate     int
+}
+
+type RulesConfig struct {
+	FeatureFlagRules      []string
+	RuleBasedSegmentRules []string
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v6/storage/mocks"
@@ -11,6 +12,15 @@ import (
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
+
+var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
 
 type mockStorage struct{}
 
@@ -236,7 +246,9 @@ func TestSplitWithoutConfigurations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest", nil)
@@ -258,7 +270,9 @@ func TestSplitWithtConfigurations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest2", nil)
@@ -280,7 +294,9 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest3", nil)
@@ -302,7 +318,9 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest4", nil)
@@ -324,7 +342,9 @@ func TestMultipleEvaluations(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	splits := []string{"mysplittest", "mysplittest2", "mysplittest3", "mysplittest4", "mysplittest5"}
@@ -380,7 +400,9 @@ func TestNoConditionMatched(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "some", nil)
@@ -426,7 +448,9 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set1", "set2", "set3"}, nil)
 
 	if result.Evaluations["mysplittest"].Treatment != "off" {
@@ -489,7 +513,9 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 		nil,
 		nil,
 		nil,
-		logger)
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules)
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set2"}, nil)
 
 	if len(result.Evaluations) != 0 {
