@@ -39,7 +39,7 @@ var unsupportedMatcherRBConditionReplacement []dtos.RuleBasedConditionDTO = []dt
 	},
 }}
 
-func (v Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
+func (v *Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
 			_, err := v.ruleBuilder.BuildMatcher(&matcher)
@@ -51,7 +51,7 @@ func (v Validator) shouldOverrideConditions(conditions []dtos.ConditionDTO, logg
 	return false
 }
 
-func (v Validator) shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
+func (v *Validator) shouldOverrideRBConditions(conditions []dtos.RuleBasedConditionDTO, logger logging.LoggerInterface) bool {
 	for _, condition := range conditions {
 		for _, matcher := range condition.MatcherGroup.Matchers {
 			_, err := v.ruleBuilder.BuildMatcher(&matcher)
@@ -64,14 +64,14 @@ func (v Validator) shouldOverrideRBConditions(conditions []dtos.RuleBasedConditi
 }
 
 // ProcessMatchers processes the matchers of a split and validates them
-func (v Validator) ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
+func (v *Validator) ProcessMatchers(split *dtos.SplitDTO, logger logging.LoggerInterface) {
 	if v.shouldOverrideConditions(split.Conditions, logger) {
 		split.Conditions = unsupportedMatcherConditionReplacement
 	}
 }
 
 // ProcessMatchers processes the matchers of a rule-based and validates them
-func (v Validator) ProcessRBMatchers(ruleBased *dtos.RuleBasedSegmentDTO, logger logging.LoggerInterface) {
+func (v *Validator) ProcessRBMatchers(ruleBased *dtos.RuleBasedSegmentDTO, logger logging.LoggerInterface) {
 	if v.shouldOverrideRBConditions(ruleBased.Conditions, logger) {
 		ruleBased.Conditions = unsupportedMatcherRBConditionReplacement
 	}
