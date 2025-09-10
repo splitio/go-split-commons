@@ -15,13 +15,7 @@ type InLargeSegmentMatcher struct {
 
 // Match returns true if the key is in the matcher's segment
 func (m *InLargeSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	storage := m.largeSegmentStorage
-	if storage == nil {
-		m.logger.Error("InLargeSegmentMatcher: Unable to retrieve large segment storage!")
-		return false
-	}
-
-	isInLargeSegment, err := storage.IsInLargeSegment(m.name, key)
+	isInLargeSegment, err := m.largeSegmentStorage.IsInLargeSegment(m.name, key)
 	if err != nil {
 		m.logger.Error(fmt.Printf("InLargeSegmentMatcher: Large Segment %s not found", m.name))
 	}

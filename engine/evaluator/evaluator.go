@@ -10,7 +10,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/storage"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -38,11 +37,10 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage   storage.SplitStorageConsumer
-	segmentStorage storage.SegmentStorageConsumer
-	eng            *engine.Engine
-	logger         logging.LoggerInterface
-	ruleBuilder    grammar.RuleBuilder
+	splitStorage storage.SplitStorageConsumer
+	eng          *engine.Engine
+	logger       logging.LoggerInterface
+	ruleBuilder  grammar.RuleBuilder
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
@@ -56,13 +54,13 @@ func NewEvaluator(
 	featureFlagRules []string,
 	ruleBasedSegmentRules []string,
 ) *Evaluator {
-	return &Evaluator{
-		splitStorage:   splitStorage,
-		segmentStorage: segmentStorage,
-		eng:            eng,
-		logger:         logger,
-		ruleBuilder:    grammar.NewRuleBuilder(nil, segmentStorage, ruleBasedSegmentStorage, largeSegmentStorage, featureFlagRules, ruleBasedSegmentRules, logger),
+	e := &Evaluator{
+		splitStorage: splitStorage,
+		eng:          eng,
+		logger:       logger,
 	}
+	e.ruleBuilder = grammar.NewRuleBuilder(segmentStorage, ruleBasedSegmentStorage, largeSegmentStorage, featureFlagRules, ruleBasedSegmentRules, logger, e)
+	return e
 }
 
 func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, splitDto *dtos.SplitDTO, attributes map[string]interface{}) *Result {
@@ -72,11 +70,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		return &Result{Treatment: Control, Label: impressionlabels.SplitNotFound, Config: config}
 	}
 
-	ctx := injection.NewContext()
-	ctx.AddDependency("evaluator", e)
-	e.ruleBuilder.Ctx = ctx
-
-	split := grammar.NewSplit(splitDto, ctx, e.logger, e.ruleBuilder)
+	split := grammar.NewSplit(splitDto, e.logger, e.ruleBuilder)
 
 	if split.Killed() {
 		e.logger.Warning(fmt.Sprintf(

@@ -79,7 +79,7 @@ func TestEqualToSemverMatcher(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -105,7 +105,7 @@ func TestPatchDiffers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -131,7 +131,7 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -157,7 +157,7 @@ func TestPreReleaseShouldReturnFalseWhenSemverIsNil(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -182,7 +182,7 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -208,7 +208,7 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -234,7 +234,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -255,7 +255,7 @@ func TestShouldReturnErrorWithNilSemver(t *testing.T) {
 		MatcherType: MatcherEqualToSemver,
 		String:      nil,
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
@@ -280,7 +280,7 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 			},
 		}
 
-		ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
@@ -310,7 +310,7 @@ func TestGreaterThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -340,7 +340,7 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
@@ -366,7 +366,7 @@ func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      nil,
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
@@ -385,7 +385,7 @@ func TestLessThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		MatcherType: MatcherTypeLessThanOrEqualToSemver,
 		String:      &semvers,
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -418,7 +418,7 @@ func TestBetweenSemverMatcher(t *testing.T) {
 				Attribute: &attrName,
 			},
 		}
-		ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+		ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 		matcher, err := ruleBuilder.BuildMatcher(dto)
 		if err != nil {
@@ -447,7 +447,7 @@ func TestBetweenSemverWithNilSemvers(t *testing.T) {
 			End:   nil,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	_, err := ruleBuilder.BuildMatcher(dto)
 	if err == nil {
@@ -470,7 +470,7 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -498,7 +498,7 @@ func TestInListSemvers(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -531,7 +531,7 @@ func TestInListSemversNotMatch(t *testing.T) {
 		MatcherType: MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -565,7 +565,7 @@ func TestInListInvalidSemvers(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

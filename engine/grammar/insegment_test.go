@@ -26,7 +26,7 @@ func TestInSegmentMatcher(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	segmentStorage.Update("segmentito", segmentKeys, set.NewSet(), 123)
 
-	ruleBuilder := NewRuleBuilder(nil, segmentStorage, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(segmentStorage, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

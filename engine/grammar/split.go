@@ -5,7 +5,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -21,16 +20,16 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
 		"AND")}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
-func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface, ruleBuilder RuleBuilder) *Split {
+func NewSplit(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO, ctx, logger, ruleBuilder),
+		conditions: processConditions(splitDTO, logger, ruleBuilder),
 		splitData:  splitDTO,
 	}
 
 	return &split
 }
 
-func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface, ruleBuilder RuleBuilder) []*Condition {
+func processConditions(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) []*Condition {
 	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
 		condition, err := NewCondition(&cond, logger, ruleBuilder)

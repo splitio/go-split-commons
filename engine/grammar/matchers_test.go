@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,14 +50,13 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	ctx := injection.NewContext()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			ruleBuilder := NewRuleBuilder(ctx, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+			ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 			matcher, err := ruleBuilder.BuildMatcher(tt.dto)
 
@@ -87,8 +85,6 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 				assert.Nil(t, ruleBasedSegmentMatcher.attributeName)
 			}
 
-			// Check context and logger are set
-			assert.NotNil(t, ruleBasedSegmentMatcher.Context)
 			assert.NotNil(t, ruleBasedSegmentMatcher.logger)
 		})
 	}

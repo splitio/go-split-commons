@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -75,7 +74,6 @@ type MatcherInterface interface {
 
 // Matcher struct with added logic that wraps around a DTO
 type Matcher struct {
-	*injection.Context
 	negate        bool
 	attributeName *string
 	logger        logging.LoggerInterface

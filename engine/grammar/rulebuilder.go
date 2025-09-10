@@ -9,29 +9,32 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
 	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
+type dependencyEvaluator interface {
+	EvaluateDependency(key string, bucketingKey *string, feature string, attributes map[string]interface{}) string
+}
+
 type RuleBuilder struct {
-	Ctx                     *injection.Context
 	segmentStorage          storage.SegmentStorageConsumer
 	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer
 	largeSegmentStorage     storage.LargeSegmentStorageConsumer
 	ffAcceptedMatchers      []string
 	rbAcceptedMatchers      []string
 	logger                  logging.LoggerInterface
+	dependencyEvaluator     dependencyEvaluator
 }
 
-func NewRuleBuilder(ctx *injection.Context, segmentStorage storage.SegmentStorageConsumer, ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer, largeSegmentStorage storage.LargeSegmentStorageConsumer, ffAcceptedMatchers []string, rbAcceptedMatchers []string, logger logging.LoggerInterface) RuleBuilder {
+func NewRuleBuilder(segmentStorage storage.SegmentStorageConsumer, ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer, largeSegmentStorage storage.LargeSegmentStorageConsumer, ffAcceptedMatchers []string, rbAcceptedMatchers []string, logger logging.LoggerInterface, dedependencyEvaluator dependencyEvaluator) RuleBuilder {
 	return RuleBuilder{
-		Ctx:                     ctx,
 		segmentStorage:          segmentStorage,
 		ruleBasedSegmentStorage: ruleBasedSegmentStorage,
 		largeSegmentStorage:     largeSegmentStorage,
 		ffAcceptedMatchers:      ffAcceptedMatchers,
 		rbAcceptedMatchers:      rbAcceptedMatchers,
 		logger:                  logger,
+		dependencyEvaluator:     dedependencyEvaluator,
 	}
 }
 
@@ -254,6 +257,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			dto.Negate,
 			dto.Dependency.Split,
 			dto.Dependency.Treatments,
+			r.dependencyEvaluator,
 		)
 
 	case MatcherTypeEqualToBoolean:
@@ -386,10 +390,6 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 		return nil, datatypes.UnsupportedMatcherError{
 			Message: fmt.Sprintf("Unable to create matcher for matcher type: %s", dto.MatcherType),
 		}
-	}
-
-	if r.Ctx != nil {
-		r.Ctx.Inject(matcher.base())
 	}
 
 	matcher.base().logger = r.logger

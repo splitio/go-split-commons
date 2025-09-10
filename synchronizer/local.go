@@ -36,7 +36,7 @@ type LocalConfig struct {
 
 // NewLocal creates new Local
 func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, largeSegmentStorage storage.LargeSegmentsStorage, ruleBasedStorage storage.RuleBasedSegmentsStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
-	ruleBuilder := grammar.NewRuleBuilder(nil, segmentStorage, ruleBasedStorage, largeSegmentStorage, cfg.ffRulesAccepted, cfg.rbRulesAccepted, logger)
+	ruleBuilder := grammar.NewRuleBuilder(segmentStorage, ruleBasedStorage, largeSegmentStorage, cfg.ffRulesAccepted, cfg.rbRulesAccepted, logger, nil)
 	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets), ruleBuilder)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedStorage)
 

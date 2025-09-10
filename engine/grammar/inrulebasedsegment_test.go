@@ -6,7 +6,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/storage"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -24,7 +23,7 @@ func (m *mockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 
 func TestNewInRuleBasedSegmentMatcher(t *testing.T) {
 	attributeName := "attr1"
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName, NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
+	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil, nil))
 
 	assert.NotNil(t, matcher)
 	assert.Equal(t, false, matcher.negate)
@@ -121,7 +120,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 				mockStorage.On("GetRuleBasedSegmentByName", "segment3").Return(nestedSegment, nil)
 			}
 
-			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, segmentStorage, mockStorage, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
+			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(segmentStorage, mockStorage, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil))
 
 			matcher.logger = logger
 
@@ -130,15 +129,4 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 			mockStorage.AssertExpectations(t)
 		})
 	}
-}
-
-func TestInRuleBasedSegmentMatcher_MissingStorage(t *testing.T) {
-	logger := logging.NewLogger(&logging.LoggerOptions{})
-	segmentStorage := mutexmap.NewMMSegmentStorage()
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, segmentStorage, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
-	matcher.Context = injection.NewContext()
-	matcher.logger = logger
-
-	result := matcher.Match("key1", nil, nil)
-	assert.False(t, result)
 }

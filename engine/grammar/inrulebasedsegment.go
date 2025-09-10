@@ -29,13 +29,8 @@ func NewInRuleBasedSegmentMatcher(negate bool, name string, attributeName *strin
 
 // Match returns true if the key is in the matcher's rule-based segment
 func (m *InRuleBasedSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	storage := m.ruleBuilder.ruleBasedSegmentStorage
-	if storage == nil {
-		m.logger.Error("InRuleBasedSegmentMatcher: Unable to retrieve rule-based segment storage!")
-		return false
-	}
 
-	ruleBasedSegment, err := storage.GetRuleBasedSegmentByName(m.name)
+	ruleBasedSegment, err := m.ruleBuilder.ruleBasedSegmentStorage.GetRuleBasedSegmentByName(m.name)
 	if err != nil {
 		m.logger.Error(fmt.Printf("InRuleBasedSegmentMatcher: Rule-based Segment %s not found", m.name))
 	}
@@ -58,13 +53,11 @@ func (m *InRuleBasedSegmentMatcher) inExcludedSegment(ruleBasedSegment dtos.Rule
 		switch value.Type {
 		case dtos.TypeStandard:
 			segmentMatcher := NewInSegmentMatcher(false, value.Name, m.attributeName, m.ruleBuilder.segmentStorage)
-			segmentMatcher.Context = m.Context
 			segmentMatcher.logger = m.logger
 			return segmentMatcher.Match(key, attributes, bucketingKey)
 
 		case dtos.TypeRuleBased:
 			ruleBasedSegmentMatcher := NewInRuleBasedSegmentMatcher(false, value.Name, m.attributeName, m.ruleBuilder)
-			ruleBasedSegmentMatcher.Context = m.Context
 			ruleBasedSegmentMatcher.logger = m.logger
 			if ruleBasedSegmentMatcher.Match(key, attributes, bucketingKey) {
 				return true

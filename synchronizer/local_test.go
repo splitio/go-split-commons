@@ -57,7 +57,7 @@ func TestLocalSyncAllError(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger, nil)
 	splitUpdater := split.NewSplitUpdater(
 		splitMockStorage,
 		ruleBasedSegmentMockStorage,

@@ -14,7 +14,7 @@ func TestAllKeysMatcher(t *testing.T) {
 	dto := &dtos.MatcherDTO{
 		MatcherType: "ALL_KEYS",
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

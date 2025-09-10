@@ -15,13 +15,8 @@ type InSegmentMatcher struct {
 
 // Match returns true if the key is in the matcher's segment
 func (m *InSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	storage := m.segmentStorage
-	if storage == nil {
-		m.logger.Error("InSegmentMatcher: Unable to retrieve segment storage!")
-		return false
-	}
 
-	isInSegment, err := storage.SegmentContainsKey(m.segmentName, key)
+	isInSegment, err := m.segmentStorage.SegmentContainsKey(m.segmentName, key)
 	if err != nil {
 		m.logger.Error(fmt.Printf("InSegmentMatcher: Segment %s not found", m.segmentName))
 	}
