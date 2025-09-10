@@ -56,7 +56,8 @@ func TestLocalSyncAllError(t *testing.T) {
 	flagSetFilter := flagsets.NewFlagSetFilter(nil)
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	splitUpdater := split.NewSplitUpdater(
 		splitMockStorage,
 		ruleBasedSegmentMockStorage,
@@ -136,8 +137,8 @@ func TestLocalSyncAllOk(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
-
-	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, largeSegmentStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
 	if err != nil {
 		t.Error("It should not return error")
@@ -196,7 +197,8 @@ func TestLocalPeriodicFetching(t *testing.T) {
 		},
 	}
 
-	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, largeSegmentStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 1500)
 	if atomic.LoadInt64(&splitFetchCalled) != 1 {

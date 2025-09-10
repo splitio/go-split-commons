@@ -51,14 +51,14 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 			wantErr: false,
 		},
 	}
+	ctx := injection.NewContext()
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	ctx := injection.NewContext()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			ruleBuilder := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+			ruleBuilder := NewRuleBuilder(ctx, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
 
 			matcher, err := ruleBuilder.BuildMatcher(tt.dto)
 

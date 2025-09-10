@@ -21,7 +21,7 @@ func TestEndsWith(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

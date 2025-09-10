@@ -6,7 +6,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/storage"
 )
 
 // InRuleBasedsegmentMatcher matches if the key passed is in the rule-based segment which the matcher was constructed with
@@ -30,8 +29,8 @@ func NewInRuleBasedSegmentMatcher(negate bool, name string, attributeName *strin
 
 // Match returns true if the key is in the matcher's rule-based segment
 func (m *InRuleBasedSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	storage, ok := m.Context.Dependency("ruleBasedSegmentStorage").(storage.RuleBasedSegmentStorageConsumer)
-	if !ok {
+	storage := m.ruleBuilder.ruleBasedSegmentStorage
+	if storage == nil {
 		m.logger.Error("InRuleBasedSegmentMatcher: Unable to retrieve rule-based segment storage!")
 		return false
 	}
@@ -58,7 +57,7 @@ func (m *InRuleBasedSegmentMatcher) inExcludedSegment(ruleBasedSegment dtos.Rule
 	for _, value := range ruleBasedSegment.Excluded.Segments {
 		switch value.Type {
 		case dtos.TypeStandard:
-			segmentMatcher := NewInSegmentMatcher(false, value.Name, m.attributeName)
+			segmentMatcher := NewInSegmentMatcher(false, value.Name, m.attributeName, m.ruleBuilder.segmentStorage)
 			segmentMatcher.Context = m.Context
 			segmentMatcher.logger = m.logger
 			return segmentMatcher.Match(key, attributes, bucketingKey)

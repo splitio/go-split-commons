@@ -126,6 +126,7 @@ func TestDependencyMatcher(t *testing.T) {
 	}, nil, 1)
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	ruleBasedSegmentStorage := mutexmap.NewRuleBasedSegmentsStorage()
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
 	ctx := injection.NewContext()
 	ctx.AddDependency(
@@ -134,13 +135,14 @@ func TestDependencyMatcher(t *testing.T) {
 			splitStorage,
 			segmentStorage,
 			ruleBasedSegmentStorage,
+			largeSegmentStorage,
 			engine.NewEngine(logger),
 			logger,
 			syncProxyFeatureFlagsRules,
 			syncProxyRuleBasedSegmentRules,
 		),
 	)
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -253,7 +255,7 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 	ctx := injection.NewContext()
 	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t})
 
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

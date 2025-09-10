@@ -38,13 +38,11 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage            storage.SplitStorageConsumer
-	segmentStorage          storage.SegmentStorageConsumer
-	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer
-	eng                     *engine.Engine
-	logger                  logging.LoggerInterface
-	featureFlagRules        []string
-	ruleBasedSegmentRules   []string
+	splitStorage   storage.SplitStorageConsumer
+	segmentStorage storage.SegmentStorageConsumer
+	eng            *engine.Engine
+	logger         logging.LoggerInterface
+	ruleBuilder    grammar.RuleBuilder
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
@@ -52,19 +50,18 @@ func NewEvaluator(
 	splitStorage storage.SplitStorageConsumer,
 	segmentStorage storage.SegmentStorageConsumer,
 	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer,
+	largeSegmentStorage storage.LargeSegmentStorageConsumer,
 	eng *engine.Engine,
 	logger logging.LoggerInterface,
 	featureFlagRules []string,
 	ruleBasedSegmentRules []string,
 ) *Evaluator {
 	return &Evaluator{
-		splitStorage:            splitStorage,
-		segmentStorage:          segmentStorage,
-		eng:                     eng,
-		logger:                  logger,
-		ruleBasedSegmentStorage: ruleBasedSegmentStorage,
-		featureFlagRules:        featureFlagRules,
-		ruleBasedSegmentRules:   ruleBasedSegmentRules,
+		splitStorage:   splitStorage,
+		segmentStorage: segmentStorage,
+		eng:            eng,
+		logger:         logger,
+		ruleBuilder:    grammar.NewRuleBuilder(nil, segmentStorage, ruleBasedSegmentStorage, largeSegmentStorage, featureFlagRules, ruleBasedSegmentRules, logger),
 	}
 }
 
@@ -76,11 +73,10 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	}
 
 	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", e.segmentStorage)
 	ctx.AddDependency("evaluator", e)
-	ctx.AddDependency("ruleBasedSegmentStorage", e.ruleBasedSegmentStorage)
+	e.ruleBuilder.Ctx = ctx
 
-	split := grammar.NewSplit(splitDto, ctx, e.logger, grammar.NewRuleBuilder(ctx, e.segmentStorage, e.ruleBasedSegmentStorage, e.featureFlagRules, e.ruleBasedSegmentRules, e.logger))
+	split := grammar.NewSplit(splitDto, ctx, e.logger, e.ruleBuilder)
 
 	if split.Killed() {
 		e.logger.Warning(fmt.Sprintf(

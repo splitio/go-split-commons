@@ -14,19 +14,21 @@ import (
 )
 
 type RuleBuilder struct {
-	ctx                     *injection.Context
+	Ctx                     *injection.Context
 	segmentStorage          storage.SegmentStorageConsumer
 	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer
+	largeSegmentStorage     storage.LargeSegmentStorageConsumer
 	ffAcceptedMatchers      []string
 	rbAcceptedMatchers      []string
 	logger                  logging.LoggerInterface
 }
 
-func NewRuleBuilder(ctx *injection.Context, segmentStorage storage.SegmentStorageConsumer, ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer, ffAcceptedMatchers []string, rbAcceptedMatchers []string, logger logging.LoggerInterface) RuleBuilder {
+func NewRuleBuilder(ctx *injection.Context, segmentStorage storage.SegmentStorageConsumer, ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer, largeSegmentStorage storage.LargeSegmentStorageConsumer, ffAcceptedMatchers []string, rbAcceptedMatchers []string, logger logging.LoggerInterface) RuleBuilder {
 	return RuleBuilder{
-		ctx:                     ctx,
+		Ctx:                     ctx,
 		segmentStorage:          segmentStorage,
 		ruleBasedSegmentStorage: ruleBasedSegmentStorage,
+		largeSegmentStorage:     largeSegmentStorage,
 		ffAcceptedMatchers:      ffAcceptedMatchers,
 		rbAcceptedMatchers:      rbAcceptedMatchers,
 		logger:                  logger,
@@ -79,6 +81,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			dto.Negate,
 			dto.UserDefinedSegment.SegmentName,
 			attributeName,
+			r.segmentStorage,
 		)
 
 	case MatcherTypeWhitelist:
@@ -363,6 +366,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			dto.Negate,
 			dto.UserDefinedLargeSegment.LargeSegmentName,
 			attributeName,
+			r.largeSegmentStorage,
 		)
 	case MatcherTypeInRuleBasedSegment:
 		if dto.UserDefinedSegment == nil {
@@ -384,8 +388,8 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 		}
 	}
 
-	if r.ctx != nil {
-		r.ctx.Inject(matcher.base())
+	if r.Ctx != nil {
+		r.Ctx.Inject(matcher.base())
 	}
 
 	matcher.base().logger = r.logger

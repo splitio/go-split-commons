@@ -48,7 +48,8 @@ func createSplitUpdater(splitMockStorage storageMock.MockSplitStorage, splitAPI 
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	return splitUpdater
 }
@@ -81,7 +82,9 @@ func TestSyncAllErrorSplits(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	workers := Workers{
@@ -564,7 +567,9 @@ func TestSplitUpdateWorkerCNGreaterThanFFChange(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
@@ -620,8 +625,8 @@ func TestSplitUpdateWorkerStorageCNEqualsFFCN(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
-
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
@@ -684,8 +689,9 @@ func TestSplitUpdateWorkerFFPcnEqualsFFNotNil(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryStorage, appMonitorMock),
@@ -772,7 +778,9 @@ func TestSplitUpdateWorkerGetCNFromStorageError(t *testing.T) {
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
@@ -845,7 +853,9 @@ func TestSplitUpdateWorkerFFIsNil(t *testing.T) {
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
@@ -919,7 +929,8 @@ func TestSplitUpdateWorkerFFPcnDifferentStorageCN(t *testing.T) {
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:   split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, hcMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, hcMonitorMock),
@@ -972,7 +983,9 @@ func TestLocalKill(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater: split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, storageMock.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 	}
@@ -1049,7 +1062,9 @@ func TestSplitUpdateWithReferencedSegments(t *testing.T) {
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
 
-	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger)
 	workers := Workers{
 		SplitUpdater:      split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder),
 		SegmentUpdater:    segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),

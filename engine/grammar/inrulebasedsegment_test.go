@@ -5,6 +5,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,7 @@ func (m *mockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 
 func TestNewInRuleBasedSegmentMatcher(t *testing.T) {
 	attributeName := "attr1"
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
+	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", &attributeName, NewRuleBuilder(nil, nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
 
 	assert.NotNil(t, matcher)
 	assert.Equal(t, false, matcher.negate)
@@ -108,6 +109,7 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage := &mockRuleBasedSegmentStorage{}
 			mockStorage.On("GetRuleBasedSegmentByName", "segment1").Return(tt.segment, nil)
+			segmentStorage := mutexmap.NewMMSegmentStorage()
 
 			// For recursive rule-based segment test
 			if tt.name == "key in excluded rule-based segment" {
@@ -119,10 +121,8 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 				mockStorage.On("GetRuleBasedSegmentByName", "segment3").Return(nestedSegment, nil)
 			}
 
-			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
-			ctx := injection.NewContext()
-			ctx.AddDependency("ruleBasedSegmentStorage", mockStorage)
-			matcher.Context = ctx
+			matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, segmentStorage, mockStorage, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger))
+
 			matcher.logger = logger
 
 			result := matcher.Match(tt.key, nil, nil)
@@ -134,7 +134,8 @@ func TestInRuleBasedSegmentMatcher_Match(t *testing.T) {
 
 func TestInRuleBasedSegmentMatcher_MissingStorage(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
+	segmentStorage := mutexmap.NewMMSegmentStorage()
+	matcher := NewInRuleBasedSegmentMatcher(false, "segment1", nil, NewRuleBuilder(nil, segmentStorage, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, nil))
 	matcher.Context = injection.NewContext()
 	matcher.logger = logger
 

@@ -34,7 +34,7 @@ func TestProcessRBMatchers(t *testing.T) {
 			},
 		},
 	}
-	validator := NewValidator(grammar.NewRuleBuilder(nil, nil, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(nil)))
+	validator := NewValidator(grammar.NewRuleBuilder(nil, nil, nil, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(nil)))
 	validator.ProcessRBMatchers(ruleBased, logging.NewLogger(nil))
 	if len(ruleBased.Conditions) != 1 {
 		t.Error("Conditions should have been overridden")
@@ -96,7 +96,7 @@ func TestProcessMatchers(t *testing.T) {
 			},
 		},
 	}
-	validator := NewValidator(grammar.NewRuleBuilder(nil, nil, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(nil)))
+	validator := NewValidator(grammar.NewRuleBuilder(nil, nil, nil, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(nil)))
 	validator.ProcessMatchers(split, logging.NewLogger(nil))
 	if len(split.Conditions) != 1 {
 		t.Error("Conditions should have been overridden")

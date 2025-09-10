@@ -246,6 +246,7 @@ func TestSplitWithoutConfigurations(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules)
@@ -267,6 +268,7 @@ func TestSplitWithtConfigurations(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		&mockStorage{},
+		nil,
 		nil,
 		nil,
 		nil,
@@ -294,6 +296,7 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules)
@@ -318,6 +321,7 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules)
@@ -339,6 +343,7 @@ func TestMultipleEvaluations(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		&mockStorage{},
+		nil,
 		nil,
 		nil,
 		nil,
@@ -400,6 +405,7 @@ func TestNoConditionMatched(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules)
@@ -445,6 +451,7 @@ func TestEvaluationByFlagSets(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		mockedStorage,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -510,6 +517,7 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 
 	evaluator := NewEvaluator(
 		mockedStorage,
+		nil,
 		nil,
 		nil,
 		nil,
