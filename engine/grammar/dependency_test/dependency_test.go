@@ -14,7 +14,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -126,21 +125,20 @@ func TestDependencyMatcher(t *testing.T) {
 	}, nil, 1)
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	ruleBasedSegmentStorage := mutexmap.NewRuleBasedSegmentsStorage()
+	largeSegmentStorage := mutexmap.NewLargeSegmentsStorage()
 
-	ctx := injection.NewContext()
-	ctx.AddDependency(
-		"evaluator",
-		evaluator.NewEvaluator(
-			splitStorage,
-			segmentStorage,
-			ruleBasedSegmentStorage,
-			engine.NewEngine(logger),
-			logger,
-			syncProxyFeatureFlagsRules,
-			syncProxyRuleBasedSegmentRules,
-		),
+	evaluator := evaluator.NewEvaluator(
+		splitStorage,
+		segmentStorage,
+		ruleBasedSegmentStorage,
+		largeSegmentStorage,
+		engine.NewEngine(logger),
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
 	)
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, evaluator)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -250,10 +248,9 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 		},
 	}, nil, 1)
 
-	ctx := injection.NewContext()
-	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t})
+	evaluator := &mockEvaluator{expectedBucketingKey: "bucketingKey_1", t: t}
 
-	ruleBuilder := grammar.NewRuleBuilder(ctx, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, evaluator)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -264,6 +261,12 @@ func TestDependencyMatcherWithBucketingKey(t *testing.T) {
 	bucketingKey := "bucketingKey_1"
 	matcher.Match("asd", map[string]interface{}{"value": "something"}, &bucketingKey)
 
-	ctx.AddDependency("evaluator", &mockEvaluator{expectedBucketingKey: "", t: t})
+	evaluator = &mockEvaluator{expectedBucketingKey: "", t: t}
+	ruleBuilder = grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, evaluator)
+	matcher, err = ruleBuilder.BuildMatcher(dto)
+	if err != nil {
+		t.Error("There should be no errors when building the matcher")
+		t.Error(err)
+	}
 	matcher.Match("asd", map[string]interface{}{"value": "something"}, nil)
 }

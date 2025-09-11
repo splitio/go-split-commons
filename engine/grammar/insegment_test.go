@@ -8,7 +8,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -27,10 +26,7 @@ func TestInSegmentMatcher(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	segmentStorage.Update("segmentito", segmentKeys, set.NewSet(), 123)
 
-	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", segmentStorage)
-
-	ruleBuilder := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(segmentStorage, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

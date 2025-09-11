@@ -9,18 +9,14 @@ import (
 // InSegmentMatcher matches if the key passed is in the segment which the matcher was constructed with
 type InSegmentMatcher struct {
 	Matcher
-	segmentName string
+	segmentName    string
+	segmentStorage storage.SegmentStorageConsumer
 }
 
 // Match returns true if the key is in the matcher's segment
 func (m *InSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
-	segmentStorage, ok := m.Context.Dependency("segmentStorage").(storage.SegmentStorageConsumer)
-	if !ok {
-		m.logger.Error("InSegmentMatcher: Unable to retrieve segment storage!")
-		return false
-	}
 
-	isInSegment, err := segmentStorage.SegmentContainsKey(m.segmentName, key)
+	isInSegment, err := m.segmentStorage.SegmentContainsKey(m.segmentName, key)
 	if err != nil {
 		m.logger.Error(fmt.Printf("InSegmentMatcher: Segment %s not found", m.segmentName))
 	}
@@ -28,12 +24,13 @@ func (m *InSegmentMatcher) Match(key string, attributes map[string]interface{}, 
 }
 
 // NewInSegmentMatcher instantiates a new InSegmentMatcher
-func NewInSegmentMatcher(negate bool, segmentName string, attributeName *string) *InSegmentMatcher {
+func NewInSegmentMatcher(negate bool, segmentName string, attributeName *string, segmentStorage storage.SegmentStorageConsumer) *InSegmentMatcher {
 	return &InSegmentMatcher{
 		Matcher: Matcher{
 			negate:        negate,
 			attributeName: attributeName,
 		},
-		segmentName: segmentName,
+		segmentName:    segmentName,
+		segmentStorage: segmentStorage,
 	}
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -21,7 +20,7 @@ func TestMatcherConstruction(t *testing.T) {
 		},
 	}
 
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher1, err := ruleBuilder.BuildMatcher(&dto1)
 
@@ -71,10 +70,8 @@ func TestMatcherConstruction(t *testing.T) {
 			TrafficType: "something",
 		},
 	}
-	ctx := injection.NewContext()
-	ctx.AddDependency("key1", "sampleString")
 
-	ruleBuilder1 := NewRuleBuilder(ctx, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder1 := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher3, err := ruleBuilder1.BuildMatcher(&dto3)
 
@@ -84,20 +81,6 @@ func TestMatcherConstruction(t *testing.T) {
 
 	if !matcher3.Negate() {
 		t.Error("Matcher should be negated")
-	}
-
-	if matcher3.base().Context != ctx {
-		t.Error("Context not properly received", matcher3.base().Context)
-	}
-
-	dep := matcher3.base().Dependency("key1")
-	asString, ok := dep.(string)
-	if !ok {
-		t.Error("Conversion of string stored in context failed")
-	}
-
-	if asString != "sampleString" {
-		t.Error("Recovered string doesn't match stored one")
 	}
 
 	attrName := "value"

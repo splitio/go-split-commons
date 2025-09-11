@@ -22,7 +22,7 @@ func TestEqualToMatcherInt(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestEqualToMatcherDatetime(t *testing.T) {
 			Attribute: &attrName,
 		},
 	}
-	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger)
+	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
 
 	matcher, err := ruleBuilder.BuildMatcher(dto)
 	if err != nil {

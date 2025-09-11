@@ -95,7 +95,7 @@ func TestTreatmentOnTrafficAllocation1(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -144,7 +144,7 @@ func TestTreatmentOnTrafficAllocation99(t *testing.T) {
 		},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -246,7 +246,7 @@ func TestEvaluations(t *testing.T) {
 		t.Error("Data was not added for testing consistency")
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil))
 
 	eng := Engine{}
 	eng.logger = logger
@@ -276,7 +276,7 @@ func TestNoConditionMatched(t *testing.T) {
 		Conditions:            []dtos.ConditionDTO{},
 	}
 
-	split := grammar.NewSplit(&splitDTO, nil, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger))
+	split := grammar.NewSplit(&splitDTO, logger, grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil))
 
 	eng := Engine{}
 	eng.logger = logger
