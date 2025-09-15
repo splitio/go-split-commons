@@ -50,6 +50,18 @@ func TestSplitDTO(t *testing.T) {
 			t.Error("Marshal struct mal formed [Configurations]")
 		}
 
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Prerequisites == nil {
+			t.Error("Marshal struct mal formed [Prerequisites]")
+		}
+
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Prerequisites[0].FeatureFlagName != "rbs_test_flag" {
+			t.Error("Marshal struct mal formed [Prerequisites]")
+		}
+
+		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Prerequisites[0].Treatments[0] != "v1" {
+			t.Error("Marshal struct mal formed [Prerequisites]")
+		}
+
 		if splitChangesDtoFromMarshal.FeatureFlags.Splits[0].Configurations["of"] !=
 			splitChangesDtoFromMock.FeatureFlags.Splits[0].Configurations["of"] {
 			t.Error("Marshal struct mal formed [Configurations]")

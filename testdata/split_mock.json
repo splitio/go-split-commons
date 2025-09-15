@@ -12,6 +12,14 @@
   "configurations": {
     "on": "{\"color\": \"blue\",\"size\": 13}"
   },
+  "prerequisites": [
+          {
+            "n": "rbs_test_flag",
+            "ts": [
+              "v1"
+            ]
+          }
+        ],
   "conditions": [
     {
       "conditionType": "WHITELIST",
