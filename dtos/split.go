@@ -38,11 +38,18 @@ type SplitDTO struct {
 	Configurations        map[string]string `json:"configurations"`
 	Sets                  []string          `json:"sets"`
 	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
+	Prerequisites         []Prerequisite    `json:"prerequisites"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string
 func (s SplitDTO) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(s)
+}
+
+// Prerequisites structure to map a Prerequisite fetched from JSON message
+type Prerequisite struct {
+	FeatureFlagName string   `json:"n"`
+	Treatments      []string `json:"ts"`
 }
 
 // ConditionDTO structure to map a Condition fetched from JSON message.
