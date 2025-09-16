@@ -12,7 +12,7 @@ type PrerequisitesMatcher struct {
 }
 
 // NewPrerequisitesMatcher will return a new instance of PrerequisitesMatcher
-func NewPrerequisitesMatcher(prerequisistes []dtos.Prerequisite, deedependencyEvaluator dependencyEvaluator) *PrerequisitesMatcher {
+func NewPrerequisitesMatcher(prerequisistes []dtos.Prerequisite, dependencyEvaluator dependencyEvaluator) *PrerequisitesMatcher {
 	return &PrerequisitesMatcher{
 		prerequisistes:      prerequisistes,
 		dependencyEvaluator: deedependencyEvaluator,
