@@ -15,7 +15,7 @@ type PrerequisitesMatcher struct {
 func NewPrerequisitesMatcher(prerequisistes []dtos.Prerequisite, dependencyEvaluator dependencyEvaluator) *PrerequisitesMatcher {
 	return &PrerequisitesMatcher{
 		prerequisistes:      prerequisistes,
-		dependencyEvaluator: deedependencyEvaluator,
+		dependencyEvaluator: dependencyEvaluator,
 	}
 }
 
