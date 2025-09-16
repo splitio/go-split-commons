@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v6/engine"
+	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	"github.com/splitio/go-split-commons/v6/storage/inmemory/mutexmap"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
@@ -148,6 +151,61 @@ var mysplittest3 = &dtos.SplitDTO{
 					Size:      100,
 					Treatment: "on",
 				}, {
+					Size:      0,
+					Treatment: "off",
+				},
+			},
+		},
+	},
+}
+
+var mysplittestWithPrerequisites = &dtos.SplitDTO{
+	Algo:                  2,
+	ChangeNumber:          1494593336752,
+	DefaultTreatment:      "off",
+	Killed:                false,
+	Name:                  "mysplittestWithPrerequisites",
+	Seed:                  -1992295819,
+	Status:                "ACTIVE",
+	TrafficAllocation:     100,
+	TrafficAllocationSeed: -285565213,
+	TrafficTypeName:       "user",
+	Configurations:        map[string]string{"on": "{\"color\": \"blue\",\"size\": 13}"},
+	Prerequisites: []dtos.Prerequisite{
+		{
+			FeatureFlagName: "prereq1",
+			Treatments:      []string{"on"},
+		},
+		{
+			FeatureFlagName: "prereq2",
+			Treatments:      []string{"on", "partial"},
+		},
+	},
+	Conditions: []dtos.ConditionDTO{
+		{
+			ConditionType: "ROLLOUT",
+			Label:         "default rule",
+			MatcherGroup: dtos.MatcherGroupDTO{
+				Combiner: "AND",
+				Matchers: []dtos.MatcherDTO{
+					{
+						KeySelector: &dtos.KeySelectorDTO{
+							TrafficType: "user",
+							Attribute:   nil,
+						},
+						MatcherType:        "ALL_KEYS",
+						Whitelist:          nil,
+						Negate:             false,
+						UserDefinedSegment: nil,
+					},
+				},
+			},
+			Partitions: []dtos.PartitionDTO{
+				{
+					Size:      100,
+					Treatment: "on",
+				},
+				{
 					Size:      0,
 					Treatment: "off",
 				},
@@ -500,6 +558,171 @@ func TestEvaluationByFlagSets(t *testing.T) {
 	}
 }
 
+// mockDependencyEvaluator implements a mock dependency evaluator for testing
+type mockDependencyEvaluator struct {
+	EvaluateDependencyCall func(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) string
+}
+
+func (m *mockDependencyEvaluator) EvaluateDependency(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) string {
+	return m.EvaluateDependencyCall(key, bucketingKey, featureFlag, attributes)
+}
+
+// mockEngine implements a mock version of the engine for testing
+type mockEngine struct {
+	*engine.Engine
+	doEvaluationFunc func(split *grammar.Split, key string, bucketingKey string, attributes map[string]interface{}) (*string, string)
+}
+
+func newMockEngine(evalFunc func(split *grammar.Split, key string, bucketingKey string, attributes map[string]interface{}) (*string, string)) *engine.Engine {
+	mock := &mockEngine{
+		Engine:           engine.NewEngine(logging.NewLogger(nil)),
+		doEvaluationFunc: evalFunc,
+	}
+	return mock.Engine
+}
+
+func (m *mockEngine) DoEvaluation(split *grammar.Split, key string, bucketingKey string, attributes map[string]interface{}) (*string, string) {
+	return m.doEvaluationFunc(split, key, bucketingKey, attributes)
+}
+
+func TestPrerequisitesMatching(t *testing.T) {
+	tests := []struct {
+		name           string
+		key            string
+		bucketingKey   string
+		attributes     map[string]interface{}
+		prereqMatches  bool
+		killed         bool
+		expectedResult Result
+	}{
+		{
+			name:          "prerequisites not met",
+			key:           "test_key",
+			bucketingKey:  "test_key",
+			attributes:    nil,
+			prereqMatches: false,
+			killed:        false,
+			expectedResult: Result{
+				Treatment: "off",
+				Label:     impressionlabels.PrerequisitesNotMet,
+			},
+		},
+		{
+			name:          "prerequisites met",
+			key:           "test_key",
+			bucketingKey:  "test_key",
+			attributes:    nil,
+			prereqMatches: true,
+			killed:        false,
+			expectedResult: Result{
+				Treatment: "on",
+				Label:     "default rule",
+			},
+		},
+		{
+			name:          "killed split returns default treatment",
+			key:           "test_key",
+			bucketingKey:  "test_key",
+			attributes:    nil,
+			prereqMatches: true, // prerequisites should not be checked for killed splits
+			killed:        true,
+			expectedResult: Result{
+				Treatment: "off",
+				Label:     impressionlabels.Killed,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create mock engine that returns our test treatments
+			mockEngine := newMockEngine(func(split *grammar.Split, key string, bucketingKey string, attributes map[string]interface{}) (*string, string) {
+				treatment := "on"
+				return &treatment, "default rule"
+			})
+
+			// Setup evaluator with mock dependencies
+			evaluator := NewEvaluator(
+				&mocks.MockSplitStorage{},
+				&mocks.MockSegmentStorage{},
+				&mocks.MockRuleBasedSegmentStorage{},
+				&mocks.MockLargeSegmentStorage{},
+				mockEngine,
+				logging.NewLogger(nil),
+				syncProxyFeatureFlagsRules,
+				syncProxyRuleBasedSegmentRules,
+			)
+
+			// Create split DTO with prerequisites
+			splitDTO := &dtos.SplitDTO{
+				Name:                  "test_split",
+				DefaultTreatment:      "off",
+				Killed:                tt.killed,
+				Seed:                  12345,
+				Status:                "ACTIVE",
+				TrafficAllocation:     100,
+				TrafficAllocationSeed: -285565213,
+				Algo:                  2,
+				Prerequisites: []dtos.Prerequisite{
+					{
+						FeatureFlagName: "prereq1",
+						Treatments:      []string{"on"},
+					},
+				},
+				Conditions: []dtos.ConditionDTO{
+					{
+						ConditionType: "ROLLOUT",
+						Label:         "default rule",
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Combiner: "AND",
+							Matchers: []dtos.MatcherDTO{
+								{
+									KeySelector: &dtos.KeySelectorDTO{
+										TrafficType: "user",
+									},
+									MatcherType: "ALL_KEYS",
+								},
+							},
+						},
+						Partitions: []dtos.PartitionDTO{
+							{
+								Size:      100,
+								Treatment: "on",
+							},
+						},
+					},
+				},
+			}
+
+			// Create mock dependency evaluator for prerequisites
+			mockDependencyEvaluator := &mockDependencyEvaluator{
+				EvaluateDependencyCall: func(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) string {
+					if tt.prereqMatches {
+						return "on"
+					}
+					return "off"
+				},
+			}
+
+			// Create rule builder with mock dependency evaluator
+			evaluator.ruleBuilder = grammar.NewRuleBuilder(
+				&mocks.MockSegmentStorage{},
+				&mocks.MockRuleBasedSegmentStorage{},
+				&mocks.MockLargeSegmentStorage{},
+				syncProxyFeatureFlagsRules,
+				syncProxyRuleBasedSegmentRules,
+				logging.NewLogger(nil),
+				mockDependencyEvaluator,
+			)
+
+			result := evaluator.evaluateTreatment(tt.key, tt.bucketingKey, "test_split", splitDTO, tt.attributes)
+
+			// Verify only the treatment and label
+			assert.Equal(t, tt.expectedResult.Treatment, result.Treatment, "Treatment mismatch for test: %s", tt.name)
+			assert.Equal(t, tt.expectedResult.Label, result.Label, "Label mismatch for test: %s", tt.name)
+		})
+	}
+}
 func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 	logger := logging.NewLogger(nil)
 	key := "test"

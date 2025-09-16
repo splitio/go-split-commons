@@ -10,8 +10,9 @@ import (
 
 // Split struct with added logic that wraps around a DTO
 type Split struct {
-	splitData  *dtos.SplitDTO
-	conditions []*Condition
+	splitData             *dtos.SplitDTO
+	prerequisitesMatchers *PrerequisitesMatcher
+	conditions            []*Condition
 }
 
 var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
@@ -22,8 +23,9 @@ var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
 func NewSplit(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO, logger, ruleBuilder),
-		splitData:  splitDTO,
+		conditions:            processConditions(splitDTO, logger, ruleBuilder),
+		splitData:             splitDTO,
+		prerequisitesMatchers: ruleBuilder.BuildPrerequistesMatchers(splitDTO.Prerequisites),
 	}
 
 	return &split
@@ -110,4 +112,8 @@ func (s *Split) Configurations() map[string]string {
 
 func (s *Split) ImpressionsDisabled() bool {
 	return s.splitData.ImpressionsDisabled
+}
+
+func (s *Split) Prerequisites() *PrerequisitesMatcher {
+	return s.prerequisitesMatchers
 }
