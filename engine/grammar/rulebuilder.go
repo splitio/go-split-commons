@@ -396,3 +396,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 
 	return matcher, nil
 }
+
+func (r RuleBuilder) BuildPrerequistesMatchers(prerequistes []dtos.Prerequisite) *PrerequisitesMatcher {
+	return NewPrerequisitesMatcher(prerequistes, r.dependencyEvaluator)
+}

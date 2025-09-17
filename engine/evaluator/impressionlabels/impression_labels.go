@@ -23,3 +23,6 @@ const ClientNotReady = "not ready"
 
 // UnsupportedMatcherType label will be returned when a matcher is not supported
 const UnsupportedMatcherType = "targeting rule type unsupported by sdk"
+
+// PrerequisitesNotMet label will be returned when prerequistes are not met
+const PrerequisitesNotMet = "prerequisites not met"

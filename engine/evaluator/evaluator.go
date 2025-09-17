@@ -93,6 +93,15 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		}
 	}
 
+	if !split.Prerequisites().Match(key, attributes, &bucketingKey) {
+		return &Result{
+			Treatment:           split.DefaultTreatment(),
+			Label:               impressionlabels.PrerequisitesNotMet,
+			SplitChangeNumber:   split.ChangeNumber(),
+			ImpressionsDisabled: split.ImpressionsDisabled(),
+		}
+	}
+
 	treatment, label := e.eng.DoEvaluation(split, key, bucketingKey, attributes)
 	if treatment == nil {
 		e.logger.Warning(fmt.Sprintf(
