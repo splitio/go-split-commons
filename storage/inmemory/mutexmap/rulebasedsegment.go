@@ -90,7 +90,7 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 	for _, ruleBased := range r.data {
 		for _, condition := range ruleBased.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 			}
