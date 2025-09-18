@@ -44,7 +44,7 @@ func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.Spl
 		SplitUpdater: splitUpdater,
 	}
 	if cfg.SegmentDirectory != "" {
-		workers.SegmentUpdater = segment.NewSegmentUpdater(splitStorage, segmentStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
+		workers.SegmentUpdater = segment.NewSegmentUpdater(splitStorage, segmentStorage, ruleBasedStorage, splitAPI.SegmentFetcher, logger, runtimeTelemetry, hcMonitor)
 	}
 	splitTasks := SplitTasks{}
 	if cfg.RefreshEnabled {
