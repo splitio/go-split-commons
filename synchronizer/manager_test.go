@@ -34,7 +34,9 @@ func TestSynchronizerErr(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = true
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 	appMonitor := hcMock.MockApplicationMonitor{}
 	status := make(chan int, 1)
@@ -158,7 +160,9 @@ func TestStreamingDisabledInitError(t *testing.T) {
 	cfg := conf.GetDefaultAdvancedConfig()
 	cfg.StreamingEnabled = false
 	splitStorage := &storageMocks.MockSplitStorage{}
-	telemetryStorage := storageMocks.MockTelemetryStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
 	authClient := &apiMocks.MockAuthClient{}
 	appMonitor := &application.Dummy{}
 	status := make(chan int, 1)
@@ -885,5 +889,134 @@ func getFromChan(c chan periodChange) (periodChange, bool) {
 }
 
 func inRange(secs int, t time.Duration) bool {
-	return secs-1 <= int(t.Seconds()) && int(t.Seconds()) <= secs+1
+	return t >= time.Duration(secs-1)*time.Second && t <= time.Duration(secs+1)*time.Second
+}
+
+func TestStartBGSyncSuccessFirstTry(t *testing.T) {
+	status := make(chan int, 1)
+	syncMock := &mocks.MockSynchronizer{
+		SyncAllCall: func() error { 
+			status <- Ready
+			return nil 
+		},
+		StartPeriodicFetchingCall: func() {},
+		StopPeriodicFetchingCall: func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall: func() {},
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
+		},
+	}
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = false // Disable streaming to avoid push manager initialization
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+	authClient := &apiMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return &dtos.Token{}, nil
+		},
+	}
+	appMonitor := &application.Dummy{}
+	manager, _ := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
+
+	readyCalled := false
+	onReady := func() { readyCalled = true }
+
+	err := manager.startBGSyng(status, false, onReady)
+	if err != nil {
+		t.Error("Should not return error on successful first try")
+	}
+
+	if !readyCalled {
+		t.Error("onReady should have been called")
+	}
+}
+
+func TestStartBGSyncFailNoSnapshot(t *testing.T) {
+	status := make(chan int, 1)
+	syncMock := &mocks.MockSynchronizer{
+		SyncAllCall: func() error { 
+			status <- Error
+			return errors.New("sync failed") 
+		},
+		StartPeriodicFetchingCall: func() {},
+		StopPeriodicFetchingCall: func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall: func() {},
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
+		},
+	}
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = false // Disable streaming to avoid push manager initialization
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+	authClient := &apiMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return &dtos.Token{}, nil
+		},
+	}
+	appMonitor := &application.Dummy{}
+	manager, _ := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
+
+	readyCalled := false
+	onReady := func() { readyCalled = true }
+
+	err := manager.startBGSyng(status, false, onReady)
+	if err != errUnrecoverable {
+		t.Error("Should return errUnrecoverable when sync fails and no snapshot available")
+	}
+
+	if readyCalled {
+		t.Error("onReady should not have been called")
+	}
+}
+
+func TestStartBGSyncFailWithSnapshot(t *testing.T) {
+	status := make(chan int, 1)
+	syncMock := &mocks.MockSynchronizer{
+		SyncAllCall: func() error { 
+			status <- Error
+			return errors.New("sync failed") 
+		},
+		StartPeriodicFetchingCall: func() {},
+		StopPeriodicFetchingCall: func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall: func() {},
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
+		},
+	}
+	logger := logging.NewLogger(nil)
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = false // Disable streaming to avoid push manager initialization
+	splitStorage := &storageMocks.MockSplitStorage{}
+	telemetryStorage := storageMocks.MockTelemetryStorage{
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+	authClient := &apiMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) {
+			return &dtos.Token{}, nil
+		},
+	}
+	appMonitor := &application.Dummy{}
+	manager, _ := NewSynchronizerManager(syncMock, logger, cfg, authClient, splitStorage, status, telemetryStorage, dtos.Metadata{}, nil, appMonitor)
+
+	readyCalled := false
+	onReady := func() { readyCalled = true }
+
+	err := manager.startBGSyng(status, true, onReady)
+	if err != errRetrying {
+		t.Error("Should return errRetrying when sync fails but snapshot is available")
+	}
+
+	if readyCalled {
+		t.Error("onReady should not have been called on first attempt")
+	}
 }
