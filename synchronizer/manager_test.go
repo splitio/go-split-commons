@@ -895,14 +895,14 @@ func inRange(secs int, t time.Duration) bool {
 func TestStartBGSyncSuccessFirstTry(t *testing.T) {
 	status := make(chan int, 1)
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error { 
+		SyncAllCall: func() error {
 			status <- Ready
-			return nil 
+			return nil
 		},
-		StartPeriodicFetchingCall: func() {},
-		StopPeriodicFetchingCall: func() {},
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
-		StopPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
 		RefreshRatesCall: func() (time.Duration, time.Duration) {
 			return 1 * time.Minute, 1 * time.Minute
 		},
@@ -925,7 +925,7 @@ func TestStartBGSyncSuccessFirstTry(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.startBGSyng(status, false, onReady)
+	err := manager.StartBGSyng(status, false, onReady)
 	if err != nil {
 		t.Error("Should not return error on successful first try")
 	}
@@ -938,14 +938,14 @@ func TestStartBGSyncSuccessFirstTry(t *testing.T) {
 func TestStartBGSyncFailNoSnapshot(t *testing.T) {
 	status := make(chan int, 1)
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error { 
+		SyncAllCall: func() error {
 			status <- Error
-			return errors.New("sync failed") 
+			return errors.New("sync failed")
 		},
-		StartPeriodicFetchingCall: func() {},
-		StopPeriodicFetchingCall: func() {},
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
-		StopPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
 		RefreshRatesCall: func() (time.Duration, time.Duration) {
 			return 1 * time.Minute, 1 * time.Minute
 		},
@@ -968,7 +968,7 @@ func TestStartBGSyncFailNoSnapshot(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.startBGSyng(status, false, onReady)
+	err := manager.StartBGSyng(status, false, onReady)
 	if err != errUnrecoverable {
 		t.Error("Should return errUnrecoverable when sync fails and no snapshot available")
 	}
@@ -981,14 +981,14 @@ func TestStartBGSyncFailNoSnapshot(t *testing.T) {
 func TestStartBGSyncFailWithSnapshot(t *testing.T) {
 	status := make(chan int, 1)
 	syncMock := &mocks.MockSynchronizer{
-		SyncAllCall: func() error { 
+		SyncAllCall: func() error {
 			status <- Error
-			return errors.New("sync failed") 
+			return errors.New("sync failed")
 		},
-		StartPeriodicFetchingCall: func() {},
-		StopPeriodicFetchingCall: func() {},
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
 		StartPeriodicDataRecordingCall: func() {},
-		StopPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
 		RefreshRatesCall: func() (time.Duration, time.Duration) {
 			return 1 * time.Minute, 1 * time.Minute
 		},
@@ -1011,7 +1011,7 @@ func TestStartBGSyncFailWithSnapshot(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.startBGSyng(status, true, onReady)
+	err := manager.StartBGSyng(status, true, onReady)
 	if err != errRetrying {
 		t.Error("Should return errRetrying when sync fails but snapshot is available")
 	}

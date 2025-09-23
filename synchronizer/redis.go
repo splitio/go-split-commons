@@ -40,3 +40,7 @@ func (m *ManagerRedisImpl) Stop() {
 func (m *ManagerRedisImpl) IsRunning() bool {
 	return m.running.IsSet()
 }
+
+func (m *ManagerRedisImpl) StartBGSyng(mstatus chan int, haveSnapshot bool, onReady func()) error {
+	return nil
+}
