@@ -48,7 +48,7 @@ type Manager interface {
 	Start()
 	Stop()
 	IsRunning() bool
-	StartBGSyng(mstatus chan int, haveSnapshot bool, onReady func()) error
+	StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error
 }
 
 // ManagerImpl struct
