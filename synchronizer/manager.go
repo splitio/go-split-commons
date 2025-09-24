@@ -255,7 +255,7 @@ func (s *ManagerImpl) enableStreaming() {
 	s.hcMonitor.Reset(hc.LargeSegments, int(nextExp.Seconds()))
 }
 
-func (m *ManagerImpl) StartBGSyng(mstatus chan int, haveSnapshot bool, onReady func()) error {
+func (m *ManagerImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error {
 
 	attemptInit := func() bool {
 		go m.Start()
@@ -274,7 +274,7 @@ func (m *ManagerImpl) StartBGSyng(mstatus chan int, haveSnapshot bool, onReady f
 		return nil
 	}
 
-	if !haveSnapshot {
+	if !shouldRetry {
 		return errUnrecoverable
 	}
 
