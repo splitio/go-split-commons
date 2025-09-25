@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	errRetrying      = errors.New("error but snapshot available")
-	errUnrecoverable = errors.New("error and no snapshot available")
+	errRetrying      = errors.New("error but retry available")
+	errUnrecoverable = errors.New("error and no retry available")
 )
 
 // Manager interface
@@ -256,7 +256,6 @@ func (s *ManagerImpl) enableStreaming() {
 }
 
 func (m *ManagerImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error {
-
 	attemptInit := func() bool {
 		go m.Start()
 		status := <-mstatus
@@ -286,5 +285,4 @@ func (m *ManagerImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady fu
 	}()
 
 	return errRetrying
-
 }
