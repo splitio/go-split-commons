@@ -3,7 +3,7 @@ package grammar
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -19,8 +19,8 @@ func (m *mockDependencyEvaluator) EvaluateDependency(key string, bucketingKey *s
 
 func TestPrerequisitesMatcher(t *testing.T) {
 	tests := []struct {
-		name           string
-		prerequisites  []dtos.Prerequisite
+		name          string
+		prerequisites []dtos.Prerequisite
 		key           string
 		bucketingKey  *string
 		attributes    map[string]interface{}
@@ -31,10 +31,10 @@ func TestPrerequisitesMatcher(t *testing.T) {
 		expectedResult bool
 	}{
 		{
-			name:          "nil prerequisites should return true",
-			prerequisites: nil,
-			key:          "test",
-			attributes:    nil,
+			name:           "nil prerequisites should return true",
+			prerequisites:  nil,
+			key:            "test",
+			attributes:     nil,
 			expectedResult: true,
 		},
 		{
@@ -45,7 +45,7 @@ func TestPrerequisitesMatcher(t *testing.T) {
 					Treatments:      []string{"on"},
 				},
 			},
-			key:       "test",
+			key:        "test",
 			attributes: map[string]interface{}{"attr": "value"},
 			expectedCalls: []struct {
 				feature   string
@@ -67,7 +67,7 @@ func TestPrerequisitesMatcher(t *testing.T) {
 					Treatments:      []string{"on", "partial"},
 				},
 			},
-			key:       "test",
+			key:        "test",
 			attributes: map[string]interface{}{"attr": "value"},
 			expectedCalls: []struct {
 				feature   string
@@ -86,7 +86,7 @@ func TestPrerequisitesMatcher(t *testing.T) {
 					Treatments:      []string{"on"},
 				},
 			},
-			key:       "test",
+			key:        "test",
 			attributes: map[string]interface{}{"attr": "value"},
 			expectedCalls: []struct {
 				feature   string
@@ -108,7 +108,7 @@ func TestPrerequisitesMatcher(t *testing.T) {
 					Treatments:      []string{"on"},
 				},
 			},
-			key:       "test",
+			key:        "test",
 			attributes: map[string]interface{}{"attr": "value"},
 			expectedCalls: []struct {
 				feature   string
@@ -124,7 +124,7 @@ func TestPrerequisitesMatcher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockEvaluator := new(mockDependencyEvaluator)
-			
+
 			// Setup mock expectations
 			for _, call := range tt.expectedCalls {
 				mockEvaluator.On("EvaluateDependency", tt.key, tt.bucketingKey, call.feature, tt.attributes).Return(call.treatment)

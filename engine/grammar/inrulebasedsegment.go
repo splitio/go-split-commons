@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
 // InRuleBasedsegmentMatcher matches if the key passed is in the rule-based segment which the matcher was constructed with

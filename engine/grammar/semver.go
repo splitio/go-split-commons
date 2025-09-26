@@ -3,7 +3,7 @@ package grammar
 import (
 	"fmt"
 
-	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/datatypes"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )

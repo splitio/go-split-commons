@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/stretchr/testify/mock"
 )

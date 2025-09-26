@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v6/conf"
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/service/api"
+	"github.com/splitio/go-split-commons/v7/conf"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/service/api"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/sse"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"

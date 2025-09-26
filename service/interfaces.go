@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
 // AuthClient inteface to be implemneted by AuthClient

@@ -1,9 +1,10 @@
-module github.com/splitio/go-split-commons/v6
+module github.com/splitio/go-split-commons/v7
 
 go 1.18
 
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.3.1
+	github.com/splitio/go-split-commons/v6 v6.1.0
 	github.com/splitio/go-toolkit/v5 v5.4.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sync v0.3.0
