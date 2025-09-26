@@ -2,15 +2,13 @@ package grammar
 
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers/datatypes"
-	"github.com/splitio/go-toolkit/v5/injection"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/datatypes"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // Condition struct with added logic that wraps around a DTO
 type Condition struct {
-	matchers      []matchers.MatcherInterface
+	matchers      []MatcherInterface
 	combiner      string
 	partitions    []Partition
 	label         string
@@ -18,12 +16,12 @@ type Condition struct {
 }
 
 // NewCondition instantiates a new Condition struct with appropriate wrappers around dtos and returns it.
-func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger logging.LoggerInterface) (*Condition, error) {
+func NewCondition(cond *dtos.ConditionDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) (*Condition, error) {
 	partitions := make([]Partition, 0)
 	for _, part := range cond.Partitions {
-		partitions = append(partitions, Partition{partitionData: part})
+		partitions = append(partitions, Partition{PartitionData: part})
 	}
-	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, ctx, logger)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, logger, ruleBuilder)
 	if err != nil {
 		//  At this point the only error forwarded is UnsupportedMatcherError
 		return nil, err
@@ -38,10 +36,26 @@ func NewCondition(cond *dtos.ConditionDTO, ctx *injection.Context, logger loggin
 	}, nil
 }
 
-func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, logger logging.LoggerInterface) ([]matchers.MatcherInterface, error) {
-	matcherObjs := make([]matchers.MatcherInterface, 0)
+func NewRBCondition(cond *dtos.RuleBasedConditionDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) (*Condition, error) {
+	partitions := make([]Partition, 0)
+	matcherObjs, err := processMatchers(cond.MatcherGroup.Matchers, logger, ruleBuilder)
+	if err != nil {
+		//  At this point the only error forwarded is UnsupportedMatcherError
+		return nil, err
+	}
+
+	return &Condition{
+		combiner:      cond.MatcherGroup.Combiner,
+		matchers:      matcherObjs,
+		partitions:    partitions,
+		conditionType: cond.ConditionType,
+	}, nil
+}
+
+func processMatchers(condMatchers []dtos.MatcherDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) ([]MatcherInterface, error) {
+	matcherObjs := make([]MatcherInterface, 0)
 	for _, matcher := range condMatchers {
-		m, err := matchers.BuildMatcher(&matcher, ctx, logger)
+		m, err := ruleBuilder.BuildMatcher(&matcher)
 		if err == nil {
 			matcherObjs = append(matcherObjs, m)
 		} else {
@@ -56,7 +70,7 @@ func processMatchers(condMatchers []dtos.MatcherDTO, ctx *injection.Context, log
 
 // Partition struct with added logic that wraps around a DTO
 type Partition struct {
-	partitionData dtos.PartitionDTO
+	PartitionData dtos.PartitionDTO
 }
 
 // ConditionType returns validated condition type. Whitelist by default
@@ -69,6 +83,10 @@ func (c *Condition) ConditionType() string {
 	default:
 		return ConditionTypeWhitelist
 	}
+}
+
+func (c *Condition) Combiner() string {
+	return c.combiner
 }
 
 // Label returns the condition's label
@@ -92,12 +110,22 @@ func (c *Condition) Matches(key string, bucketingKey *string, attributes map[str
 func (c *Condition) CalculateTreatment(bucket int) *string {
 	accum := 0
 	for _, partition := range c.partitions {
-		accum += partition.partitionData.Size
+		accum += partition.PartitionData.Size
 		if bucket <= accum {
-			return &partition.partitionData.Treatment
+			return &partition.PartitionData.Treatment
 		}
 	}
 	return nil
+}
+
+func BuildCondition(conditionType string, label string, partitions []Partition, matchers []MatcherInterface, combiner string) *Condition {
+	return &Condition{
+		conditionType: conditionType,
+		label:         label,
+		partitions:    partitions,
+		matchers:      matchers,
+		combiner:      combiner,
+	}
 }
 
 func applyCombiner(results []bool, combiner string) bool {

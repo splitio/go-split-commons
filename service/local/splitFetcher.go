@@ -24,8 +24,10 @@ type FileSplitFetcher struct {
 	splitFile  string
 	fileFormat int
 	lastHash   []byte
+	lastHashRB []byte
 	logger     logging.LoggerInterface
-	mutex      sync.Mutex
+	mutexFF    sync.Mutex
+	mutexRB    sync.Mutex
 }
 
 // NewFileSplitFetcher returns a new instance of LocalFileSplitFetcher
@@ -35,7 +37,8 @@ func NewFileSplitFetcher(splitFile string, logger logging.LoggerInterface, fileF
 		fileFormat: fileFormat,
 		logger:     logger,
 		reader:     NewFileReader(),
-		mutex:      sync.Mutex{},
+		mutexFF:    sync.Mutex{},
+		mutexRB:    sync.Mutex{},
 	}
 }
 
@@ -232,26 +235,49 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 		return nil, err
 	}
 	// if the till is less than storage CN and different from the default till ignore the change
-	if splitChange.Till < changeNumber && splitChange.Till != defaultTill {
+	if splitChange.FeatureFlags.Till < changeNumber && splitChange.FeatureFlags.Till != defaultTill ||
+		splitChange.RuleBasedSegments.Since != 0 && splitChange.RuleBasedSegments.Till < changeNumber && splitChange.RuleBasedSegments.Till != defaultTill {
 		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
 	}
-	splitsJson, _ := json.Marshal(splitChange.Splits)
+	splitsJson, _ := json.Marshal(splitChange.FeatureFlags.Splits)
 	currH := sha1.New()
 	currH.Write(splitsJson)
 	// calculate the json sha
 	currSum := currH.Sum(nil)
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	//if sha exist and is equal to before sha, or if till is equal to default till returns the same segmentChange with till equals to storage CN
-	if bytes.Equal(currSum, s.lastHash) || splitChange.Till == defaultTill {
+	s.mutexFF.Lock()
+	defer s.mutexFF.Unlock()
+	//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
+	if bytes.Equal(currSum, s.lastHash) || splitChange.FeatureFlags.Till == defaultTill {
 		s.lastHash = currSum
-		splitChange.Till = changeNumber
-		splitChange.Since = changeNumber
+		splitChange.FeatureFlags.Till = changeNumber
+		splitChange.FeatureFlags.Since = changeNumber
 		return splitChange, nil
 	}
 	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
-	splitChange.Since = splitChange.Till
+
+	if splitChange.RuleBasedSegments.RuleBasedSegments != nil {
+		ruleBasedJson, _ := json.Marshal(splitChange.RuleBasedSegments.RuleBasedSegments)
+		currHRB := sha1.New()
+		currHRB.Write(ruleBasedJson)
+		// calculate the json sha
+		currSumRB := currHRB.Sum(nil)
+		s.mutexRB.Lock()
+		defer s.mutexRB.Unlock()
+		//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
+		if bytes.Equal(currSumRB, s.lastHashRB) || splitChange.RuleBasedSegments.Till == defaultTill {
+			s.lastHashRB = currSumRB
+			splitChange.RuleBasedSegments.Till = changeNumber
+			splitChange.RuleBasedSegments.Since = changeNumber
+			return splitChange, nil
+		}
+		s.lastHashRB = currSumRB
+		splitChange.RuleBasedSegments.Since = splitChange.RuleBasedSegments.Till
+	}
+
+	// In the last case, the sha is different and till upper or equal to storage CN
+	s.lastHash = currSum
+	splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
 	return splitChange, nil
 }
 
@@ -290,9 +316,11 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos
 
 	s.lastHash = currSum
 	return &dtos.SplitChangesDTO{
-		Splits: splits,
-		Since:  fetchOptions.ChangeNumber(),
-		Till:   till,
+		FeatureFlags: dtos.FeatureFlagsDTO{
+			Splits: splits,
+			Since:  fetchOptions.ChangeNumber(),
+			Till:   till,
+		},
 	}, nil
 }
 

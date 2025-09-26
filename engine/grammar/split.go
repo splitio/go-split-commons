@@ -3,40 +3,38 @@ package grammar
 import (
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
 // Split struct with added logic that wraps around a DTO
 type Split struct {
-	splitData  *dtos.SplitDTO
-	conditions []*Condition
+	splitData             *dtos.SplitDTO
+	prerequisitesMatchers *PrerequisitesMatcher
+	conditions            []*Condition
 }
 
-var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{{
-	conditionType: ConditionTypeWhitelist,
-	label:         impressionlabels.UnsupportedMatcherType,
-	partitions:    []Partition{{partitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}},
-	matchers:      []matchers.MatcherInterface{matchers.NewAllKeysMatcher(false)},
-	combiner:      "AND",
-}}
+var conditionReplacementUnsupportedMatcher []*Condition = []*Condition{
+	BuildCondition(ConditionTypeWhitelist, impressionlabels.UnsupportedMatcherType,
+		[]Partition{{PartitionData: dtos.PartitionDTO{Treatment: "control", Size: 100}}}, []MatcherInterface{NewAllKeysMatcher(false)},
+		"AND")}
 
 // NewSplit instantiates a new Split object and all it's internal structures mapped to model classes
-func NewSplit(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) *Split {
+func NewSplit(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) *Split {
 	split := Split{
-		conditions: processConditions(splitDTO, ctx, logger),
-		splitData:  splitDTO,
+		conditions:            processConditions(splitDTO, logger, ruleBuilder),
+		splitData:             splitDTO,
+		prerequisitesMatchers: ruleBuilder.BuildPrerequistesMatchers(splitDTO.Prerequisites),
 	}
 
 	return &split
 }
 
-func processConditions(splitDTO *dtos.SplitDTO, ctx *injection.Context, logger logging.LoggerInterface) []*Condition {
+func processConditions(splitDTO *dtos.SplitDTO, logger logging.LoggerInterface, ruleBuilder RuleBuilder) []*Condition {
 	conditionsToReturn := make([]*Condition, 0)
 	for _, cond := range splitDTO.Conditions {
-		condition, err := NewCondition(&cond, ctx, logger)
+		condition, err := NewCondition(&cond, logger, ruleBuilder)
 		if err != nil {
 			logger.Debug("Overriding conditions due unexpected matcher received")
 			return conditionReplacementUnsupportedMatcher
@@ -59,8 +57,8 @@ func (s *Split) Seed() int64 {
 // Status returns whether the feature flag is active or arhived
 func (s *Split) Status() string {
 	status := s.splitData.Status
-	if status == "" || (status != SplitStatusActive && status != SplitStatusArchived) {
-		return SplitStatusActive
+	if status == "" || (status != constants.SplitStatusActive && status != constants.SplitStatusArchived) {
+		return constants.SplitStatusActive
 	}
 	return status
 }
@@ -88,12 +86,12 @@ func (s *Split) TrafficAllocationSeed() int64 {
 // Algo returns the hashing algorithm configured for this feature flag
 func (s *Split) Algo() int {
 	switch s.splitData.Algo {
-	case SplitAlgoLegacy:
-		return SplitAlgoLegacy
-	case SplitAlgoMurmur:
-		return SplitAlgoMurmur
+	case constants.SplitAlgoLegacy:
+		return constants.SplitAlgoLegacy
+	case constants.SplitAlgoMurmur:
+		return constants.SplitAlgoMurmur
 	default:
-		return SplitAlgoLegacy
+		return constants.SplitAlgoLegacy
 	}
 }
 
@@ -114,4 +112,8 @@ func (s *Split) Configurations() map[string]string {
 
 func (s *Split) ImpressionsDisabled() bool {
 	return s.splitData.ImpressionsDisabled
+}
+
+func (s *Split) Prerequisites() *PrerequisitesMatcher {
+	return s.prerequisitesMatchers
 }

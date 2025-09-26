@@ -2,25 +2,27 @@ package redis
 
 // Split redis keys, fields & TTLs
 const (
-	KeySplit            = "SPLITIO.split.{split}"                                    // split object
-	KeySplitTill        = "SPLITIO.splits.till"                                      // last split fetch
-	KeySegment          = "SPLITIO.segment.{segment}"                                // segment object
-	KeySegmentTill      = "SPLITIO.segment.{segment}.till"                           // last segment fetch
-	KeyEvents           = "SPLITIO.events"                                           // events LIST key
-	KeyImpressionsQueue = "SPLITIO.impressions"                                      // impressions LIST key
-	KeyTrafficType      = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
-	KeyAPIKeyHash       = "SPLITIO.hash"                                             // hash key
-	KeyConfig           = "SPLITIO.telemetry.config"                                 // config Key
-	KeyLatency          = "SPLITIO.telemetry.latencies"                              // latency Key
-	KeyException        = "SPLITIO.telemetry.exceptions"                             // exception Key
-	KeyUniquekeys       = "SPLITIO.uniquekeys"                                       // Unique keys
-	KeyImpressionsCount = "SPLITIO.impressions.count"                                // impressions count
-	FieldLatency        = "{sdkVersion}/{machineName}/{machineIP}/{method}/{bucket}" // latency field template
-	FieldException      = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
-	TTLImpressions      = 3600                                                       // impressions default TTL
-	TTLConfig           = 3600                                                       // config TTL
-	TTLUniquekeys       = 3600                                                       // Uniquekeys TTL
-	KeyFlagSet          = "SPLITIO.flagSet.{set}"                                    // flagSet object
+	KeySplit                = "SPLITIO.split.{split}"                                    // split object
+	KeySplitTill            = "SPLITIO.splits.till"                                      // last split fetch
+	KeySegment              = "SPLITIO.segment.{segment}"                                // segment object
+	KeySegmentTill          = "SPLITIO.segment.{segment}.till"                           // last segment fetch
+	KeyRuleBasedSegment     = "SPLITIO.rbsegment.{rbsegment}"                            // rule-based segment object
+	KeyRuleBasedSegmentTill = "SPLITIO.rbsegments.till"                                  // last rule-based segment fetch
+	KeyEvents               = "SPLITIO.events"                                           // events LIST key
+	KeyImpressionsQueue     = "SPLITIO.impressions"                                      // impressions LIST key
+	KeyTrafficType          = "SPLITIO.trafficType.{trafficType}"                        // traffic Type fetch
+	KeyAPIKeyHash           = "SPLITIO.hash"                                             // hash key
+	KeyConfig               = "SPLITIO.telemetry.config"                                 // config Key
+	KeyLatency              = "SPLITIO.telemetry.latencies"                              // latency Key
+	KeyException            = "SPLITIO.telemetry.exceptions"                             // exception Key
+	KeyUniquekeys           = "SPLITIO.uniquekeys"                                       // Unique keys
+	KeyImpressionsCount     = "SPLITIO.impressions.count"                                // impressions count
+	FieldLatency            = "{sdkVersion}/{machineName}/{machineIP}/{method}/{bucket}" // latency field template
+	FieldException          = "{sdkVersion}/{machineName}/{machineIP}/{method}"          // exception field template
+	TTLImpressions          = 3600                                                       // impressions default TTL
+	TTLConfig               = 3600                                                       // config TTL
+	TTLUniquekeys           = 3600                                                       // Uniquekeys TTL
+	KeyFlagSet              = "SPLITIO.flagSet.{set}"                                    // flagSet object
 
 	// TODO(mredolatti): when doing a breking change, name this `KeyConfig`, and rename `KeyConfig` to `KeyConfigLegacy`,
 	// or even better, remove the old one, so that it only exists in the split-sync

@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
+	"github.com/splitio/go-split-commons/v6/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v6/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
@@ -26,8 +27,8 @@ func (e *Engine) DoEvaluation(
 	attributes map[string]interface{},
 ) (*string, string) {
 	inRollOut := false
-	for _, condition := range split.Conditions() {
-		if !inRollOut && condition.ConditionType() == grammar.ConditionTypeRollout {
+	for _, cond := range split.Conditions() {
+		if !inRollOut && cond.ConditionType() == grammar.ConditionTypeRollout {
 			if split.TrafficAllocation() < 100 {
 				bucket := e.calculateBucket(split.Algo(), bucketingKey, split.TrafficAllocationSeed())
 				if bucket > split.TrafficAllocation() {
@@ -42,10 +43,10 @@ func (e *Engine) DoEvaluation(
 			}
 		}
 
-		if condition.Matches(key, &bucketingKey, attributes) {
+		if cond.Matches(key, &bucketingKey, attributes) {
 			bucket := e.calculateBucket(split.Algo(), bucketingKey, split.Seed())
-			treatment := condition.CalculateTreatment(bucket)
-			return treatment, condition.Label()
+			treatment := cond.CalculateTreatment(bucket)
+			return treatment, cond.Label()
 		}
 	}
 	return nil, impressionlabels.NoConditionMatched
@@ -54,9 +55,9 @@ func (e *Engine) DoEvaluation(
 func (e *Engine) calculateBucket(algo int, bucketingKey string, seed int64) int {
 	var hashedKey uint32
 	switch algo {
-	case grammar.SplitAlgoMurmur:
+	case constants.SplitAlgoMurmur:
 		hashedKey = hasher.Sum32WithSeed([]byte(bucketingKey), uint32(seed))
-	case grammar.SplitAlgoLegacy:
+	case constants.SplitAlgoLegacy:
 		fallthrough
 	default:
 		hashedKey = hash.Legacy([]byte(bucketingKey), uint32(seed))

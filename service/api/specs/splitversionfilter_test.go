@@ -3,7 +3,7 @@ package specs
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v6/engine/grammar"
 )
 
 func TestParseAndValidate(t *testing.T) {
@@ -30,37 +30,37 @@ func TestParseAndValidate(t *testing.T) {
 
 func TestsplitVersionFilter(t *testing.T) {
 	filter := NewSplitVersionFilter()
-	shouldFilter := filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_0)
+	shouldFilter := filter.ShouldFilter(grammar.MatcherTypeBetweenSemver, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeEqualTo, FLAG_V1_0)
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeEqualTo, FLAG_V1_0)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeBetweenSemver, FLAG_V1_1)
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeBetweenSemver, FLAG_V1_1)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_0)
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeInLargeSegment, FLAG_V1_0)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_1)
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeInLargeSegment, FLAG_V1_1)
 	if !shouldFilter {
 		t.Error("It should filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, FLAG_V1_2)
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeInLargeSegment, FLAG_V1_2)
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}
 
-	shouldFilter = filter.ShouldFilter(matchers.MatcherTypeInLargeSegment, "4.3")
+	shouldFilter = filter.ShouldFilter(grammar.MatcherTypeInLargeSegment, "4.3")
 	if shouldFilter {
 		t.Error("It should not filtered")
 	}

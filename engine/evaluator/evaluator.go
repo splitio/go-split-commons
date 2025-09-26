@@ -10,7 +10,6 @@ import (
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
 	"github.com/splitio/go-split-commons/v6/storage"
 
-	"github.com/splitio/go-toolkit/v5/injection"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -38,25 +37,30 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage   storage.SplitStorageConsumer
-	segmentStorage storage.SegmentStorageConsumer
-	eng            *engine.Engine
-	logger         logging.LoggerInterface
+	splitStorage storage.SplitStorageConsumer
+	eng          *engine.Engine
+	logger       logging.LoggerInterface
+	ruleBuilder  grammar.RuleBuilder
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
 func NewEvaluator(
 	splitStorage storage.SplitStorageConsumer,
 	segmentStorage storage.SegmentStorageConsumer,
+	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer,
+	largeSegmentStorage storage.LargeSegmentStorageConsumer,
 	eng *engine.Engine,
 	logger logging.LoggerInterface,
+	featureFlagRules []string,
+	ruleBasedSegmentRules []string,
 ) *Evaluator {
-	return &Evaluator{
-		splitStorage:   splitStorage,
-		segmentStorage: segmentStorage,
-		eng:            eng,
-		logger:         logger,
+	e := &Evaluator{
+		splitStorage: splitStorage,
+		eng:          eng,
+		logger:       logger,
 	}
+	e.ruleBuilder = grammar.NewRuleBuilder(segmentStorage, ruleBasedSegmentStorage, largeSegmentStorage, featureFlagRules, ruleBasedSegmentRules, logger, e)
+	return e
 }
 
 func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, splitDto *dtos.SplitDTO, attributes map[string]interface{}) *Result {
@@ -66,11 +70,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		return &Result{Treatment: Control, Label: impressionlabels.SplitNotFound, Config: config}
 	}
 
-	ctx := injection.NewContext()
-	ctx.AddDependency("segmentStorage", e.segmentStorage)
-	ctx.AddDependency("evaluator", e)
-
-	split := grammar.NewSplit(splitDto, ctx, e.logger)
+	split := grammar.NewSplit(splitDto, e.logger, e.ruleBuilder)
 
 	if split.Killed() {
 		e.logger.Warning(fmt.Sprintf(
@@ -89,6 +89,15 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			Label:               impressionlabels.Killed,
 			SplitChangeNumber:   split.ChangeNumber(),
 			Config:              config,
+			ImpressionsDisabled: split.ImpressionsDisabled(),
+		}
+	}
+
+	if !split.Prerequisites().Match(key, attributes, &bucketingKey) {
+		return &Result{
+			Treatment:           split.DefaultTreatment(),
+			Label:               impressionlabels.PrerequisitesNotMet,
+			SplitChangeNumber:   split.ChangeNumber(),
 			ImpressionsDisabled: split.ImpressionsDisabled(),
 		}
 	}

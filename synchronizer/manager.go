@@ -38,11 +38,17 @@ const (
 	refreshTokenTolerance = 15 * time.Minute
 )
 
+var (
+	errRetrying      = errors.New("error but retry available")
+	errUnrecoverable = errors.New("error and no retry available")
+)
+
 // Manager interface
 type Manager interface {
 	Start()
 	Stop()
 	IsRunning() bool
+	StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error
 }
 
 // ManagerImpl struct
@@ -247,4 +253,36 @@ func (s *ManagerImpl) enableStreaming() {
 	s.hcMonitor.Reset(hc.Splits, int(nextExp.Seconds()))
 	s.hcMonitor.Reset(hc.Segments, int(nextExp.Seconds()))
 	s.hcMonitor.Reset(hc.LargeSegments, int(nextExp.Seconds()))
+}
+
+func (m *ManagerImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error {
+	attemptInit := func() bool {
+		go m.Start()
+		status := <-mstatus
+		switch status {
+		case Ready:
+			onReady()
+			return true
+		case Error:
+			return false
+		}
+		return false
+	}
+
+	if attemptInit() { // succeeeded at first try
+		return nil
+	}
+
+	if !shouldRetry {
+		return errUnrecoverable
+	}
+
+	go func() {
+		boff := backoff.New(2, 10*time.Minute)
+		for !attemptInit() {
+			time.Sleep(boff.Next())
+		}
+	}()
+
+	return errRetrying
 }

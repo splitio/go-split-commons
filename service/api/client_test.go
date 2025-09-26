@@ -42,7 +42,7 @@ func TestGetSplitFetchOptions(t *testing.T) {
 		if r.Header.Get(CacheControlHeader) != CacheControlNoCache {
 			t.Error("wrong header")
 		}
-		expected := "/test?s=v1.1&since=123456&sets=filter&till=2345"
+		expected := "/test?s=v1.1&since=123456&rbSince=123456&sets=filter&till=2345"
 		if r.URL.String() != expected {
 			t.Error("wrong query params, expected ", expected, "got", r.URL.String())
 		}
@@ -51,7 +51,7 @@ func TestGetSplitFetchOptions(t *testing.T) {
 
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	httpClient := NewHTTPClient("", conf.AdvancedConfig{}, ts.URL, logger, dtos.Metadata{})
-	txt, errg := httpClient.Get("/test", service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(2345).WithFlagSetsFilter("filter").WithSpecVersion(common.StringRef("v1.1")))
+	txt, errg := httpClient.Get("/test", service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(2345).WithFlagSetsFilter("filter").WithSpecVersion(common.StringRef("v1.1")).WithChangeNumberRB(123456))
 	if errg != nil {
 		t.Error(errg)
 	}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/splitio/go-split-commons/v6/dtos"
 	"github.com/splitio/go-split-commons/v6/engine/grammar"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
 	"github.com/splitio/go-split-commons/v6/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v6/service"
@@ -20,7 +19,17 @@ import (
 	"github.com/splitio/go-split-commons/v6/telemetry"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/mock"
 )
+
+var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
+	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
+	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
+	grammar.MatcherTypeInRuleBasedSegment}
 
 func validReqParams(t *testing.T, fetchOptions service.RequestParams, till string) {
 	req, _ := http.NewRequest("GET", "test", nil)
@@ -49,6 +58,9 @@ func TestSplitSynchronizerError(t *testing.T) {
 		},
 	}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncErrorCall: func(resource, status int) {
 			if resource != telemetry.SplitSync {
@@ -65,8 +77,9 @@ func TestSplitSynchronizerError(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
 
-	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	splitUpdater := NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	_, err := splitUpdater.SynchronizeSplits(nil)
 	if err == nil {
@@ -105,14 +118,16 @@ func TestSplitSynchronizerErrorScRequestURITooLong(t *testing.T) {
 			}
 		},
 	}
-
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
 	appMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
 
-	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	_, err := splitUpdater.SynchronizeSplits(nil)
 	if err == nil {
@@ -168,9 +183,9 @@ func TestSplitSynchronizer(t *testing.T) {
 				t.Error("Wrong since")
 			}
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-				Since:  3,
-				Till:   3,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+					Since: 3,
+					Till:  3},
 			}, nil
 		},
 	}
@@ -196,8 +211,14 @@ func TestSplitSynchronizer(t *testing.T) {
 			atomic.AddInt64(&notifyEventCalled, 1)
 		},
 	}
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
-	splitUpdater := NewSplitUpdater(splitMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	_, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
@@ -231,18 +252,18 @@ func TestSplitSyncProcess(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+						Since: 3,
+						Till:  3},
 				}, nil
 			case 2:
 				if fetchOptions.ChangeNumber() != 3 {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
+						Since: 3,
+						Till:  3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -261,7 +282,14 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(3).Return(-1)
+
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	res, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
@@ -328,14 +356,18 @@ func TestSplitTill(t *testing.T) {
 	var call int64
 	var notifyEventCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
+	mockedRuleBased1 := dtos.RuleBasedSegmentDTO{Name: "rb1", Status: "ACTIVE"}
 
 	splitMockFetcher := fetcherMock.MockSplitFetcher{
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&call, 1)
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
+				RuleBasedSegments: dtos.RuleBasedSegmentsDTO{RuleBasedSegments: []dtos.RuleBasedSegmentDTO{mockedRuleBased1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -350,7 +382,13 @@ func TestSplitTill(t *testing.T) {
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(12).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(12).Return(-1)
+
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	var till int64 = 1
 	_, err := splitUpdater.SynchronizeSplits(&till)
@@ -361,7 +399,7 @@ func TestSplitTill(t *testing.T) {
 	if err != nil {
 		t.Error("It should not return err")
 	}
-	if atomic.LoadInt64(&call) != 1 {
+	if atomic.LoadInt64(&call) != 2 {
 		t.Error("It should be called once")
 	}
 	if atomic.LoadInt64(&notifyEventCalled) != 2 {
@@ -381,30 +419,30 @@ func TestByPassingCDN(t *testing.T) {
 			case called == 1:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  1,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 1,
+						Till:  2},
 				}, nil
 			case called >= 2 && called <= 11:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			case called == 12:
 				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 3,
+						Till:  3},
 				}, nil
 			}
 
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -418,8 +456,13 @@ func TestByPassingCDN(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(13).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(13).Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	splitUpdater.onDemandFetchBackoffBase = 1
 	splitUpdater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
@@ -434,6 +477,7 @@ func TestByPassingCDN(t *testing.T) {
 	if atomic.LoadInt64(&notifyEventCalled) != 1 {
 		t.Error("It should be called twice instead of", atomic.LoadInt64(&notifyEventCalled))
 	}
+
 }
 
 func TestByPassingCDNLimit(t *testing.T) {
@@ -448,30 +492,30 @@ func TestByPassingCDNLimit(t *testing.T) {
 			case called == 1:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  1,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 1,
+						Till:  2},
 				}, nil
 			case called >= 2 && called <= 11:
 				validReqParams(t, fetchOptions, "")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			case called >= 12:
 				validReqParams(t, fetchOptions, "2")
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1},
-					Since:  2,
-					Till:   2,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+						Since: 2,
+						Till:  2},
 				}, nil
 			}
 
 			return &dtos.SplitChangesDTO{
-				Splits: []dtos.SplitDTO{mockedSplit1},
-				Since:  2,
-				Till:   2,
+				FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1},
+					Since: 2,
+					Till:  2},
 			}, nil
 		},
 	}
@@ -485,8 +529,13 @@ func TestByPassingCDNLimit(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{{}}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(22).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(22).Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	splitUpdater.onDemandFetchBackoffBase = 1
 	splitUpdater.onDemandFetchBackoffMaxWait = 10 * time.Nanosecond
 
@@ -517,10 +566,17 @@ func TestProcessFFChange(t *testing.T) {
 			return nil, nil
 		},
 	}
+
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
 
-	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	result, _ := fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 12), nil, nil,
@@ -546,9 +602,9 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
-				Till:   2,
-				Since:  2,
-				Splits: []dtos.SplitDTO{},
+				FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{}},
 			}, nil
 		},
 	}
@@ -557,7 +613,13 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 		NotifyEventCall: func(counterType int) {},
 	}
 
-	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
@@ -594,9 +656,16 @@ func TestAddOrUpdateFeatureFlagPcnEquals(t *testing.T) {
 			return nil, nil
 		},
 	}
+
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
-	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Active}
 
@@ -638,9 +707,15 @@ func TestAddOrUpdateFeatureFlagArchive(t *testing.T) {
 			return nil, nil
 		},
 	}
+
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	appMonitorMock := hcMock.MockApplicationMonitor{}
-	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil)
+	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	featureFlag := dtos.SplitDTO{ChangeNumber: 4, Status: Archived}
 	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
@@ -673,9 +748,9 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 		FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
 			atomic.AddInt64(&fetchCallCalled, 1)
 			return &dtos.SplitChangesDTO{
-				Till:   2,
-				Since:  2,
-				Splits: []dtos.SplitDTO{},
+				FeatureFlags: dtos.FeatureFlagsDTO{Till: 2,
+					Since:  2,
+					Splits: []dtos.SplitDTO{}},
 			}, nil
 		},
 	}
@@ -683,7 +758,14 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	appMonitorMock := hcMock.MockApplicationMonitor{
 		NotifyEventCall: func(counterType int) {},
 	}
-	fetcher := NewSplitUpdater(ffStorageMock, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil))
+
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil)
+	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 
 	fetcher.SynchronizeFeatureFlags(dtos.NewSplitChangeUpdate(
 		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "some"), 2), nil, nil,
@@ -700,9 +782,14 @@ func TestGetActiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 2 {
@@ -718,9 +805,14 @@ func TestGetInactiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 0 {
@@ -736,9 +828,15 @@ func TestGetActiveAndInactiveFF(t *testing.T) {
 	var featureFlags []dtos.SplitDTO
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Active})
 	featureFlags = append(featureFlags, dtos.SplitDTO{Status: Archived})
-	featureFlagChanges := &dtos.SplitChangesDTO{Splits: featureFlags}
+	featureFlagChanges := &dtos.SplitChangesDTO{
+		FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
 
-	s := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	s := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, nil, mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	actives, inactives := s.processFeatureFlagChanges(featureFlagChanges)
 
 	if len(actives) != 1 {
@@ -765,9 +863,9 @@ func TestSplitSyncWithSets(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+						Since: 3,
+						Till:  3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -783,7 +881,14 @@ func TestSplitSyncWithSets(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter([]string{"set1", "set2", "set3"}))
+
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter([]string{"set1", "set2", "set3"}), ruleBuilder)
 
 	res, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
@@ -821,9 +926,10 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 					t.Error("Wrong changenumber passed")
 				}
 				return &dtos.SplitChangesDTO{
-					Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
-					Since:  3,
-					Till:   3,
+					FeatureFlags: dtos.FeatureFlagsDTO{
+						Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
+						Since:  3,
+						Till:   3},
 				}, nil
 			default:
 				t.Error("Wrong calls")
@@ -840,7 +946,13 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	splitStorage := mutexmap.NewMMSplitStorage(flagSetFilter)
 	splitStorage.Update([]dtos.SplitDTO{}, nil, -1)
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
-	splitUpdater := NewSplitUpdater(splitStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagSetFilter)
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(splitStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryStorage, appMonitorMock, flagSetFilter, ruleBuilder)
 
 	res, err := splitUpdater.SynchronizeSplits(nil)
 	if err != nil {
@@ -869,53 +981,339 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	}
 }
 
+func TestSynchronizeSplitsWithLowerTill(t *testing.T) {
+	// Mock split storage with higher change number
+	currentSince := int64(100)
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return currentSince, nil },
+		UpdateCall:       func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {},
+	}
+
+	// Mock rule based segment storage with higher change number
+	currentRBSince := int64(150)
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(currentRBSince))
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return()
+
+	// Mock fetcher
+	var fetchCalled bool
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(requestParams *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+			fetchCalled = true
+			return &dtos.SplitChangesDTO{
+				FeatureFlags: dtos.FeatureFlagsDTO{
+					Since:  currentSince,
+					Till:   currentSince,
+					Splits: []dtos.SplitDTO{},
+				},
+				RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+					Since:             currentRBSince,
+					Till:              currentRBSince,
+					RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+				},
+			}, nil
+		},
+	}
+
+	// Mock telemetry storage
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, timestamp time.Time) {},
+	}
+
+	// Mock app monitor
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	// Create split updater
+	splitUpdater := NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+		ruleBuilder,
+	)
+
+	// Test case 1: till is less than both currentSince and currentRBSince
+	till := int64(50)
+	result, err := splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result == nil {
+		t.Error("Expected non-nil result")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when till is less than both currentSince and currentRBSince")
+	}
+
+	// Test case 2: till is equal to currentSince but less than currentRBSince
+	till = currentSince
+	result, err = splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error when till equals currentSince, got:", err)
+	}
+
+	if !fetchCalled {
+		t.Error("Fetcher should have been called when till equals currentSince (since currentRBSince is higher)")
+	}
+
+	// Test case 3: till is equal to currentRBSince but greater than currentSince
+	till = currentRBSince
+	result, err = splitUpdater.SynchronizeSplits(&till)
+
+	if err != nil {
+		t.Error("Expected no error when till equals currentRBSince, got:", err)
+	}
+
+	if !fetchCalled {
+		t.Error("Fetcher should have been called when till equals currentRBSince")
+	}
+}
+
+func TestSynchronizeFeatureFlagsRuleBasedUpdate(t *testing.T) {
+	// Mock rule based segment storage with testify/mock
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+
+	// Mock split storage
+	splitMockStorage := mocks.MockSplitStorage{
+		ChangeNumberCall: func() (int64, error) { return 200, nil },
+		UpdateCall:       func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {},
+		AllCall:          func() []dtos.SplitDTO { return []dtos.SplitDTO{} },
+	}
+
+	// Mock fetcher
+	var fetchCalled bool
+	var fetchCount int
+	splitMockFetcher := fetcherMock.MockSplitFetcher{
+		FetchCall: func(requestParams *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+			fetchCalled = true
+			fetchCount++
+			if fetchCount == 1 {
+				return &dtos.SplitChangesDTO{
+					FeatureFlags: dtos.FeatureFlagsDTO{
+						Since:  100,
+						Till:   200,
+						Splits: []dtos.SplitDTO{},
+					},
+					RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+						Since:             100,
+						Till:              200,
+						RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+					},
+				}, nil
+			}
+			return &dtos.SplitChangesDTO{
+				FeatureFlags: dtos.FeatureFlagsDTO{
+					Since:  200,
+					Till:   200,
+					Splits: []dtos.SplitDTO{},
+				},
+				RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
+					Since:             200,
+					Till:              200,
+					RuleBasedSegments: []dtos.RuleBasedSegmentDTO{},
+				},
+			}, nil
+		},
+	}
+
+	// Mock telemetry storage
+	telemetryMockStorage := mocks.MockTelemetryStorage{
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordSuccessfulSyncCall: func(resource int, timestamp time.Time) {},
+		RecordSyncErrorCall:      func(resource, status int) {},
+	}
+
+	// Mock app monitor
+	appMonitorMock := hcMock.MockApplicationMonitor{
+		NotifyEventCall: func(counterType int) {},
+	}
+
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+
+	// Create split updater
+	splitUpdater := NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+		ruleBuilder,
+	)
+
+	// Test case 1: When rule-based segment change number is lower than current
+	lowerChangeNumber := int64(100)
+	ruleBasedSegment := &dtos.RuleBasedSegmentDTO{
+		Name:         "test-segment",
+		ChangeNumber: lowerChangeNumber,
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{},
+				},
+			},
+		},
+	}
+	baseMessage := dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
+	baseUpdate := dtos.NewBaseUpdate(baseMessage, lowerChangeNumber)
+	ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, nil, ruleBasedSegment)
+
+	// Reset fetchCalled
+	fetchCalled = false
+
+	// Set up expectations for the first test case
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(200))
+	ruleBasedSegmentMockStorage.On("Update",
+		mock.MatchedBy(func(toAdd []dtos.RuleBasedSegmentDTO) bool { return len(toAdd) == 0 }),
+		mock.MatchedBy(func(toRemove []dtos.RuleBasedSegmentDTO) bool { return len(toRemove) == 0 }),
+		int64(200)).Return()
+
+	result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result.RequiresFetch {
+		t.Error("Expected RequiresFetch to be false when change number is lower than current")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when change number is lower than current")
+	}
+
+	// Test case 2: When rule-based segment change number is higher than current
+	higherChangeNumber := int64(300)
+	ruleBasedSegment = &dtos.RuleBasedSegmentDTO{
+		Name:         "test-segment",
+		ChangeNumber: higherChangeNumber,
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{},
+				},
+			},
+		},
+	}
+	baseMessage = dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
+	baseUpdate = dtos.NewBaseUpdate(baseMessage, higherChangeNumber)
+	ffChange = *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, nil, ruleBasedSegment)
+
+	// Reset fetchCalled
+	fetchCalled = false
+
+	// Set up expectations for the second test case
+	ruleBasedSegmentMockStorage = &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int(100))
+	ruleBasedSegmentMockStorage.On("Update",
+		mock.MatchedBy(func(toAdd []dtos.RuleBasedSegmentDTO) bool {
+			return len(toAdd) == 1 && toAdd[0].ChangeNumber == higherChangeNumber
+		}),
+		mock.MatchedBy(func(toRemove []dtos.RuleBasedSegmentDTO) bool { return len(toRemove) == 0 }),
+		higherChangeNumber).Return()
+
+	// Create a new split updater for the second test case
+	splitUpdater = NewSplitUpdater(
+		splitMockStorage,
+		ruleBasedSegmentMockStorage,
+		splitMockFetcher,
+		logging.NewLogger(&logging.LoggerOptions{}),
+		telemetryMockStorage,
+		appMonitorMock,
+		flagsets.NewFlagSetFilter(nil),
+		ruleBuilder,
+	)
+
+	result, err = splitUpdater.SynchronizeFeatureFlags(&ffChange)
+
+	if err != nil {
+		t.Error("Expected no error, got:", err)
+	}
+
+	if result.RequiresFetch {
+		t.Error("Expected RequiresFetch to be false when change number is higher than current")
+	}
+
+	if fetchCalled {
+		t.Error("Fetcher should not have been called when change number is higher than current")
+	}
+
+	if result.NewChangeNumber != higherChangeNumber {
+		t.Errorf("Expected NewChangeNumber to be %d, got %d", higherChangeNumber, result.NewChangeNumber)
+	}
+
+	// Verify that the rule-based segment storage was updated with the higher change number
+	ruleBasedSegmentMockStorage.AssertCalled(t, "Update", mock.Anything, mock.Anything, higherChangeNumber)
+}
+
 func TestProcessMatchers(t *testing.T) {
-	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil))
-	splitChange := &dtos.SplitChangesDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
-		{
-			Name:   "split1",
-			Status: Active,
-			Conditions: []dtos.ConditionDTO{
-				{
-					ConditionType: "NEW_MATCHER",
-					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
-					MatcherGroup: dtos.MatcherGroupDTO{
-						Matchers: []dtos.MatcherDTO{
-							{MatcherType: "NEW_MATCHER", KeySelector: nil},
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
+
+	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
+	splitUpdater := NewSplitUpdater(mocks.MockSplitStorage{}, ruleBasedSegmentMockStorage, fetcherMock.MockSplitFetcher{}, logging.NewLogger(nil), mocks.MockTelemetryStorage{}, hcMock.MockApplicationMonitor{}, flagsets.NewFlagSetFilter(nil), ruleBuilder)
+	splitChange := &dtos.SplitChangesDTO{
+		FeatureFlags: dtos.FeatureFlagsDTO{Till: 1, Since: 1, Splits: []dtos.SplitDTO{
+			{
+				Name:   "split1",
+				Status: Active,
+				Conditions: []dtos.ConditionDTO{
+					{
+						ConditionType: "NEW_MATCHER",
+						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{
+								{MatcherType: "NEW_MATCHER", KeySelector: nil},
+							},
 						},
 					},
 				},
 			},
-		},
-		{
-			Name:   "split2",
-			Status: Active,
-			Conditions: []dtos.ConditionDTO{
-				{
-					ConditionType: grammar.ConditionTypeRollout,
-					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
-					MatcherGroup: dtos.MatcherGroupDTO{
-						Matchers: []dtos.MatcherDTO{
-							{MatcherType: matchers.MatcherTypeAllKeys, KeySelector: nil},
+			{
+				Name:   "split2",
+				Status: Active,
+				Conditions: []dtos.ConditionDTO{
+					{
+						ConditionType: grammar.ConditionTypeRollout,
+						Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
+						MatcherGroup: dtos.MatcherGroupDTO{
+							Matchers: []dtos.MatcherDTO{
+								{MatcherType: grammar.MatcherTypeAllKeys, KeySelector: nil},
+							},
 						},
 					},
 				},
 			},
-		},
-	}}
+		}}}
 	toAdd, _ := splitUpdater.processFeatureFlagChanges(splitChange)
 
 	if toAdd[0].Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
 		t.Error("ConditionType should be WHITELIST")
 	}
-	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+	if toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
 	if toAdd[1].Conditions[0].ConditionType != grammar.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
 	}
-	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != matchers.MatcherTypeAllKeys {
+	if toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 }
