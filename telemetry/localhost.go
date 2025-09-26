@@ -1,8 +1,6 @@
 package telemetry
 
-import (
-	"github.com/splitio/go-split-commons/v6/dtos"
-)
+import "github.com/splitio/go-split-commons/v7/dtos"
 
 type NoOp struct{}
 

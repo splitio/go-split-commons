@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/service/api/specs"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	"github.com/splitio/go-toolkit/v5/common"
 )
 
