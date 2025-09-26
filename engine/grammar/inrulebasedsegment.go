@@ -3,9 +3,8 @@ package grammar
 import (
 	"fmt"
 
+	"github.com/splitio/go-split-commons/v7/dtos"
 	"golang.org/x/exp/slices"
-
-	"github.com/splitio/go-split-commons/v6/dtos"
 )
 
 // InRuleBasedsegmentMatcher matches if the key passed is in the rule-based segment which the matcher was constructed with

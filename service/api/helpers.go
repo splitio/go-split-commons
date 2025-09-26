@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/service/api/specs"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 )
 
 const (

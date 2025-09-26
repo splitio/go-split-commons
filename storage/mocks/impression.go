@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v6/dtos"
+import "github.com/splitio/go-split-commons/v7/dtos"
 
 // MockImpressionStorage is a mocked implementation of Impression Storage
 type MockImpressionStorage struct {
