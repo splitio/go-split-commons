@@ -3,9 +3,9 @@ package mutexmap
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/flagsets"
-	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/flagsets"
+	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -193,7 +193,7 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range m.data {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 

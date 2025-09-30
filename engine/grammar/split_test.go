@@ -3,8 +3,8 @@ package grammar
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/engine/grammar/matchers"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -24,9 +24,9 @@ func TestSplitCreation(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil))
 
-	if split.Algo() != SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -50,7 +50,7 @@ func TestSplitCreation(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -70,7 +70,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "off", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}, {
 			ConditionType: ConditionTypeWhitelist,
@@ -78,7 +78,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",
@@ -90,9 +90,9 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil))
 
-	if split.Algo() != SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -116,7 +116,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -148,7 +148,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: matchers.MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",
@@ -160,9 +160,9 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		TrafficAllocationSeed: 333,
 		TrafficTypeName:       "tt1",
 	}
-	split := NewSplit(&dto, nil, logger)
+	split := NewSplit(&dto, logger, NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil))
 
-	if split.Algo() != SplitAlgoLegacy {
+	if split.Algo() != constants.SplitAlgoLegacy {
 		t.Error("Algo() should return legacy")
 	}
 
@@ -186,7 +186,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		t.Error("Incorrect split name")
 	}
 
-	if split.Status() != SplitStatusActive {
+	if split.Status() != constants.SplitStatusActive {
 		t.Error("Status should be active")
 	}
 
@@ -198,7 +198,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 		t.Error("conditions length should be 1")
 	}
 
-	if split.conditions[0].combiner != "AND" {
+	if split.conditions[0].Combiner() != "AND" {
 		t.Error("combiner should be AND")
 	}
 }
