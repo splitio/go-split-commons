@@ -7,6 +7,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMMSplitStorage(t *testing.T) {
@@ -326,6 +327,61 @@ func TestGetNamesByFlagSets(t *testing.T) {
 	if len(sSet2) != 2 {
 		t.Error("size of names by set2 should be 2, but was: ", len(sSet2))
 	}
+}
+
+func TestReplaceAll(t *testing.T) {
+	// Initialize storage with some initial splits
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
+	initialSplits := []dtos.SplitDTO{
+		{Name: "split1", TrafficTypeName: "tt1", Sets: []string{"set1"}, ChangeNumber: 1},
+		{Name: "split2", TrafficTypeName: "tt2", Sets: []string{"set2"}, ChangeNumber: 2},
+	}
+	splitStorage.Update(initialSplits, nil, 100)
+
+	// Verify initial state
+	assert.Equal(t, 2, len(splitStorage.All()), "Should have 2 initial splits")
+	assert.False(t, !splitStorage.TrafficTypeExists("tt1") || !splitStorage.TrafficTypeExists("tt2"), "Initial traffic types should exist")
+
+	// Prepare new splits for replacement
+	newSplits := []dtos.SplitDTO{
+		{Name: "split3", TrafficTypeName: "tt3", Sets: []string{"set3"}, ChangeNumber: 3},
+		{Name: "split4", TrafficTypeName: "tt4", Sets: []string{"set4"}, ChangeNumber: 4},
+		{Name: "split5", TrafficTypeName: "tt4", Sets: []string{"set5"}, ChangeNumber: 5},
+	}
+
+	// Replace all splits
+	splitStorage.ReplaceAll(newSplits, 200)
+
+	// Verify the replacement
+	allSplits := splitStorage.All()
+	assert.Equal(t, 3, len(allSplits), "Should have 3 splits after replacement")
+
+	// Verify old splits are removed
+	assert.False(t, splitStorage.Split("split1") != nil || splitStorage.Split("split2") != nil, "Old splits should have been removed")
+
+	// Verify new splits are present
+	assert.ElementsMatch(t, newSplits, allSplits, "All splits should match the new splits")
+	for _, expectedSplit := range newSplits {
+		split := splitStorage.Split(expectedSplit.Name)
+		assert.NotNil(t, split, "Split %s should exist", expectedSplit.Name)
+		assert.Equal(t, expectedSplit.TrafficTypeName, split.TrafficTypeName, "Split %s should have traffic type %s", expectedSplit.Name, expectedSplit.TrafficTypeName)
+	}
+
+	// Verify old traffic types are removed and new ones exist
+	assert.False(t, splitStorage.TrafficTypeExists("tt1") || splitStorage.TrafficTypeExists("tt2"), "Old traffic types should not exist")
+	assert.True(t, splitStorage.TrafficTypeExists("tt3") && splitStorage.TrafficTypeExists("tt4"), "New traffic types should exist")
+
+	// Verify change number is updated
+	cn, err := splitStorage.ChangeNumber()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(200), cn, "Change number should be updated to 200")
+
+	// Test replacing with empty list
+	splitStorage.ReplaceAll([]dtos.SplitDTO{}, 300)
+	assert.Empty(t, splitStorage.All(), "All splits should be removed when replacing with empty list")
+	cn, err = splitStorage.ChangeNumber()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(300), cn, "Change number should be updated to 300")
 }
 
 func TestLargeSegmentNames(t *testing.T) {

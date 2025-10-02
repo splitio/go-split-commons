@@ -13,6 +13,7 @@ type SplitStorageProducer interface {
 	Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
 	KillLocally(splitName string, defaultTreatment string, changeNumber int64)
 	SetChangeNumber(changeNumber int64) error
+	ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64)
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
@@ -211,6 +212,7 @@ type SplitStorage interface {
 	TrafficTypeExists(trafficType string) bool
 	GetNamesByFlagSets(sets []string) map[string][]string
 	GetAllFlagSetNames() []string
+	ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64)
 }
 
 // SegmentStorage wraps consumer and producer interfaces

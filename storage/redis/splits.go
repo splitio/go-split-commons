@@ -493,4 +493,8 @@ func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
 	return result, nil
 }
 
+func (r *SplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+	//to do
+}
+
 var _ storage.SplitStorage = (*SplitStorage)(nil)
