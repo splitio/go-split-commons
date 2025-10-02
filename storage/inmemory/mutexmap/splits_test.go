@@ -328,6 +328,80 @@ func TestGetNamesByFlagSets(t *testing.T) {
 	}
 }
 
+func TestReplaceAll(t *testing.T) {
+	// Initialize storage with some initial splits
+	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
+	initialSplits := []dtos.SplitDTO{
+		{Name: "split1", TrafficTypeName: "tt1", Sets: []string{"set1"}, ChangeNumber: 1},
+		{Name: "split2", TrafficTypeName: "tt2", Sets: []string{"set2"}, ChangeNumber: 2},
+	}
+	splitStorage.Update(initialSplits, nil, 100)
+
+	// Verify initial state
+	if len(splitStorage.All()) != 2 {
+		t.Error("Should have 2 initial splits")
+	}
+	if !splitStorage.TrafficTypeExists("tt1") || !splitStorage.TrafficTypeExists("tt2") {
+		t.Error("Initial traffic types should exist")
+	}
+
+	// Prepare new splits for replacement
+	newSplits := []dtos.SplitDTO{
+		{Name: "split3", TrafficTypeName: "tt3", Sets: []string{"set3"}, ChangeNumber: 3},
+		{Name: "split4", TrafficTypeName: "tt4", Sets: []string{"set4"}, ChangeNumber: 4},
+		{Name: "split5", TrafficTypeName: "tt4", Sets: []string{"set5"}, ChangeNumber: 5},
+	}
+
+	// Replace all splits
+	splitStorage.ReplaceAll(newSplits, 200)
+
+	// Verify the replacement
+	allSplits := splitStorage.All()
+	if len(allSplits) != 3 {
+		t.Error("Should have 3 splits after replacement")
+	}
+
+	// Verify old splits are removed
+	if splitStorage.Split("split1") != nil || splitStorage.Split("split2") != nil {
+		t.Error("Old splits should have been removed")
+	}
+
+	// Verify new splits are present
+	for _, expectedSplit := range newSplits {
+		split := splitStorage.Split(expectedSplit.Name)
+		if split == nil {
+			t.Errorf("Split %s should exist", expectedSplit.Name)
+		}
+		if split.TrafficTypeName != expectedSplit.TrafficTypeName {
+			t.Errorf("Split %s should have traffic type %s", expectedSplit.Name, expectedSplit.TrafficTypeName)
+		}
+	}
+
+	// Verify old traffic types are removed and new ones exist
+	if splitStorage.TrafficTypeExists("tt1") || splitStorage.TrafficTypeExists("tt2") {
+		t.Error("Old traffic types should not exist")
+	}
+	if !splitStorage.TrafficTypeExists("tt3") || !splitStorage.TrafficTypeExists("tt4") {
+		t.Error("New traffic types should exist")
+	}
+
+	// Verify change number is updated
+	cn, _ := splitStorage.ChangeNumber()
+	if cn != 200 {
+		t.Error("Change number should be updated to 200")
+	}
+
+	// Test replacing with empty list
+	splitStorage.ReplaceAll([]dtos.SplitDTO{}, 300)
+	if len(splitStorage.All()) != 0 {
+		t.Error("All splits should be removed when replacing with empty list")
+	}
+	cn, _ = splitStorage.ChangeNumber()
+	if cn != 300 {
+		t.Error("Change number should be updated to 300")
+	}
+}
+
 func TestLargeSegmentNames(t *testing.T) {
 	splitStorage := NewMMSplitStorage(flagsets.NewFlagSetFilter(nil))
 
