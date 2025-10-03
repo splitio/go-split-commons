@@ -34,17 +34,6 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-// func createSplitUpdater(splitMockStorage storageMock.MockSplitStorage, splitAPI api.SplitAPI, logger logging.LoggerInterface, telemetryMockStorage storageMock.MockTelemetryStorage, appMonitorMock hcMock.MockApplicationMonitor) split.Updater {
-// 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-// 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(-1)
-// 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
-
-// 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
-// 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger, nil)
-// 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
-// 	return splitUpdater
-// }
-
 func validReqParams(t *testing.T, fetchOptions service.RequestParams) {
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
@@ -268,7 +257,7 @@ func TestPeriodicFetching(t *testing.T) {
 		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 			Since: 3,
 			Till:  3},
-	}).Once()
+	}, nil).Once()
 	splitAPI := api.SplitAPI{
 		SplitFetcher: splitFetcher,
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
@@ -290,7 +279,7 @@ func TestPeriodicFetching(t *testing.T) {
 	}
 	splitMockStorage := &storageMock.SplitStorageMock{}
 	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)
-	// splitMockStorage.On("Update", mock.Anything, []dtos.SplitDTO{}, int64(3)).Return().Twice()
+	splitMockStorage.On("Update", mock.Anything, []dtos.SplitDTO{}, int64(3)).Return().Once()
 	splitMockStorage.On("SegmentNames").Return(set.NewSet("segment1", "segment2")).Twice()
 	segmentMockStorage := storageMock.MockSegmentStorage{
 		ChangeNumberCall: func(segmentName string) (int64, error) { return -1, nil },
@@ -320,18 +309,12 @@ func TestPeriodicFetching(t *testing.T) {
 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitAPI.SplitFetcher, logger, telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
 	advanced := conf.AdvancedConfig{EventsQueueSize: 100, EventsBulkSize: 100, HTTPTimeout: 100, ImpressionsBulkSize: 100, ImpressionsQueueSize: 100, SegmentQueueSize: 50, SegmentWorkers: 5}
 	workers := Workers{
-		SplitUpdater:       splitUpdater,
-		SegmentUpdater:     segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
-		EventRecorder:      event.NewEventRecorderSingle(storageMock.MockEventStorage{}, splitAPI.EventRecorder, logger, dtos.Metadata{}, telemetryMockStorage),
-		ImpressionRecorder: impression.NewRecorderSingle(storageMock.MockImpressionStorage{}, splitAPI.ImpressionRecorder, logger, dtos.Metadata{}, conf.ImpressionsModeDebug, telemetryMockStorage),
-		TelemetryRecorder:  telemetry.NewTelemetrySynchronizer(telemetryMockStorage, nil, nil, nil, nil, dtos.Metadata{}, telemetryMockStorage),
+		SplitUpdater:   splitUpdater,
+		SegmentUpdater: segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, splitAPI.SegmentFetcher, logger, telemetryMockStorage, appMonitorMock),
 	}
 	splitTasks := SplitTasks{
-		EventSyncTask:      tasks.NewRecordEventsTask(workers.EventRecorder, advanced.EventsBulkSize, 1, logger),
-		ImpressionSyncTask: tasks.NewRecordImpressionsTask(workers.ImpressionRecorder, 1, logger, advanced.ImpressionsBulkSize),
-		SegmentSyncTask:    tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
-		SplitSyncTask:      tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
-		TelemetrySyncTask:  tasks.NewRecordTelemetryTask(workers.TelemetryRecorder, 10, logger),
+		SegmentSyncTask: tasks.NewFetchSegmentsTask(workers.SegmentUpdater, 1, advanced.SegmentWorkers, advanced.SegmentQueueSize, logger, appMonitorMock),
+		SplitSyncTask:   tasks.NewFetchSplitsTask(workers.SplitUpdater, 1, logger),
 	}
 	syncForTest := NewSynchronizer(advanced, splitTasks, workers, logger, nil)
 	syncForTest.StartPeriodicFetching()
