@@ -385,7 +385,7 @@ func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitCha
 
 	return &UpdateResult{
 		ReferencedSegments: segments,
-		NewChangeNumber:    ruleBasedChange.BaseUpdate.ChangeNumber(),
+		NewRBChangeNumber:  ruleBasedChange.BaseUpdate.ChangeNumber(),
 		RequiresFetch:      false,
 	}
 }

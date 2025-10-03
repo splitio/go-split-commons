@@ -40,7 +40,7 @@ func (m MockImpressionStorage) PopNWithMetadata(n int64) ([]dtos.ImpressionQueue
 
 // Drop mock
 func (m MockImpressionStorage) Drop(size *int64) error {
-	return m.Drop(size)
+	return m.DropCall(size)
 }
 
 // PopNRaw mock

@@ -15,7 +15,7 @@ type MockRuleBasedSegmentStorage struct {
 // ChangeNumber mock
 func (m *MockRuleBasedSegmentStorage) ChangeNumber() int64 {
 	args := m.Called()
-	return int64(args.Int(0))
+	return args.Get(0).(int64)
 }
 
 // All mock
@@ -56,20 +56,18 @@ func (m *MockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 
 // SetChangeNumber mock
 func (m *MockRuleBasedSegmentStorage) SetChangeNumber(till int64) error {
-	m.Called(till)
-	return nil
+	args := m.Called(till)
+	return args.Error(0)
 }
 
 // Update mock
 func (m *MockRuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
 	m.Called(toAdd, toRemove, till)
-	return
 }
 
 // Clear mock
 func (m *MockRuleBasedSegmentStorage) Clear() {
 	m.Called()
-	return
 }
 
 var _ storage.RuleBasedSegmentsStorage = (*MockRuleBasedSegmentStorage)(nil)
