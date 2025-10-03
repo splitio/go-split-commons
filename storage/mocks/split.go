@@ -23,6 +23,7 @@ type MockSplitStorage struct {
 	TrafficTypeExistsCall  func(trafficType string) bool
 	GetNamesByFlagSetsCall func(sets []string) map[string][]string
 	GetAllFlagSetNamesCall func() []string
+	ReplaceAllCall         func(toAdd []dtos.SplitDTO, changeNumber int64)
 }
 
 // All mock
@@ -92,6 +93,10 @@ func (m MockSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string 
 
 func (m MockSplitStorage) GetAllFlagSetNames() []string {
 	return m.GetAllFlagSetNamesCall()
+}
+
+func (m MockSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+	m.ReplaceAllCall(toAdd, changeNumber)
 }
 
 // SplitStorageMock is a mocked implementation of Split Storage with testify
@@ -192,12 +197,18 @@ func (m *SplitStorageMock) GetNamesByFlagSets(sets []string) map[string][]string
 	return args.Get(0).(map[string][]string)
 }
 
+// GetAllFlagSetNames mock
 func (m *SplitStorageMock) GetAllFlagSetNames() []string {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil
 	}
 	return args.Get(0).([]string)
+}
+
+// ReplaceAll mock
+func (m *SplitStorageMock) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+	m.Called(toAdd, changeNumber)
 }
 
 var _ storage.SplitStorage = (*SplitStorageMock)(nil)

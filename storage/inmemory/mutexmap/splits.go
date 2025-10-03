@@ -150,6 +150,10 @@ func (m *MMSplitStorage) addToFlagSets(name string, sets []string) {
 func (m *MMSplitStorage) Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, till int64) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+	m.update(toAdd, toRemove, till)
+}
+
+func (m *MMSplitStorage) update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, till int64) {
 	for _, split := range toAdd {
 		existing, thisIsAnUpdate := m.data[split.Name]
 		if thisIsAnUpdate {
@@ -264,6 +268,21 @@ func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 		toReturn[flagSet] = m.flagSets.FlagsFromSet(flagSet)
 	}
 	return toReturn
+}
+
+func (m *MMSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+	// Get all current splits under read lock
+	m.mutex.RLock()
+	toRemove := make([]dtos.SplitDTO, 0)
+	for _, split := range m.data {
+		toRemove = append(toRemove, split)
+	}
+	m.mutex.RUnlock()
+
+	// Now acquire write lock for the update
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.update(toAdd, toRemove, changeNumber)
 }
 
 var _ storage.SplitStorageConsumer = (*MMSplitStorage)(nil)
