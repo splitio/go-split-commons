@@ -367,7 +367,7 @@ func TestPeriodicRecording(t *testing.T) {
 				Treatment:    "someTreatment",
 			}}, nil
 		},
-		EmptyCall: func() bool { return atomic.LoadInt64(&impressionsCalled) >= 3 },
+		EmptyCall: func() bool { return atomic.LoadInt64(&impressionsCalled) != 1 },
 	}
 	eventMockStorage := storageMock.MockEventStorage{
 		PopNCall: func(n int64) ([]dtos.EventDTO, error) {
@@ -381,7 +381,7 @@ func TestPeriodicRecording(t *testing.T) {
 				Value:           nil,
 			}}, nil
 		},
-		EmptyCall: func() bool { return atomic.LoadInt64(&eventsCalled) >= 4 },
+		EmptyCall: func() bool { return atomic.LoadInt64(&eventsCalled) != 1 },
 	}
 	telemetryMockStorage := storageMock.MockTelemetryStorage{
 		PopLatenciesCall:           func() dtos.MethodLatencies { return dtos.MethodLatencies{} },
