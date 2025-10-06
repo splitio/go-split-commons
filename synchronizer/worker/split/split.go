@@ -114,6 +114,48 @@ func (s *UpdaterImpl) processRuleBasedUpdate(splitChanges *dtos.SplitChangesDTO)
 	return segments
 }
 
+type fetchResult struct {
+	segmentReferences      []string
+	largeSegmentReferences []string
+	updatedSplitNames      []string
+	ffCurrentSince         int64
+	rbCurrentSince         int64
+	ffSince                int64
+	rbSince                int64
+}
+
+func (s *UpdaterImpl) performFetch(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
+	currentSince, _ := s.splitStorage.ChangeNumber()
+	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
+	before := time.Now()
+	splitChanges, err := s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			if httpError.Code == scRequestURITooLong {
+				s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+			}
+			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
+		}
+		return fetchResult{
+			ffCurrentSince: currentSince,
+			rbCurrentSince: currentRBSince,
+		}, err
+	}
+	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
+	s.processUpdate(splitChanges)
+	segmentReferences := s.processRuleBasedUpdate(splitChanges)
+	segmentReferences = appendSegmentNames(segmentReferences, splitChanges)
+	return fetchResult{
+		segmentReferences:      segmentReferences,
+		largeSegmentReferences: appendLargeSegmentNames([]string{}, splitChanges),
+		updatedSplitNames:      appendSplitNames([]string{}, splitChanges),
+		ffCurrentSince:         splitChanges.FeatureFlags.Till,
+		rbCurrentSince:         splitChanges.RuleBasedSegments.Till,
+		ffSince:                splitChanges.FeatureFlags.Since,
+		rbSince:                splitChanges.RuleBasedSegments.Since,
+	}, nil
+}
+
 // fetchUntil Hit endpoint, update storage and return when since==till.
 func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*UpdateResult, error) {
 	// just guessing sizes so the we don't realloc immediately
@@ -121,33 +163,17 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	updatedSplitNames := make([]string, 0, 10)
 	largeSegmentReferences := make([]string, 0, 10)
 	var err error
-	var currentSince int64
-	var currentRBSince int64
+	var fetchResult fetchResult
 
 	for { // Fetch until since==till
-		currentSince, _ = s.splitStorage.ChangeNumber()
-		currentRBSince = s.ruleBasedSegmentStorage.ChangeNumber()
-		before := time.Now()
-		var splitChanges *dtos.SplitChangesDTO
-		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+		fetchResult, err = s.performFetch(fetchOptions)
 		if err != nil {
-			if httpError, ok := err.(*dtos.HTTPError); ok {
-				if httpError.Code == scRequestURITooLong {
-					s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
-				}
-				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
-			}
 			break
 		}
-		currentSince = splitChanges.FeatureFlags.Till
-		currentRBSince = splitChanges.RuleBasedSegments.Till
-		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
-		s.processUpdate(splitChanges)
-		segmentReferences = s.processRuleBasedUpdate(splitChanges)
-		segmentReferences = appendSegmentNames(segmentReferences, splitChanges)
-		updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges)
-		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges)
-		if currentSince == splitChanges.FeatureFlags.Since && currentRBSince == splitChanges.RuleBasedSegments.Since {
+		segmentReferences = append(segmentReferences, fetchResult.segmentReferences...)
+		largeSegmentReferences = append(largeSegmentReferences, fetchResult.largeSegmentReferences...)
+		updatedSplitNames = append(updatedSplitNames, fetchResult.updatedSplitNames...)
+		if fetchResult.ffCurrentSince == fetchResult.ffSince && fetchResult.rbCurrentSince == fetchResult.rbSince {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			break
 		}
@@ -155,8 +181,8 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	return &UpdateResult{
 		UpdatedSplits:           common.DedupeStringSlice(updatedSplitNames),
 		ReferencedSegments:      common.DedupeStringSlice(segmentReferences),
-		NewChangeNumber:         currentSince,
-		NewRBChangeNumber:       currentRBSince,
+		NewChangeNumber:         fetchResult.ffCurrentSince,
+		NewRBChangeNumber:       fetchResult.rbCurrentSince,
 		ReferencedLargeSegments: common.DedupeStringSlice(largeSegmentReferences),
 	}, err
 }
