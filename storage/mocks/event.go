@@ -40,7 +40,7 @@ func (m MockEventStorage) Push(event dtos.EventDTO, size int) error {
 
 // Drop mock
 func (m MockEventStorage) Drop(size *int64) error {
-	return m.Drop(size)
+	return m.DropCall(size)
 }
 
 // PopNRaw mock
