@@ -96,11 +96,11 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
-	splitFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-			Since: 3,
-			Till:  3},
-	}, nil)
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
+	response.SetFFSince(3)
+	response.SetFFTill(3)
+
+	splitFetcher.On("Fetch", mock.Anything).Return(response, nil)
 	splitAPI := api.SplitAPI{
 		SplitFetcher: splitFetcher,
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
@@ -165,12 +165,11 @@ func TestSyncAllOk(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
+	response.SetFFSince(3)
+	response.SetFFTill(3)
 	splitFetcher := &httpMocks.MockSplitFetcher{}
-	splitFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-			Since: 3,
-			Till:  3},
-	}, nil)
+	splitFetcher.On("Fetch", mock.Anything).Return(response, nil)
 	splitAPI := api.SplitAPI{
 		SplitFetcher: splitFetcher,
 		SegmentFetcher: httpMocks.MockSegmentFetcher{
@@ -252,12 +251,12 @@ func TestPeriodicFetching(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
+	response.SetFFSince(3)
+	response.SetFFTill(3)
 	splitFetcher := &httpMocks.MockSplitFetcher{}
-	splitFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-			Since: 3,
-			Till:  3},
-	}, nil).Once()
+	splitFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 	splitAPI := api.SplitAPI{
 		SplitFetcher: splitFetcher,
 		SegmentFetcher: httpMocks.MockSegmentFetcher{

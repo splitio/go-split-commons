@@ -21,10 +21,11 @@ import (
 )
 
 var splitsMock, _ = ioutil.ReadFile("../../testdata/splits_mock.json")
+var oldSplitMock, _ = ioutil.ReadFile("../../testdata/old_splits_mock.json")
 var splitMock, _ = ioutil.ReadFile("../../testdata/split_mock.json")
 var segmentMock, _ = ioutil.ReadFile("../../testdata/segment_mock.json")
 
-func TestSpitChangesFetch(t *testing.T) {
+func TestSpitChangesFetch11(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +47,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		if r.URL.RawQuery != "s=1.1&since=123456&rbSince=123456" {
 			t.Error("wrong query params")
 		}
-		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
+		fmt.Fprintln(w, fmt.Sprintf(string(oldSplitMock), splitMock))
 	}))
 	defer ts.Close()
 
@@ -66,20 +67,80 @@ func TestSpitChangesFetch(t *testing.T) {
 		t.Error(err)
 	}
 
-	if splitChangesDTO.FeatureFlags.Till != 1491244291288 ||
-		splitChangesDTO.FeatureFlags.Splits[0].Name != "DEMO_MURMUR2" {
+	if splitChangesDTO.FFTill() != 1491244291288 ||
+		splitChangesDTO.FeatureFlags()[0].Name != "DEMO_MURMUR2" {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.FeatureFlags.Splits[0].Configurations == nil {
+	if splitChangesDTO.FeatureFlags()[0].Configurations == nil {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.FeatureFlags.Splits[0].Configurations["of"] != "" {
+	if splitChangesDTO.FeatureFlags()[0].Configurations["of"] != "" {
 		t.Error("DTO mal formed")
 	}
 
-	if splitChangesDTO.FeatureFlags.Splits[0].Configurations["on"] != "{\"color\": \"blue\",\"size\": 13}" {
+	if splitChangesDTO.FeatureFlags()[0].Configurations["on"] != "{\"color\": \"blue\",\"size\": 13}" {
+		t.Error("DTO mal formed")
+	}
+}
+
+func TestSpitChangesFetch(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(CacheControlHeader) != CacheControlNoCache {
+			t.Error("wrong cache control header")
+		}
+		if r.URL.Query().Get("since") != "123456" {
+			t.Error("wrong since")
+		}
+		if r.URL.Query().Get("till") != "" {
+			t.Error("wrong till")
+		}
+		if r.URL.Query().Get("sets") != "" {
+			t.Error("wrong sets")
+		}
+		if r.URL.Query().Get("s") != specs.FLAG_V1_3 {
+			t.Error("wrong spec")
+		}
+		if r.URL.RawQuery != "s=1.3&since=123456&rbSince=123456" {
+			t.Error("wrong query params")
+		}
+		fmt.Fprintln(w, fmt.Sprintf(string(splitsMock), splitMock))
+	}))
+	defer ts.Close()
+
+	splitFetcher := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL:        ts.URL,
+			SdkURL:           ts.URL,
+			FlagsSpecVersion: specs.FLAG_V1_3,
+		},
+		logger,
+		dtos.Metadata{},
+	)
+
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if splitChangesDTO.FFTill() != 1491244291288 ||
+		splitChangesDTO.FeatureFlags()[0].Name != "DEMO_MURMUR2" {
+		t.Error("DTO mal formed")
+	}
+
+	if splitChangesDTO.FeatureFlags()[0].Configurations == nil {
+		t.Error("DTO mal formed")
+	}
+
+	if splitChangesDTO.FeatureFlags()[0].Configurations["of"] != "" {
+		t.Error("DTO mal formed")
+	}
+
+	if splitChangesDTO.FeatureFlags()[0].Configurations["on"] != "{\"color\": \"blue\",\"size\": 13}" {
 		t.Error("DTO mal formed")
 	}
 }

@@ -37,11 +37,10 @@ func TestSplitSyncTask(t *testing.T) {
 	splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1, mockedSplit2}, []dtos.SplitDTO{mockedSplit3}, int64(3)).Once()
 
 	splitMockFetcher := &fetcherMock.MockSplitFetcher{}
-	splitMockFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-			Since: 3,
-			Till:  3},
-	}, nil).Once()
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3}, nil)
+	response.SetFFSince(3)
+	response.SetFFTill(3)
+	splitMockFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
