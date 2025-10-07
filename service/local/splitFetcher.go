@@ -217,8 +217,8 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
-func (f *FileSplitFetcher) parseSplitsJson(data string) (dtos.FFResponse, error) {
-	splitChangesDto, err := dtos.NewFFResponseV13([]byte(data))
+func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.FFResponseLocalV13, error) {
+	splitChangesDto, err := dtos.NewFFResponseLocalV13([]byte(data))
 
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
@@ -314,9 +314,7 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 	}
 
 	s.lastHash = currSum
-	responseToReturn := dtos.NewFFResponseWithFFRBV13(splits, nil)
-	responseToReturn.SetFFSince(fetchOptions.ChangeNumber())
-	responseToReturn.SetFFTill(till)
+	responseToReturn := dtos.NewFFResponseWithFFRBV13(splits, nil, fetchOptions.ChangeNumber(), till, -1, -1)
 	return responseToReturn, nil
 }
 

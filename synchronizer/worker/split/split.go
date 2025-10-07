@@ -316,7 +316,7 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	s.logger.Debug(fmt.Sprintf("updating feature flag %s", ffChange.FeatureFlag().Name))
 	featureFlags := make([]dtos.SplitDTO, 0, 1)
 	featureFlags = append(featureFlags, *ffChange.FeatureFlag())
-	splitChanges := dtos.NewFFResponseWithFFRBV13(featureFlags, nil)
+	splitChanges := dtos.NewFFResponseWithFFRBV13(featureFlags, nil, ffChange.BaseUpdate.ChangeNumber(), ffChange.BaseUpdate.ChangeNumber(), -1, -1)
 	activeFFs, inactiveFFs := s.processFeatureFlagChanges(splitChanges)
 	s.splitStorage.Update(activeFFs, inactiveFFs, ffChange.BaseUpdate.ChangeNumber())
 	s.runtimeTelemetry.RecordUpdatesFromSSE(telemetry.SplitUpdate)
@@ -383,7 +383,7 @@ func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitCha
 	}
 	ruleBasedSegments := make([]dtos.RuleBasedSegmentDTO, 0, 1)
 	ruleBasedSegments = append(ruleBasedSegments, *ruleBasedChange.RuleBasedSegment())
-	ffResponse := dtos.NewFFResponseWithFFRBV13(nil, ruleBasedSegments)
+	ffResponse := dtos.NewFFResponseWithFFRBV13(nil, ruleBasedSegments, -1, -1, ruleBasedChange.ChangeNumber(), ruleBasedChange.ChangeNumber())
 	toRemove, toAdd, segments := s.processRuleBasedSegmentChanges(ffResponse)
 	s.ruleBasedSegmentStorage.Update(toAdd, toRemove, ruleBasedChange.BaseUpdate.ChangeNumber())
 

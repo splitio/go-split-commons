@@ -96,9 +96,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
-	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
-	response.SetFFSince(3)
-	response.SetFFTill(3)
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil, 3, 3, -1, -1)
 
 	splitFetcher.On("Fetch", mock.Anything).Return(response, nil)
 	splitAPI := api.SplitAPI{
@@ -165,9 +163,7 @@ func TestSyncAllOk(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
-	response.SetFFSince(3)
-	response.SetFFTill(3)
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil, 3, 3, -1, -1)
 	splitFetcher := &httpMocks.MockSplitFetcher{}
 	splitFetcher.On("Fetch", mock.Anything).Return(response, nil)
 	splitAPI := api.SplitAPI{
@@ -252,9 +248,7 @@ func TestPeriodicFetching(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
-	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil)
-	response.SetFFSince(3)
-	response.SetFFTill(3)
+	response := dtos.NewFFResponseWithFFRBV13([]dtos.SplitDTO{mockedSplit1, mockedSplit2}, nil, 3, 3, -1, -1)
 	splitFetcher := &httpMocks.MockSplitFetcher{}
 	splitFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 	splitAPI := api.SplitAPI{

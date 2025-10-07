@@ -7,7 +7,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
-func splitSanitization(splitChange dtos.FFResponse) dtos.FFResponse {
+func splitSanitization(splitChange *dtos.FFResponseLocalV13) *dtos.FFResponseLocalV13 {
 	if splitChange.FFTill() < -1 {
 		splitChange.SetFFTill(-1)
 	}

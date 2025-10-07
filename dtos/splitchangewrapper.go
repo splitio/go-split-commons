@@ -12,12 +12,6 @@ type FFResponse interface {
 	RBTill() int64
 	FFSince() int64
 	RBSince() int64
-	SetFFTill(till int64)
-	SetFFSince(since int64)
-	SetRBTill(till int64)
-	SetRBSince(since int64)
-	ReplaceFF(featureFlags []SplitDTO)
-	ReplaceRB(ruleBasedSegments []RuleBasedSegmentDTO)
 }
 
 type FFResponseV12 struct {
@@ -56,7 +50,7 @@ func (f12 *FFResponseV12) RBTill() int64 {
 }
 
 func (f12 *FFResponseV12) FFSince() int64 {
-	return f12.FFSince()
+	return f12.SplitChanges.Since
 }
 
 func (f12 *FFResponseV12) RBSince() int64 {
@@ -102,9 +96,9 @@ func NewFFResponseV13(data []byte) (FFResponse, error) {
 	return nil, err
 }
 
-func NewFFResponseWithFFRBV13(ffDTOs []SplitDTO, rbDTOs []RuleBasedSegmentDTO) FFResponse {
-	featureFlagChange := SplitChangesDTO{FeatureFlags: FeatureFlagsDTO{Splits: ffDTOs},
-		RuleBasedSegments: RuleBasedSegmentsDTO{RuleBasedSegments: rbDTOs}}
+func NewFFResponseWithFFRBV13(ffDTOs []SplitDTO, rbDTOs []RuleBasedSegmentDTO, since int64, till int64, rbSince int64, rbTill int64) FFResponse {
+	featureFlagChange := SplitChangesDTO{FeatureFlags: FeatureFlagsDTO{Splits: ffDTOs, Since: since, Till: till},
+		RuleBasedSegments: RuleBasedSegmentsDTO{RuleBasedSegments: rbDTOs, Since: rbSince, Till: rbTill}}
 	return &FFResponseV13{
 		SplitChanges: featureFlagChange,
 	}
@@ -160,4 +154,79 @@ func (f13 *FFResponseV13) ReplaceFF(featureFlags []SplitDTO) {
 
 func (f13 *FFResponseV13) ReplaceRB(ruleBasedSegments []RuleBasedSegmentDTO) {
 	f13.SplitChanges.RuleBasedSegments.RuleBasedSegments = ruleBasedSegments
+}
+
+type FFResponseLocalV13 struct {
+	SplitChanges SplitChangesDTO
+}
+
+func NewFFResponseLocalV13(data []byte) (*FFResponseLocalV13, error) {
+	var splitChangesDto SplitChangesDTO
+	err := json.Unmarshal(data, &splitChangesDto)
+	if err == nil {
+		return &FFResponseLocalV13{
+			SplitChanges: splitChangesDto,
+		}, nil
+	}
+	return nil, err
+}
+
+func NewFFResponseLocalWithFFRBV13(ffDTOs []SplitDTO, rbDTOs []RuleBasedSegmentDTO, since int64, till int64, rbSince int64, rbTill int64) *FFResponseLocalV13 {
+	featureFlagChange := SplitChangesDTO{FeatureFlags: FeatureFlagsDTO{Splits: ffDTOs, Since: since, Till: till},
+		RuleBasedSegments: RuleBasedSegmentsDTO{RuleBasedSegments: rbDTOs, Since: rbSince, Till: rbTill}}
+	return &FFResponseLocalV13{
+		SplitChanges: featureFlagChange,
+	}
+}
+
+func (f *FFResponseLocalV13) FeatureFlags() []SplitDTO {
+	return f.SplitChanges.FeatureFlags.Splits
+}
+
+func (f *FFResponseLocalV13) RuleBasedSegments() []RuleBasedSegmentDTO {
+	return f.SplitChanges.RuleBasedSegments.RuleBasedSegments
+}
+
+func (f FFResponseLocalV13) NeedsAnotherFetch() bool {
+	return f.SplitChanges.FeatureFlags.Since == f.SplitChanges.FeatureFlags.Till && f.SplitChanges.RuleBasedSegments.Since == f.SplitChanges.RuleBasedSegments.Till
+}
+
+func (f *FFResponseLocalV13) FFTill() int64 {
+	return f.SplitChanges.FeatureFlags.Till
+}
+
+func (f *FFResponseLocalV13) RBTill() int64 {
+	return f.SplitChanges.RuleBasedSegments.Till
+}
+
+func (f *FFResponseLocalV13) RBSince() int64 {
+	return f.SplitChanges.RuleBasedSegments.Since
+}
+
+func (f *FFResponseLocalV13) SetFFTill(till int64) {
+	f.SplitChanges.FeatureFlags.Till = till
+}
+
+func (f *FFResponseLocalV13) SetFFSince(since int64) {
+	f.SplitChanges.FeatureFlags.Since = since
+}
+
+func (f *FFResponseLocalV13) SetRBTill(till int64) {
+	f.SplitChanges.RuleBasedSegments.Till = till
+}
+
+func (f *FFResponseLocalV13) FFSince() int64 {
+	return f.SplitChanges.FeatureFlags.Since
+}
+
+func (f *FFResponseLocalV13) SetRBSince(since int64) {
+	f.SplitChanges.RuleBasedSegments.Since = since
+}
+
+func (f *FFResponseLocalV13) ReplaceFF(featureFlags []SplitDTO) {
+	f.SplitChanges.FeatureFlags.Splits = featureFlags
+}
+
+func (f *FFResponseLocalV13) ReplaceRB(ruleBasedSegments []RuleBasedSegmentDTO) {
+	f.SplitChanges.RuleBasedSegments.RuleBasedSegments = ruleBasedSegments
 }
