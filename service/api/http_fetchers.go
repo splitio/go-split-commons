@@ -48,7 +48,7 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
 func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter).WithSpecVersion(f.specVersion)
+	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter)
 	data, err := f.fetchRaw("/splitChanges", fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)

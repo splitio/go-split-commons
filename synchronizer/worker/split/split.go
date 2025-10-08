@@ -1,7 +1,9 @@
 package split
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
@@ -10,6 +12,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/healthcheck/application"
 	"github.com/splitio/go-split-commons/v7/service"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-split-commons/v7/telemetry"
 	"github.com/splitio/go-toolkit/v5/backoff"
@@ -24,7 +27,6 @@ const (
 	UpdateTypeSplitChange          = "SPLIT_UPDATE"
 	UpdateTypeRuleBasedChange      = "RB_SEGMENT_UPDATE"
 	TypeStandard                   = "standard"
-	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
@@ -33,6 +35,10 @@ const (
 const (
 	Active   = "ACTIVE"
 	Archived = "ARCHIVED"
+)
+
+var (
+	ErrProxy = fmt.Errorf("maybe proxy error")
 )
 
 // Updater interface
@@ -70,6 +76,8 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffMaxWait time.Duration
 	flagSetsFilter              flagsets.FlagSetFilter
 	validator                   validator.Validator
+	timestampLastSync           int64
+	fetcher                     func(fetchOptions *service.FlagRequestParams) (fetchResult, error)
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -82,8 +90,9 @@ func NewSplitUpdater(
 	hcMonitor application.MonitorProducerInterface,
 	flagSetsFilter flagsets.FlagSetFilter,
 	ruleBuilder grammar.RuleBuilder,
+	isProxy bool,
 ) *UpdaterImpl {
-	return &UpdaterImpl{
+	updater := &UpdaterImpl{
 		splitStorage:                splitStorage,
 		splitFetcher:                splitFetcher,
 		logger:                      logger,
@@ -94,7 +103,14 @@ func NewSplitUpdater(
 		flagSetsFilter:              flagSetsFilter,
 		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
 		validator:                   validator.NewValidator(ruleBuilder),
+		timestampLastSync:           0,
 	}
+	if !isProxy {
+		updater.fetcher = updater.performFetchWithoutProxy
+	} else {
+		updater.fetcher = updater.performFetch
+	}
+	return updater
 }
 
 func (s *UpdaterImpl) SetRuleBasedSegmentStorage(storage storage.RuleBasedSegmentsStorage) {
@@ -124,24 +140,32 @@ type fetchResult struct {
 	rbSince                int64
 }
 
-func (s *UpdaterImpl) performFetch(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
-	currentSince, _ := s.splitStorage.ChangeNumber()
-	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
+func (s *UpdaterImpl) shouldUseLatest() bool {
+	return time.Since(time.Unix(s.timestampLastSync, 0)) >= 24*time.Hour
+}
+
+func (s *UpdaterImpl) fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+	var splitChanges *dtos.SplitChangesDTO
+	var err error
 	before := time.Now()
-	splitChanges, err := s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+	splitChanges, err = s.splitFetcher.Fetch(fetchOptions)
 	if err != nil {
 		if httpError, ok := err.(*dtos.HTTPError); ok {
-			if httpError.Code == scRequestURITooLong {
+			if httpError.Code == http.StatusRequestURITooLong {
 				s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+			}
+			if httpError.Code == http.StatusBadRequest {
+				return splitChanges, ErrProxy
 			}
 			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 		}
-		return fetchResult{
-			ffCurrentSince: currentSince,
-			rbCurrentSince: currentRBSince,
-		}, err
+		return splitChanges, err
 	}
 	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
+	return splitChanges, nil
+}
+
+func (s *UpdaterImpl) processSplitChanges(splitChanges *dtos.SplitChangesDTO) fetchResult {
 	s.processUpdate(splitChanges)
 	segmentReferences := s.processRuleBasedUpdate(splitChanges)
 	segmentReferences = appendSegmentNames(segmentReferences, splitChanges)
@@ -153,7 +177,62 @@ func (s *UpdaterImpl) performFetch(fetchOptions *service.FlagRequestParams) (fet
 		rbCurrentSince:         splitChanges.RuleBasedSegments.Till,
 		ffSince:                splitChanges.FeatureFlags.Since,
 		rbSince:                splitChanges.RuleBasedSegments.Since,
-	}, nil
+	}
+}
+
+func (s *UpdaterImpl) v11(fetchOptions *service.FlagRequestParams, currentSince, currentRBSince int64) (fetchResult, error) {
+	splitChanges, err := s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_1)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+	if err != nil {
+		return fetchResult{
+			ffSince: currentSince,
+			rbSince: currentRBSince,
+		}, err
+	}
+	return s.processSplitChanges(splitChanges), nil
+}
+
+func (s *UpdaterImpl) performFetchWithoutProxy(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
+	currentSince, _ := s.splitStorage.ChangeNumber()
+	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
+	splitChanges, err := s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+	if err != nil {
+		return fetchResult{
+			ffSince: currentSince,
+			rbSince: currentRBSince,
+		}, err
+	}
+	return s.processSplitChanges(splitChanges), nil
+}
+
+func (s *UpdaterImpl) performFetch(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
+	var splitChanges *dtos.SplitChangesDTO
+	var err error
+	currentSince, _ := s.splitStorage.ChangeNumber()
+	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
+	shouldRetry := s.shouldUseLatest()
+	if shouldRetry || s.timestampLastSync == 0 {
+		if shouldRetry { // check if timestamp passed and reset since to -1
+			currentSince = -1
+			currentRBSince = -1
+		}
+		splitChanges, err = s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+		if err != nil {
+			if errors.Is(err, ErrProxy) {
+				s.timestampLastSync = time.Now().Unix()
+				return s.v11(fetchOptions, currentSince, currentRBSince)
+			}
+			return fetchResult{
+				ffSince: currentSince,
+				rbSince: currentRBSince,
+			}, err
+		}
+		if shouldRetry { // fetch was ok and needs to replace entire cache because legacy data are stored
+			// replaceALL if s.Timestamp != 0 AND RETURN
+			// return s.replaceAllChanges(splitChanges), nil
+		}
+		return s.processSplitChanges(splitChanges), nil
+	}
+	return s.v11(fetchOptions, currentSince, currentRBSince)
 }
 
 // fetchUntil Hit endpoint, update storage and return when since==till.
@@ -166,7 +245,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	var fetchResult fetchResult
 
 	for { // Fetch until since==till
-		fetchResult, err = s.performFetch(fetchOptions)
+		fetchResult, err = s.fetcher(fetchOptions)
 		if err != nil {
 			break
 		}

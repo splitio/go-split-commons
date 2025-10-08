@@ -55,6 +55,7 @@ func TestLocalSyncAllError(t *testing.T) {
 		appMonitorMock,
 		flagSetFilter,
 		ruleBuilder,
+		false,
 	)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 

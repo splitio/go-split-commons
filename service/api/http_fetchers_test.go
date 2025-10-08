@@ -17,6 +17,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/service"
 	"github.com/splitio/go-split-commons/v7/service/api/specs"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -61,7 +62,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456))
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456).WithSpecVersion(common.StringRef(specs.FLAG_V1_1)))
 	if err != nil {
 		t.Error(err)
 	}
@@ -219,7 +220,7 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000).WithChangeNumberRB(123456))
+	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000).WithChangeNumberRB(123456).WithSpecVersion(common.StringRef(specs.FLAG_V1_1)))
 	if err != nil {
 		t.Error(err)
 	}
