@@ -67,8 +67,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has defaultTill, both since/till should be updated to changeNumber
-	if res.RuleBasedSegments.Since != 25 || res.RuleBasedSegments.Till != 25 {
-		t.Error("Expected RBS since/till to be 25 (change number), got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 25 || res.RBTill() != 25 {
+		t.Error("Expected RBS since/till to be 25 (change number), got:", res.RBSince(), res.RBTill())
 	}
 
 	// Test case 2: RBS with different hash and till = 50
@@ -84,8 +84,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has different hash and till > changeNumber, since should be updated to till
-	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 50 || res.RBTill() != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RBSince(), res.RBTill())
 	}
 
 	// Test case 3: RBS with same hash and till = 50
@@ -113,8 +113,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has same hash and till = changeNumber, since should be updated to till
-	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 50 || res.RBTill() != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RBSince(), res.RBTill())
 	}
 
 	// Test case 5: RBS with empty segments
@@ -130,8 +130,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has empty segments, since should be updated to till
-	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 50 || res.RBTill() != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RBSince(), res.RBTill())
 	}
 
 	// Test case 6: RBS with nil segments
@@ -147,8 +147,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has nil segments, since should be updated to till
-	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 50 || res.RBTill() != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RBSince(), res.RBTill())
 	}
 
 	// Test case 7: RBS with different segments
@@ -164,8 +164,8 @@ func TestProcessSplitJson(t *testing.T) {
 	}
 
 	// Since RBS has different segments, since should be updated to till
-	if res.RuleBasedSegments.Since != 50 || res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS since/till to be 50/50, got:", res.RuleBasedSegments.Since, res.RuleBasedSegments.Till)
+	if res.RBSince() != 50 || res.RBTill() != 50 {
+		t.Error("Expected RBS since/till to be 50/50, got:", res.RBSince(), res.RBTill())
 	}
 }
 
@@ -192,12 +192,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != -1 || res.FeatureFlags.Till != 0 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != -1 || res.FFTill() != 0 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 2 {
+		t.Error("should have 2 splits. has: ", len(res.FeatureFlags()))
 	}
 
 	// second call -- no change -- since == till
@@ -207,12 +207,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != 0 || res.FeatureFlags.Till != 0 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != 0 || res.FFTill() != 0 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 2 {
+		t.Error("should have 2 splits. has: ", len(res.FeatureFlags()))
 	}
 
 	if _, err := file.Write([]byte("feature3 yes\n")); err != nil {
@@ -226,12 +226,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != 0 || res.FeatureFlags.Till != 1 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != 0 || res.FFTill() != 1 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 3 {
-		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 3 {
+		t.Error("should have 2 splits. has: ", len(res.FeatureFlags()))
 	}
 
 	// fourth call -- no change -- till != since
@@ -241,12 +241,12 @@ func TestLocalSplitFetcher(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != 1 || res.FeatureFlags.Till != 1 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != 1 || res.FFTill() != 1 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 3 {
-		t.Error("should have 2 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 3 {
+		t.Error("should have 2 splits. has: ", len(res.FeatureFlags()))
 	}
 }
 
@@ -260,19 +260,19 @@ func TestLocalSplitFetcherJson(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != 1660326991072 || res.FeatureFlags.Till != 1660326991072 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != 1660326991072 || res.FFTill() != 1660326991072 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 7 {
-		t.Error("should have 7 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 7 {
+		t.Error("should have 7 splits. has: ", len(res.FeatureFlags()))
 	}
 
-	if res.FeatureFlags.Splits[0].Name != "split_1" {
+	if res.FeatureFlags()[0].Name != "split_1" {
 		t.Error("DTO mal formed")
 	}
 
-	if res.FeatureFlags.Splits[0].Configurations == nil {
+	if res.FeatureFlags()[0].Configurations == nil {
 		t.Error("DTO mal formed")
 	}
 }
@@ -287,19 +287,19 @@ func TestLocalSplitFetcherJsonWithRbs(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Since != 10 || res.FeatureFlags.Till != 10 {
-		t.Error("Wrong since/till. Got: ", res.FeatureFlags.Since, res.FeatureFlags.Till)
+	if res.FFSince() != 10 || res.FFTill() != 10 {
+		t.Error("Wrong since/till. Got: ", res.FFSince(), res.FFTill())
 	}
 
-	if len(res.FeatureFlags.Splits) != 1 {
-		t.Error("should have 1 splits. has: ", res.FeatureFlags.Splits)
+	if len(res.FeatureFlags()) != 1 {
+		t.Error("should have 1 splits. has: ", len(res.FeatureFlags()))
 	}
 
-	if res.FeatureFlags.Splits[0].Name != "rbs_split" {
+	if res.FeatureFlags()[0].Name != "rbs_split" {
 		t.Error("DTO mal formed")
 	}
 
-	if res.FeatureFlags.Splits[0].Configurations == nil {
+	if res.FeatureFlags()[0].Configurations == nil {
 		t.Error("DTO mal formed")
 	}
 }
@@ -359,61 +359,61 @@ func TestFetchSomeSplits(t *testing.T) {
 	}
 	// 0) The CN from storage is -1, till and since are -1, and sha doesn't exist in the hash. It's going to return a split change with updates.
 	splitChange, _ := mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != -1 || splitChange.FFTill() != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags())
 	}
 
 	fetches++
 	// 1) The CN from storage is -1, till and since are -1, and sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != -1 || splitChange.FFTill() != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 2 {
-		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 2 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags())
 	}
 
 	fetches++
 	// 2) The CN from storage is -1, till is 2323, and since is -1, and sha is the same as before. It's going to return a split change with the same data.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.FeatureFlags.Since != -1 || splitChange.FeatureFlags.Till != -1 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != -1 || splitChange.FFTill() != -1 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags())
 	}
 
 	fetches++
 	// 3) The CN from storage is -1, till is 2323, and since is -1, sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(-1))
-	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != 2323 || splitChange.FFTill() != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags())
 	}
 
 	fetches++
 	// 4) The CN from storage is 2323, till is 445345, and since is -1, and sha is the same as before. It's going to return a split change with same data.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
-	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != 2323 || splitChange.FFTill() != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 1 {
-		t.Error("should have 1 split. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 1 {
+		t.Error("should have 1 split. has: ", splitChange.FeatureFlags())
 	}
 
 	fetches++
 	// 5) The CN from storage is 2323, till and since are -1, and sha is different than before. It's going to return a split change with updates.
 	splitChange, _ = mockedFetchers.Fetch(service.MakeFlagRequestParams().WithChangeNumber(2323))
-	if splitChange.FeatureFlags.Since != 2323 || splitChange.FeatureFlags.Till != 2323 {
-		t.Error("Wrong since/till. Got: ", splitChange.FeatureFlags.Since, splitChange.FeatureFlags.Till)
+	if splitChange.FFSince() != 2323 || splitChange.FFTill() != 2323 {
+		t.Error("Wrong since/till. Got: ", splitChange.FFSince(), splitChange.FFTill())
 	}
-	if len(splitChange.FeatureFlags.Splits) != 2 {
-		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags.Splits)
+	if len(splitChange.FeatureFlags()) != 2 {
+		t.Error("should have 2 splits. has: ", splitChange.FeatureFlags())
 	}
 }
 
@@ -441,8 +441,8 @@ func TestSplitWithoutName(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if len(res.FeatureFlags.Splits) != 1 {
-		t.Error("Should has one split. Got: ", len(res.FeatureFlags.Splits))
+	if len(res.FeatureFlags()) != 1 {
+		t.Error("Should has one split. Got: ", len(res.FeatureFlags()))
 	}
 }
 
@@ -470,11 +470,11 @@ func TestSplitMatchersEmpty(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if len(res.FeatureFlags.Splits) != 1 {
-		t.Error("should has one split. Got: ", len(res.FeatureFlags.Splits))
+	if len(res.FeatureFlags()) != 1 {
+		t.Error("should has one split. Got: ", len(res.FeatureFlags()))
 	}
 
-	split := res.FeatureFlags.Splits[0]
+	split := res.FeatureFlags()[0]
 	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != "ALL_KEYS" {
 		t.Error("the matcher type should be all keys. Got: ", split.Conditions[0].MatcherGroup.Matchers[0].MatcherType)
 	}
@@ -508,12 +508,12 @@ func TestSplitWithRuleBasedSegment(t *testing.T) {
 		return
 	}
 
-	if len(res.FeatureFlags.Splits) != 1 {
-		t.Error("should have 1 split, got:", len(res.FeatureFlags.Splits))
+	if len(res.FeatureFlags()) != 1 {
+		t.Error("should have 1 split, got:", len(res.FeatureFlags()))
 		return
 	}
 
-	split := res.FeatureFlags.Splits[0]
+	split := res.FeatureFlags()[0]
 	if split.Name != "SPLIT_WITH_RULE" {
 		t.Error("Expected split name SPLIT_WITH_RULE, got", split.Name)
 	}
@@ -557,12 +557,12 @@ func TestSplitWithRuleBasedSegment(t *testing.T) {
 	}
 
 	// Verify rule based segments
-	if len(res.RuleBasedSegments.RuleBasedSegments) != 1 {
-		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments.RuleBasedSegments))
+	if len(res.RuleBasedSegments()) != 1 {
+		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments()))
 		return
 	}
 
-	ruleBasedSegment := res.RuleBasedSegments.RuleBasedSegments[0]
+	ruleBasedSegment := res.RuleBasedSegments()[0]
 	if ruleBasedSegment.Name != "test-segment" {
 		t.Error("Expected rule based segment name test-segment, got", ruleBasedSegment.Name)
 	}
@@ -623,8 +623,8 @@ func TestSplitWithOldTill(t *testing.T) {
 	if err != nil {
 		t.Error("Expected no error when till equals change number, got:", err)
 	}
-	if res.FeatureFlags.Till != 50 {
-		t.Error("Expected till value 50, got:", res.FeatureFlags.Till)
+	if res.FFTill() != 50 {
+		t.Error("Expected till value 50, got:", res.FFTill())
 	}
 
 	// Test with a change number less than the till value
@@ -632,8 +632,8 @@ func TestSplitWithOldTill(t *testing.T) {
 	if err != nil {
 		t.Error("Expected no error when till is greater than change number, got:", err)
 	}
-	if res.FeatureFlags.Till != 25 {
-		t.Error("Expected till value to match change number 25, got:", res.FeatureFlags.Till)
+	if res.FFTill() != 25 {
+		t.Error("Expected till value to match change number 25, got:", res.FFTill())
 	}
 }
 
@@ -668,8 +668,8 @@ func TestSplitWithOldRBSTill(t *testing.T) {
 	if err != nil {
 		t.Error("Expected no error when RBS till equals change number, got:", err)
 	}
-	if res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS till value 50, got:", res.RuleBasedSegments.Till)
+	if res.RBTill() != 50 {
+		t.Error("Expected RBS till value 50, got:", res.RBTill())
 	}
 
 	// Test with a change number less than the RBS till value
@@ -677,18 +677,18 @@ func TestSplitWithOldRBSTill(t *testing.T) {
 	if err != nil {
 		t.Error("Expected no error when RBS till is greater than change number, got:", err)
 	}
-	if res.RuleBasedSegments.Till != 50 {
-		t.Error("Expected RBS till value to remain at 50, got:", res.RuleBasedSegments.Till)
+	if res.RBTill() != 50 {
+		t.Error("Expected RBS till value to remain at 50, got:", res.RBTill())
 	}
-	if res.RuleBasedSegments.Since != 50 {
-		t.Error("Expected RBS since value to be 50, got:", res.RuleBasedSegments.Since)
+	if res.RBSince() != 50 {
+		t.Error("Expected RBS since value to be 50, got:", res.RBSince())
 	}
 
 	// Verify that the rule based segments are present
-	if len(res.RuleBasedSegments.RuleBasedSegments) != 1 {
-		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments.RuleBasedSegments))
+	if len(res.RuleBasedSegments()) != 1 {
+		t.Error("Expected 1 rule based segment, got", len(res.RuleBasedSegments()))
 	}
-	ruleBasedSegment := res.RuleBasedSegments.RuleBasedSegments[0]
+	ruleBasedSegment := res.RuleBasedSegments()[0]
 	if ruleBasedSegment.Name != "test-segment" {
 		t.Error("Expected rule based segment name test-segment, got", ruleBasedSegment.Name)
 	}
@@ -718,23 +718,23 @@ func TestSplitSanitization(t *testing.T) {
 		t.Error("fetching should not fail. Got: ", err)
 	}
 
-	if res.FeatureFlags.Splits[0].Algo != 2 {
-		t.Error("algo should be 2. Got: ", res.FeatureFlags.Splits[0].Algo)
+	if res.FeatureFlags()[0].Algo != 2 {
+		t.Error("algo should be 2. Got: ", res.FeatureFlags()[0].Algo)
 	}
 
-	if res.FeatureFlags.Splits[0].TrafficAllocation != 100 {
-		t.Error("traffic allocation should be 100. Got: ", res.FeatureFlags.Splits[0].TrafficAllocation)
+	if res.FeatureFlags()[0].TrafficAllocation != 100 {
+		t.Error("traffic allocation should be 100. Got: ", res.FeatureFlags()[0].TrafficAllocation)
 	}
 
-	if res.FeatureFlags.Splits[0].TrafficAllocationSeed == 0 {
+	if res.FeatureFlags()[0].TrafficAllocationSeed == 0 {
 		t.Error("traffic allocation seed can't be 0")
 	}
 
-	if res.FeatureFlags.Splits[0].Seed == 0 {
+	if res.FeatureFlags()[0].Seed == 0 {
 		t.Error("seed can't be 0")
 	}
 
-	if res.FeatureFlags.Splits[0].DefaultTreatment != "control" {
+	if res.FeatureFlags()[0].DefaultTreatment != "control" {
 		t.Error("default treatment should be control")
 	}
 }
