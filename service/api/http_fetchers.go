@@ -61,7 +61,7 @@ func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 	if common.StringFromRef(f.specVersion) == specs.FLAG_V1_3 {
 		splitChangesDto, err = dtos.NewFFResponseV13(data)
 	} else {
-		splitChangesDto, err = dtos.NewFFResponseV12(data)
+		splitChangesDto, err = dtos.NewFFResponseLegacy(data)
 	}
 	if err != nil {
 		f.logger.Error("Error parsing split changes JSON ", err)
