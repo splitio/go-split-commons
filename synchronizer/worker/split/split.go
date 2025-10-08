@@ -145,7 +145,7 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 		s.processUpdate(splitChanges)
 		segmentReferences = s.processRuleBasedUpdate(splitChanges)
 		segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
-		updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges)
+		updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
 		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges.FeatureFlags())
 		if splitChanges.NeedsAnotherFetch() {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
@@ -211,8 +211,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	return internalSyncResultCDNBypass.updateResult, nil
 }
 
-func appendSplitNames(dst []string, splitChanges dtos.FFResponse) []string {
-	featureFlags := splitChanges.FeatureFlags()
+func appendSplitNames(dst []string, featureFlags []dtos.SplitDTO) []string {
 	for idx := range featureFlags {
 		dst = append(dst, featureFlags[idx].Name)
 	}
