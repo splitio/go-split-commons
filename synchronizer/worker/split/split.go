@@ -274,15 +274,24 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 
 	if s.isProxy && s.passedTimeWindow() {
 		syncResult, err := s.attemptLatestSync()
-		if err != nil {
+		if err == nil {
 			s.lastSyncNewSpec = -1
 			s.specVersion = specs.FLAG_V1_3
-			return syncResult, nil
+			untilTillSince, err := s.synchronizeSplits(nil)
+			if err != nil {
+				return &UpdateResult{
+					UpdatedSplits:           common.DedupeStringSlice(append(syncResult.UpdatedSplits, untilTillSince.UpdatedSplits...)),
+					ReferencedSegments:      common.DedupeStringSlice(append(syncResult.ReferencedSegments, untilTillSince.ReferencedSegments...)),
+					NewChangeNumber:         untilTillSince.NewChangeNumber,
+					NewRBChangeNumber:       untilTillSince.NewRBChangeNumber,
+					ReferencedLargeSegments: common.DedupeStringSlice(append(syncResult.ReferencedLargeSegments, untilTillSince.ReferencedLargeSegments...)),
+				}, nil
+			}
 		}
 		s.specVersion = specs.FLAG_V1_1
 	}
 
-	return s.synchronizeSplits(till)
+	return s.synchronizeSplits(nil)
 }
 
 func appendSplitNames(dst []string, featureFlags []dtos.SplitDTO) []string {
