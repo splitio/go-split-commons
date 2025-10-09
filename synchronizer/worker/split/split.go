@@ -1,7 +1,6 @@
 package split
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-split-commons/v7/telemetry"
+
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	ErrProxy = fmt.Errorf("maybe proxy error")
+	ErrProxy = fmt.Errorf("version not supported in proxy")
 )
 
 // Updater interface
@@ -76,8 +76,9 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffMaxWait time.Duration
 	flagSetsFilter              flagsets.FlagSetFilter
 	validator                   validator.Validator
-	timestampLastSync           int64
-	fetcher                     func(fetchOptions *service.FlagRequestParams) (fetchResult, error)
+	isProxy                     bool
+	lastSyncNewSpec             int64
+	specVersion                 string
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -92,7 +93,7 @@ func NewSplitUpdater(
 	ruleBuilder grammar.RuleBuilder,
 	isProxy bool,
 ) *UpdaterImpl {
-	updater := &UpdaterImpl{
+	return &UpdaterImpl{
 		splitStorage:                splitStorage,
 		splitFetcher:                splitFetcher,
 		logger:                      logger,
@@ -103,136 +104,27 @@ func NewSplitUpdater(
 		flagSetsFilter:              flagSetsFilter,
 		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
 		validator:                   validator.NewValidator(ruleBuilder),
-		timestampLastSync:           0,
+		isProxy:                     isProxy,
+		lastSyncNewSpec:             0,
+		specVersion:                 specs.FLAG_V1_3,
 	}
-	if !isProxy {
-		updater.fetcher = updater.performFetchWithoutProxy
-	} else {
-		updater.fetcher = updater.performFetch
-	}
-	return updater
 }
 
 func (s *UpdaterImpl) SetRuleBasedSegmentStorage(storage storage.RuleBasedSegmentsStorage) {
 	s.ruleBasedSegmentStorage = storage
 }
 
-func (s *UpdaterImpl) processUpdate(splitChanges *dtos.SplitChangesDTO) {
-	activeSplits, inactiveSplits := s.processFeatureFlagChanges(splitChanges)
+func (s *UpdaterImpl) processUpdate(splitChanges dtos.FFResponse) {
+	activeSplits, inactiveSplits := s.processFeatureFlagChanges(splitChanges.FeatureFlags())
 	// Add/Update active splits
-	s.splitStorage.Update(activeSplits, inactiveSplits, splitChanges.FeatureFlags.Till)
+	s.splitStorage.Update(activeSplits, inactiveSplits, splitChanges.FFTill())
 }
 
-func (s *UpdaterImpl) processRuleBasedUpdate(splitChanges *dtos.SplitChangesDTO) []string {
-	activeRB, inactiveRB, segments := s.processRuleBasedSegmentChanges(splitChanges)
+func (s *UpdaterImpl) processRuleBasedUpdate(splitChanges dtos.FFResponse) []string {
+	activeRB, inactiveRB, segments := s.processRuleBasedSegmentChanges(splitChanges.RuleBasedSegments())
 	// Add/Update active splits
-	s.ruleBasedSegmentStorage.Update(activeRB, inactiveRB, splitChanges.RuleBasedSegments.Till)
+	s.ruleBasedSegmentStorage.Update(activeRB, inactiveRB, splitChanges.RBTill())
 	return segments
-}
-
-type fetchResult struct {
-	segmentReferences      []string
-	largeSegmentReferences []string
-	updatedSplitNames      []string
-	ffCurrentSince         int64
-	rbCurrentSince         int64
-	ffSince                int64
-	rbSince                int64
-}
-
-func (s *UpdaterImpl) shouldUseLatest() bool {
-	return time.Since(time.Unix(s.timestampLastSync, 0)) >= 24*time.Hour
-}
-
-func (s *UpdaterImpl) fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-	var splitChanges *dtos.SplitChangesDTO
-	var err error
-	before := time.Now()
-	splitChanges, err = s.splitFetcher.Fetch(fetchOptions)
-	if err != nil {
-		if httpError, ok := err.(*dtos.HTTPError); ok {
-			if httpError.Code == http.StatusRequestURITooLong {
-				s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
-			}
-			if httpError.Code == http.StatusBadRequest {
-				return splitChanges, ErrProxy
-			}
-			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
-		}
-		return splitChanges, err
-	}
-	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
-	return splitChanges, nil
-}
-
-func (s *UpdaterImpl) processSplitChanges(splitChanges *dtos.SplitChangesDTO) fetchResult {
-	s.processUpdate(splitChanges)
-	segmentReferences := s.processRuleBasedUpdate(splitChanges)
-	segmentReferences = appendSegmentNames(segmentReferences, splitChanges)
-	return fetchResult{
-		segmentReferences:      segmentReferences,
-		largeSegmentReferences: appendLargeSegmentNames([]string{}, splitChanges),
-		updatedSplitNames:      appendSplitNames([]string{}, splitChanges),
-		ffCurrentSince:         splitChanges.FeatureFlags.Till,
-		rbCurrentSince:         splitChanges.RuleBasedSegments.Till,
-		ffSince:                splitChanges.FeatureFlags.Since,
-		rbSince:                splitChanges.RuleBasedSegments.Since,
-	}
-}
-
-func (s *UpdaterImpl) v11(fetchOptions *service.FlagRequestParams, currentSince, currentRBSince int64) (fetchResult, error) {
-	splitChanges, err := s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_1)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
-	if err != nil {
-		return fetchResult{
-			ffSince: currentSince,
-			rbSince: currentRBSince,
-		}, err
-	}
-	return s.processSplitChanges(splitChanges), nil
-}
-
-func (s *UpdaterImpl) performFetchWithoutProxy(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
-	currentSince, _ := s.splitStorage.ChangeNumber()
-	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
-	splitChanges, err := s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
-	if err != nil {
-		return fetchResult{
-			ffSince: currentSince,
-			rbSince: currentRBSince,
-		}, err
-	}
-	return s.processSplitChanges(splitChanges), nil
-}
-
-func (s *UpdaterImpl) performFetch(fetchOptions *service.FlagRequestParams) (fetchResult, error) {
-	var splitChanges *dtos.SplitChangesDTO
-	var err error
-	currentSince, _ := s.splitStorage.ChangeNumber()
-	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
-	shouldRetry := s.shouldUseLatest()
-	if shouldRetry || s.timestampLastSync == 0 {
-		if shouldRetry { // check if timestamp passed and reset since to -1
-			currentSince = -1
-			currentRBSince = -1
-		}
-		splitChanges, err = s.fetch(fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
-		if err != nil {
-			if errors.Is(err, ErrProxy) {
-				s.timestampLastSync = time.Now().Unix()
-				return s.v11(fetchOptions, currentSince, currentRBSince)
-			}
-			return fetchResult{
-				ffSince: currentSince,
-				rbSince: currentRBSince,
-			}, err
-		}
-		if shouldRetry { // fetch was ok and needs to replace entire cache because legacy data are stored
-			// replaceALL if s.Timestamp != 0 AND RETURN
-			// return s.replaceAllChanges(splitChanges), nil
-		}
-		return s.processSplitChanges(splitChanges), nil
-	}
-	return s.v11(fetchOptions, currentSince, currentRBSince)
 }
 
 // fetchUntil Hit endpoint, update storage and return when since==till.
@@ -242,17 +134,33 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	updatedSplitNames := make([]string, 0, 10)
 	largeSegmentReferences := make([]string, 0, 10)
 	var err error
-	var fetchResult fetchResult
+	var currentSince int64
+	var currentRBSince int64
 
 	for { // Fetch until since==till
-		fetchResult, err = s.fetcher(fetchOptions)
+		currentSince, _ = s.splitStorage.ChangeNumber()
+		currentRBSince = s.ruleBasedSegmentStorage.ChangeNumber()
+		before := time.Now()
+		var splitChanges dtos.FFResponse
+		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(s.specVersion)))
 		if err != nil {
+			if httpError, ok := err.(*dtos.HTTPError); ok {
+				if httpError.Code == http.StatusRequestURITooLong {
+					s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+				}
+				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
+			}
 			break
 		}
-		segmentReferences = append(segmentReferences, fetchResult.segmentReferences...)
-		largeSegmentReferences = append(largeSegmentReferences, fetchResult.largeSegmentReferences...)
-		updatedSplitNames = append(updatedSplitNames, fetchResult.updatedSplitNames...)
-		if fetchResult.ffCurrentSince == fetchResult.ffSince && fetchResult.rbCurrentSince == fetchResult.rbSince {
+		currentSince = splitChanges.FFTill()
+		currentRBSince = splitChanges.RBTill()
+		s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
+		s.processUpdate(splitChanges)
+		segmentReferences = s.processRuleBasedUpdate(splitChanges)
+		segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
+		updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
+		largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges.FeatureFlags())
+		if splitChanges.NeedsAnotherFetch() {
 			s.runtimeTelemetry.RecordSuccessfulSync(telemetry.SplitSync, time.Now().UTC())
 			break
 		}
@@ -260,8 +168,8 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 	return &UpdateResult{
 		UpdatedSplits:           common.DedupeStringSlice(updatedSplitNames),
 		ReferencedSegments:      common.DedupeStringSlice(segmentReferences),
-		NewChangeNumber:         fetchResult.ffCurrentSince,
-		NewRBChangeNumber:       fetchResult.rbCurrentSince,
+		NewChangeNumber:         currentSince,
+		NewRBChangeNumber:       currentRBSince,
 		ReferencedLargeSegments: common.DedupeStringSlice(largeSegmentReferences),
 	}, err
 }
@@ -284,7 +192,7 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FlagRequestParams, 
 	}
 }
 
-func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
+func (s *UpdaterImpl) synchronizeSplits(till *int64) (*UpdateResult, error) {
 	s.hcMonitor.NotifyEvent(application.Splits)
 	currentSince, _ := s.splitStorage.ChangeNumber()
 	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
@@ -316,15 +224,76 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	return internalSyncResultCDNBypass.updateResult, nil
 }
 
-func appendSplitNames(dst []string, splitChanges *dtos.SplitChangesDTO) []string {
-	for idx := range splitChanges.FeatureFlags.Splits {
-		dst = append(dst, splitChanges.FeatureFlags.Splits[idx].Name)
+func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
+	s.hcMonitor.NotifyEvent(application.Splits)
+	// just guessing sizes so the we don't realloc immediately
+	updatedSplitNames := make([]string, 0, 10)
+	largeSegmentReferences := make([]string, 0, 10)
+	currentSince := int64(-1)
+	currentRBSince := int64(-1)
+
+	before := time.Now()
+	splitChanges, err := s.splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(specs.FLAG_V1_3)))
+	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			if httpError.Code == http.StatusRequestURITooLong {
+				s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+			}
+			if httpError.Code == http.StatusBadRequest {
+				return nil, ErrProxy
+			}
+			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
+		}
+	}
+	currentSince = splitChanges.FFTill()
+	currentRBSince = splitChanges.RBTill()
+	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
+	s.splitStorage.ReplaceAll(splitChanges.FeatureFlags(), currentSince)
+	s.ruleBasedSegmentStorage.Clear()
+	segmentReferences := s.processRuleBasedUpdate(splitChanges)
+	segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
+	updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
+	largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges.FeatureFlags())
+	return &UpdateResult{
+		UpdatedSplits:           common.DedupeStringSlice(updatedSplitNames),
+		ReferencedSegments:      common.DedupeStringSlice(segmentReferences),
+		NewChangeNumber:         currentSince,
+		NewRBChangeNumber:       currentRBSince,
+		ReferencedLargeSegments: common.DedupeStringSlice(largeSegmentReferences),
+	}, err
+}
+
+func (s *UpdaterImpl) passedTimeWindow() bool {
+	return s.lastSyncNewSpec == 0 || time.Since(time.Unix(s.lastSyncNewSpec, 0)) >= 24*time.Hour
+}
+
+func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
+	if !s.isProxy && till != nil {
+		return s.synchronizeSplits(till)
+	}
+
+	if s.isProxy && s.passedTimeWindow() {
+		syncResult, err := s.attemptLatestSync()
+		if err != nil {
+			s.lastSyncNewSpec = -1
+			s.specVersion = specs.FLAG_V1_3
+			return syncResult, nil
+		}
+		s.specVersion = specs.FLAG_V1_1
+	}
+
+	return s.synchronizeSplits(till)
+}
+
+func appendSplitNames(dst []string, featureFlags []dtos.SplitDTO) []string {
+	for idx := range featureFlags {
+		dst = append(dst, featureFlags[idx].Name)
 	}
 	return dst
 }
 
-func appendSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) []string {
-	for _, split := range splitChanges.FeatureFlags.Splits {
+func appendSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []string {
+	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
 				if matcher.MatcherType == matcherTypeInSegment && matcher.UserDefinedSegment != nil {
@@ -336,8 +305,8 @@ func appendSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) []stri
 	return dst
 }
 
-func appendLargeSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) []string {
-	for _, split := range splitChanges.FeatureFlags.Splits {
+func appendLargeSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []string {
+	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
 				if matcher.MatcherType == matcherTypeInLargeSegment && matcher.UserDefinedLargeSegment != nil {
@@ -357,14 +326,14 @@ func addIfNotExists(dst []string, seen map[string]struct{}, name string) []strin
 	return dst
 }
 
-func appendRuleBasedSegmentNames(dst []string, splitChanges *dtos.SplitChangesDTO) []string {
+func appendRuleBasedSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []string {
 	seen := make(map[string]struct{})
 	// Inicializamos el mapa con lo que ya tiene dst para no duplicar tampoco ahí
 	for _, name := range dst {
 		seen[name] = struct{}{}
 	}
 
-	for _, split := range splitChanges.FeatureFlags.Splits {
+	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
 				if matcher.MatcherType == matcherTypeInRuleBasedSegment && matcher.UserDefinedSegment != nil {
@@ -376,15 +345,16 @@ func appendRuleBasedSegmentNames(dst []string, splitChanges *dtos.SplitChangesDT
 	return dst
 }
 
-func (s *UpdaterImpl) processFeatureFlagChanges(splitChanges *dtos.SplitChangesDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
-	toRemove := make([]dtos.SplitDTO, 0, len(splitChanges.FeatureFlags.Splits))
-	toAdd := make([]dtos.SplitDTO, 0, len(splitChanges.FeatureFlags.Splits))
-	for idx := range splitChanges.FeatureFlags.Splits {
-		if splitChanges.FeatureFlags.Splits[idx].Status == Active && s.flagSetsFilter.Instersect(splitChanges.FeatureFlags.Splits[idx].Sets) {
-			s.validator.ProcessMatchers(&splitChanges.FeatureFlags.Splits[idx], s.logger)
-			toAdd = append(toAdd, splitChanges.FeatureFlags.Splits[idx])
+func (s *UpdaterImpl) processFeatureFlagChanges(featureFlags []dtos.SplitDTO) ([]dtos.SplitDTO, []dtos.SplitDTO) {
+	toRemove := make([]dtos.SplitDTO, 0, len(featureFlags))
+	toAdd := make([]dtos.SplitDTO, 0, len(featureFlags))
+
+	for idx := range featureFlags {
+		if featureFlags[idx].Status == Active && s.flagSetsFilter.Instersect(featureFlags[idx].Sets) {
+			s.validator.ProcessMatchers(&featureFlags[idx], s.logger)
+			toAdd = append(toAdd, featureFlags[idx])
 		} else {
-			toRemove = append(toRemove, splitChanges.FeatureFlags.Splits[idx])
+			toRemove = append(toRemove, featureFlags[idx])
 		}
 	}
 	return toAdd, toRemove
@@ -418,14 +388,13 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 	s.logger.Debug(fmt.Sprintf("updating feature flag %s", ffChange.FeatureFlag().Name))
 	featureFlags := make([]dtos.SplitDTO, 0, 1)
 	featureFlags = append(featureFlags, *ffChange.FeatureFlag())
-	featureFlagChange := dtos.SplitChangesDTO{FeatureFlags: dtos.FeatureFlagsDTO{Splits: featureFlags}}
-	activeFFs, inactiveFFs := s.processFeatureFlagChanges(&featureFlagChange)
+	activeFFs, inactiveFFs := s.processFeatureFlagChanges(featureFlags)
 	s.splitStorage.Update(activeFFs, inactiveFFs, ffChange.BaseUpdate.ChangeNumber())
 	s.runtimeTelemetry.RecordUpdatesFromSSE(telemetry.SplitUpdate)
 	updatedSplitNames = append(updatedSplitNames, ffChange.FeatureFlag().Name)
-	segmentReferences = appendSegmentNames(segmentReferences, &featureFlagChange)
-	largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, &featureFlagChange)
-	ruleBasedSegmentReferences = appendRuleBasedSegmentNames(ruleBasedSegmentReferences, &featureFlagChange)
+	segmentReferences = appendSegmentNames(segmentReferences, featureFlags)
+	largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, featureFlags)
+	ruleBasedSegmentReferences = appendRuleBasedSegmentNames(ruleBasedSegmentReferences, featureFlags)
 	requiresFetch := false
 	if len(ruleBasedSegmentReferences) > 0 && !s.ruleBasedSegmentStorage.Contains(ruleBasedSegmentReferences) {
 		requiresFetch = true
@@ -460,11 +429,11 @@ func (s *UpdaterImpl) getSegments(ruleBasedSegment *dtos.RuleBasedSegmentDTO) []
 	return segments
 }
 
-func (s *UpdaterImpl) processRuleBasedSegmentChanges(splitChanges *dtos.SplitChangesDTO) ([]dtos.RuleBasedSegmentDTO, []dtos.RuleBasedSegmentDTO, []string) {
-	toRemove := make([]dtos.RuleBasedSegmentDTO, 0, len(splitChanges.RuleBasedSegments.RuleBasedSegments))
-	toAdd := make([]dtos.RuleBasedSegmentDTO, 0, len(splitChanges.RuleBasedSegments.RuleBasedSegments))
+func (s *UpdaterImpl) processRuleBasedSegmentChanges(ruleBasedSegments []dtos.RuleBasedSegmentDTO) ([]dtos.RuleBasedSegmentDTO, []dtos.RuleBasedSegmentDTO, []string) {
+	toRemove := make([]dtos.RuleBasedSegmentDTO, 0, len(ruleBasedSegments))
+	toAdd := make([]dtos.RuleBasedSegmentDTO, 0, len(ruleBasedSegments))
 	segments := make([]string, 0)
-	for _, rbSegment := range splitChanges.RuleBasedSegments.RuleBasedSegments {
+	for _, rbSegment := range ruleBasedSegments {
 		if rbSegment.Status == Active {
 			s.validator.ProcessRBMatchers(&rbSegment, s.logger)
 			toAdd = append(toAdd, rbSegment)
@@ -484,8 +453,7 @@ func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitCha
 	}
 	ruleBasedSegments := make([]dtos.RuleBasedSegmentDTO, 0, 1)
 	ruleBasedSegments = append(ruleBasedSegments, *ruleBasedChange.RuleBasedSegment())
-	splitChanges := dtos.SplitChangesDTO{RuleBasedSegments: dtos.RuleBasedSegmentsDTO{RuleBasedSegments: ruleBasedSegments}}
-	toRemove, toAdd, segments := s.processRuleBasedSegmentChanges(&splitChanges)
+	toRemove, toAdd, segments := s.processRuleBasedSegmentChanges(ruleBasedSegments)
 	s.ruleBasedSegmentStorage.Update(toAdd, toRemove, ruleBasedChange.BaseUpdate.ChangeNumber())
 
 	return &UpdateResult{

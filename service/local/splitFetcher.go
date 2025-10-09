@@ -217,9 +217,8 @@ func (f *FileSplitFetcher) parseSplitsYAML(data string) (d []dtos.SplitDTO) {
 	return splits
 }
 
-func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, error) {
-	var splitChangesDto dtos.SplitChangesDTO
-	err := json.Unmarshal([]byte(data), &splitChangesDto)
+func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.FFResponseLocalV13, error) {
+	splitChangesDto, err := dtos.NewFFResponseLocalV13([]byte(data))
 
 	if err != nil {
 		f.logger.Error(fmt.Sprintf("error: %v", err))
@@ -228,18 +227,18 @@ func (f *FileSplitFetcher) parseSplitsJson(data string) (*dtos.SplitChangesDTO, 
 	return splitSanitization(splitChangesDto), nil
 }
 
-func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (dtos.FFResponse, error) {
 	splitChange, err := s.parseSplitsJson(data)
 	if err != nil {
 		s.logger.Error(fmt.Sprintf("could not find the splitChange file. error: %v", err))
 		return nil, err
 	}
 	// if the till is less than storage CN and different from the default till ignore the change
-	if splitChange.FeatureFlags.Till < changeNumber && splitChange.FeatureFlags.Till != defaultTill ||
-		splitChange.RuleBasedSegments.Since != 0 && splitChange.RuleBasedSegments.Till < changeNumber && splitChange.RuleBasedSegments.Till != defaultTill {
+	if splitChange.FFTill() < changeNumber && splitChange.FFTill() != defaultTill ||
+		splitChange.RBTill() != 0 && splitChange.RBTill() < changeNumber && splitChange.RBTill() != defaultTill {
 		return nil, fmt.Errorf("ignoring change, the till is less than storage change number")
 	}
-	splitsJson, _ := json.Marshal(splitChange.FeatureFlags.Splits)
+	splitsJson, _ := json.Marshal(splitChange.FeatureFlags())
 	currH := sha1.New()
 	currH.Write(splitsJson)
 	// calculate the json sha
@@ -247,17 +246,17 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 	s.mutexFF.Lock()
 	defer s.mutexFF.Unlock()
 	//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
-	if bytes.Equal(currSum, s.lastHash) || splitChange.FeatureFlags.Till == defaultTill {
+	if bytes.Equal(currSum, s.lastHash) || splitChange.FFTill() == defaultTill {
 		s.lastHash = currSum
-		splitChange.FeatureFlags.Till = changeNumber
-		splitChange.FeatureFlags.Since = changeNumber
+		splitChange.SetFFTill(changeNumber)
+		splitChange.SetFFSince(changeNumber)
 		return splitChange, nil
 	}
 	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
 
-	if splitChange.RuleBasedSegments.RuleBasedSegments != nil {
-		ruleBasedJson, _ := json.Marshal(splitChange.RuleBasedSegments.RuleBasedSegments)
+	if splitChange.RuleBasedSegments() != nil {
+		ruleBasedJson, _ := json.Marshal(splitChange.RuleBasedSegments())
 		currHRB := sha1.New()
 		currHRB.Write(ruleBasedJson)
 		// calculate the json sha
@@ -265,24 +264,24 @@ func (s *FileSplitFetcher) processSplitJson(data string, changeNumber int64) (*d
 		s.mutexRB.Lock()
 		defer s.mutexRB.Unlock()
 		//if sha exist and is equal to before sha, or if till is equal to default till returns the same splitChange with till equals to storage CN
-		if bytes.Equal(currSumRB, s.lastHashRB) || splitChange.RuleBasedSegments.Till == defaultTill {
+		if bytes.Equal(currSumRB, s.lastHashRB) || splitChange.RBTill() == defaultTill {
 			s.lastHashRB = currSumRB
-			splitChange.RuleBasedSegments.Till = changeNumber
-			splitChange.RuleBasedSegments.Since = changeNumber
+			splitChange.SetRBTill(changeNumber)
+			splitChange.SetRBSince(changeNumber)
 			return splitChange, nil
 		}
 		s.lastHashRB = currSumRB
-		splitChange.RuleBasedSegments.Since = splitChange.RuleBasedSegments.Till
+		splitChange.SetRBSince(splitChange.RBTill())
 	}
 
 	// In the last case, the sha is different and till upper or equal to storage CN
 	s.lastHash = currSum
-	splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
+	splitChange.SetFFSince(splitChange.FFTill())
 	return splitChange, nil
 }
 
 // Fetch parses the file and returns the appropriate structures
-func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
 	fileContents, err := s.reader.ReadFile(s.splitFile)
 	if err != nil {
 		return nil, err
@@ -315,11 +314,13 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos
 	}
 
 	s.lastHash = currSum
-	return &dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{
-			Splits: splits,
-			Since:  fetchOptions.ChangeNumber(),
-			Till:   till,
+	return &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: splits,
+				Since:  fetchOptions.ChangeNumber(),
+				Till:   till,
+			},
 		},
 	}, nil
 }
