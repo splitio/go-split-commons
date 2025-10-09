@@ -26,22 +26,6 @@ func TestSplitFetchOptions(t *testing.T) {
 	assert.Equal(t, "test?s=1.1&since=123456&rbSince=123456&sets=filter&till=123", req.URL.String())
 }
 
-func TestCopy(t *testing.T) {
-	fetchOptions := MakeFlagRequestParams().WithChangeNumber(123456).WithFlagSetsFilter("filter").WithTill(*common.Int64Ref(123)).WithSpecVersion(common.StringRef(specs.FLAG_V1_1)).WithChangeNumberRB(123456)
-	copyOptions := fetchOptions.Copy().WithSpecVersion(common.StringRef(specs.FLAG_V1_2)).WithChangeNumber(654321).WithChangeNumberRB(654321).WithFlagSetsFilter("newfilter").WithTill(*common.Int64Ref(321))
-
-	assert.Equal(t, fetchOptions.ChangeNumber(), int64(123456))
-	assert.Equal(t, copyOptions.ChangeNumber(), int64(654321))
-	assert.Equal(t, fetchOptions.ChangeNumberRB(), int64(123456))
-	assert.Equal(t, copyOptions.ChangeNumberRB(), int64(654321))
-	assert.Equal(t, *fetchOptions.Till(), int64(123))
-	assert.Equal(t, *copyOptions.Till(), int64(321))
-	assert.Equal(t, *fetchOptions.specVersion, specs.FLAG_V1_1)
-	assert.Equal(t, *copyOptions.specVersion, specs.FLAG_V1_2)
-	assert.Equal(t, fetchOptions.flagSetsFilter, "filter")
-	assert.Equal(t, copyOptions.flagSetsFilter, "newfilter")
-}
-
 func TestSegmentRequestParams(t *testing.T) {
 	fetchOptions := MakeSegmentRequestParams().WithChangeNumber(123456).WithTill(*common.Int64Ref(123))
 	req, _ := http.NewRequest("GET", "test", nil)

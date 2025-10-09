@@ -53,19 +53,6 @@ func MakeFlagRequestParams() *FlagRequestParams {
 	}
 }
 
-func (s *FlagRequestParams) Copy() *FlagRequestParams {
-	return &FlagRequestParams{
-		baseRequestParams: baseRequestParams{
-			cacheControlHeaders: s.cacheControlHeaders,
-		},
-		changeNumber:   s.changeNumber,
-		changeNumberRB: s.changeNumberRB,
-		flagSetsFilter: s.flagSetsFilter,
-		specVersion:    s.specVersion,
-		till:           s.till,
-	}
-}
-
 // WithCacheControl sets the cache control header
 func (s *FlagRequestParams) WithCacheControl(cacheControl bool) *FlagRequestParams {
 	s.cacheControlHeaders = cacheControl
