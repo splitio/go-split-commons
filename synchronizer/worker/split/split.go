@@ -264,7 +264,7 @@ func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
 }
 
 func (s *UpdaterImpl) passedTimeWindow() bool {
-	return s.lastSyncNewSpec == 0 || time.Since(time.Unix(s.lastSyncNewSpec, 0)) >= 24*time.Hour
+	return s.lastSyncNewSpec == 0 || (s.lastSyncNewSpec > 0 && time.Since(time.Unix(s.lastSyncNewSpec, 0)) >= 24*time.Hour)
 }
 
 func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
@@ -273,12 +273,14 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	}
 
 	if s.isProxy && s.passedTimeWindow() {
+		s.logger.Info("Attempting to sync splits with the latest spec version (v1.3)")
 		syncResult, err := s.attemptLatestSync()
+		s.lastSyncNewSpec = time.Now().Unix()
 		if err == nil {
 			s.lastSyncNewSpec = -1
 			s.specVersion = specs.FLAG_V1_3
 			untilTillSince, err := s.synchronizeSplits(nil)
-			if err != nil {
+			if err == nil {
 				return &UpdateResult{
 					UpdatedSplits:           common.DedupeStringSlice(append(syncResult.UpdatedSplits, untilTillSince.UpdatedSplits...)),
 					ReferencedSegments:      common.DedupeStringSlice(append(syncResult.ReferencedSegments, untilTillSince.ReferencedSegments...)),
