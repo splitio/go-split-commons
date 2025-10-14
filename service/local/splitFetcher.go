@@ -325,4 +325,8 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 	}, nil
 }
 
+func (s *FileSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool {
+	return false
+}
+
 var _ service.SplitFetcher = &FileSplitFetcher{}

@@ -21,4 +21,10 @@ func (m *MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 	return args.Get(0).(dtos.FFResponse), args.Error(1)
 }
 
+// Fetch mock
+func (m *MockSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool {
+	args := m.Called(fetchOptions)
+	return args.Get(0).(bool)
+}
+
 var _ service.SplitFetcher = (*MockSplitFetcher)(nil)

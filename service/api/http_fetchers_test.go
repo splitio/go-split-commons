@@ -606,7 +606,7 @@ func TestIsProxy(t *testing.T) {
 		dtos.Metadata{},
 	).(*HTTPSplitFetcher) // Type assertion to access unexported method
 
-	isProxy := splitFetcher1.isProxy(service.MakeFlagRequestParams())
+	isProxy := splitFetcher1.IsProxy(service.MakeFlagRequestParams())
 	assert.False(t, isProxy, "Should not be identified as proxy when version endpoint returns 200")
 
 	// Test case 2: Is a proxy (version endpoint returns 404)
@@ -626,7 +626,7 @@ func TestIsProxy(t *testing.T) {
 		dtos.Metadata{},
 	).(*HTTPSplitFetcher) // Type assertion to access unexported method
 
-	isProxy = splitFetcher2.isProxy(service.MakeFlagRequestParams())
+	isProxy = splitFetcher2.IsProxy(service.MakeFlagRequestParams())
 	assert.True(t, isProxy, "Should be identified as proxy when version endpoint returns 404")
 
 	// Test case 3: Not a proxy (version endpoint returns other error code)
@@ -646,7 +646,7 @@ func TestIsProxy(t *testing.T) {
 		dtos.Metadata{},
 	).(*HTTPSplitFetcher) // Type assertion to access unexported method
 
-	isProxy = splitFetcher3.isProxy(service.MakeFlagRequestParams())
+	isProxy = splitFetcher3.IsProxy(service.MakeFlagRequestParams())
 	assert.False(t, isProxy, "Should not be identified as proxy when version endpoint returns non-404 error")
 }
 
