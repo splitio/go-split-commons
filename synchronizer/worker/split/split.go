@@ -249,8 +249,8 @@ func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
 	currentRBSince = splitChanges.RBTill()
 	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 	s.splitStorage.ReplaceAll(splitChanges.FeatureFlags(), currentSince)
-	s.ruleBasedSegmentStorage.Clear()
-	segmentReferences := s.processRuleBasedUpdate(splitChanges) // TODO ReplaceAll
+	s.ruleBasedSegmentStorage.ReplaceAll(splitChanges.RuleBasedSegments(), currentSince)
+	segmentReferences := s.getSegmentsFromRuleBasedSegments(splitChanges.RuleBasedSegments())
 	segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
 	updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
 	largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges.FeatureFlags())
@@ -454,6 +454,14 @@ func (s *UpdaterImpl) processRuleBasedSegmentChanges(ruleBasedSegments []dtos.Ru
 		}
 	}
 	return toAdd, toRemove, segments
+}
+
+func (s *UpdaterImpl) getSegmentsFromRuleBasedSegments(ruleBasedSegments []dtos.RuleBasedSegmentDTO) []string {
+	segments := make([]string, 0)
+	for _, rbSegment := range ruleBasedSegments {
+		segments = append(segments, s.getSegments(&rbSegment)...)
+	}
+	return segments
 }
 
 func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitChangeUpdate) *UpdateResult {

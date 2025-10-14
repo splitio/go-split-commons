@@ -1016,8 +1016,8 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		splitMockStorage.On("Update", []dtos.SplitDTO{}, []dtos.SplitDTO{}, int64(3)).Once()
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(3)).Times(2)
-		ruleBasedSegmentMockStorage.On("Clear").Return().Once()
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(3)
+		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once()
+		//ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(3)
 		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(3)
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}

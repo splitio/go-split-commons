@@ -70,4 +70,8 @@ func (m *MockRuleBasedSegmentStorage) Clear() {
 	m.Called()
 }
 
+func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) {
+	m.Called(toAdd, changeNumber)
+}
+
 var _ storage.RuleBasedSegmentsStorage = (*MockRuleBasedSegmentStorage)(nil)
