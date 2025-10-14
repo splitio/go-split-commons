@@ -263,7 +263,7 @@ func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
 	}, err
 }
 
-func (s *UpdaterImpl) passedTimeWindow() bool {
+func (s *UpdaterImpl) shouldRetryWithLatestSpec() bool {
 	return s.lastSyncNewSpec == 0 || (s.lastSyncNewSpec > 0 && time.Since(time.Unix(s.lastSyncNewSpec, 0)) >= 24*time.Hour)
 }
 
@@ -272,7 +272,7 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 		return s.synchronizeSplits(till)
 	}
 
-	if s.isProxy && s.passedTimeWindow() {
+	if s.isProxy && s.shouldRetryWithLatestSpec() {
 		s.logger.Info("Attempting to sync splits with the latest spec version (v1.3)")
 		syncResult, err := s.attemptLatestSync()
 		s.lastSyncNewSpec = time.Now().Unix()
