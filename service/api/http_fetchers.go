@@ -53,7 +53,7 @@ func (f *HTTPSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool
 		return false
 	}
 	httpErr, ok := err.(*dtos.HTTPError)
-	return ok && httpErr.Code == 404
+	return ok && httpErr.Code == http.StatusNotFound
 }
 
 // Fetch makes an http call to the split backend and returns the list of updated splits
