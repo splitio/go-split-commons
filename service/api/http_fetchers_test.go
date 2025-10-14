@@ -586,6 +586,70 @@ func TestFetchWithPost(t *testing.T) {
 	assert.Equal(t, 1500, len(result.Keys), "Keys lenght should be 1500. Actual: ", len(result.Keys))
 }
 
+func TestIsProxy(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	// Test case 1: Not a proxy (version endpoint returns 200)
+	ts1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/version", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts1.Close()
+
+	splitFetcher1 := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts1.URL,
+			SdkURL:    ts1.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	).(*HTTPSplitFetcher) // Type assertion to access unexported method
+
+	isProxy := splitFetcher1.IsProxy(service.MakeFlagRequestParams())
+	assert.False(t, isProxy, "Should not be identified as proxy when version endpoint returns 200")
+
+	// Test case 2: Is a proxy (version endpoint returns 404)
+	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/version", r.URL.Path)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts2.Close()
+
+	splitFetcher2 := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts2.URL,
+			SdkURL:    ts2.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	).(*HTTPSplitFetcher) // Type assertion to access unexported method
+
+	isProxy = splitFetcher2.IsProxy(service.MakeFlagRequestParams())
+	assert.True(t, isProxy, "Should be identified as proxy when version endpoint returns 404")
+
+	// Test case 3: Not a proxy (version endpoint returns other error code)
+	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/version", r.URL.Path)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts3.Close()
+
+	splitFetcher3 := NewHTTPSplitFetcher(
+		"",
+		conf.AdvancedConfig{
+			EventsURL: ts3.URL,
+			SdkURL:    ts3.URL,
+		},
+		logger,
+		dtos.Metadata{},
+	).(*HTTPSplitFetcher) // Type assertion to access unexported method
+
+	isProxy = splitFetcher3.IsProxy(service.MakeFlagRequestParams())
+	assert.False(t, isProxy, "Should not be identified as proxy when version endpoint returns non-404 error")
+}
+
 func buildLargeSegmentRFDResponseDTO(url string) dtos.LargeSegmentRFDResponseDTO {
 	return dtos.LargeSegmentRFDResponseDTO{
 		NotificationType: "LS_NEW_DEFINITION",

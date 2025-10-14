@@ -47,6 +47,15 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 	}
 }
 
+func (f *HTTPSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool {
+	_, err := f.fetchRaw("/version", fetchOptions)
+	if err == nil {
+		return false
+	}
+	httpErr, ok := err.(*dtos.HTTPError)
+	return ok && httpErr.Code == http.StatusNotFound
+}
+
 // Fetch makes an http call to the split backend and returns the list of updated splits
 func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
 	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter).WithSpecVersion(f.specVersion)
