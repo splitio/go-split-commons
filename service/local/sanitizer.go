@@ -7,22 +7,22 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
-func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
-	if splitChange.FeatureFlags.Till < -1 {
-		splitChange.FeatureFlags.Till = -1
+func splitSanitization(splitChange *dtos.FFResponseLocalV13) *dtos.FFResponseLocalV13 {
+	if splitChange.FFTill() < -1 {
+		splitChange.SetFFTill(-1)
 	}
-	if splitChange.RuleBasedSegments.Till < -1 {
-		splitChange.RuleBasedSegments.Till = -1
+	if splitChange.RBTill() < -1 {
+		splitChange.SetRBTill(-1)
 	}
-	if splitChange.FeatureFlags.Since < -1 || splitChange.FeatureFlags.Since > splitChange.FeatureFlags.Till {
-		splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
+	if splitChange.FFSince() < -1 || splitChange.FFSince() > splitChange.FFTill() {
+		splitChange.SetFFSince(splitChange.FFTill())
 	}
-	if splitChange.RuleBasedSegments.Since < -1 || splitChange.RuleBasedSegments.Since > splitChange.RuleBasedSegments.Till {
-		splitChange.RuleBasedSegments.Since = splitChange.RuleBasedSegments.Till
+	if splitChange.RBSince() < -1 || splitChange.RBSince() > splitChange.RBTill() {
+		splitChange.SetRBSince(splitChange.RBTill())
 	}
 	var splitResult []dtos.SplitDTO
-	for i := 0; i < len(splitChange.FeatureFlags.Splits); i++ {
-		split := splitChange.FeatureFlags.Splits[i]
+	for i := 0; i < len(splitChange.FeatureFlags()); i++ {
+		split := splitChange.FeatureFlags()[i]
 		if split.Name == "" {
 			continue
 		}
@@ -61,8 +61,8 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		splitResult = append(splitResult, split)
 	}
 	var ruleBasedSegmentResult []dtos.RuleBasedSegmentDTO
-	for i := 0; i < len(splitChange.RuleBasedSegments.RuleBasedSegments); i++ {
-		ruleBased := splitChange.RuleBasedSegments.RuleBasedSegments[i]
+	for i := 0; i < len(splitChange.RuleBasedSegments()); i++ {
+		ruleBased := splitChange.RuleBasedSegments()[i]
 		if ruleBased.Name == "" {
 			continue
 		}
@@ -78,9 +78,9 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		ruleBasedSegmentResult = append(ruleBasedSegmentResult, ruleBased)
 	}
 
-	splitChange.FeatureFlags.Splits = splitResult
-	splitChange.RuleBasedSegments.RuleBasedSegments = ruleBasedSegmentResult
-	return &splitChange
+	splitChange.ReplaceFF(splitResult)
+	splitChange.ReplaceRB(ruleBasedSegmentResult)
+	return splitChange
 }
 
 func segmentSanitization(segmentChange dtos.SegmentChangesDTO, segmentName string) (*dtos.SegmentChangesDTO, error) {

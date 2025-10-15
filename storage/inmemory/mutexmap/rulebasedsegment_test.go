@@ -95,6 +95,126 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Empty(t, storage.RuleBasedSegmentNames())
 }
 
+func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
+	// Initialize storage
+	storage := NewRuleBasedSegmentsStorage()
+
+	// Create initial test data
+	initialRuleBased := dtos.RuleBasedSegmentDTO{
+		Name: "initial",
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{
+						{
+							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+								SegmentName: "segment1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Add initial data
+	storage.Update([]dtos.RuleBasedSegmentDTO{initialRuleBased}, nil, 100)
+
+	// Create new data for replacement
+	newRuleBased := dtos.RuleBasedSegmentDTO{
+		Name: "new",
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{
+						{
+							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+								SegmentName: "segment2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test ReplaceAll
+	storage.ReplaceAll([]dtos.RuleBasedSegmentDTO{newRuleBased}, 200)
+
+	// Verify change number was updated
+	assert.Equal(t, int64(200), storage.ChangeNumber())
+
+	// Verify old data was removed
+	oldSegment, err := storage.GetRuleBasedSegmentByName("initial")
+	assert.Error(t, err)
+	assert.Nil(t, oldSegment)
+
+	// Verify new data was added
+	newSegment, err := storage.GetRuleBasedSegmentByName("new")
+	assert.NoError(t, err)
+	assert.NotNil(t, newSegment)
+	assert.Equal(t, "new", newSegment.Name)
+
+	// Verify segments set
+	segments := storage.GetSegments()
+	assert.True(t, segments.Has("segment2"))
+	assert.False(t, segments.Has("segment1"))
+
+	// Test ReplaceAll with empty slice
+	storage.ReplaceAll([]dtos.RuleBasedSegmentDTO{}, 300)
+
+	// Verify storage is empty
+	assert.Empty(t, storage.All())
+	assert.Equal(t, int64(300), storage.ChangeNumber())
+
+	// Test ReplaceAll with multiple segments
+	ruleBased1 := dtos.RuleBasedSegmentDTO{
+		Name: "rule1",
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{
+						{
+							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+								SegmentName: "segment3",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ruleBased2 := dtos.RuleBasedSegmentDTO{
+		Name: "rule2",
+		Conditions: []dtos.RuleBasedConditionDTO{
+			{
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{
+						{
+							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
+								SegmentName: "segment4",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	storage.ReplaceAll([]dtos.RuleBasedSegmentDTO{ruleBased1, ruleBased2}, 400)
+
+	// Verify multiple segments were added
+	assert.Len(t, storage.All(), 2)
+	assert.Equal(t, int64(400), storage.ChangeNumber())
+	assert.True(t, storage.Contains([]string{"rule1", "rule2"}))
+
+	// Verify segments set contains both segments
+	segments = storage.GetSegments()
+	assert.True(t, segments.Has("segment3"))
+	assert.True(t, segments.Has("segment4"))
+}
+
 func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 	storage := NewRuleBasedSegmentsStorage()
 

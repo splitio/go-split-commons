@@ -5,7 +5,10 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v7/service/api/specs"
+
 	"github.com/splitio/go-toolkit/v5/common"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSplitFetchOptions(t *testing.T) {
@@ -14,24 +17,13 @@ func TestSplitFetchOptions(t *testing.T) {
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
 
-	if req.Header.Get(cacheControl) != cacheControlNoCache {
-		t.Error("Cache control header not set")
-	}
-	if req.URL.Query().Get(since) != "123456" {
-		t.Error("Change number not set")
-	}
-	if req.URL.Query().Get(spec) != specs.FLAG_V1_1 {
-		t.Error("Spec version not set")
-	}
-	if req.URL.Query().Get(sets) != "filter" {
-		t.Error("Flag sets filter not set")
-	}
-	if req.URL.Query().Get(till) != "123" {
-		t.Error("Till not set")
-	}
-	if req.URL.String() != "test?s=1.1&since=123456&rbSince=123456&sets=filter&till=123" {
-		t.Error("Query params not set correctly, expected: test?s=v1&since=123456&sets=filter&till=123, got:", req.URL.String())
-	}
+	assert.Equal(t, cacheControlNoCache, req.Header.Get(cacheControl))
+	assert.Equal(t, "123456", req.URL.Query().Get(since))
+	assert.Equal(t, specs.FLAG_V1_1, req.URL.Query().Get(spec))
+	assert.Equal(t, "filter", req.URL.Query().Get(sets))
+	assert.Equal(t, "123", req.URL.Query().Get(till))
+	assert.Equal(t, "123456", req.URL.Query().Get(rbSince))
+	assert.Equal(t, "test?s=1.1&since=123456&rbSince=123456&sets=filter&till=123", req.URL.String())
 }
 
 func TestSegmentRequestParams(t *testing.T) {
@@ -39,20 +31,10 @@ func TestSegmentRequestParams(t *testing.T) {
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
 
-	if req.Header.Get(cacheControl) != cacheControlNoCache {
-		t.Error("Cache control header not set")
-	}
-
-	if req.URL.Query().Get(since) != "123456" {
-		t.Error("Change number not set")
-	}
-	if req.URL.Query().Get(till) != "123" {
-		t.Error("Till not set")
-	}
-
-	if req.URL.String() != "test?since=123456&till=123" {
-		t.Error("Query params not set correctly, expected: test?s=v1&since=123456&till=123, got:", req.URL.String())
-	}
+	assert.Equal(t, cacheControlNoCache, req.Header.Get(cacheControl))
+	assert.Equal(t, "123456", req.URL.Query().Get(since))
+	assert.Equal(t, "123", req.URL.Query().Get(till))
+	assert.Equal(t, "test?since=123456&till=123", req.URL.String())
 }
 
 func TestAuthRequestParams(t *testing.T) {
@@ -60,39 +42,24 @@ func TestAuthRequestParams(t *testing.T) {
 	req, _ := http.NewRequest("GET", "test", nil)
 	fetchOptions.Apply(req)
 
-	if req.Header.Get(cacheControl) != cacheControlNoCache {
-		t.Error("Cache control header not set")
-	}
-	if req.URL.Query().Get(spec) != specs.FLAG_V1_1 {
-		t.Error("Spec version not set")
-	}
-	if req.URL.String() != "test?s=1.1" {
-		t.Error("Query params not set correctly, expected: test?s=v1, got:", req.URL.String())
-	}
+	assert.Equal(t, cacheControlNoCache, req.Header.Get(cacheControl))
+	assert.Equal(t, "1.1", req.URL.Query().Get(spec))
+	assert.Equal(t, "test?s=1.1", req.URL.String())
 }
 
 func TestOverrideCacheControl(t *testing.T) {
 	flagParams := MakeFlagRequestParams().WithCacheControl(false)
 	req, _ := http.NewRequest("GET", "test", nil)
 	flagParams.Apply(req)
-
-	if req.Header.Get(cacheControl) != "" {
-		t.Error("Cache control header should not be set")
-	}
+	assert.Equal(t, "", req.Header.Get(cacheControl))
 
 	segmentParams := MakeSegmentRequestParams().WithCacheControl(false)
 	req, _ = http.NewRequest("GET", "test", nil)
 	segmentParams.Apply(req)
-
-	if req.Header.Get(cacheControl) != "" {
-		t.Error("Cache control header should not be set")
-	}
+	assert.Equal(t, "", req.Header.Get(cacheControl))
 
 	authParams := MakeAuthRequestParams(nil).WithCacheControl(false)
 	req, _ = http.NewRequest("GET", "test", nil)
 	authParams.Apply(req)
-
-	if req.Header.Get(cacheControl) != "" {
-		t.Error("Cache control header should not be set")
-	}
+	assert.Equal(t, "", req.Header.Get(cacheControl))
 }

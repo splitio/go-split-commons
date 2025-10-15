@@ -11,6 +11,7 @@ import (
 	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v7/service"
 	"github.com/splitio/go-split-commons/v7/service/api"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	httpMocks "github.com/splitio/go-split-commons/v7/service/mocks"
 	"github.com/splitio/go-split-commons/v7/storage/mocks"
 	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
@@ -55,6 +56,8 @@ func TestLocalSyncAllError(t *testing.T) {
 		appMonitorMock,
 		flagSetFilter,
 		ruleBuilder,
+		false,
+		specs.FLAG_V1_3,
 	)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 
@@ -82,14 +85,19 @@ func TestLocalSyncAllOk(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
+	response := &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+				Since:  3,
+				Till:   3,
+			},
+		},
+	}
 	splitFetcher.On("Fetch",
 		mock.MatchedBy(func(req *service.FlagRequestParams) bool {
 			return req.ChangeNumber() == -1
-		})).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-			Since: 3,
-			Till:  3},
-	}, nil).Once()
+		})).Return(response, nil).Once()
 	splitAPI := api.SplitAPI{SplitFetcher: splitFetcher}
 	splitMockStorage := &mocks.SplitStorageMock{}
 	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)
@@ -120,11 +128,17 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
-	splitFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-			Since: 3,
-			Till:  3},
-	}, nil).Once()
+	response := &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+				Since:  3,
+				Till:   3,
+			},
+		},
+	}
+
+	splitFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 	splitAPI := api.SplitAPI{SplitFetcher: splitFetcher}
 	splitMockStorage := &mocks.SplitStorageMock{}
 	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)

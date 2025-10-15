@@ -13,12 +13,18 @@ type MockSplitFetcher struct {
 }
 
 // Fetch mock
-func (m *MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
+func (m *MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
 	args := m.Called(fetchOptions)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*dtos.SplitChangesDTO), args.Error(1)
+	return args.Get(0).(dtos.FFResponse), args.Error(1)
+}
+
+// Fetch mock
+func (m *MockSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool {
+	args := m.Called(fetchOptions)
+	return args.Get(0).(bool)
 }
 
 var _ service.SplitFetcher = (*MockSplitFetcher)(nil)

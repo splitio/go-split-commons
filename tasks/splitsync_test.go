@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/engine/grammar"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	fetcherMock "github.com/splitio/go-split-commons/v7/service/mocks"
 	"github.com/splitio/go-split-commons/v7/storage/mocks"
 	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
@@ -37,11 +38,16 @@ func TestSplitSyncTask(t *testing.T) {
 	splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1, mockedSplit2}, []dtos.SplitDTO{mockedSplit3}, int64(3)).Once()
 
 	splitMockFetcher := &fetcherMock.MockSplitFetcher{}
-	splitMockFetcher.On("Fetch", mock.Anything).Return(&dtos.SplitChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
-			Since: 3,
-			Till:  3},
-	}, nil).Once()
+	response := &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
+				Since:  3,
+				Till:   3,
+			},
+		},
+	}
+	splitMockFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
@@ -64,7 +70,7 @@ func TestSplitSyncTask(t *testing.T) {
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
-	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder)
+	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder, false, specs.FLAG_V1_3)
 
 	splitTask := NewFetchSplitsTask(
 		splitUpdater,
