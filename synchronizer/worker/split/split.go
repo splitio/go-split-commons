@@ -2,6 +2,7 @@ package split
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
@@ -10,8 +11,10 @@ import (
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/healthcheck/application"
 	"github.com/splitio/go-split-commons/v7/service"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-split-commons/v7/telemetry"
+
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -24,7 +27,6 @@ const (
 	UpdateTypeSplitChange          = "SPLIT_UPDATE"
 	UpdateTypeRuleBasedChange      = "RB_SEGMENT_UPDATE"
 	TypeStandard                   = "standard"
-	scRequestURITooLong            = 414
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
 	onDemandFetchBackoffMaxRetries = 10
@@ -33,6 +35,10 @@ const (
 const (
 	Active   = "ACTIVE"
 	Archived = "ARCHIVED"
+)
+
+var (
+	ErrProxy = fmt.Errorf("version not supported in proxy")
 )
 
 // Updater interface
@@ -70,6 +76,9 @@ type UpdaterImpl struct {
 	onDemandFetchBackoffMaxWait time.Duration
 	flagSetsFilter              flagsets.FlagSetFilter
 	validator                   validator.Validator
+	isProxy                     bool
+	lastSyncNewSpec             int64
+	specVersion                 string
 }
 
 // NewSplitUpdater creates new split synchronizer for processing split updates
@@ -82,6 +91,8 @@ func NewSplitUpdater(
 	hcMonitor application.MonitorProducerInterface,
 	flagSetsFilter flagsets.FlagSetFilter,
 	ruleBuilder grammar.RuleBuilder,
+	isProxy bool,
+	specVersion string,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -94,6 +105,9 @@ func NewSplitUpdater(
 		flagSetsFilter:              flagSetsFilter,
 		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
 		validator:                   validator.NewValidator(ruleBuilder),
+		isProxy:                     isProxy,
+		lastSyncNewSpec:             0,
+		specVersion:                 specVersion,
 	}
 }
 
@@ -129,10 +143,10 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 		currentRBSince = s.ruleBasedSegmentStorage.ChangeNumber()
 		before := time.Now()
 		var splitChanges dtos.FFResponse
-		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince))
+		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(s.specVersion)))
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
-				if httpError.Code == scRequestURITooLong {
+				if httpError.Code == http.StatusRequestURITooLong {
 					s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
 				}
 				s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
@@ -179,7 +193,7 @@ func (s *UpdaterImpl) attemptSplitSync(fetchOptions *service.FlagRequestParams, 
 	}
 }
 
-func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
+func (s *UpdaterImpl) synchronizeSplits(till *int64) (*UpdateResult, error) {
 	s.hcMonitor.NotifyEvent(application.Splits)
 	currentSince, _ := s.splitStorage.ChangeNumber()
 	currentRBSince := s.ruleBasedSegmentStorage.ChangeNumber()
@@ -209,6 +223,78 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 	}
 	s.logger.Debug(fmt.Sprintf("No changes fetched after %d attempts with CDN bypassed.", withoutCDNattempts))
 	return internalSyncResultCDNBypass.updateResult, nil
+}
+
+func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
+	s.hcMonitor.NotifyEvent(application.Splits)
+	// just guessing sizes so the we don't realloc immediately
+	updatedSplitNames := make([]string, 0, 10)
+	largeSegmentReferences := make([]string, 0, 10)
+	currentSince := int64(-1)
+	currentRBSince := int64(-1)
+
+	before := time.Now()
+	splitChanges, err := s.splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(specs.FLAG_V1_3)))
+	if err != nil {
+		if httpError, ok := err.(*dtos.HTTPError); ok {
+			if httpError.Code == http.StatusRequestURITooLong {
+				s.logger.Error("SDK Initialization, the amount of flag sets provided are big causing uri length error.")
+			}
+			if httpError.Code == http.StatusBadRequest {
+				return nil, ErrProxy
+			}
+			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
+		}
+	}
+	currentSince = splitChanges.FFTill()
+	currentRBSince = splitChanges.RBTill()
+	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
+	s.splitStorage.ReplaceAll(splitChanges.FeatureFlags(), currentSince)
+	s.ruleBasedSegmentStorage.ReplaceAll(splitChanges.RuleBasedSegments(), currentSince)
+	segmentReferences := s.getSegmentsFromRuleBasedSegments(splitChanges.RuleBasedSegments())
+	segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
+	updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
+	largeSegmentReferences = appendLargeSegmentNames(largeSegmentReferences, splitChanges.FeatureFlags())
+	return &UpdateResult{
+		UpdatedSplits:           common.DedupeStringSlice(updatedSplitNames),
+		ReferencedSegments:      common.DedupeStringSlice(segmentReferences),
+		NewChangeNumber:         currentSince,
+		NewRBChangeNumber:       currentRBSince,
+		ReferencedLargeSegments: common.DedupeStringSlice(largeSegmentReferences),
+	}, err
+}
+
+func (s *UpdaterImpl) shouldRetryWithLatestSpec() bool {
+	return s.lastSyncNewSpec == 0 || (s.lastSyncNewSpec > 0 && time.Since(time.Unix(s.lastSyncNewSpec, 0)) >= 24*time.Hour)
+}
+
+func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
+	if !s.isProxy && till != nil {
+		return s.synchronizeSplits(till)
+	}
+
+	if s.isProxy && s.shouldRetryWithLatestSpec() {
+		s.logger.Info("Attempting to sync splits with the latest spec version (v1.3)")
+		syncResult, err := s.attemptLatestSync()
+		s.lastSyncNewSpec = time.Now().Unix()
+		if err == nil {
+			s.lastSyncNewSpec = -1
+			s.specVersion = specs.FLAG_V1_3
+			untilTillSince, err := s.synchronizeSplits(nil)
+			if err == nil {
+				return &UpdateResult{
+					UpdatedSplits:           common.DedupeStringSlice(append(syncResult.UpdatedSplits, untilTillSince.UpdatedSplits...)),
+					ReferencedSegments:      common.DedupeStringSlice(append(syncResult.ReferencedSegments, untilTillSince.ReferencedSegments...)),
+					NewChangeNumber:         untilTillSince.NewChangeNumber,
+					NewRBChangeNumber:       untilTillSince.NewRBChangeNumber,
+					ReferencedLargeSegments: common.DedupeStringSlice(append(syncResult.ReferencedLargeSegments, untilTillSince.ReferencedLargeSegments...)),
+				}, nil
+			}
+		}
+		s.specVersion = specs.FLAG_V1_1
+	}
+
+	return s.synchronizeSplits(nil)
 }
 
 func appendSplitNames(dst []string, featureFlags []dtos.SplitDTO) []string {
@@ -369,6 +455,14 @@ func (s *UpdaterImpl) processRuleBasedSegmentChanges(ruleBasedSegments []dtos.Ru
 		}
 	}
 	return toAdd, toRemove, segments
+}
+
+func (s *UpdaterImpl) getSegmentsFromRuleBasedSegments(ruleBasedSegments []dtos.RuleBasedSegmentDTO) []string {
+	segments := make([]string, 0)
+	for _, rbSegment := range ruleBasedSegments {
+		segments = append(segments, s.getSegments(&rbSegment)...)
+	}
+	return segments
 }
 
 func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitChangeUpdate) *UpdateResult {

@@ -11,6 +11,7 @@ import (
 	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v7/service"
 	"github.com/splitio/go-split-commons/v7/service/api"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	httpMocks "github.com/splitio/go-split-commons/v7/service/mocks"
 	"github.com/splitio/go-split-commons/v7/storage/mocks"
 	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
@@ -55,6 +56,8 @@ func TestLocalSyncAllError(t *testing.T) {
 		appMonitorMock,
 		flagSetFilter,
 		ruleBuilder,
+		false,
+		specs.FLAG_V1_3,
 	)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 

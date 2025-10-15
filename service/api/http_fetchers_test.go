@@ -17,6 +17,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/service"
 	"github.com/splitio/go-split-commons/v7/service/api/specs"
+	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +52,7 @@ func TestSpitChangesFetch11(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456))
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456).WithSpecVersion(common.StringRef(specs.FLAG_V1_1)))
 	assert.Equal(t, nil, err, err)
 	assert.False(t, splitChangesDTO.FFTill() != 1491244291288 ||
 		splitChangesDTO.FeatureFlags()[0].Name != "DEMO_MURMUR2", "DTO mal formed")
@@ -85,7 +86,7 @@ func TestSpitChangesFetch(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456))
+	splitChangesDTO, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithChangeNumberRB(123456).WithSpecVersion(common.StringRef(specs.FLAG_V1_3)))
 	assert.Equal(t, nil, err, err)
 	assert.False(t, splitChangesDTO.FFTill() != 1491244291288 ||
 		splitChangesDTO.FeatureFlags()[0].Name != "DEMO_MURMUR2", "DTO mal formed")
@@ -204,14 +205,13 @@ func TestSpitChangesFetchWithAll(t *testing.T) {
 		dtos.Metadata{},
 	)
 
-	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000).WithChangeNumberRB(123456))
+	_, err := splitFetcher.Fetch(service.MakeFlagRequestParams().WithChangeNumber(123456).WithTill(10000).WithChangeNumberRB(123456).WithSpecVersion(common.StringRef(specs.FLAG_V1_1)))
 
 	assert.Equal(t, nil, err, err)
 	assert.Equal(t, CacheControlNoCache, cacheControl, "Wrong header sent")
 	assert.Equal(t, "123456", queryParams.Get("since"), "Expected to have since")
 	assert.True(t, queryParams.Has("till"), "Expected to have till")
 	assert.True(t, queryParams.Has("sets"), "Expected to have sets")
-	assert.Equal(t, specs.FLAG_V1_1, queryParams.Get("s"), "Expected to have spec")
 
 	asString := queryParams.Get("sets")
 	asArray := strings.Split(asString, ",")
