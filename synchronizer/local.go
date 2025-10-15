@@ -8,6 +8,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/healthcheck/application"
 	"github.com/splitio/go-split-commons/v7/service/api"
+	"github.com/splitio/go-split-commons/v7/service/api/specs"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-split-commons/v7/synchronizer/worker/segment"
 	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
@@ -37,7 +38,7 @@ type LocalConfig struct {
 // NewLocal creates new Local
 func NewLocal(cfg *LocalConfig, splitAPI *api.SplitAPI, splitStorage storage.SplitStorage, segmentStorage storage.SegmentStorage, largeSegmentStorage storage.LargeSegmentsStorage, ruleBasedStorage storage.RuleBasedSegmentsStorage, logger logging.LoggerInterface, runtimeTelemetry storage.TelemetryRuntimeProducer, hcMonitor application.MonitorProducerInterface) Synchronizer {
 	ruleBuilder := grammar.NewRuleBuilder(segmentStorage, ruleBasedStorage, largeSegmentStorage, cfg.FfRulesAccepted, cfg.RbRulesAccepted, logger, nil)
-	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets), ruleBuilder, false)
+	splitUpdater := split.NewSplitUpdater(splitStorage, ruleBasedStorage, splitAPI.SplitFetcher, logger, runtimeTelemetry, hcMonitor, flagsets.NewFlagSetFilter(cfg.FlagSets), ruleBuilder, false, specs.FLAG_V1_3)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedStorage)
 
 	workers := Workers{

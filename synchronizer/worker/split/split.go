@@ -92,6 +92,7 @@ func NewSplitUpdater(
 	flagSetsFilter flagsets.FlagSetFilter,
 	ruleBuilder grammar.RuleBuilder,
 	isProxy bool,
+	specVersion string,
 ) *UpdaterImpl {
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
@@ -106,7 +107,7 @@ func NewSplitUpdater(
 		validator:                   validator.NewValidator(ruleBuilder),
 		isProxy:                     isProxy,
 		lastSyncNewSpec:             0,
-		specVersion:                 specs.FLAG_V1_3,
+		specVersion:                 specVersion,
 	}
 }
 

@@ -149,8 +149,8 @@ func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentD
 	// Get all current splits under read lock
 	r.mutex.RLock()
 	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
-	for _, split := range r.data {
-		toRemove = append(toRemove, split)
+	for _, ruleBased := range r.data {
+		toRemove = append(toRemove, ruleBased)
 	}
 	r.mutex.RUnlock()
 
