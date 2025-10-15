@@ -3,7 +3,7 @@ package specs
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v6/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/grammar"
 )
 
 func TestParseAndValidate(t *testing.T) {
