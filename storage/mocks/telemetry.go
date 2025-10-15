@@ -3,7 +3,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
 // MockTelemetryStorage is a mocked implementation of Telemetry Storage

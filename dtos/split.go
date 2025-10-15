@@ -1,12 +1,25 @@
 package dtos
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
-	Till   int64      `json:"till"`
-	Since  int64      `json:"since"`
-	Splits []SplitDTO `json:"splits"`
+	FeatureFlags      FeatureFlagsDTO      `json:"ff"`
+	RuleBasedSegments RuleBasedSegmentsDTO `json:"rbs"`
+}
+
+type FeatureFlagsDTO struct {
+	Since  int64      `json:"s"`
+	Till   int64      `json:"t"`
+	Splits []SplitDTO `json:"d"`
+}
+
+type RuleBasedSegmentsDTO struct {
+	Since             int64                 `json:"s"`
+	Till              int64                 `json:"t"`
+	RuleBasedSegments []RuleBasedSegmentDTO `json:"d"`
 }
 
 // SplitDTO structure to map an Split definition fetched from JSON message.
@@ -25,11 +38,18 @@ type SplitDTO struct {
 	Configurations        map[string]string `json:"configurations"`
 	Sets                  []string          `json:"sets"`
 	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
+	Prerequisites         []Prerequisite    `json:"prerequisites"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string
 func (s SplitDTO) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(s)
+}
+
+// Prerequisites structure to map a Prerequisite fetched from JSON message
+type Prerequisite struct {
+	FeatureFlagName string   `json:"n"`
+	Treatments      []string `json:"ts"`
 }
 
 // ConditionDTO structure to map a Condition fetched from JSON message.

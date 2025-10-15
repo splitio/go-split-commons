@@ -1,3 +1,14 @@
+7.0.0 (Sep 26, 2025)
+- BREAKING CHANGE:
+    - Changed NewEvaluator parameters.
+    - Changed NewSplitUpdater parameters.
+    - Changed NewSegmentUpdater parameters.
+    - Changed NewLocal parameters.
+- Added support for rule-based segments.
+- Added support for prerequisites.
+- Added support for retries.
+- Fixed evaluation of large segments to return control properly.
+
 6.1.0 (Jan 14, 2025)
 - Added support for Impressions toggle.
 - Bump dependencies for vulnerability fixes.

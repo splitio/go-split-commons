@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/healthcheck/application"
-	"github.com/splitio/go-split-commons/v6/service"
-	"github.com/splitio/go-split-commons/v6/storage"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/utils"
-	"github.com/splitio/go-split-commons/v6/telemetry"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/healthcheck/application"
+	"github.com/splitio/go-split-commons/v7/service"
+	"github.com/splitio/go-split-commons/v7/storage"
+	"github.com/splitio/go-split-commons/v7/synchronizer/worker/utils"
+	"github.com/splitio/go-split-commons/v7/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
@@ -41,6 +41,7 @@ type Updater interface {
 type UpdaterImpl struct {
 	splitStorage                storage.SplitStorageConsumer
 	segmentStorage              storage.SegmentStorage
+	ruleBasedSegmentStorage     storage.RuleBasedSegmentStorageConsumer
 	segmentFetcher              service.SegmentFetcher
 	logger                      logging.LoggerInterface
 	runtimeTelemetry            storage.TelemetryRuntimeProducer
@@ -65,6 +66,7 @@ type internalSegmentSync struct {
 func NewSegmentUpdater(
 	splitStorage storage.SplitStorage,
 	segmentStorage storage.SegmentStorage,
+	ruleBasedSegmentStorage storage.RuleBasedSegmentStorageConsumer,
 	segmentFetcher service.SegmentFetcher,
 	logger logging.LoggerInterface,
 	runtimeTelemetry storage.TelemetryRuntimeProducer,
@@ -73,6 +75,7 @@ func NewSegmentUpdater(
 	return &UpdaterImpl{
 		splitStorage:                splitStorage,
 		segmentStorage:              segmentStorage,
+		ruleBasedSegmentStorage:     ruleBasedSegmentStorage,
 		segmentFetcher:              segmentFetcher,
 		logger:                      logger,
 		runtimeTelemetry:            runtimeTelemetry,
@@ -193,6 +196,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 // SynchronizeSegments syncs segments at once
 func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
+	segmentNames = append(segmentNames, s.ruleBasedSegmentStorage.GetSegments().List()...)
 	s.logger.Debug("Segment Sync", segmentNames)
 	s.hcMonitor.NotifyEvent(application.Segments)
 	wg := sync.WaitGroup{}

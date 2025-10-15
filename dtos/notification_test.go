@@ -226,6 +226,72 @@ func TestControlUpdate(t *testing.T) {
 	}
 }
 
+func TestRuleBasedSegmentChangeUpdate(t *testing.T) {
+	// Test case 1: With rule-based segment data
+	ruleBasedSegment := &RuleBasedSegmentDTO{
+		Name:         "test-segment",
+		ChangeNumber: 123456,
+		Conditions: []RuleBasedConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				MatcherGroup: MatcherGroupDTO{
+					Matchers: []MatcherDTO{},
+				},
+			},
+		},
+	}
+
+	rbUpdate := NewRuleBasedSegmentChangeUpdate(NewBaseUpdate(NewBaseMessage(123456789, "rb_channel"), 123456), nil, ruleBasedSegment)
+	if rbUpdate.EventType() != SSEEventTypeMessage {
+		t.Error("Unexpected EventType")
+	}
+	if rbUpdate.Timestamp() != 123456789 {
+		t.Error("Unexpected Timestamp")
+	}
+	if rbUpdate.Channel() != "rb_channel" {
+		t.Error("Unexpected Channel")
+	}
+	if rbUpdate.MessageType() != MessageTypeUpdate {
+		t.Error("Unexpected MessageType")
+	}
+	if rbUpdate.ChangeNumber() != 123456 {
+		t.Error("Unexpected ChangeNumber")
+	}
+	if rbUpdate.UpdateType() != UpdateTypeRuleBasedChange {
+		t.Error("Unexpected UpdateType, got:", rbUpdate.UpdateType())
+	}
+	if rbUpdate.String() != "SplitChange(channel=rb_channel,changeNumber=123456,timestamp=123456789)" {
+		t.Error("Unexpected String", rbUpdate.String())
+	}
+	if rbUpdate.RuleBasedSegment() == nil {
+		t.Error("RuleBasedSegment should not be nil")
+	}
+	if rbUpdate.RuleBasedSegment().Name != "test-segment" {
+		t.Error("Unexpected RuleBasedSegment name")
+	}
+	if rbUpdate.RuleBasedSegment().ChangeNumber != 123456 {
+		t.Error("Unexpected RuleBasedSegment change number")
+	}
+	if len(rbUpdate.RuleBasedSegment().Conditions) != 1 {
+		t.Error("RuleBasedSegment should have 1 condition")
+	}
+	if rbUpdate.RuleBasedSegment().Conditions[0].ConditionType != "WHITELIST" {
+		t.Error("Unexpected condition type")
+	}
+
+	// Test case 2: Without rule-based segment data
+	rbUpdateNoSegment := NewRuleBasedSegmentChangeUpdate(NewBaseUpdate(NewBaseMessage(123456789, "rb_channel"), 123456), nil, nil)
+	if rbUpdateNoSegment.EventType() != SSEEventTypeMessage {
+		t.Error("Unexpected EventType for no segment case")
+	}
+	if rbUpdateNoSegment.UpdateType() != UpdateTypeSplitChange {
+		t.Error("Unexpected UpdateType for no segment case, got:", rbUpdateNoSegment.UpdateType())
+	}
+	if rbUpdateNoSegment.RuleBasedSegment() != nil {
+		t.Error("RuleBasedSegment should be nil for no segment case")
+	}
+}
+
 func TestLargeSegmentChangeUpdate(t *testing.T) {
 	ls := []LargeSegmentRFDResponseDTO{
 		{

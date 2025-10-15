@@ -4,19 +4,25 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 )
 
 func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
-	if splitChange.Till < -1 {
-		splitChange.Till = -1
+	if splitChange.FeatureFlags.Till < -1 {
+		splitChange.FeatureFlags.Till = -1
 	}
-	if splitChange.Since < -1 || splitChange.Since > splitChange.Till {
-		splitChange.Since = splitChange.Till
+	if splitChange.RuleBasedSegments.Till < -1 {
+		splitChange.RuleBasedSegments.Till = -1
+	}
+	if splitChange.FeatureFlags.Since < -1 || splitChange.FeatureFlags.Since > splitChange.FeatureFlags.Till {
+		splitChange.FeatureFlags.Since = splitChange.FeatureFlags.Till
+	}
+	if splitChange.RuleBasedSegments.Since < -1 || splitChange.RuleBasedSegments.Since > splitChange.RuleBasedSegments.Till {
+		splitChange.RuleBasedSegments.Since = splitChange.RuleBasedSegments.Till
 	}
 	var splitResult []dtos.SplitDTO
-	for i := 0; i < len(splitChange.Splits); i++ {
-		split := splitChange.Splits[i]
+	for i := 0; i < len(splitChange.FeatureFlags.Splits); i++ {
+		split := splitChange.FeatureFlags.Splits[i]
 		if split.Name == "" {
 			continue
 		}
@@ -54,7 +60,26 @@ func splitSanitization(splitChange dtos.SplitChangesDTO) *dtos.SplitChangesDTO {
 		}
 		splitResult = append(splitResult, split)
 	}
-	splitChange.Splits = splitResult
+	var ruleBasedSegmentResult []dtos.RuleBasedSegmentDTO
+	for i := 0; i < len(splitChange.RuleBasedSegments.RuleBasedSegments); i++ {
+		ruleBased := splitChange.RuleBasedSegments.RuleBasedSegments[i]
+		if ruleBased.Name == "" {
+			continue
+		}
+		if ruleBased.TrafficTypeName == "" {
+			ruleBased.TrafficTypeName = "user"
+		}
+		if ruleBased.Status == "" || ruleBased.Status != "ARCHIVED" && ruleBased.Status != "ACTIVE" {
+			ruleBased.Status = "ACTIVE"
+		}
+		if ruleBased.ChangeNumber < 0 {
+			ruleBased.ChangeNumber = 0
+		}
+		ruleBasedSegmentResult = append(ruleBasedSegmentResult, ruleBased)
+	}
+
+	splitChange.FeatureFlags.Splits = splitResult
+	splitChange.RuleBasedSegments.RuleBasedSegments = ruleBasedSegmentResult
 	return &splitChange
 }
 
