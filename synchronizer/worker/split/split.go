@@ -1,6 +1,7 @@
 package split
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -245,6 +246,7 @@ func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
 			}
 			s.runtimeTelemetry.RecordSyncError(telemetry.SplitSync, httpError.Code)
 		}
+		return nil, err
 	}
 	currentSince = splitChanges.FFTill()
 	currentRBSince = splitChanges.RBTill()
@@ -281,17 +283,22 @@ func (s *UpdaterImpl) SynchronizeSplits(till *int64) (*UpdateResult, error) {
 			s.lastSyncNewSpec = -1
 			s.specVersion = specs.FLAG_V1_3
 			untilTillSince, err := s.synchronizeSplits(nil)
-			if err == nil {
-				return &UpdateResult{
-					UpdatedSplits:           common.DedupeStringSlice(append(syncResult.UpdatedSplits, untilTillSince.UpdatedSplits...)),
-					ReferencedSegments:      common.DedupeStringSlice(append(syncResult.ReferencedSegments, untilTillSince.ReferencedSegments...)),
-					NewChangeNumber:         untilTillSince.NewChangeNumber,
-					NewRBChangeNumber:       untilTillSince.NewRBChangeNumber,
-					ReferencedLargeSegments: common.DedupeStringSlice(append(syncResult.ReferencedLargeSegments, untilTillSince.ReferencedLargeSegments...)),
-				}, nil
+			if err != nil {
+				return untilTillSince, err
 			}
+			return &UpdateResult{
+				UpdatedSplits:           common.DedupeStringSlice(append(syncResult.UpdatedSplits, untilTillSince.UpdatedSplits...)),
+				ReferencedSegments:      common.DedupeStringSlice(append(syncResult.ReferencedSegments, untilTillSince.ReferencedSegments...)),
+				NewChangeNumber:         untilTillSince.NewChangeNumber,
+				NewRBChangeNumber:       untilTillSince.NewRBChangeNumber,
+				ReferencedLargeSegments: common.DedupeStringSlice(append(syncResult.ReferencedLargeSegments, untilTillSince.ReferencedLargeSegments...)),
+			}, nil
+		} else {
+			if !errors.Is(err, ErrProxy) {
+				return syncResult, err
+			}
+			s.specVersion = specs.FLAG_V1_1
 		}
-		s.specVersion = specs.FLAG_V1_1
 	}
 
 	return s.synchronizeSplits(nil)
