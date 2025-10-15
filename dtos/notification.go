@@ -17,8 +17,9 @@ const (
 	UpdateTypeSplitChange        = "SPLIT_UPDATE"
 	UpdateTypeSplitKill          = "SPLIT_KILL"
 	UpdateTypeSegmentChange      = "SEGMENT_UPDATE"
-	UpdateTypeContol             = "CONTROL"
+	UpdateTypeControl            = "CONTROL"
 	UpdateTypeLargeSegmentChange = "LS_DEFINITION_UPDATE"
+	UpdateTypeRuleBasedChange    = "RB_SEGMENT_UPDATE"
 )
 
 // Control type constants
@@ -201,6 +202,7 @@ type SplitChangeUpdate struct {
 	BaseUpdate
 	previousChangeNumber *int64
 	featureFlag          *SplitDTO
+	ruleBasedSegment     *RuleBasedSegmentDTO
 }
 
 func NewSplitChangeUpdate(baseUpdate BaseUpdate, pcn *int64, featureFlag *SplitDTO) *SplitChangeUpdate {
@@ -211,8 +213,26 @@ func NewSplitChangeUpdate(baseUpdate BaseUpdate, pcn *int64, featureFlag *SplitD
 	}
 }
 
-// UpdateType always returns UpdateTypeSplitChange for SplitUpdate messages
-func (u *SplitChangeUpdate) UpdateType() string { return UpdateTypeSplitChange }
+func NewRuleBasedSegmentChangeUpdate(baseUpdate BaseUpdate, pcn *int64, ruleBasedSegment *RuleBasedSegmentDTO) *SplitChangeUpdate {
+	return &SplitChangeUpdate{
+		BaseUpdate:           baseUpdate,
+		previousChangeNumber: pcn,
+		ruleBasedSegment:     ruleBasedSegment,
+	}
+}
+
+// UpdateType returns the type of update
+func (u *SplitChangeUpdate) UpdateType() string {
+	if u.ruleBasedSegment != nil {
+		return UpdateTypeRuleBasedChange
+	}
+	return UpdateTypeSplitChange
+}
+
+// GetRuleBased returns rule-based segment
+func (u *SplitChangeUpdate) RuleBasedSegment() *RuleBasedSegmentDTO {
+	return u.ruleBasedSegment
+}
 
 // String returns the String representation of a split change notification
 func (u *SplitChangeUpdate) String() string {

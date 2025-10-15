@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v6/storage"
+	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"

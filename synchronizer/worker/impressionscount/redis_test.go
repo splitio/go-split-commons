@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	"github.com/splitio/go-split-commons/v6/provisional/strategy"
-	"github.com/splitio/go-split-commons/v6/storage/mocks"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/provisional/strategy"
+	"github.com/splitio/go-split-commons/v7/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

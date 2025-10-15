@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
-	hcMock "github.com/splitio/go-split-commons/v6/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v6/service"
-	fetcherMock "github.com/splitio/go-split-commons/v6/service/mocks"
-	"github.com/splitio/go-split-commons/v6/storage/mocks"
-	"github.com/splitio/go-split-commons/v6/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v6/telemetry"
+	"github.com/splitio/go-split-commons/v7/dtos"
+	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v7/service"
+	fetcherMock "github.com/splitio/go-split-commons/v7/service/mocks"
+	"github.com/splitio/go-split-commons/v7/storage/mocks"
+	"github.com/splitio/go-split-commons/v7/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v7/telemetry"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -93,8 +93,10 @@ func TestSegmentSyncTask(t *testing.T) {
 		},
 	}
 
+	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
+
 	segmentTask := NewFetchSegmentsTask(
-		segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
+		segment.NewSegmentUpdater(splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock),
 		1,
 		10,
 		100,

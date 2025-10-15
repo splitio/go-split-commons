@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v6/dtos"
+	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -264,4 +264,27 @@ type LargeSegmentStorageConsumer interface {
 type LargeSegmentsStorage interface {
 	LargeSegmentStorageProducer
 	LargeSegmentStorageConsumer
+}
+
+// RuleBasedSegmentStorageProducer interface should be implemented by all structs that offer writing rule-based segments
+type RuleBasedSegmentStorageProducer interface {
+	SetChangeNumber(till int64) error
+	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
+	Clear()
+}
+
+// RuleBasedStorageConsumer interface should be implemented by all structs that ofer reading rule-based segments
+type RuleBasedSegmentStorageConsumer interface {
+	ChangeNumber() int64
+	All() []dtos.RuleBasedSegmentDTO
+	RuleBasedSegmentNames() []string
+	Contains(ruleBasedSegmentNames []string) bool
+	GetSegments() *set.ThreadUnsafeSet
+	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
+}
+
+// RuleBasedSegmentsStorage defines the interface for a per-user rule-based segments storage
+type RuleBasedSegmentsStorage interface {
+	RuleBasedSegmentStorageProducer
+	RuleBasedSegmentStorageConsumer
 }

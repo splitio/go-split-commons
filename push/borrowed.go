@@ -1,6 +1,6 @@
 package push
 
-import "github.com/splitio/go-split-commons/v6/dtos"
+import "github.com/splitio/go-split-commons/v7/dtos"
 
 // Borrowed synchronizer interface to break circular dependencies
 type synchronizerInterface interface {
