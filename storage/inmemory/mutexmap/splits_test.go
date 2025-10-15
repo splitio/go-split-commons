@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/flagsets"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/stretchr/testify/assert"
 )

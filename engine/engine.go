@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/splitio/go-split-commons/v7/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v7/engine/grammar"
-	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v7/engine/hash"
+	"github.com/splitio/go-split-commons/v8/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v8/engine/grammar"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v8/engine/hash"
 
 	"github.com/splitio/go-toolkit/v5/hasher"
 	"github.com/splitio/go-toolkit/v5/logging"

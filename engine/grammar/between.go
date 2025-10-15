@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/splitio/go-split-commons/v7/engine/grammar/datatypes"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/datatypes"
 )
 
 // BetweenMatcher will match if two numbers or two datetimes are equal

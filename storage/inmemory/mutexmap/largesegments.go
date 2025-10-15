@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v7/storage"
+	"github.com/splitio/go-split-commons/v8/storage"
 )
 
 // LargeSegmentsStorageImpl implements the LargeSegmentsStorage interface

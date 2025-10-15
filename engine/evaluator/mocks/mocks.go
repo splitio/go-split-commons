@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v7/engine/evaluator"
+import "github.com/splitio/go-split-commons/v8/engine/evaluator"
 
 // MockEvaluator mock evaluator
 type MockEvaluator struct {
