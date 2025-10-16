@@ -24,6 +24,10 @@ func TestSplitFetchOptions(t *testing.T) {
 	assert.Equal(t, "123", req.URL.Query().Get(till))
 	assert.Equal(t, "123456", req.URL.Query().Get(rbSince))
 	assert.Equal(t, "test?s=1.1&since=123456&rbSince=123456&sets=filter&till=123", req.URL.String())
+	assert.Equal(t, "1.1", fetchOptions.SpecVersion())
+
+	fetchOptions = MakeFlagRequestParams()
+	assert.Equal(t, "", fetchOptions.SpecVersion())
 }
 
 func TestSegmentRequestParams(t *testing.T) {

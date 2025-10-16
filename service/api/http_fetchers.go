@@ -11,7 +11,6 @@ import (
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/service"
 	"github.com/splitio/go-split-commons/v7/service/api/specs"
-	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -32,7 +31,6 @@ func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.Request
 type HTTPSplitFetcher struct {
 	httpFetcherBase
 	flagSetsFilter string
-	specVersion    *string
 }
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
@@ -43,7 +41,6 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 			logger: logger,
 		},
 		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
-		specVersion:    specs.Match(cfg.FlagsSpecVersion),
 	}
 }
 
@@ -67,7 +64,7 @@ func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 
 	var splitChangesDto dtos.FFResponse
 
-	if common.StringFromRef(f.specVersion) == specs.FLAG_V1_3 {
+	if fetchOptions.SpecVersion() == specs.FLAG_V1_3 {
 		splitChangesDto, err = dtos.NewFFResponseV13(data)
 	} else {
 		splitChangesDto, err = dtos.NewFFResponseLegacy(data)
