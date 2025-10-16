@@ -47,8 +47,8 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 	}
 }
 
-func (f *HTTPSplitFetcher) IsProxy(fetchOptions *service.FlagRequestParams) bool {
-	_, err := f.fetchRaw("/version", fetchOptions)
+func (f *HTTPSplitFetcher) IsProxy() bool {
+	_, err := f.fetchRaw("/version", nil)
 	if err == nil {
 		return false
 	}

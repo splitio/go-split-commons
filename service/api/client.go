@@ -87,7 +87,7 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 		message := fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status)
 		if resp.StatusCode == http.StatusNotModified {
 			c.logger.Debug(message)
-		} else {
+		} else if resp.StatusCode != http.StatusNotFound {
 			c.logger.Error(message)
 		}
 
