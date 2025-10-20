@@ -13,7 +13,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	storage := NewRuleBasedSegmentsStorage()
 
 	// Test initial state
-	assert.Equal(t, int64(-1), storage.ChangeNumber())
+	changeNumber, _ := storage.ChangeNumber()
+	assert.Equal(t, int64(-1), changeNumber)
 	assert.Empty(t, storage.All())
 	assert.Empty(t, storage.RuleBasedSegmentNames())
 
@@ -62,7 +63,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 
 	// Test Update
 	storage.Update([]dtos.RuleBasedSegmentDTO{ruleBased1, ruleBased2}, nil, 123)
-	assert.Equal(t, int64(123), storage.ChangeNumber())
+	changeNumber, _ = storage.ChangeNumber()
+	assert.Equal(t, int64(123), changeNumber)
 	assert.Len(t, storage.All(), 2)
 
 	// Test RuleBasedSegmentNames
@@ -71,7 +73,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Contains(t, names, "rule2")
 
 	// Test GetSegments
-	segments := storage.GetSegments()
+	segments := storage.Segments()
 	// Print segments for debugging
 	t.Logf("Segments in set: %v", segments.List())
 	assert.True(t, segments.Has("segment1"), "segment1 should be in segments")
@@ -85,7 +87,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 
 	// Test Remove
 	storage.Update(nil, []dtos.RuleBasedSegmentDTO{ruleBased1}, 124)
-	assert.Equal(t, int64(124), storage.ChangeNumber())
+	changeNumber, _ = storage.ChangeNumber()
+	assert.Equal(t, int64(124), changeNumber)
 	assert.Len(t, storage.All(), 1)
 	assert.Contains(t, storage.RuleBasedSegmentNames(), "rule2")
 
@@ -142,7 +145,8 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 	storage.ReplaceAll([]dtos.RuleBasedSegmentDTO{newRuleBased}, 200)
 
 	// Verify change number was updated
-	assert.Equal(t, int64(200), storage.ChangeNumber())
+	changeNumber, _ := storage.ChangeNumber()
+	assert.Equal(t, int64(200), changeNumber)
 
 	// Verify old data was removed
 	oldSegment, err := storage.GetRuleBasedSegmentByName("initial")
@@ -156,7 +160,7 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 	assert.Equal(t, "new", newSegment.Name)
 
 	// Verify segments set
-	segments := storage.GetSegments()
+	segments := storage.Segments()
 	assert.True(t, segments.Has("segment2"))
 	assert.False(t, segments.Has("segment1"))
 
@@ -165,7 +169,8 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 
 	// Verify storage is empty
 	assert.Empty(t, storage.All())
-	assert.Equal(t, int64(300), storage.ChangeNumber())
+	changeNumber, _ = storage.ChangeNumber()
+	assert.Equal(t, int64(300), changeNumber)
 
 	// Test ReplaceAll with multiple segments
 	ruleBased1 := dtos.RuleBasedSegmentDTO{
@@ -206,11 +211,12 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 
 	// Verify multiple segments were added
 	assert.Len(t, storage.All(), 2)
-	assert.Equal(t, int64(400), storage.ChangeNumber())
+	changeNumber, _ = storage.ChangeNumber()
+	assert.Equal(t, int64(400), changeNumber)
 	assert.True(t, storage.Contains([]string{"rule1", "rule2"}))
 
 	// Verify segments set contains both segments
-	segments = storage.GetSegments()
+	segments = storage.Segments()
 	assert.True(t, segments.Has("segment3"))
 	assert.True(t, segments.Has("segment4"))
 }
@@ -221,7 +227,8 @@ func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 	// Test SetChangeNumber explicitly
 	err := storage.SetChangeNumber(100)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(100), storage.ChangeNumber())
+	changeNumber, _ := storage.ChangeNumber()
+	assert.Equal(t, int64(100), changeNumber)
 
 	// Test GetSegments with different segment types
 	ruleBased := dtos.RuleBasedSegmentDTO{
@@ -241,7 +248,7 @@ func TestRuleBasedSegmentsStorageEdgeCases(t *testing.T) {
 	}
 
 	storage.Update([]dtos.RuleBasedSegmentDTO{ruleBased}, nil, 101)
-	segments := storage.GetSegments()
+	segments := storage.Segments()
 	assert.True(t, segments.Has("excluded1"))
 	assert.False(t, segments.Has("excluded2")) // Should not include non-standard segments
 
@@ -288,7 +295,7 @@ func TestRuleBasedSegmentsStorageConcurrent(t *testing.T) {
 			defer wg.Done()
 			_ = storage.All()
 			_ = storage.RuleBasedSegmentNames()
-			_ = storage.GetSegments()
+			_ = storage.Segments()
 			_ = storage.Contains([]string{"segment1"})
 		}()
 	}

@@ -57,10 +57,10 @@ func (r *RuleBasedSegmentsStorageImpl) SetChangeNumber(till int64) error {
 }
 
 // ChangeNumber return the actual rule-based till
-func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() int64 {
+func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() (int64, error) {
 	r.tillMutex.RLock()
 	defer r.tillMutex.RUnlock()
-	return r.till
+	return r.till, nil
 }
 
 // All returns a list with a copy of each rule-based.
@@ -87,7 +87,7 @@ func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() []string {
 }
 
 // SegmentNames returns a slice with the names of all segments referenced in rule-based
-func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
+func (r *RuleBasedSegmentsStorageImpl) Segments() *set.ThreadUnsafeSet {
 	segments := set.NewSet()
 
 	r.mutex.RLock()
@@ -107,6 +107,28 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 		}
 	}
 	return segments
+}
+
+func (r *RuleBasedSegmentsStorageImpl) LargeSegments() *set.ThreadUnsafeSet {
+	largeSegments := set.NewSet()
+
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	for _, ruleBased := range r.data {
+		for _, condition := range ruleBased.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedLargeSegment != nil {
+					largeSegments.Add(matcher.UserDefinedSegment.SegmentName)
+				}
+			}
+		}
+		for _, excluded := range ruleBased.Excluded.Segments {
+			if excluded.Type == dtos.TypeStandard {
+				largeSegments.Add(excluded.Name)
+			}
+		}
+	}
+	return largeSegments
 }
 
 // Contains returns true or false if all the rule-based segment names are present

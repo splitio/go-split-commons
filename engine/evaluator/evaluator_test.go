@@ -285,12 +285,13 @@ func (s *mockStorage) FetchMany(
 	splits["mysplittest5"] = nil
 	return splits
 }
-func (s *mockStorage) All() []dtos.SplitDTO                      { return make([]dtos.SplitDTO, 0) }
-func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet        { return nil }
-func (s *mockStorage) LargeSegmentNames() *set.ThreadUnsafeSet   { return nil }
-func (s *mockStorage) SplitNames() []string                      { return make([]string, 0) }
-func (s *mockStorage) TrafficTypeExists(trafficType string) bool { return true }
-func (s *mockStorage) ChangeNumber() (int64, error)              { return 0, nil }
+func (s *mockStorage) All() []dtos.SplitDTO                        { return make([]dtos.SplitDTO, 0) }
+func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet          { return nil }
+func (s *mockStorage) LargeSegmentNames() *set.ThreadUnsafeSet     { return nil }
+func (s *mockStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet { return nil }
+func (s *mockStorage) SplitNames() []string                        { return make([]string, 0) }
+func (s *mockStorage) TrafficTypeExists(trafficType string) bool   { return true }
+func (s *mockStorage) ChangeNumber() (int64, error)                { return 0, nil }
 func (s *mockStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return make(map[string][]string)
 }

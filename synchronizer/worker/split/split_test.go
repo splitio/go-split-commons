@@ -806,6 +806,9 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdate(t *testing.T) {
 		ruleBasedSegmentMockStorage.AssertExpectations(t)
 		appMonitorMock.AssertExpectations(t)
 	})
+}
+
+func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 
 	t.Run("Rule-based segment change number higher than current", func(t *testing.T) {
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
@@ -837,13 +840,25 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdate(t *testing.T) {
 				},
 			},
 		}
+		response := &dtos.FFResponseV13{
+			SplitChanges: dtos.SplitChangesDTO{
+				FeatureFlags: dtos.FeatureFlagsDTO{
+					Since: 3,
+					Till:  3,
+				},
+			},
+		}
+		pvChangeNumber := int64(100)
 		baseMessage := dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
 		baseUpdate := dtos.NewBaseUpdate(baseMessage, changeNumber)
-		ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, nil, ruleBasedSegment)
+		ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, &pvChangeNumber, ruleBasedSegment)
 
-		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200)).Once()
+		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200)).Times(3)
+		splitMockStorage.On("ChangeNumber").Return(int64(200)).Twice()
 		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{*ruleBasedSegment}, []dtos.RuleBasedSegmentDTO{}, changeNumber).Return().Once()
-
+		splitMockFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
+		splitMockStorage.On("Update", []dtos.SplitDTO{}, []dtos.SplitDTO{}, int64(3)).Once()
+		appMonitorMock.On("NotifyEvent", mock.Anything).Once()
 		result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
 		assert.Nil(t, err)
 		assert.False(t, result.RequiresFetch)

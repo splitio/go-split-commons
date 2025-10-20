@@ -13,9 +13,9 @@ type MockRuleBasedSegmentStorage struct {
 }
 
 // ChangeNumber mock
-func (m *MockRuleBasedSegmentStorage) ChangeNumber() int64 {
+func (m *MockRuleBasedSegmentStorage) ChangeNumber() (int64, error) {
 	args := m.Called()
-	return args.Get(0).(int64)
+	return args.Get(0).(int64), nil
 }
 
 // All mock
@@ -70,8 +70,19 @@ func (m *MockRuleBasedSegmentStorage) Clear() {
 	m.Called()
 }
 
-func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) {
-	m.Called(toAdd, changeNumber)
+func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
+	args := m.Called(toAdd, changeNumber)
+	return args.Error(0)
+}
+
+func (m *MockRuleBasedSegmentStorage) Segments() *set.ThreadUnsafeSet {
+	args := m.Called()
+	return args.Get(0).(*set.ThreadUnsafeSet)
+}
+
+func (m *MockRuleBasedSegmentStorage) LargeSegments() *set.ThreadUnsafeSet {
+	args := m.Called()
+	return args.Get(0).(*set.ThreadUnsafeSet)
 }
 
 var _ storage.RuleBasedSegmentsStorage = (*MockRuleBasedSegmentStorage)(nil)
