@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -95,7 +96,7 @@ func (r *RuleBasedSegmentsStorageImpl) Segments() *set.ThreadUnsafeSet {
 	for _, ruleBased := range r.data {
 		for _, condition := range ruleBased.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType != constants.MatcherTypeInRuleBasedSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -123,7 +124,7 @@ func (r *RuleBasedSegmentsStorageImpl) LargeSegments() *set.ThreadUnsafeSet {
 			}
 		}
 		for _, excluded := range ruleBased.Excluded.Segments {
-			if excluded.Type == dtos.TypeStandard {
+			if excluded.Type == dtos.TypeLarge {
 				largeSegments.Add(excluded.Name)
 			}
 		}

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/engine/grammar/datatypes"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -53,11 +54,11 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 	}
 
 	switch dto.MatcherType {
-	case MatcherTypeAllKeys:
+	case constants.MatcherTypeAllKeys:
 		r.logger.Debug(fmt.Sprintf("Building AllKeysMatcher with negate=%t", dto.Negate))
 		matcher = NewAllKeysMatcher(dto.Negate)
 
-	case MatcherTypeEqualTo:
+	case constants.MatcherTypeEqualTo:
 		if dto.UnaryNumeric == nil {
 			return nil, errors.New("UnaryNumeric is required for EQUAL_TO matcher type")
 		}
@@ -72,7 +73,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeInSegment:
+	case constants.MatcherTypeInSegment:
 		if dto.UserDefinedSegment == nil {
 			return nil, errors.New("UserDefinedSegment is required for IN_SEGMENT matcher type")
 		}
@@ -87,7 +88,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			r.segmentStorage,
 		)
 
-	case MatcherTypeWhitelist:
+	case constants.MatcherTypeWhitelist:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for WHITELIST matcher type")
 		}
@@ -101,7 +102,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeGreaterThanOrEqualTo:
+	case constants.MatcherTypeGreaterThanOrEqualTo:
 		if dto.UnaryNumeric == nil {
 			return nil, errors.New("UnaryNumeric is required for GREATER_THAN_OR_EQUAL_TO matcher type")
 		}
@@ -116,7 +117,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeLessThanOrEqualTo:
+	case constants.MatcherTypeLessThanOrEqualTo:
 		if dto.UnaryNumeric == nil {
 			return nil, errors.New("UnaryNumeric is required for LESS_THAN_OR_EQUAL_TO matcher type")
 		}
@@ -131,7 +132,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeBetween:
+	case constants.MatcherTypeBetween:
 		if dto.Between == nil {
 			return nil, errors.New("Between is required for BETWEEN matcher type")
 		}
@@ -147,7 +148,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeEqualToSet:
+	case constants.MatcherTypeEqualToSet:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for EQUAL_TO_SET matcher type")
 		}
@@ -161,7 +162,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypePartOfSet:
+	case constants.MatcherTypePartOfSet:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for PART_OF_SET matcher type")
 		}
@@ -175,7 +176,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeContainsAllOfSet:
+	case constants.MatcherTypeContainsAllOfSet:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for CONTAINS_ALL_OF_SET matcher type")
 		}
@@ -189,7 +190,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeContainsAnyOfSet:
+	case constants.MatcherTypeContainsAnyOfSet:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for CONTAINS_ANY_OF_SET matcher type")
 		}
@@ -203,7 +204,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeStartsWith:
+	case constants.MatcherTypeStartsWith:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for STARTS_WITH matcher type")
 		}
@@ -217,7 +218,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeEndsWith:
+	case constants.MatcherTypeEndsWith:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for ENDS_WITH matcher type")
 		}
@@ -231,7 +232,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeContainsString:
+	case constants.MatcherTypeContainsString:
 		if dto.Whitelist == nil {
 			return nil, errors.New("Whitelist is required for CONTAINS_STRING matcher type")
 		}
@@ -245,7 +246,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeInSplitTreatment:
+	case constants.MatcherTypeInSplitTreatment:
 		if dto.Dependency == nil {
 			return nil, errors.New("Dependency is required for IN_SPLIT_TREATMENT matcher type")
 		}
@@ -260,7 +261,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			r.dependencyEvaluator,
 		)
 
-	case MatcherTypeEqualToBoolean:
+	case constants.MatcherTypeEqualToBoolean:
 		if dto.Boolean == nil {
 			return nil, errors.New("Boolean is required for EQUAL_TO_BOOLEAN matcher type")
 		}
@@ -274,7 +275,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 		)
 
-	case MatcherTypeMatchesString:
+	case constants.MatcherTypeMatchesString:
 		if dto.String == nil {
 			return nil, errors.New("String is required for MATCHES_STRING matcher type")
 		}
@@ -287,7 +288,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			*dto.String,
 			attributeName,
 		)
-	case MatcherEqualToSemver:
+	case constants.MatcherEqualToSemver:
 		if dto.String == nil {
 			return nil, ErrInvalidEqualSemver
 		}
@@ -301,7 +302,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.logger,
 		)
-	case MatcherTypeGreaterThanOrEqualToSemver:
+	case constants.MatcherTypeGreaterThanOrEqualToSemver:
 		if dto.String == nil {
 			return nil, ErrInvalidGTOESemver
 		}
@@ -315,7 +316,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.logger,
 		)
-	case MatcherTypeLessThanOrEqualToSemver:
+	case constants.MatcherTypeLessThanOrEqualToSemver:
 		if dto.String == nil {
 			return nil, ErrInvalidLTOESemver
 		}
@@ -329,7 +330,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.logger,
 		)
-	case MatcherTypeBetweenSemver:
+	case constants.MatcherTypeBetweenSemver:
 		if dto.BetweenString.Start == nil || dto.BetweenString.End == nil {
 			return nil, ErrInvalidLBetweenSemver
 		}
@@ -344,7 +345,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.logger,
 		)
-	case MatcherTypeInListSemver:
+	case constants.MatcherTypeInListSemver:
 		if dto.Whitelist == nil {
 			return nil, ErrInvalidLInListSemver
 		}
@@ -358,7 +359,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.logger,
 		)
-	case MatcherTypeInLargeSegment:
+	case constants.MatcherTypeInLargeSegment:
 		if dto.UserDefinedLargeSegment == nil {
 			return nil, errors.New("UserDefinedLargeSegment is required for IN_LARGE_SEGMENT matcher type")
 		}
@@ -372,7 +373,7 @@ func (r RuleBuilder) BuildMatcher(dto *dtos.MatcherDTO) (MatcherInterface, error
 			attributeName,
 			r.largeSegmentStorage,
 		)
-	case MatcherTypeInRuleBasedSegment:
+	case constants.MatcherTypeInRuleBasedSegment:
 		if dto.UserDefinedSegment == nil {
 			return nil, errors.New("UserDefinedSegment is required for IN_RULE_BASED_SEGMENT matcher type")
 		}

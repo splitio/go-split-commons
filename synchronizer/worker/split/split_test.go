@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
 	"github.com/splitio/go-split-commons/v7/service"
@@ -25,14 +26,14 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
-	grammar.MatcherTypeInRuleBasedSegment}
-var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
-	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyFeatureFlagsRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString, constants.MatcherTypeInSplitTreatment,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
 
 func TestSplitSynchronizerError(t *testing.T) {
 	splitMockStorage := &mocks.SplitStorageMock{}
@@ -903,7 +904,7 @@ func TestProcessMatchers(t *testing.T) {
 					Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 					MatcherGroup: dtos.MatcherGroupDTO{
 						Matchers: []dtos.MatcherDTO{
-							{MatcherType: grammar.MatcherTypeAllKeys, KeySelector: nil},
+							{MatcherType: constants.MatcherTypeAllKeys, KeySelector: nil},
 						},
 					},
 				},
@@ -911,9 +912,9 @@ func TestProcessMatchers(t *testing.T) {
 		}}
 	toAdd, _ := splitUpdater.processFeatureFlagChanges(featureFlags)
 	assert.Equal(t, grammar.ConditionTypeWhitelist, toAdd[0].Conditions[0].ConditionType)
-	assert.Equal(t, grammar.MatcherTypeAllKeys, toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType)
+	assert.Equal(t, constants.MatcherTypeAllKeys, toAdd[0].Conditions[0].MatcherGroup.Matchers[0].MatcherType)
 	assert.Equal(t, grammar.ConditionTypeRollout, toAdd[1].Conditions[0].ConditionType)
-	assert.Equal(t, grammar.MatcherTypeAllKeys, toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType)
+	assert.Equal(t, constants.MatcherTypeAllKeys, toAdd[1].Conditions[0].MatcherGroup.Matchers[0].MatcherType)
 }
 
 func TestSplitProxyDowngrade(t *testing.T) {

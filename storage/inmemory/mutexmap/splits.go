@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -197,7 +198,7 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range m.data {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType != constants.MatcherTypeInRuleBasedSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 
@@ -231,7 +232,7 @@ func (m *MMSplitStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range m.data {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType == "IN_RULE_BASED_SEGMENT" {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInRuleBasedSegment {
 					ruleBasedSegments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 

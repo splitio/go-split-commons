@@ -70,7 +70,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "off", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: constants.MatcherTypeAllKeys, Negate: false}},
 			},
 		}, {
 			ConditionType: ConditionTypeWhitelist,
@@ -78,7 +78,7 @@ func TestSplitCreationWithConditionsMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: constants.MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",
@@ -148,7 +148,7 @@ func TestSplitCreationWithUnsupportedMatcher(t *testing.T) {
 			Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 			MatcherGroup: dtos.MatcherGroupDTO{
 				Combiner: "AND",
-				Matchers: []dtos.MatcherDTO{{MatcherType: MatcherTypeAllKeys, Negate: false}},
+				Matchers: []dtos.MatcherDTO{{MatcherType: constants.MatcherTypeAllKeys, Negate: false}},
 			},
 		}},
 		DefaultTreatment:      "def",

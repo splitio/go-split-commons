@@ -5,18 +5,19 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/storage/inmemory/mutexmap"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-var SyncProxyFeatureFlagsRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString, MatcherTypeInSplitTreatment,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
-	MatcherTypeInRuleBasedSegment}
-var SyncProxyRuleBasedSegmentRules = []string{MatcherTypeAllKeys, MatcherTypeInSegment, MatcherTypeWhitelist, MatcherTypeEqualTo, MatcherTypeGreaterThanOrEqualTo, MatcherTypeLessThanOrEqualTo, MatcherTypeBetween,
-	MatcherTypeEqualToSet, MatcherTypePartOfSet, MatcherTypeContainsAllOfSet, MatcherTypeContainsAnyOfSet, MatcherTypeStartsWith, MatcherTypeEndsWith, MatcherTypeContainsString,
-	MatcherTypeEqualToBoolean, MatcherTypeMatchesString, MatcherEqualToSemver, MatcherTypeGreaterThanOrEqualToSemver, MatcherTypeLessThanOrEqualToSemver, MatcherTypeBetweenSemver, MatcherTypeInListSemver, MatcherTypeInLargeSegment,
-	MatcherTypeInRuleBasedSegment}
+var SyncProxyFeatureFlagsRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString, constants.MatcherTypeInSplitTreatment,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
+var SyncProxyRuleBasedSegmentRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
 
 func TestInLargeSegmentMatcher(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})

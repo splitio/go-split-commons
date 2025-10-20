@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v7/dtos"
 	"github.com/splitio/go-split-commons/v7/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/engine/validator"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/healthcheck/application"
@@ -22,12 +23,8 @@ import (
 )
 
 const (
-	matcherTypeInSegment           = "IN_SEGMENT"
-	matcherTypeInLargeSegment      = "IN_LARGE_SEGMENT"
-	matcherTypeInRuleBasedSegment  = "IN_RULE_BASED_SEGMENT"
 	UpdateTypeSplitChange          = "SPLIT_UPDATE"
 	UpdateTypeRuleBasedChange      = "RB_SEGMENT_UPDATE"
-	TypeStandard                   = "standard"
 	TypeLargeSegment               = "large"
 	onDemandFetchBackoffBase       = int64(10)        // backoff base starting at 10 seconds
 	onDemandFetchBackoffMaxWait    = 60 * time.Second //  don't sleep for more than 1 minute
@@ -333,7 +330,7 @@ func appendSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []string {
 	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
-				if matcher.MatcherType == matcherTypeInSegment && matcher.UserDefinedSegment != nil {
+				if matcher.MatcherType == constants.MatcherTypeInSegment && matcher.UserDefinedSegment != nil {
 					dst = append(dst, matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -346,7 +343,7 @@ func appendLargeSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []strin
 	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
-				if matcher.MatcherType == matcherTypeInLargeSegment && matcher.UserDefinedLargeSegment != nil {
+				if matcher.MatcherType == constants.MatcherTypeInLargeSegment && matcher.UserDefinedLargeSegment != nil {
 					dst = append(dst, matcher.UserDefinedLargeSegment.LargeSegmentName)
 				}
 			}
@@ -372,7 +369,7 @@ func appendRuleBasedSegmentNamesReferenced(dst []string, featureFlags []dtos.Spl
 	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
-				if matcher.MatcherType == matcherTypeInRuleBasedSegment && matcher.UserDefinedSegment != nil {
+				if matcher.MatcherType == constants.MatcherTypeInRuleBasedSegment && matcher.UserDefinedSegment != nil {
 					dst = addIfNotExists(dst, seen, matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -452,14 +449,14 @@ func (s *UpdaterImpl) getSegments(ruleBasedSegment *dtos.RuleBasedSegmentDTO) []
 	segments := make([]string, 0)
 
 	for _, segment := range ruleBasedSegment.Excluded.Segments {
-		if segment.Type == TypeStandard {
+		if segment.Type == dtos.TypeStandard {
 			segments = addIfNotExists(segments, seen, segment.Name)
 		}
 	}
 
 	for _, cond := range ruleBasedSegment.Conditions {
 		for _, matcher := range cond.MatcherGroup.Matchers {
-			if matcher.MatcherType == matcherTypeInSegment && matcher.UserDefinedSegment != nil {
+			if matcher.MatcherType == constants.MatcherTypeInSegment && matcher.UserDefinedSegment != nil {
 				segments = addIfNotExists(segments, seen, matcher.UserDefinedSegment.SegmentName)
 			}
 		}
@@ -480,7 +477,7 @@ func (s *UpdaterImpl) getLargeSegments(ruleBasedSegment *dtos.RuleBasedSegmentDT
 
 	for _, cond := range ruleBasedSegment.Conditions {
 		for _, matcher := range cond.MatcherGroup.Matchers {
-			if matcher.MatcherType == matcherTypeInLargeSegment {
+			if matcher.MatcherType == constants.MatcherTypeInLargeSegment {
 				largeSegments = addIfNotExists(largeSegments, seen, matcher.UserDefinedSegment.SegmentName)
 			}
 		}

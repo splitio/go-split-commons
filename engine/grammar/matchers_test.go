@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,7 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 		{
 			name: "valid rule-based segment matcher",
 			dto: &dtos.MatcherDTO{
-				MatcherType: MatcherTypeInRuleBasedSegment,
+				MatcherType: constants.MatcherTypeInRuleBasedSegment,
 				Negate:      false,
 				UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 					SegmentName: "segment1",
@@ -29,7 +30,7 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 		{
 			name: "missing UserDefinedSegment",
 			dto: &dtos.MatcherDTO{
-				MatcherType: MatcherTypeInRuleBasedSegment,
+				MatcherType: constants.MatcherTypeInRuleBasedSegment,
 				Negate:      false,
 			},
 			wantErr:     true,
@@ -38,7 +39,7 @@ func TestBuildMatcher_InRuleBasedSegment(t *testing.T) {
 		{
 			name: "with attribute name",
 			dto: &dtos.MatcherDTO{
-				MatcherType: MatcherTypeInRuleBasedSegment,
+				MatcherType: constants.MatcherTypeInRuleBasedSegment,
 				Negate:      true,
 				UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 					SegmentName: "segment1",

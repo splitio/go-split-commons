@@ -5,6 +5,7 @@ import (
 	"github.com/splitio/go-split-commons/v7/engine/evaluator"
 	"github.com/splitio/go-split-commons/v7/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v7/engine/grammar"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/engine/grammar/datatypes"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -26,7 +27,7 @@ var unsupportedMatcherConditionReplacement []dtos.ConditionDTO = []dtos.Conditio
 	Partitions:    []dtos.PartitionDTO{{Treatment: evaluator.Control, Size: 100}},
 	MatcherGroup: dtos.MatcherGroupDTO{
 		Combiner: "AND",
-		Matchers: []dtos.MatcherDTO{{MatcherType: grammar.MatcherTypeAllKeys, Negate: false}},
+		Matchers: []dtos.MatcherDTO{{MatcherType: constants.MatcherTypeAllKeys, Negate: false}},
 	},
 }}
 
@@ -35,7 +36,7 @@ var unsupportedMatcherRBConditionReplacement []dtos.RuleBasedConditionDTO = []dt
 	ConditionType: grammar.ConditionTypeWhitelist,
 	MatcherGroup: dtos.MatcherGroupDTO{
 		Combiner: "AND",
-		Matchers: []dtos.MatcherDTO{{MatcherType: grammar.MatcherTypeAllKeys, Negate: false}},
+		Matchers: []dtos.MatcherDTO{{MatcherType: constants.MatcherTypeAllKeys, Negate: false}},
 	},
 }}
 
