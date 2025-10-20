@@ -168,7 +168,7 @@ func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*
 	return nil, fmt.Errorf("rule-based segment %s not found in storage", name)
 }
 
-func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) {
+func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
 	// Get all current splits under read lock
 	r.mutex.RLock()
 	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
@@ -181,4 +181,5 @@ func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentD
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.update(toAdd, toRemove, changeNumber)
+	return nil
 }
