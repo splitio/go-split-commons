@@ -352,25 +352,12 @@ func appendLargeSegmentNames(dst []string, featureFlags []dtos.SplitDTO) []strin
 	return dst
 }
 
-func addIfNotExists(dst []string, seen map[string]struct{}, name string) []string {
-	if _, exists := seen[name]; !exists {
-		seen[name] = struct{}{}
-		dst = append(dst, name)
-	}
-	return dst
-}
-
 func appendRuleBasedSegmentNamesReferenced(dst []string, featureFlags []dtos.SplitDTO) []string {
-	seen := make(map[string]struct{})
-	for _, name := range dst {
-		seen[name] = struct{}{}
-	}
-
 	for _, split := range featureFlags {
 		for _, cond := range split.Conditions {
 			for _, matcher := range cond.MatcherGroup.Matchers {
 				if matcher.MatcherType == constants.MatcherTypeInRuleBasedSegment && matcher.UserDefinedSegment != nil {
-					dst = addIfNotExists(dst, seen, matcher.UserDefinedSegment.SegmentName)
+					dst = append(dst, matcher.UserDefinedSegment.SegmentName)
 				}
 			}
 		}
@@ -445,19 +432,18 @@ func (s *UpdaterImpl) processFFChange(ffChange dtos.SplitChangeUpdate) *UpdateRe
 }
 
 func (s *UpdaterImpl) getSegments(ruleBasedSegment *dtos.RuleBasedSegmentDTO) []string {
-	seen := make(map[string]struct{})
 	segments := make([]string, 0)
 
 	for _, segment := range ruleBasedSegment.Excluded.Segments {
 		if segment.Type == dtos.TypeStandard {
-			segments = addIfNotExists(segments, seen, segment.Name)
+			segments = append(segments, segment.Name)
 		}
 	}
 
 	for _, cond := range ruleBasedSegment.Conditions {
 		for _, matcher := range cond.MatcherGroup.Matchers {
 			if matcher.MatcherType == constants.MatcherTypeInSegment && matcher.UserDefinedSegment != nil {
-				segments = addIfNotExists(segments, seen, matcher.UserDefinedSegment.SegmentName)
+				segments = append(segments, matcher.UserDefinedSegment.SegmentName)
 			}
 		}
 	}
@@ -466,19 +452,18 @@ func (s *UpdaterImpl) getSegments(ruleBasedSegment *dtos.RuleBasedSegmentDTO) []
 }
 
 func (s *UpdaterImpl) getLargeSegments(ruleBasedSegment *dtos.RuleBasedSegmentDTO) []string {
-	seen := make(map[string]struct{})
 	largeSegments := make([]string, 0)
 
 	for _, segment := range ruleBasedSegment.Excluded.Segments {
 		if segment.Type == TypeLargeSegment {
-			largeSegments = addIfNotExists(largeSegments, seen, segment.Name)
+			largeSegments = append(largeSegments, segment.Name)
 		}
 	}
 
 	for _, cond := range ruleBasedSegment.Conditions {
 		for _, matcher := range cond.MatcherGroup.Matchers {
 			if matcher.MatcherType == constants.MatcherTypeInLargeSegment {
-				largeSegments = addIfNotExists(largeSegments, seen, matcher.UserDefinedSegment.SegmentName)
+				largeSegments = append(largeSegments, matcher.UserDefinedSegment.SegmentName)
 			}
 		}
 	}
@@ -531,15 +516,15 @@ func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitCha
 		ruleBasedSegments = append(ruleBasedSegments, *ruleBasedChange.RuleBasedSegment())
 		toRemove, toAdd := s.processRuleBasedSegmentChanges(ruleBasedSegments)
 		segments := s.getSegmentsFromRuleBasedSegments(ruleBasedSegments)
-		//large segments
+		largeSegments := s.getLargeSegmentsFromRuleBasedSegments(ruleBasedSegments)
 		s.ruleBasedSegmentStorage.Update(toAdd, toRemove, ruleBasedChange.BaseUpdate.ChangeNumber())
 
 		return &UpdateResult{
 			UpdatedRuleBasedSegments: []string{ruleBasedChange.RuleBasedSegment().Name},
-			ReferencedSegments:       segments,
-			//large segment referenced
-			NewRBChangeNumber: ruleBasedChange.BaseUpdate.ChangeNumber(),
-			RequiresFetch:     false,
+			ReferencedSegments:       common.DedupeStringSlice(segments),
+			ReferencedLargeSegments:  common.DedupeStringSlice(largeSegments),
+			NewRBChangeNumber:        ruleBasedChange.BaseUpdate.ChangeNumber(),
+			RequiresFetch:            false,
 		}
 	}
 	s.logger.Debug("the rule-based segment was nil or the previous change number wasn't equal to the rule-based segment storage's change number")
