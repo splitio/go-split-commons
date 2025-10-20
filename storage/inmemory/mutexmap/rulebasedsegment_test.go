@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,9 +30,15 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment1",
 							},
+							MatcherType: constants.MatcherTypeInSegment,
 						},
 					},
 				},
+			},
+			{
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Matchers: []dtos.MatcherDTO{
+						{UserDefinedLargeSegment: &dtos.UserDefinedLargeSegmentMatcherDataDTO{LargeSegmentName: "ls1"}, MatcherType: constants.MatcherTypeInLargeSegment}}},
 			},
 		},
 		Excluded: dtos.ExcludedDTO{
@@ -39,6 +46,14 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 				{
 					Name: "excluded1",
 					Type: dtos.TypeStandard,
+				},
+				{
+					Name: "excluded2",
+					Type: dtos.TypeRuleBased,
+				},
+				{
+					Name: "excluded3",
+					Type: dtos.TypeLarge,
 				},
 			},
 		},
@@ -54,6 +69,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment2",
 							},
+							MatcherType: constants.MatcherTypeInRuleBasedSegment,
 						},
 					},
 				},
@@ -74,11 +90,12 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 
 	// Test GetSegments
 	segments := storage.Segments()
-	// Print segments for debugging
-	t.Logf("Segments in set: %v", segments.List())
 	assert.True(t, segments.Has("segment1"), "segment1 should be in segments")
-	assert.True(t, segments.Has("segment2"), "segment2 should be in segments")
 	assert.True(t, segments.Has("excluded1"), "excluded1 should be in segments")
+
+	ls := storage.LargeSegments()
+	assert.True(t, ls.Has("excluded3"), "excluded3 should be in large segments")
+	assert.True(t, ls.Has("ls1"), "ls1 should be in large segments")
 
 	// Test Contains
 	assert.True(t, storage.Contains([]string{"rule1", "rule2"}), "should contain rule1 and rule2")
@@ -113,6 +130,7 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment1",
 							},
+							MatcherType: constants.MatcherTypeInSegment,
 						},
 					},
 				},
@@ -134,6 +152,7 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment2",
 							},
+							MatcherType: constants.MatcherTypeInSegment,
 						},
 					},
 				},
@@ -183,6 +202,7 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment3",
 							},
+							MatcherType: constants.MatcherTypeInSegment,
 						},
 					},
 				},
@@ -200,6 +220,7 @@ func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment4",
 							},
+							MatcherType: constants.MatcherTypeInSegment,
 						},
 					},
 				},
@@ -278,6 +299,7 @@ func TestRuleBasedSegmentsStorageConcurrent(t *testing.T) {
 									UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 										SegmentName: "segment1",
 									},
+									MatcherType: constants.MatcherTypeInSegment,
 								},
 							},
 						},

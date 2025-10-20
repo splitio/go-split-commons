@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/healthcheck/application"
 	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
@@ -225,6 +226,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment1",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},
@@ -322,6 +324,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment1",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},
@@ -341,6 +344,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment2",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},

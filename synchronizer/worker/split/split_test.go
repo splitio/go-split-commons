@@ -908,7 +908,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return().Once()
 		result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
 		assert.Nil(t, err)
-		assert.True(t, result.RequiresFetch)
+		assert.False(t, result.RequiresFetch)
 
 		splitMockFetcher.AssertExpectations(t)
 		splitMockStorage.AssertExpectations(t)
@@ -1057,10 +1057,10 @@ func TestSplitProxyDowngrade(t *testing.T) {
 
 		splitMockStorage := &mocks.SplitStorageMock{}
 		splitMockStorage.On("ChangeNumber").Return(int64(3), nil).Times(2)
-		splitMockStorage.On("ReplaceAll", []dtos.SplitDTO{mockedSplit1}, int64(3)).Once()
+		splitMockStorage.On("ReplaceAll", []dtos.SplitDTO{mockedSplit1}, int64(3)).Once().Return(nil)
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(3)).Times(2)
-		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once()
+		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once().Return(nil)
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(-1).WithChangeNumberRB(-1)).Return(response, nil).Once()
@@ -1125,11 +1125,11 @@ func TestSplitProxyDowngrade(t *testing.T) {
 
 		splitMockStorage := &mocks.SplitStorageMock{}
 		splitMockStorage.On("ChangeNumber").Return(int64(3), nil).Times(2)
-		splitMockStorage.On("ReplaceAll", []dtos.SplitDTO{mockedSplit1}, int64(3)).Once()
+		splitMockStorage.On("ReplaceAll", []dtos.SplitDTO{mockedSplit1}, int64(3)).Once().Return(nil)
 		splitMockStorage.On("Update", []dtos.SplitDTO{}, []dtos.SplitDTO{}, int64(3)).Once()
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(3)).Times(2)
-		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once()
+		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once().Return(nil)
 		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(3)
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
