@@ -811,7 +811,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdate(t *testing.T) {
 
 func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 
-	t.Run("Rule-based segment change number higher than current", func(t *testing.T) {
+	t.Run("Rule-based segment pcn matches", func(t *testing.T) {
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		splitMockStorage := &mocks.SplitStorageMock{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
@@ -828,10 +828,9 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 
 		splitUpdater := NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder, false, specs.FLAG_V1_3)
 
-		changeNumber := int64(300)
 		ruleBasedSegment := &dtos.RuleBasedSegmentDTO{
 			Name:         "test-segment",
-			ChangeNumber: changeNumber,
+			ChangeNumber: int64(300),
 			Conditions: []dtos.RuleBasedConditionDTO{
 				{
 					ConditionType: "WHITELIST",
@@ -841,29 +840,17 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 				},
 			},
 		}
-		response := &dtos.FFResponseV13{
-			SplitChanges: dtos.SplitChangesDTO{
-				FeatureFlags: dtos.FeatureFlagsDTO{
-					Since: 3,
-					Till:  3,
-				},
-			},
-		}
-		pvChangeNumber := int64(100)
+		pvChangeNumber := int64(200)
 		baseMessage := dtos.NewBaseMessage(time.Now().Unix(), "test-channel")
-		baseUpdate := dtos.NewBaseUpdate(baseMessage, changeNumber)
+		baseUpdate := dtos.NewBaseUpdate(baseMessage, 300)
 		ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, &pvChangeNumber, ruleBasedSegment)
 
-		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200)).Times(3)
-		splitMockStorage.On("ChangeNumber").Return(int64(200)).Twice()
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{*ruleBasedSegment}, []dtos.RuleBasedSegmentDTO{}, changeNumber).Return().Once()
-		splitMockFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
-		splitMockStorage.On("Update", []dtos.SplitDTO{}, []dtos.SplitDTO{}, int64(3)).Once()
-		appMonitorMock.On("NotifyEvent", mock.Anything).Once()
+		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200), nil).Times(1)
+		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{*ruleBasedSegment}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return().Once()
 		result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
 		assert.Nil(t, err)
 		assert.False(t, result.RequiresFetch)
-		assert.Equal(t, changeNumber, result.NewRBChangeNumber)
+		assert.Equal(t, int64(300), result.NewRBChangeNumber)
 
 		splitMockFetcher.AssertExpectations(t)
 		splitMockStorage.AssertExpectations(t)
