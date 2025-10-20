@@ -198,7 +198,7 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range m.data {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != constants.MatcherTypeInRuleBasedSegment {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 

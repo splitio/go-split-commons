@@ -96,7 +96,7 @@ func (r *RuleBasedSegmentsStorageImpl) Segments() *set.ThreadUnsafeSet {
 	for _, ruleBased := range r.data {
 		for _, condition := range ruleBased.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != constants.MatcherTypeInRuleBasedSegment {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -119,7 +119,7 @@ func (r *RuleBasedSegmentsStorageImpl) LargeSegments() *set.ThreadUnsafeSet {
 		for _, condition := range ruleBased.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
 				if matcher.UserDefinedLargeSegment != nil {
-					largeSegments.Add(matcher.UserDefinedSegment.SegmentName)
+					largeSegments.Add(matcher.UserDefinedLargeSegment.LargeSegmentName)
 				}
 			}
 		}
