@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v7/flagsets"
 	"github.com/splitio/go-split-commons/v7/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -309,7 +310,7 @@ func (r *SplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range splits {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType != constants.MatcherTypeInRuleBasedSegment {
 					segmentNames.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -323,6 +324,23 @@ func (r *SplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
 	// TODO(sanzmauro): add split storage implementation
 	segments := set.NewSet()
 	return segments
+}
+
+// RuleBasedSegmentNames returns a slice of strings with all the rule-baseed segment names
+func (r *SplitStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet {
+	segmentNames := set.NewSet()
+	splits := r.All()
+
+	for _, split := range splits {
+		for _, condition := range split.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInRuleBasedSegment {
+					segmentNames.Add(matcher.UserDefinedSegment.SegmentName)
+				}
+			}
+		}
+	}
+	return segmentNames
 }
 
 // SetChangeNumber sets the till value belong to segmentName
@@ -493,8 +511,9 @@ func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
 	return result, nil
 }
 
-func (r *SplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+func (r *SplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error {
 	//to do
+	return nil
 }
 
 var _ storage.SplitStorage = (*SplitStorage)(nil)
