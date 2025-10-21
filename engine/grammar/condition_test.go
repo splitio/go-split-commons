@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/engine/grammar/datatypes"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
@@ -209,7 +210,7 @@ func TestConditionMatcherWithNilStringWrapperObject(t *testing.T) {
 			Matchers: []dtos.MatcherDTO{
 				{
 					Negate:      false,
-					MatcherType: MatcherTypeStartsWith,
+					MatcherType: constants.MatcherTypeStartsWith,
 					KeySelector: &dtos.KeySelectorDTO{
 						Attribute:   nil,
 						TrafficType: "something",

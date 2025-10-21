@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-split-commons/v8/healthcheck/application"
 	hcMock "github.com/splitio/go-split-commons/v8/healthcheck/mocks"
@@ -71,7 +72,7 @@ func TestSegmentsSynchronizerError(t *testing.T) {
 		},
 	}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 
 	segmentSync := NewSegmentUpdater(splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
@@ -184,7 +185,7 @@ func TestSegmentSynchronizer(t *testing.T) {
 		},
 	}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 
 	segmentSync := NewSegmentUpdater(splitMockStorage, segmentMockStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock)
 
@@ -225,6 +226,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment1",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},
@@ -259,7 +261,7 @@ func TestSegmentSyncUpdate(t *testing.T) {
 		},
 	}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
@@ -322,6 +324,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment1",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},
@@ -341,6 +344,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 								UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 									SegmentName: "segment2",
 								},
+								MatcherType: constants.MatcherTypeInSegment,
 							},
 						},
 					},
@@ -376,7 +380,7 @@ func TestSegmentSyncProcess(t *testing.T) {
 		},
 	}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), runtimeTelemetry, appMonitorMock)
@@ -656,7 +660,7 @@ func TestSegmentSyncConcurrencyLimit(t *testing.T) {
 	segmentStorage := mutexmap.NewMMSegmentStorage()
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 
 	segmentSync := NewSegmentUpdater(splitStorage, segmentStorage, ruleBasedSegmentMockStorage, segmentMockFetcher, logging.NewLogger(nil), runtimeTelemetry, &application.Dummy{})
 	_, err := segmentSync.SynchronizeSegments()

@@ -5,18 +5,19 @@ import (
 
 	"github.com/splitio/go-split-commons/v8/dtos"
 	"github.com/splitio/go-split-commons/v8/engine/grammar"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
-var goClientFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
-	grammar.MatcherTypeInRuleBasedSegment}
-var goClientRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
-	grammar.MatcherTypeInRuleBasedSegment}
+var goClientFeatureFlagsRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString, constants.MatcherTypeInSplitTreatment,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver,
+	constants.MatcherTypeInRuleBasedSegment}
+var goClientRuleBasedSegmentRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver,
+	constants.MatcherTypeInRuleBasedSegment}
 
 func TestProcessRBMatchers(t *testing.T) {
 	// Test case 1: Rule-based segment with unsupported matcher
@@ -42,7 +43,7 @@ func TestProcessRBMatchers(t *testing.T) {
 	if ruleBased.Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
 		t.Error("ConditionType should be WHITELIST")
 	}
-	if ruleBased.Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
+	if ruleBased.Conditions[0].MatcherGroup.Matchers[0].MatcherType != constants.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
@@ -55,7 +56,7 @@ func TestProcessRBMatchers(t *testing.T) {
 				ConditionType: grammar.ConditionTypeRollout,
 				MatcherGroup: dtos.MatcherGroupDTO{
 					Matchers: []dtos.MatcherDTO{
-						{MatcherType: grammar.MatcherTypeEndsWith, KeySelector: nil, String: common.StringRef("test")},
+						{MatcherType: constants.MatcherTypeEndsWith, KeySelector: nil, String: common.StringRef("test")},
 					},
 				},
 			},
@@ -68,7 +69,7 @@ func TestProcessRBMatchers(t *testing.T) {
 	if ruleBased.Conditions[0].ConditionType != grammar.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
 	}
-	if ruleBased.Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeEndsWith {
+	if ruleBased.Conditions[0].MatcherGroup.Matchers[0].MatcherType != constants.MatcherTypeEndsWith {
 		t.Error("MatcherType should be ENDS_WITH")
 	}
 }
@@ -81,7 +82,7 @@ func TestProcessMatchers(t *testing.T) {
 				Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 				MatcherGroup: dtos.MatcherGroupDTO{
 					Matchers: []dtos.MatcherDTO{
-						{MatcherType: grammar.MatcherTypeEndsWith, KeySelector: nil, String: common.StringRef("test")},
+						{MatcherType: constants.MatcherTypeEndsWith, KeySelector: nil, String: common.StringRef("test")},
 					},
 				},
 			},
@@ -104,7 +105,7 @@ func TestProcessMatchers(t *testing.T) {
 	if split.Conditions[0].ConditionType != grammar.ConditionTypeWhitelist {
 		t.Error("ConditionType should be WHITELIST")
 	}
-	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
+	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != constants.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 
@@ -115,7 +116,7 @@ func TestProcessMatchers(t *testing.T) {
 				Partitions:    []dtos.PartitionDTO{{Treatment: "on", Size: 100}},
 				MatcherGroup: dtos.MatcherGroupDTO{
 					Matchers: []dtos.MatcherDTO{
-						{MatcherType: grammar.MatcherTypeAllKeys, KeySelector: nil},
+						{MatcherType: constants.MatcherTypeAllKeys, KeySelector: nil},
 					},
 				},
 			},
@@ -126,7 +127,7 @@ func TestProcessMatchers(t *testing.T) {
 	if split.Conditions[0].ConditionType != grammar.ConditionTypeRollout {
 		t.Error("ConditionType should be ROLLOUT")
 	}
-	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != grammar.MatcherTypeAllKeys {
+	if split.Conditions[0].MatcherGroup.Matchers[0].MatcherType != constants.MatcherTypeAllKeys {
 		t.Error("MatcherType should be ALL_KEYS")
 	}
 }

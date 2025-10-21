@@ -135,7 +135,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	appMonitorMock := &hcMock.ApplicationMonitorMock{}
 	appMonitorMock.On("NotifyEvent", mock.Anything).Return().Times(4)
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(int64(-1))
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
@@ -228,7 +228,7 @@ func TestSyncAllOk(t *testing.T) {
 	appMonitorMock := &hcMock.ApplicationMonitorMock{}
 	appMonitorMock.On("NotifyEvent", mock.Anything).Return().Times(4)
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("GetSegments").Return(set.NewSet())
+	ruleBasedSegmentMockStorage.On("Segments").Return(set.NewSet())
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Maybe().Return(int64(-1))
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(-1)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}

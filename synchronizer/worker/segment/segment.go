@@ -196,7 +196,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 // SynchronizeSegments syncs segments at once
 func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
-	segmentNames = append(segmentNames, s.ruleBasedSegmentStorage.GetSegments().List()...)
+	segmentNames = append(segmentNames, s.ruleBasedSegmentStorage.Segments().List()...)
 	s.logger.Debug("Segment Sync", segmentNames)
 	s.hcMonitor.NotifyEvent(application.Segments)
 	wg := sync.WaitGroup{}

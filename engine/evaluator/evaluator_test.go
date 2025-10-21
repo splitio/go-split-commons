@@ -7,23 +7,23 @@ import (
 	"github.com/splitio/go-split-commons/v8/engine"
 	"github.com/splitio/go-split-commons/v8/engine/evaluator/impressionlabels"
 	"github.com/splitio/go-split-commons/v8/engine/grammar"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-split-commons/v8/storage/inmemory/mutexmap"
 	"github.com/splitio/go-split-commons/v8/storage/mocks"
-
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
 
-var syncProxyFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
-	grammar.MatcherTypeInRuleBasedSegment}
-var syncProxyRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver, grammar.MatcherTypeInLargeSegment,
-	grammar.MatcherTypeInRuleBasedSegment}
+var syncProxyFeatureFlagsRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString, constants.MatcherTypeInSplitTreatment,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
+var syncProxyRuleBasedSegmentRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver, constants.MatcherTypeInLargeSegment,
+	constants.MatcherTypeInRuleBasedSegment}
 
 type mockStorage struct{}
 
@@ -285,12 +285,13 @@ func (s *mockStorage) FetchMany(
 	splits["mysplittest5"] = nil
 	return splits
 }
-func (s *mockStorage) All() []dtos.SplitDTO                      { return make([]dtos.SplitDTO, 0) }
-func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet        { return nil }
-func (s *mockStorage) LargeSegmentNames() *set.ThreadUnsafeSet   { return nil }
-func (s *mockStorage) SplitNames() []string                      { return make([]string, 0) }
-func (s *mockStorage) TrafficTypeExists(trafficType string) bool { return true }
-func (s *mockStorage) ChangeNumber() (int64, error)              { return 0, nil }
+func (s *mockStorage) All() []dtos.SplitDTO                        { return make([]dtos.SplitDTO, 0) }
+func (s *mockStorage) SegmentNames() *set.ThreadUnsafeSet          { return nil }
+func (s *mockStorage) LargeSegmentNames() *set.ThreadUnsafeSet     { return nil }
+func (s *mockStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet { return nil }
+func (s *mockStorage) SplitNames() []string                        { return make([]string, 0) }
+func (s *mockStorage) TrafficTypeExists(trafficType string) bool   { return true }
+func (s *mockStorage) ChangeNumber() (int64, error)                { return 0, nil }
 func (s *mockStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return make(map[string][]string)
 }

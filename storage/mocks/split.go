@@ -9,21 +9,22 @@ import (
 
 // MockSplitStorage is a mocked implementation of Split Storage
 type MockSplitStorage struct {
-	AllCall                func() []dtos.SplitDTO
-	ChangeNumberCall       func() (int64, error)
-	FetchManyCall          func(splitNames []string) map[string]*dtos.SplitDTO
-	KillLocallyCall        func(splitName string, defaultTreatment string, changeNumber int64)
-	UpdateCall             func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
-	RemoveCall             func(splitName string)
-	SegmentNamesCall       func() *set.ThreadUnsafeSet
-	LargeSegmentNamesCall  func() *set.ThreadUnsafeSet
-	SetChangeNumberCall    func(changeNumber int64) error
-	SplitCall              func(splitName string) *dtos.SplitDTO
-	SplitNamesCall         func() []string
-	TrafficTypeExistsCall  func(trafficType string) bool
-	GetNamesByFlagSetsCall func(sets []string) map[string][]string
-	GetAllFlagSetNamesCall func() []string
-	ReplaceAllCall         func(toAdd []dtos.SplitDTO, changeNumber int64)
+	AllCall                   func() []dtos.SplitDTO
+	ChangeNumberCall          func() (int64, error)
+	FetchManyCall             func(splitNames []string) map[string]*dtos.SplitDTO
+	KillLocallyCall           func(splitName string, defaultTreatment string, changeNumber int64)
+	UpdateCall                func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
+	RemoveCall                func(splitName string)
+	SegmentNamesCall          func() *set.ThreadUnsafeSet
+	LargeSegmentNamesCall     func() *set.ThreadUnsafeSet
+	RuleBasedSegmentNamesCall func() *set.ThreadUnsafeSet
+	SetChangeNumberCall       func(changeNumber int64) error
+	SplitCall                 func(splitName string) *dtos.SplitDTO
+	SplitNamesCall            func() []string
+	TrafficTypeExistsCall     func(trafficType string) bool
+	GetNamesByFlagSetsCall    func(sets []string) map[string][]string
+	GetAllFlagSetNamesCall    func() []string
+	ReplaceAllCall            func(toAdd []dtos.SplitDTO, changeNumber int64) error
 }
 
 // All mock
@@ -61,9 +62,14 @@ func (m MockSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	return m.SegmentNamesCall()
 }
 
-// SegmentNames mock
+// LargeSegmentNames mock
 func (m MockSplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
 	return m.LargeSegmentNamesCall()
+}
+
+// RuleBasedSegmentNames mock
+func (m MockSplitStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet {
+	return m.RuleBasedSegmentNamesCall()
 }
 
 // SetChangeNumber mock
@@ -95,8 +101,9 @@ func (m MockSplitStorage) GetAllFlagSetNames() []string {
 	return m.GetAllFlagSetNamesCall()
 }
 
-func (m MockSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+func (m MockSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error {
 	m.ReplaceAllCall(toAdd, changeNumber)
+	return nil
 }
 
 // SplitStorageMock is a mocked implementation of Split Storage with testify
@@ -113,7 +120,7 @@ func (m *SplitStorageMock) All() []dtos.SplitDTO {
 // ChangeNumber mock
 func (m *SplitStorageMock) ChangeNumber() (int64, error) {
 	args := m.Called()
-	return args.Get(0).(int64), args.Error(1)
+	return args.Get(0).(int64), nil
 }
 
 // FetchMany mock
@@ -207,8 +214,17 @@ func (m *SplitStorageMock) GetAllFlagSetNames() []string {
 }
 
 // ReplaceAll mock
-func (m *SplitStorageMock) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
-	m.Called(toAdd, changeNumber)
+func (m *SplitStorageMock) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error {
+	args := m.Called(toAdd, changeNumber)
+	return args.Error(0)
+}
+
+func (m *SplitStorageMock) RuleBasedSegmentNames() *set.ThreadUnsafeSet {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*set.ThreadUnsafeSet)
 }
 
 var _ storage.SplitStorage = (*SplitStorageMock)(nil)

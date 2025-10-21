@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-split-commons/v8/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -197,7 +198,7 @@ func (m *MMSplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 	for _, split := range m.data {
 		for _, condition := range split.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 
@@ -222,6 +223,23 @@ func (m *MMSplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
 		}
 	}
 	return largeSegments
+}
+
+func (m *MMSplitStorage) RuleBasedSegmentNames() *set.ThreadUnsafeSet {
+	ruleBasedSegments := set.NewSet()
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	for _, split := range m.data {
+		for _, condition := range split.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInRuleBasedSegment {
+					ruleBasedSegments.Add(matcher.UserDefinedSegment.SegmentName)
+				}
+
+			}
+		}
+	}
+	return ruleBasedSegments
 }
 
 // SetChangeNumber sets the till value belong to split
@@ -270,7 +288,7 @@ func (m *MMSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return toReturn
 }
 
-func (m *MMSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
+func (m *MMSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error {
 	// Get all current splits under read lock
 	m.mutex.RLock()
 	toRemove := make([]dtos.SplitDTO, 0)
@@ -283,6 +301,7 @@ func (m *MMSplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.update(toAdd, toRemove, changeNumber)
+	return nil
 }
 
 var _ storage.SplitStorageConsumer = (*MMSplitStorage)(nil)

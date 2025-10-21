@@ -10,7 +10,7 @@ type AuthClient interface {
 // SplitFetcher interface to be implemented by Split Fetchers
 type SplitFetcher interface {
 	Fetch(fetchOptions *FlagRequestParams) (dtos.FFResponse, error)
-	IsProxy(fetchOptions *FlagRequestParams) bool
+	IsProxy() bool
 }
 
 // SegmentFetcher interface to be implemented by Split Fetchers
