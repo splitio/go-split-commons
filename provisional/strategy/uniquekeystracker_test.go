@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/storage/filter"
+	"github.com/splitio/go-split-commons/v8/storage/filter"
 )
 
 func Test(t *testing.T) {

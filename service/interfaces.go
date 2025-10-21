@@ -1,6 +1,6 @@
 package service
 
-import "github.com/splitio/go-split-commons/v7/dtos"
+import "github.com/splitio/go-split-commons/v8/dtos"
 
 // AuthClient inteface to be implemneted by AuthClient
 type AuthClient interface {
@@ -9,7 +9,8 @@ type AuthClient interface {
 
 // SplitFetcher interface to be implemented by Split Fetchers
 type SplitFetcher interface {
-	Fetch(fetchOptions *FlagRequestParams) (*dtos.SplitChangesDTO, error)
+	Fetch(fetchOptions *FlagRequestParams) (dtos.FFResponse, error)
+	IsProxy() bool
 }
 
 // SegmentFetcher interface to be implemented by Split Fetchers

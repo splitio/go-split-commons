@@ -2,60 +2,50 @@ package synchronizer
 
 import (
 	"errors"
-	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/engine/grammar"
-	"github.com/splitio/go-split-commons/v7/flagsets"
-	hcMock "github.com/splitio/go-split-commons/v7/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v7/service"
-	"github.com/splitio/go-split-commons/v7/service/api"
-	httpMocks "github.com/splitio/go-split-commons/v7/service/mocks"
-	"github.com/splitio/go-split-commons/v7/storage/mocks"
-	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v8/flagsets"
+	hcMock "github.com/splitio/go-split-commons/v8/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v8/service/api"
+	"github.com/splitio/go-split-commons/v8/service/api/specs"
+	httpMocks "github.com/splitio/go-split-commons/v8/service/mocks"
+	"github.com/splitio/go-split-commons/v8/storage/mocks"
+	"github.com/splitio/go-split-commons/v8/synchronizer/worker/split"
+
 	"github.com/splitio/go-toolkit/v5/logging"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-var goClientFeatureFlagsRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString, grammar.MatcherTypeInSplitTreatment,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
-	grammar.MatcherTypeInRuleBasedSegment}
-var goClientRuleBasedSegmentRules = []string{grammar.MatcherTypeAllKeys, grammar.MatcherTypeInSegment, grammar.MatcherTypeWhitelist, grammar.MatcherTypeEqualTo, grammar.MatcherTypeGreaterThanOrEqualTo, grammar.MatcherTypeLessThanOrEqualTo, grammar.MatcherTypeBetween,
-	grammar.MatcherTypeEqualToSet, grammar.MatcherTypePartOfSet, grammar.MatcherTypeContainsAllOfSet, grammar.MatcherTypeContainsAnyOfSet, grammar.MatcherTypeStartsWith, grammar.MatcherTypeEndsWith, grammar.MatcherTypeContainsString,
-	grammar.MatcherTypeEqualToBoolean, grammar.MatcherTypeMatchesString, grammar.MatcherEqualToSemver, grammar.MatcherTypeGreaterThanOrEqualToSemver, grammar.MatcherTypeLessThanOrEqualToSemver, grammar.MatcherTypeBetweenSemver, grammar.MatcherTypeInListSemver,
-	grammar.MatcherTypeInRuleBasedSegment}
+var goClientFeatureFlagsRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString, constants.MatcherTypeInSplitTreatment,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver,
+	constants.MatcherTypeInRuleBasedSegment}
+var goClientRuleBasedSegmentRules = []string{constants.MatcherTypeAllKeys, constants.MatcherTypeInSegment, constants.MatcherTypeWhitelist, constants.MatcherTypeEqualTo, constants.MatcherTypeGreaterThanOrEqualTo, constants.MatcherTypeLessThanOrEqualTo, constants.MatcherTypeBetween,
+	constants.MatcherTypeEqualToSet, constants.MatcherTypePartOfSet, constants.MatcherTypeContainsAllOfSet, constants.MatcherTypeContainsAnyOfSet, constants.MatcherTypeStartsWith, constants.MatcherTypeEndsWith, constants.MatcherTypeContainsString,
+	constants.MatcherTypeEqualToBoolean, constants.MatcherTypeMatchesString, constants.MatcherEqualToSemver, constants.MatcherTypeGreaterThanOrEqualToSemver, constants.MatcherTypeLessThanOrEqualToSemver, constants.MatcherTypeBetweenSemver, constants.MatcherTypeInListSemver,
+	constants.MatcherTypeInRuleBasedSegment}
 
 func TestLocalSyncAllError(t *testing.T) {
-	var splitFetchCalled int64
-	var notifyEventCalled int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	splitAPI := api.SplitAPI{
-		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-				atomic.AddInt64(&splitFetchCalled, 1)
-				if fetchOptions.ChangeNumber() != -1 {
-					t.Error("Wrong changenumber passed")
-				}
-				return nil, errors.New("Some")
-			},
-		},
-	}
-	splitMockStorage := mocks.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) { return -1, nil },
-	}
+	splitFetcher := &httpMocks.MockSplitFetcher{}
+	splitFetcher.On("Fetch", mock.Anything).Return(nil, errors.New("Some")).Once()
+	splitAPI := api.SplitAPI{SplitFetcher: splitFetcher}
+	splitMockStorage := &mocks.SplitStorageMock{}
+	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)
 	telemetryMockStorage := mocks.MockTelemetryStorage{}
-	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {
-			atomic.AddInt64(&notifyEventCalled, 1)
-		},
-	}
+	appMonitorMock := &hcMock.ApplicationMonitorMock{}
+	appMonitorMock.On("NotifyEvent", mock.Anything).Once()
 
 	flagSetFilter := flagsets.NewFlagSetFilter(nil)
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logger, nil)
 	splitUpdater := split.NewSplitUpdater(
@@ -67,6 +57,8 @@ func TestLocalSyncAllError(t *testing.T) {
 		appMonitorMock,
 		flagSetFilter,
 		ruleBuilder,
+		false,
+		specs.FLAG_V1_3,
 	)
 	splitUpdater.SetRuleBasedSegmentStorage(ruleBasedSegmentMockStorage)
 
@@ -81,131 +73,96 @@ func TestLocalSyncAllError(t *testing.T) {
 	}
 
 	err := syncForTest.SyncAll()
-	if err == nil {
-		t.Error("It should return error")
-	}
-	if atomic.LoadInt64(&splitFetchCalled) != 1 {
-		t.Error("It should be called once")
-	}
-	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
-	}
+	assert.NotNil(t, err)
+
+	splitFetcher.AssertExpectations(t)
+	appMonitorMock.AssertExpectations(t)
+	splitMockStorage.AssertExpectations(t)
+	ruleBasedSegmentMockStorage.AssertExpectations(t)
 }
 
 func TestLocalSyncAllOk(t *testing.T) {
-	var splitFetchCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	splitAPI := api.SplitAPI{
-		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-				atomic.AddInt64(&splitFetchCalled, 1)
-				if fetchOptions.ChangeNumber() != -1 {
-					t.Error("Wrong changenumber passed")
-				}
-				return &dtos.SplitChangesDTO{
-					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-						Since: 3,
-						Till:  3},
-				}, nil
+	splitFetcher := &httpMocks.MockSplitFetcher{}
+	response := &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+				Since:  3,
+				Till:   3,
 			},
 		},
 	}
-	splitMockStorage := mocks.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) { return -1, nil },
-		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
-			if changeNumber != 3 {
-				t.Error("Wrong changenumber")
-			}
-			if len(toAdd) != 2 {
-				t.Error("Wrong length of passed splits")
-			}
-		},
-	}
-	var notifyEventCalled int64
+	splitFetcher.On("Fetch",
+		mock.MatchedBy(func(req *service.FlagRequestParams) bool {
+			return req.ChangeNumber() == -1
+		})).Return(response, nil).Once()
+	splitAPI := api.SplitAPI{SplitFetcher: splitFetcher}
+	splitMockStorage := &mocks.SplitStorageMock{}
+	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)
+	splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1, mockedSplit2}, []dtos.SplitDTO{}, int64(3)).Once()
 	segmentMockStorage := mocks.MockSegmentStorage{}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
 	}
-	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {
-			atomic.AddInt64(&notifyEventCalled, 1)
-		},
-	}
+	appMonitorMock := &hcMock.ApplicationMonitorMock{}
+	appMonitorMock.On("NotifyEvent", mock.Anything).Once()
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 	syncForTest := NewLocal(&LocalConfig{}, &splitAPI, splitMockStorage, segmentMockStorage, largeSegmentStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	err := syncForTest.SyncAll()
-	if err != nil {
-		t.Error("It should not return error")
-	}
-	if splitFetchCalled != 1 {
-		t.Error("It should be called once")
-	}
-	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
-	}
+	assert.Nil(t, err)
+
+	splitFetcher.AssertExpectations(t)
+	appMonitorMock.AssertExpectations(t)
+	splitMockStorage.AssertExpectations(t)
+	ruleBasedSegmentMockStorage.AssertExpectations(t)
 }
 
 func TestLocalPeriodicFetching(t *testing.T) {
-	var splitFetchCalled int64
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
-	splitAPI := api.SplitAPI{
-		SplitFetcher: httpMocks.MockSplitFetcher{
-			FetchCall: func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-				atomic.AddInt64(&splitFetchCalled, 1)
-				if fetchOptions.ChangeNumber() != -1 {
-					t.Error("Wrong changenumber passed")
-				}
-				return &dtos.SplitChangesDTO{
-					FeatureFlags: dtos.FeatureFlagsDTO{Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
-						Since: 3,
-						Till:  3},
-				}, nil
+	splitFetcher := &httpMocks.MockSplitFetcher{}
+	response := &dtos.FFResponseV13{
+		SplitChanges: dtos.SplitChangesDTO{
+			FeatureFlags: dtos.FeatureFlagsDTO{
+				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
+				Since:  3,
+				Till:   3,
 			},
 		},
 	}
-	splitMockStorage := mocks.MockSplitStorage{
-		ChangeNumberCall: func() (int64, error) { return -1, nil },
-		UpdateCall: func(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64) {
-			if changeNumber != 3 {
-				t.Error("Wrong changenumber")
-			}
-			if len(toAdd) != 2 {
-				t.Error("Wrong length of passed splits")
-			}
-		},
-	}
+
+	splitFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
+	splitAPI := api.SplitAPI{SplitFetcher: splitFetcher}
+	splitMockStorage := &mocks.SplitStorageMock{}
+	splitMockStorage.On("ChangeNumber").Return(int64(-1), nil)
+	splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1, mockedSplit2}, []dtos.SplitDTO{}, int64(3)).Once()
 	segmentMockStorage := mocks.MockSegmentStorage{}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
-	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(-1)
+	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
 	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
 	}
-	var notifyEventCalled int64
-	appMonitorMock := hcMock.MockApplicationMonitor{
-		NotifyEventCall: func(counterType int) {
-			atomic.AddInt64(&notifyEventCalled, 1)
-		},
-	}
+	appMonitorMock := &hcMock.ApplicationMonitorMock{}
+	appMonitorMock.On("NotifyEvent", mock.Anything).Once()
 
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 	syncForTest := NewLocal(&LocalConfig{RefreshEnabled: true, SplitPeriod: 1}, &splitAPI, splitMockStorage, segmentMockStorage, largeSegmentStorage, ruleBasedSegmentMockStorage, logger, telemetryMockStorage, appMonitorMock)
 	syncForTest.StartPeriodicFetching()
 	time.Sleep(time.Millisecond * 1500)
-	if atomic.LoadInt64(&splitFetchCalled) != 1 {
-		t.Error("It should be called once", splitFetchCalled)
-	}
 	syncForTest.StopPeriodicFetching()
-	if atomic.LoadInt64(&notifyEventCalled) != 1 {
-		t.Errorf("It should be called once. Actual %d", notifyEventCalled)
-	}
+
+	splitFetcher.AssertExpectations(t)
+	appMonitorMock.AssertExpectations(t)
+	splitMockStorage.AssertExpectations(t)
+	ruleBasedSegmentMockStorage.AssertExpectations(t)
 }

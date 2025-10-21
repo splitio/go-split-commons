@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v7/dtos"
+import "github.com/splitio/go-split-commons/v8/dtos"
 
 // MockImpressionRecorder mocked implementation of impression recorder
 type MockImpressionRecorder struct {

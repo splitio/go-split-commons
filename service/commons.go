@@ -104,6 +104,11 @@ func (s *FlagRequestParams) Till() *int64 {
 	return s.till
 }
 
+// SpecVersion returns the spec version
+func (s *FlagRequestParams) SpecVersion() string {
+	return common.StringFromRef(s.specVersion)
+}
+
 // Apply applies the request parameters
 func (s *FlagRequestParams) Apply(request *http.Request) error {
 	if s.cacheControlHeaders {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	healthcheck "github.com/splitio/go-split-commons/v7/healthcheck/application"
-	"github.com/splitio/go-split-commons/v7/synchronizer/worker/segment"
+	healthcheck "github.com/splitio/go-split-commons/v8/healthcheck/application"
+	"github.com/splitio/go-split-commons/v8/synchronizer/worker/segment"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/workerpool"

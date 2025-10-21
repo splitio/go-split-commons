@@ -3,7 +3,7 @@ package redis
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v7/storage"
+	"github.com/splitio/go-split-commons/v8/storage"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 )

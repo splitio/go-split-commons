@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/provisional/strategy"
-	"github.com/splitio/go-split-commons/v7/storage/filter"
-	"github.com/splitio/go-split-commons/v7/storage/inmemory"
-	"github.com/splitio/go-split-commons/v7/telemetry"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/provisional/strategy"
+	"github.com/splitio/go-split-commons/v8/storage/filter"
+	"github.com/splitio/go-split-commons/v8/storage/inmemory"
+	"github.com/splitio/go-split-commons/v8/telemetry"
 )
 
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
