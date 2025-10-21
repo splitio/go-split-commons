@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/storage"
-	"github.com/splitio/go-split-commons/v7/telemetry"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/storage"
+	"github.com/splitio/go-split-commons/v8/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 )

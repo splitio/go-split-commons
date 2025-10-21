@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v8/dtos"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -13,6 +13,7 @@ type SplitStorageProducer interface {
 	Update(toAdd []dtos.SplitDTO, toRemove []dtos.SplitDTO, changeNumber int64)
 	KillLocally(splitName string, defaultTreatment string, changeNumber int64)
 	SetChangeNumber(changeNumber int64) error
+	ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error
 }
 
 // SplitStorageConsumer should be implemented by structs that offer reading splits from storage
@@ -20,8 +21,9 @@ type SplitStorageConsumer interface {
 	ChangeNumber() (int64, error)
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
-	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet          // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet     // Not in Spec
+	RuleBasedSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
@@ -204,13 +206,15 @@ type SplitStorage interface {
 	SetChangeNumber(changeNumber int64) error
 	All() []dtos.SplitDTO
 	FetchMany(splitNames []string) map[string]*dtos.SplitDTO
-	SegmentNames() *set.ThreadUnsafeSet      // Not in Spec
-	LargeSegmentNames() *set.ThreadUnsafeSet // Not in Spec
+	SegmentNames() *set.ThreadUnsafeSet          // Not in Spec
+	LargeSegmentNames() *set.ThreadUnsafeSet     // Not in Spec
+	RuleBasedSegmentNames() *set.ThreadUnsafeSet // Not in Spec
 	Split(splitName string) *dtos.SplitDTO
 	SplitNames() []string
 	TrafficTypeExists(trafficType string) bool
 	GetNamesByFlagSets(sets []string) map[string][]string
 	GetAllFlagSetNames() []string
+	ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error
 }
 
 // SegmentStorage wraps consumer and producer interfaces
@@ -271,15 +275,17 @@ type RuleBasedSegmentStorageProducer interface {
 	SetChangeNumber(till int64) error
 	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
 	Clear()
+	ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error
 }
 
 // RuleBasedStorageConsumer interface should be implemented by all structs that ofer reading rule-based segments
 type RuleBasedSegmentStorageConsumer interface {
-	ChangeNumber() int64
+	ChangeNumber() (int64, error)
 	All() []dtos.RuleBasedSegmentDTO
 	RuleBasedSegmentNames() []string
 	Contains(ruleBasedSegmentNames []string) bool
-	GetSegments() *set.ThreadUnsafeSet
+	Segments() *set.ThreadUnsafeSet
+	LargeSegments() *set.ThreadUnsafeSet
 	GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error)
 }
 

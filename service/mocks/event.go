@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v7/dtos"
+import "github.com/splitio/go-split-commons/v8/dtos"
 
 // MockEventRecorder mocked implementation of event recorder
 type MockEventRecorder struct {

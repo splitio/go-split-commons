@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 
@@ -26,10 +27,15 @@ func NewRuleBasedSegmentsStorage() *RuleBasedSegmentsStorageImpl {
 	}
 }
 
-// Update atomically registers new rule-based, removes archived ones and updates the change number
+// Update atomically registers new rule-based segments, removes archived ones and updates the change number
 func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+	r.update(toAdd, toRemove, till)
+}
+
+// Update atomically registers new rule-based, removes archived ones and updates the change number
+func (r *RuleBasedSegmentsStorageImpl) update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
 	for _, ruleBased := range toAdd {
 		r.data[ruleBased.Name] = ruleBased
 	}
@@ -52,10 +58,10 @@ func (r *RuleBasedSegmentsStorageImpl) SetChangeNumber(till int64) error {
 }
 
 // ChangeNumber return the actual rule-based till
-func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() int64 {
+func (r *RuleBasedSegmentsStorageImpl) ChangeNumber() (int64, error) {
 	r.tillMutex.RLock()
 	defer r.tillMutex.RUnlock()
-	return r.till
+	return r.till, nil
 }
 
 // All returns a list with a copy of each rule-based.
@@ -82,7 +88,7 @@ func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() []string {
 }
 
 // SegmentNames returns a slice with the names of all segments referenced in rule-based
-func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
+func (r *RuleBasedSegmentsStorageImpl) Segments() *set.ThreadUnsafeSet {
 	segments := set.NewSet()
 
 	r.mutex.RLock()
@@ -90,7 +96,7 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 	for _, ruleBased := range r.data {
 		for _, condition := range ruleBased.Conditions {
 			for _, matcher := range condition.MatcherGroup.Matchers {
-				if matcher.UserDefinedSegment != nil && matcher.MatcherType != "IN_RULE_BASED_SEGMENT" {
+				if matcher.UserDefinedSegment != nil && matcher.MatcherType == constants.MatcherTypeInSegment {
 					segments.Add(matcher.UserDefinedSegment.SegmentName)
 				}
 			}
@@ -102,6 +108,28 @@ func (r *RuleBasedSegmentsStorageImpl) GetSegments() *set.ThreadUnsafeSet {
 		}
 	}
 	return segments
+}
+
+func (r *RuleBasedSegmentsStorageImpl) LargeSegments() *set.ThreadUnsafeSet {
+	largeSegments := set.NewSet()
+
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	for _, ruleBased := range r.data {
+		for _, condition := range ruleBased.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedLargeSegment != nil {
+					largeSegments.Add(matcher.UserDefinedLargeSegment.LargeSegmentName)
+				}
+			}
+		}
+		for _, excluded := range ruleBased.Excluded.Segments {
+			if excluded.Type == dtos.TypeLarge {
+				largeSegments.Add(excluded.Name)
+			}
+		}
+	}
+	return largeSegments
 }
 
 // Contains returns true or false if all the rule-based segment names are present
@@ -138,4 +166,20 @@ func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*
 		return &ruleBased, nil
 	}
 	return nil, fmt.Errorf("rule-based segment %s not found in storage", name)
+}
+
+func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
+	// Get all current splits under read lock
+	r.mutex.RLock()
+	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
+	for _, ruleBased := range r.data {
+		toRemove = append(toRemove, ruleBased)
+	}
+	r.mutex.RUnlock()
+
+	// Now acquire write lock for the update
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.update(toAdd, toRemove, changeNumber)
+	return nil
 }

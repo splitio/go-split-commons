@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/healthcheck/application"
-	"github.com/splitio/go-split-commons/v7/service"
-	"github.com/splitio/go-split-commons/v7/storage"
-	"github.com/splitio/go-split-commons/v7/synchronizer/worker/utils"
-	"github.com/splitio/go-split-commons/v7/telemetry"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/healthcheck/application"
+	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v8/storage"
+	"github.com/splitio/go-split-commons/v8/synchronizer/worker/utils"
+	"github.com/splitio/go-split-commons/v8/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/backoff"
 	"github.com/splitio/go-toolkit/v5/common"
@@ -196,7 +196,7 @@ func (s *UpdaterImpl) SynchronizeSegment(name string, till *int64) (*UpdateResul
 // SynchronizeSegments syncs segments at once
 func (s *UpdaterImpl) SynchronizeSegments() (map[string]UpdateResult, error) {
 	segmentNames := s.splitStorage.SegmentNames().List()
-	segmentNames = append(segmentNames, s.ruleBasedSegmentStorage.GetSegments().List()...)
+	segmentNames = append(segmentNames, s.ruleBasedSegmentStorage.Segments().List()...)
 	s.logger.Debug("Segment Sync", segmentNames)
 	s.hcMonitor.NotifyEvent(application.Segments)
 	wg := sync.WaitGroup{}

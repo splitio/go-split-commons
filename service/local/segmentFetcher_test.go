@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/service"
-	"github.com/splitio/go-split-commons/v7/service/local/mocks"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v8/service/local/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v7/service"
+import "github.com/splitio/go-split-commons/v8/service"
 
 // ClientMock mocks client
 type ClientMock struct {

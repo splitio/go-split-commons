@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v7/conf"
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/service"
-	"github.com/splitio/go-split-commons/v7/service/api/specs"
+	"github.com/splitio/go-split-commons/v8/conf"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v8/service/api/specs"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -31,7 +31,6 @@ func (h *httpFetcherBase) fetchRaw(endpoint string, fetchOptions service.Request
 type HTTPSplitFetcher struct {
 	httpFetcherBase
 	flagSetsFilter string
-	specVersion    *string
 }
 
 // NewHTTPSplitFetcher instantiates and return an HTTPSplitFetcher
@@ -42,27 +41,40 @@ func NewHTTPSplitFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.
 			logger: logger,
 		},
 		flagSetsFilter: strings.Join(cfg.FlagSetsFilter, ","),
-		specVersion:    specs.Match(cfg.FlagsSpecVersion),
 	}
 }
 
+func (f *HTTPSplitFetcher) IsProxy() bool {
+	_, err := f.fetchRaw("/version", nil)
+	if err == nil {
+		return false
+	}
+	httpErr, ok := err.(*dtos.HTTPError)
+	return ok && httpErr.Code == http.StatusNotFound
+}
+
 // Fetch makes an http call to the split backend and returns the list of updated splits
-func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter).WithSpecVersion(f.specVersion)
+func (f *HTTPSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
+	fetchOptions.WithFlagSetsFilter(f.flagSetsFilter)
 	data, err := f.fetchRaw("/splitChanges", fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching split changes ", err)
 		return nil, err
 	}
 
-	var splitChangesDto dtos.SplitChangesDTO
-	err = json.Unmarshal(data, &splitChangesDto)
+	var splitChangesDto dtos.FFResponse
+
+	if fetchOptions.SpecVersion() == specs.FLAG_V1_3 {
+		splitChangesDto, err = dtos.NewFFResponseV13(data)
+	} else {
+		splitChangesDto, err = dtos.NewFFResponseLegacy(data)
+	}
 	if err != nil {
 		f.logger.Error("Error parsing split changes JSON ", err)
 		return nil, err
 	}
 
-	return &splitChangesDto, nil
+	return splitChangesDto, nil
 }
 
 // HTTPSegmentFetcher struct is responsible for fetching segment by name from the API via HTTP method

@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/splitio/go-split-commons/v7/conf"
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/service"
+	"github.com/splitio/go-split-commons/v8/conf"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -85,10 +85,12 @@ func (c *HTTPClient) Get(endpoint string, fetchOptions service.RequestParams) ([
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		message := fmt.Sprintf("GET method: [%s] Status Code: %d - %s", req.URL.String(), resp.StatusCode, resp.Status)
-		if resp.StatusCode == http.StatusNotModified {
-			c.logger.Debug(message)
-		} else {
-			c.logger.Error(message)
+		if endpoint != "/version" {
+			if resp.StatusCode == http.StatusNotModified {
+				c.logger.Debug(message)
+			} else {
+				c.logger.Error(message)
+			}
 		}
 
 		return nil, &dtos.HTTPError{

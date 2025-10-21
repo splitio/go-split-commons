@@ -7,7 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -73,7 +74,7 @@ func TestEqualToSemverMatcher(t *testing.T) {
 	attrName := "version"
 	str := "1.0.0"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -99,7 +100,7 @@ func TestPatchDiffers(t *testing.T) {
 	attrName := "version"
 	str := "1.0.0"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -125,7 +126,7 @@ func TestPreReleaseShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 	attrName := "version"
 	str := "1.2.3----RC-SNAPSHOT.12.9.1--.12.88"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -151,7 +152,7 @@ func TestPreReleaseShouldReturnFalseWhenSemverIsNil(t *testing.T) {
 	attrName := "version"
 	str := "1.2-SNAPSHOT"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -176,7 +177,7 @@ func TestPreReleaseShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 	attrName := "version"
 	str := "1.2.3----RC-SNAPSHOT.12.9.1--.12.88"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -202,7 +203,7 @@ func TestMetadataShouldReturnTrueWhenVersionsAreEqual(t *testing.T) {
 	attrName := "version"
 	str := "2.2.2-rc.2+metadata-lalala"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -228,7 +229,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 	attrName := "version"
 	str := "2.2.2-rc.2+metadata-lalala"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      &str,
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
@@ -252,7 +253,7 @@ func TestMetadataShouldReturnFalseWhenVersionsDiffer(t *testing.T) {
 func TestShouldReturnErrorWithNilSemver(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherEqualToSemver,
+		MatcherType: constants.MatcherEqualToSemver,
 		String:      nil,
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -273,7 +274,7 @@ func TestGreaterThanOrEqualToSemverMatcher(t *testing.T) {
 
 	for _, twoSemvers := range semvers {
 		dto := &dtos.MatcherDTO{
-			MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
+			MatcherType: constants.MatcherTypeGreaterThanOrEqualToSemver,
 			String:      &twoSemvers.semver1,
 			KeySelector: &dtos.KeySelectorDTO{
 				Attribute: &attrName,
@@ -307,7 +308,7 @@ func TestGreaterThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
 		},
-		MatcherType: MatcherTypeGreaterThanOrEqualToSemver,
+		MatcherType: constants.MatcherTypeGreaterThanOrEqualToSemver,
 		String:      &semvers,
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -334,7 +335,7 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 
 	for _, twoSemvers := range semvers {
 		dto := &dtos.MatcherDTO{
-			MatcherType: MatcherTypeLessThanOrEqualToSemver,
+			MatcherType: constants.MatcherTypeLessThanOrEqualToSemver,
 			String:      &twoSemvers.semver2,
 			KeySelector: &dtos.KeySelectorDTO{
 				Attribute: &attrName,
@@ -363,7 +364,7 @@ func TestLessThanOrEqualToSemverMatcher(t *testing.T) {
 func TestLessThanOrEqualToSemverMatcherWithInvalidSemver(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		MatcherType: constants.MatcherTypeLessThanOrEqualToSemver,
 		String:      nil,
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -382,7 +383,7 @@ func TestLessThanOrEqualToSemverMatcherWithNilSemver(t *testing.T) {
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
 		},
-		MatcherType: MatcherTypeLessThanOrEqualToSemver,
+		MatcherType: constants.MatcherTypeLessThanOrEqualToSemver,
 		String:      &semvers,
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -409,7 +410,7 @@ func TestBetweenSemverMatcher(t *testing.T) {
 
 	for _, threeSemvers := range semvers {
 		dto := &dtos.MatcherDTO{
-			MatcherType: MatcherTypeBetweenSemver,
+			MatcherType: constants.MatcherTypeBetweenSemver,
 			BetweenString: &dtos.BetweenStringMatcherDataDTO{
 				Start: &threeSemvers.semver1,
 				End:   &threeSemvers.semver3,
@@ -441,7 +442,7 @@ func TestBetweenSemverMatcher(t *testing.T) {
 func TestBetweenSemverWithNilSemvers(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeBetweenSemver,
+		MatcherType: constants.MatcherTypeBetweenSemver,
 		BetweenString: &dtos.BetweenStringMatcherDataDTO{
 			Start: nil,
 			End:   nil,
@@ -461,7 +462,7 @@ func TestBetweenSemverWithInvalidSemvers(t *testing.T) {
 	start := "1.alpha.2"
 	end := "3.4.5"
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeBetweenSemver,
+		MatcherType: constants.MatcherTypeBetweenSemver,
 		BetweenString: &dtos.BetweenStringMatcherDataDTO{
 			Start: &start,
 			End:   &end,
@@ -495,7 +496,7 @@ func TestInListSemvers(t *testing.T) {
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
 		},
-		MatcherType: MatcherTypeInListSemver,
+		MatcherType: constants.MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -528,7 +529,7 @@ func TestInListSemversNotMatch(t *testing.T) {
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,
 		},
-		MatcherType: MatcherTypeInListSemver,
+		MatcherType: constants.MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 	}
 	ruleBuilder := NewRuleBuilder(nil, nil, nil, SyncProxyFeatureFlagsRules, SyncProxyRuleBasedSegmentRules, logger, nil)
@@ -559,7 +560,7 @@ func TestInListInvalidSemvers(t *testing.T) {
 	semvers = append(semvers, "alpha.beta.1")
 	semvers = append(semvers, "1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788")
 	dto := &dtos.MatcherDTO{
-		MatcherType: MatcherTypeInListSemver,
+		MatcherType: constants.MatcherTypeInListSemver,
 		Whitelist:   &dtos.WhitelistMatcherDataDTO{Whitelist: semvers},
 		KeySelector: &dtos.KeySelectorDTO{
 			Attribute: &attrName,

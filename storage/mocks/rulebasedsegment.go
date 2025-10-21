@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/storage"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,9 +13,9 @@ type MockRuleBasedSegmentStorage struct {
 }
 
 // ChangeNumber mock
-func (m *MockRuleBasedSegmentStorage) ChangeNumber() int64 {
+func (m *MockRuleBasedSegmentStorage) ChangeNumber() (int64, error) {
 	args := m.Called()
-	return int64(args.Int(0))
+	return args.Get(0).(int64), nil
 }
 
 // All mock
@@ -56,20 +56,33 @@ func (m *MockRuleBasedSegmentStorage) GetRuleBasedSegmentByName(name string) (*d
 
 // SetChangeNumber mock
 func (m *MockRuleBasedSegmentStorage) SetChangeNumber(till int64) error {
-	m.Called(till)
-	return nil
+	args := m.Called(till)
+	return args.Error(0)
 }
 
 // Update mock
 func (m *MockRuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
 	m.Called(toAdd, toRemove, till)
-	return
 }
 
 // Clear mock
 func (m *MockRuleBasedSegmentStorage) Clear() {
 	m.Called()
-	return
+}
+
+func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
+	args := m.Called(toAdd, changeNumber)
+	return args.Error(0)
+}
+
+func (m *MockRuleBasedSegmentStorage) Segments() *set.ThreadUnsafeSet {
+	args := m.Called()
+	return args.Get(0).(*set.ThreadUnsafeSet)
+}
+
+func (m *MockRuleBasedSegmentStorage) LargeSegments() *set.ThreadUnsafeSet {
+	args := m.Called()
+	return args.Get(0).(*set.ThreadUnsafeSet)
 }
 
 var _ storage.RuleBasedSegmentsStorage = (*MockRuleBasedSegmentStorage)(nil)

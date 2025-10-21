@@ -1,16 +1,30 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/service"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/service"
+
+	"github.com/stretchr/testify/mock"
 )
 
 // MockSplitFetcher mocked implementation of split fetcher
 type MockSplitFetcher struct {
-	FetchCall func(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error)
+	mock.Mock
 }
 
 // Fetch mock
-func (m MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (*dtos.SplitChangesDTO, error) {
-	return m.FetchCall(fetchOptions)
+func (m *MockSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
+	args := m.Called(fetchOptions)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(dtos.FFResponse), args.Error(1)
 }
+
+// Fetch mock
+func (m *MockSplitFetcher) IsProxy() bool {
+	args := m.Called()
+	return args.Get(0).(bool)
+}
+
+var _ service.SplitFetcher = (*MockSplitFetcher)(nil)
