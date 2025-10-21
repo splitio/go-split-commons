@@ -3,7 +3,7 @@ package grammar
 import (
 	"fmt"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
+	"github.com/splitio/go-split-commons/v8/dtos"
 	"golang.org/x/exp/slices"
 )
 

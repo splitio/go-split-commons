@@ -3,7 +3,7 @@ package specs
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 )
 
 func TestParseAndValidate(t *testing.T) {

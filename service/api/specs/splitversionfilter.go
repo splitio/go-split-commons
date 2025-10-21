@@ -1,7 +1,7 @@
 package specs
 
 import (
-	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 )
 
 type SplitVersionFilter struct {

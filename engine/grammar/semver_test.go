@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v7/dtos"
-	"github.com/splitio/go-split-commons/v7/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

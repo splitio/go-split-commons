@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v7/dtos"
+import "github.com/splitio/go-split-commons/v8/dtos"
 
 type MockImpressionsCountStorage struct {
 	RecordImpressionsCountCall func(impressions dtos.ImpressionsCountDTO) error

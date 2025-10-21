@@ -1,7 +1,7 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/v7/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v8/synchronizer/worker/split"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
