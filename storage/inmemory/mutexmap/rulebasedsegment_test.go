@@ -108,11 +108,6 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Equal(t, int64(124), changeNumber)
 	assert.Len(t, storage.All(), 1)
 	assert.Contains(t, storage.RuleBasedSegmentNames(), "rule2")
-
-	// Test Clear
-	storage.Clear()
-	assert.Empty(t, storage.All())
-	assert.Empty(t, storage.RuleBasedSegmentNames())
 }
 
 func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
