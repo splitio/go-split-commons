@@ -87,7 +87,7 @@ func TestLocalSyncAllOk(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 				Since:  3,
@@ -130,7 +130,7 @@ func TestLocalPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 				Since:  3,

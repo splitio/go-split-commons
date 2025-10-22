@@ -98,7 +98,7 @@ func TestSyncAllErrorInSegments(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	splitFetcher := &httpMocks.MockSplitFetcher{}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 				Since:  3,
@@ -173,7 +173,7 @@ func TestSyncAllOk(t *testing.T) {
 	mockedSplit2 := dtos.SplitDTO{Name: "split2", Killed: true, Status: "ACTIVE", TrafficTypeName: "two"}
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 				Since:  3,
@@ -266,7 +266,7 @@ func TestPeriodicFetching(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2},
 				Since:  3,
