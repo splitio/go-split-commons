@@ -233,7 +233,7 @@ func (r *RuleBasedSegmentStorage) LargeSegments() *set.ThreadUnsafeSet {
 	return largeSegments
 }
 
-// UpdateWithErrors updates the storage and reports errors on a per-feature basis
+// UpdateWithErrors updates the storage and reports errors on a per-rule-based segment basis
 // To-be-deprecated: This method should be renamed to `Update` as the current one is removed
 func (r *RuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
 	r.mutext.Lock()
@@ -251,8 +251,8 @@ func (r *RuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRem
 	// Instantiating pipeline for adding operations to pipe
 	pipeline := r.client.Pipeline()
 
-	// Attach to the pipe all the operations related to featureFlags (Set, Del)
-	// addedInPipe are all the featureFlags without Marshal error
+	// Attach to the pipe all the operations related to rule-based segments (Set, Del)
+	// addedInPipe are all the rule-based Segments without Marshal error
 	failedToMarshal, addedInPipe := updateRuleBasedSegments(pipeline, toAdd, toRemove)
 
 	// Execute all the operation attached into the pipe
@@ -322,7 +322,7 @@ func (r *RuleBasedSegmentStorage) fetchCurrentRuleBasedSegments(toAdd []dtos.Rul
 }
 
 func (r *RuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
-	// don't need
+	// todo implement!!!!!
 	return nil
 }
 
