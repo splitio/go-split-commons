@@ -6,6 +6,13 @@ import (
 
 // SplitChangesDTO structure to map JSON message sent by Split servers.
 type SplitChangesDTO struct {
+	Till   int64      `json:"till"`
+	Since  int64      `json:"since"`
+	Splits []SplitDTO `json:"splits"`
+}
+
+// RuleChangesDTO structure to map JSON message sent by Split servers.
+type RuleChangesDTO struct {
 	FeatureFlags      FeatureFlagsDTO      `json:"ff"`
 	RuleBasedSegments RuleBasedSegmentsDTO `json:"rbs"`
 }
@@ -14,12 +21,6 @@ type FeatureFlagsDTO struct {
 	Since  int64      `json:"s"`
 	Till   int64      `json:"t"`
 	Splits []SplitDTO `json:"d"`
-}
-
-type SplitsDTO struct {
-	Since  int64      `json:"since"`
-	Till   int64      `json:"till"`
-	Splits []SplitDTO `json:"splits"`
 }
 
 type RuleBasedSegmentsDTO struct {
