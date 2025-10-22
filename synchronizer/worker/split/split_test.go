@@ -110,7 +110,7 @@ func TestSplitSynchronizer(t *testing.T) {
 	splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1, mockedSplit2}, []dtos.SplitDTO{mockedSplit3}, int64(3)).Once()
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
 				Since:  3,
@@ -166,7 +166,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	}
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
 				Since:  3,
@@ -179,7 +179,7 @@ func TestSplitSyncProcess(t *testing.T) {
 	splitMockFetcher.On("Fetch", mock.Anything).Return(response, nil).Once()
 
 	response1 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit4, mockedSplit5},
 				Since:  3,
@@ -233,7 +233,7 @@ func TestSplitTill(t *testing.T) {
 	mockedRuleBased1 := dtos.RuleBasedSegmentDTO{Name: "rb1", Status: "ACTIVE"}
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  2,
@@ -279,7 +279,7 @@ func TestSplitTill(t *testing.T) {
 func TestByPassingCDN(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  1,
@@ -291,7 +291,7 @@ func TestByPassingCDN(t *testing.T) {
 	splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithChangeNumber(-1).WithChangeNumberRB(-1).WithSpecVersion(common.StringRef(specs.FLAG_V1_3))).Return(response, nil).Once()
 
 	response1 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  2,
@@ -301,7 +301,7 @@ func TestByPassingCDN(t *testing.T) {
 	}
 	splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithChangeNumber(2).WithChangeNumberRB(-1).WithSpecVersion(common.StringRef(specs.FLAG_V1_3))).Return(response1, nil).Times(10)
 	response2 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  3,
@@ -342,7 +342,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 	mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  1,
@@ -354,7 +354,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 	splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 	splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithChangeNumber(-1).WithChangeNumberRB(-1).WithSpecVersion(common.StringRef(specs.FLAG_V1_3))).Return(response, nil).Once()
 	response1 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  2,
@@ -364,7 +364,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 	}
 	splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithChangeNumber(2).WithChangeNumberRB(-1).WithSpecVersion(common.StringRef(specs.FLAG_V1_3))).Return(response1, nil).Times(10)
 	response2 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  2,
@@ -430,7 +430,7 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 	ffStorageMock.On("ChangeNumber").Return(int64(-1), nil).Times(3)
 	ffStorageMock.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(-1).Once()
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{},
 				Since:  2,
@@ -510,7 +510,7 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 	ffStorageMock.On("ChangeNumber").Return(int64(0), errors.New("error geting change number")).Times(3)
 	ffStorageMock.On("Update", mock.Anything, mock.Anything, int64(2)).Return().Once()
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{},
 				Since:  2,
@@ -577,7 +577,7 @@ func TestSplitSyncWithSets(t *testing.T) {
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set1"}}
 
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
 				Since:  3,
@@ -620,7 +620,7 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	mockedSplit3 := dtos.SplitDTO{Name: "split3", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set5", "set2"}}
 	mockedSplit4 := dtos.SplitDTO{Name: "split4", Killed: false, Status: "ACTIVE", TrafficTypeName: "one", Sets: []string{"set2"}}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3, mockedSplit4},
 				Since:  3,
@@ -709,7 +709,7 @@ func TestSynchronizeSplitsWithLowerTill(t *testing.T) {
 	// Test case 2: till is equal to currentSince but less than currentRBSince
 	till = 100
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{},
 				Since:  100,
@@ -733,7 +733,7 @@ func TestSynchronizeSplitsWithLowerTill(t *testing.T) {
 	till = 150
 
 	response1 := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{},
 				Since:  100,
@@ -861,7 +861,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 		splitMockStorage.On("Update", []dtos.SplitDTO{}, []dtos.SplitDTO{}, int64(300)).Return().Once()
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 		splitMockFetcher.On("Fetch", mock.Anything).Return(&dtos.FFResponseV13{
-			SplitChanges: dtos.SplitChangesDTO{
+			SplitChanges: dtos.RuleChangesDTO{
 				FeatureFlags: dtos.FeatureFlagsDTO{
 					Splits: []dtos.SplitDTO{},
 					Since:  300,
@@ -992,7 +992,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 	t.Run("From 1.3 to 1.1", func(t *testing.T) {
 		mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 		response := &dtos.FFResponseLegacy{
-			SplitChanges: dtos.SplitsDTO{
+			SplitChanges: dtos.SplitChangesDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1},
 				Since:  3,
 				Till:   3,
@@ -1041,7 +1041,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 		mockedRuleBased1 := dtos.RuleBasedSegmentDTO{Name: "rb1", Status: "ACTIVE"}
 		response := &dtos.FFResponseV13{
-			SplitChanges: dtos.SplitChangesDTO{
+			SplitChanges: dtos.RuleChangesDTO{
 				FeatureFlags: dtos.FeatureFlagsDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  -1,
@@ -1095,7 +1095,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		mockedSplit1 := dtos.SplitDTO{Name: "split1", Killed: false, Status: "ACTIVE", TrafficTypeName: "one"}
 		mockedRuleBased1 := dtos.RuleBasedSegmentDTO{Name: "rb1", Status: "ACTIVE"}
 		response := &dtos.FFResponseV13{
-			SplitChanges: dtos.SplitChangesDTO{
+			SplitChanges: dtos.RuleChangesDTO{
 				FeatureFlags: dtos.FeatureFlagsDTO{
 					Splits: []dtos.SplitDTO{mockedSplit1},
 					Since:  -1,
@@ -1109,7 +1109,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 			},
 		}
 		empty := &dtos.FFResponseV13{
-			SplitChanges: dtos.SplitChangesDTO{
+			SplitChanges: dtos.RuleChangesDTO{
 				FeatureFlags: dtos.FeatureFlagsDTO{
 					Splits: []dtos.SplitDTO{},
 					Since:  3,

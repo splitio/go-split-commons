@@ -148,16 +148,6 @@ func (r *RuleBasedSegmentsStorageImpl) Contains(ruleBasedSegmentNames []string) 
 	return true
 }
 
-func (r *RuleBasedSegmentsStorageImpl) Clear() {
-	r.tillMutex.RLock()
-	defer r.tillMutex.RUnlock()
-	r.till = -1
-
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	r.data = make(map[string]dtos.RuleBasedSegmentDTO)
-}
-
 func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*dtos.RuleBasedSegmentDTO, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()

@@ -65,11 +65,6 @@ func (m *MockRuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, t
 	m.Called(toAdd, toRemove, till)
 }
 
-// Clear mock
-func (m *MockRuleBasedSegmentStorage) Clear() {
-	m.Called()
-}
-
 func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
 	args := m.Called(toAdd, changeNumber)
 	return args.Error(0)

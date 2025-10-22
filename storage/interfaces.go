@@ -274,7 +274,6 @@ type LargeSegmentsStorage interface {
 type RuleBasedSegmentStorageProducer interface {
 	SetChangeNumber(till int64) error
 	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
-	Clear()
 	ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error
 }
 
