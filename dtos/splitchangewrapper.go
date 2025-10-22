@@ -17,12 +17,12 @@ type FFResponse interface {
 
 // FFResponseLegacy handles the legacy format of feature flag responses.
 type FFResponseLegacy struct {
-	SplitChanges SplitsDTO
+	SplitChanges SplitChangesDTO
 }
 
 // NewFFResponseLegacy creates a new FFResponseLegacy instance from the provided JSON data.
 func NewFFResponseLegacy(data []byte) (FFResponse, error) {
-	var splitChangesDto SplitsDTO
+	var splitChangesDto SplitChangesDTO
 	err := json.Unmarshal(data, &splitChangesDto)
 	if err == nil {
 		return &FFResponseLegacy{
@@ -69,12 +69,12 @@ func (ffLegacy *FFResponseLegacy) RBSince() int64 {
 
 // FFResponseV13 handles the version 1.3 format of feature flag responses.
 type FFResponseV13 struct {
-	SplitChanges SplitChangesDTO
+	SplitChanges RuleChangesDTO
 }
 
 // NewFFResponseV13 creates a new FFResponseV13 instance from the provided JSON data.
 func NewFFResponseV13(data []byte) (FFResponse, error) {
-	var splitChangesDto SplitChangesDTO
+	var splitChangesDto RuleChangesDTO
 	err := json.Unmarshal(data, &splitChangesDto)
 	if err == nil {
 		return &FFResponseV13{
@@ -121,12 +121,12 @@ func (f13 *FFResponseV13) FFSince() int64 {
 
 // FFResponseLocalV13 is a local version of FFResponseV13 for internal use.
 type FFResponseLocalV13 struct {
-	SplitChanges SplitChangesDTO
+	SplitChanges RuleChangesDTO
 }
 
 // NewFFResponseLocalV13 creates a new FFResponseLocalV13 instance from the provided JSON data.
 func NewFFResponseLocalV13(data []byte) (*FFResponseLocalV13, error) {
-	var splitChangesDto SplitChangesDTO
+	var splitChangesDto RuleChangesDTO
 	err := json.Unmarshal(data, &splitChangesDto)
 	if err == nil {
 		return &FFResponseLocalV13{

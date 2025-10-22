@@ -14,8 +14,8 @@ var splitMock, _ = os.ReadFile("../testdata/split_mock.json")
 func TestSplitDTO(t *testing.T) {
 	mockedData := fmt.Sprintf(string(splitsMock), splitMock)
 
-	var splitChangesDtoFromMock SplitChangesDTO
-	var splitChangesDtoFromMarshal SplitChangesDTO
+	var splitChangesDtoFromMock RuleChangesDTO
+	var splitChangesDtoFromMarshal RuleChangesDTO
 
 	err := json.Unmarshal([]byte(mockedData), &splitChangesDtoFromMock)
 	if err != nil {

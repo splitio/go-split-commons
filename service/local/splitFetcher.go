@@ -315,7 +315,7 @@ func (s *FileSplitFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.
 
 	s.lastHash = currSum
 	return &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: splits,
 				Since:  fetchOptions.ChangeNumber(),

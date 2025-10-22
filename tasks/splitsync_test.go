@@ -40,7 +40,7 @@ func TestSplitSyncTask(t *testing.T) {
 
 	splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 	response := &dtos.FFResponseV13{
-		SplitChanges: dtos.SplitChangesDTO{
+		SplitChanges: dtos.RuleChangesDTO{
 			FeatureFlags: dtos.FeatureFlagsDTO{
 				Splits: []dtos.SplitDTO{mockedSplit1, mockedSplit2, mockedSplit3},
 				Since:  3,

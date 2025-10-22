@@ -925,7 +925,7 @@ func TestStartBGSyncSuccessFirstTry(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.StartBGSyng(status, false, onReady)
+	err := manager.StartBGSync(status, false, onReady)
 	if err != nil {
 		t.Error("Should not return error on successful first try")
 	}
@@ -968,7 +968,7 @@ func TestStartBGSyncFailNoSnapshot(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.StartBGSyng(status, false, onReady)
+	err := manager.StartBGSync(status, false, onReady)
 	if err != errUnrecoverable {
 		t.Error("Should return errUnrecoverable when sync fails and no snapshot available")
 	}
@@ -1011,7 +1011,7 @@ func TestStartBGSyncFailWithSnapshot(t *testing.T) {
 	readyCalled := false
 	onReady := func() { readyCalled = true }
 
-	err := manager.StartBGSyng(status, true, onReady)
+	err := manager.StartBGSync(status, true, onReady)
 	if err != errRetrying {
 		t.Error("Should return errRetrying when sync fails but snapshot is available")
 	}
