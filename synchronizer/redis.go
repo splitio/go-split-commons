@@ -41,6 +41,6 @@ func (m *ManagerRedisImpl) IsRunning() bool {
 	return m.running.IsSet()
 }
 
-func (m *ManagerRedisImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error {
+func (m *ManagerRedisImpl) StartBGSyng(status chan int, shouldRetry bool, onReady func()) error {
 	return nil
 }

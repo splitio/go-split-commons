@@ -48,7 +48,7 @@ type Manager interface {
 	Start()
 	Stop()
 	IsRunning() bool
-	StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error
+	StartBGSyng(status chan int, shouldRetry bool, onReady func()) error
 }
 
 // ManagerImpl struct
@@ -255,10 +255,10 @@ func (s *ManagerImpl) enableStreaming() {
 	s.hcMonitor.Reset(hc.LargeSegments, int(nextExp.Seconds()))
 }
 
-func (m *ManagerImpl) StartBGSyng(mstatus chan int, shouldRetry bool, onReady func()) error {
+func (m *ManagerImpl) StartBGSyng(status chan int, shouldRetry bool, onReady func()) error {
 	attemptInit := func() bool {
 		go m.Start()
-		status := <-mstatus
+		status := <-status
 		switch status {
 		case Ready:
 			onReady()
