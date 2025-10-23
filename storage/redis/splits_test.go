@@ -12,6 +12,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v8/conf"
 	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
@@ -29,6 +30,12 @@ func createSampleSplit(name string, sets []string) dtos.SplitDTO {
 						{
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment",
+							},
+						},
+						{
+							MatcherType: constants.MatcherTypeInLargeSegment,
+							UserDefinedLargeSegment: &dtos.UserDefinedLargeSegmentMatcherDataDTO{
+								LargeSegmentName: "largeSegment",
 							},
 						},
 					},
@@ -1319,5 +1326,49 @@ func TestGetAllSplitKeys(t *testing.T) {
 
 	if keys[1] != "SPLITIO.split.split2" {
 		t.Errorf("Key should be 'SPLITIO.split.split2'. Actual: %s", keys[1])
+	}
+}
+
+func TestLargeSegmentNames(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.*"
+
+	mockedRedisClient := mocks.MockClient{
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
+			}
+
+			return &mocks.MockResultOutput{
+				IntCall:   func() int64 { return 0 },
+				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+				ErrCall:   func() error { return nil },
+			}
+		},
+		MGetCall: func(keys []string) redis.Result {
+			if keys[0] != "someprefix.SPLITIO.split1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", keys[0])
+			}
+			if keys[1] != "someprefix.SPLITIO.split2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", keys[1])
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
+					}, nil
+				},
+			}
+		},
+		ClusterModeCall: func() bool { return false },
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+
+	segments := splitStorage.LargeSegmentNames()
+	if segments == nil || !segments.IsEqual(set.NewSet("largeSegment")) {
+		t.Error("Incorrect large segment")
+		t.Error(segments)
 	}
 }

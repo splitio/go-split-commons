@@ -111,7 +111,7 @@ func (r *RuleBasedSegmentStorage) All() []dtos.RuleBasedSegmentDTO {
 func (r *RuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
 	if !r.client.ClusterMode() {
 		var cursor uint64
-		ruleBasedSegmentNames := make([]string, 0)
+		ruleBasedSegmentKeys := make([]string, 0)
 		scanKey := strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "*", 1)
 		for {
 			keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
@@ -120,17 +120,20 @@ func (r *RuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
 			}
 
 			cursor = rCursor
-			ruleBasedSegmentNames = append(ruleBasedSegmentNames, keys...)
+			ruleBasedSegmentKeys = append(ruleBasedSegmentKeys, keys...)
 
 			if cursor == 0 {
 				break
 			}
 		}
-
-		return ruleBasedSegmentNames, nil
+		return cleanPrefixedKeys(ruleBasedSegmentKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
 	}
 
-	return r.ruleBasedSegmentsKeysClusterMode()
+	ruleBasedSegmentKeys, err := r.ruleBasedSegmentsKeysClusterMode()
+	if err == nil {
+		return cleanPrefixedKeys(ruleBasedSegmentKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
+	}
+	return nil, err
 }
 
 func (r *RuleBasedSegmentStorage) ruleBasedSegmentsKeysClusterMode() ([]string, error) {
@@ -230,17 +233,16 @@ func (r *RuleBasedSegmentStorage) LargeSegments() *set.ThreadUnsafeSet {
 }
 
 // UpdateWithErrors updates the storage and reports errors on a per-rule-based segment basis
-// To-be-deprecated: This method should be renamed to `Update` as the current one is removed
 func (r *RuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
 	r.mutext.Lock()
 	defer r.mutext.Unlock()
 
 	// Gather all the rule-based segments involved for update operation
-	allFeatureFlags, err := r.fetchCurrentRuleBasedSegments(toAdd, toRemove)
+	allRuleBasedSegments, err := r.fetchCurrentRuleBasedSegments(toAdd, toRemove)
 	if err != nil {
 		return err
 	}
-	if allFeatureFlags == nil {
+	if allRuleBasedSegments == nil {
 		return nil
 	}
 
@@ -261,7 +263,7 @@ func (r *RuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRem
 	// Check if no errors occurs adding and removing featureFlags
 	// Set the ChangenUmber
 	if len(failedToAdd) == 0 && len(failedToRemove) == 0 {
-		err := r.client.Set(KeySplitTill, changeNumber, 0)
+		err := r.client.Set(KeyRuleBasedSegmentTill, changeNumber, 0)
 		if err != nil {
 			return ErrChangeNumberUpdateFailed
 		}

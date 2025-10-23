@@ -104,7 +104,7 @@ func updateRuleBasedSegments(pipeline redis.Pipeline, toAdd []dtos.RuleBasedSegm
 	if len(toRemove) > 0 {
 		toRemoveKeys := make([]string, 0, len(toRemove))
 		for idx := range toRemove {
-			toRemoveKeys = append(toRemoveKeys, strings.Replace(KeySplit, "{split}", toRemove[idx].Name, 1))
+			toRemoveKeys = append(toRemoveKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", toRemove[idx].Name, 1))
 		}
 		pipeline.Del(toRemoveKeys...)
 	}

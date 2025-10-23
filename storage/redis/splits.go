@@ -321,9 +321,20 @@ func (r *SplitStorage) SegmentNames() *set.ThreadUnsafeSet {
 
 // LargeSegmentNames returns a slice with the names of all large segments referenced in splits
 func (r *SplitStorage) LargeSegmentNames() *set.ThreadUnsafeSet {
-	// TODO(sanzmauro): add split storage implementation
-	segments := set.NewSet()
-	return segments
+
+	largeSegments := set.NewSet()
+
+	featureFlags := r.All()
+	for _, ruleBased := range featureFlags {
+		for _, condition := range ruleBased.Conditions {
+			for _, matcher := range condition.MatcherGroup.Matchers {
+				if matcher.UserDefinedLargeSegment != nil {
+					largeSegments.Add(matcher.UserDefinedLargeSegment.LargeSegmentName)
+				}
+			}
+		}
+	}
+	return largeSegments
 }
 
 // RuleBasedSegmentNames returns a slice of strings with all the rule-baseed segment names
