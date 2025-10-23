@@ -77,14 +77,14 @@ func (r *RuleBasedSegmentsStorageImpl) All() []dtos.RuleBasedSegmentDTO {
 }
 
 // RuleBasedSegmentNames returns a slice with the names of all the current rule-baseds
-func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() []string {
+func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() ([]string, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	ruleBasedNames := make([]string, 0)
 	for key := range r.data {
 		ruleBasedNames = append(ruleBasedNames, key)
 	}
-	return ruleBasedNames
+	return ruleBasedNames, nil
 }
 
 // SegmentNames returns a slice with the names of all segments referenced in rule-based

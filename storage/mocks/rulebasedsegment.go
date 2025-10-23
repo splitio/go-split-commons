@@ -25,9 +25,9 @@ func (m *MockRuleBasedSegmentStorage) All() []dtos.RuleBasedSegmentDTO {
 }
 
 // RuleBasedSegmentNames mock
-func (m *MockRuleBasedSegmentStorage) RuleBasedSegmentNames() []string {
+func (m *MockRuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
 	args := m.Called()
-	return args.Get(0).([]string)
+	return args.Get(0).([]string), args.Error(1)
 }
 
 // Contains mock
@@ -61,8 +61,9 @@ func (m *MockRuleBasedSegmentStorage) SetChangeNumber(till int64) error {
 }
 
 // Update mock
-func (m *MockRuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
-	m.Called(toAdd, toRemove, till)
+func (m *MockRuleBasedSegmentStorage) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) error {
+	args := m.Called(toAdd, toRemove, till)
+	return args.Error(0)
 }
 
 func (m *MockRuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {

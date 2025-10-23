@@ -68,7 +68,7 @@ func TestSplitSyncTask(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, nil, goClientFeatureFlagsRules, goClientRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	splitUpdater := split.NewSplitUpdater(splitMockStorage, ruleBasedSegmentMockStorage, splitMockFetcher, logging.NewLogger(&logging.LoggerOptions{}), telemetryMockStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder, false, specs.FLAG_V1_3)

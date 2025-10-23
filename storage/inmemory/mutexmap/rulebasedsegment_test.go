@@ -17,7 +17,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	changeNumber, _ := storage.ChangeNumber()
 	assert.Equal(t, int64(-1), changeNumber)
 	assert.Empty(t, storage.All())
-	assert.Empty(t, storage.RuleBasedSegmentNames())
+	names, _ := storage.RuleBasedSegmentNames()
+	assert.Empty(t, names)
 
 	// Create test data
 	ruleBased1 := dtos.RuleBasedSegmentDTO{
@@ -84,7 +85,7 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Len(t, storage.All(), 2)
 
 	// Test RuleBasedSegmentNames
-	names := storage.RuleBasedSegmentNames()
+	names, _ = storage.RuleBasedSegmentNames()
 	assert.Contains(t, names, "rule1")
 	assert.Contains(t, names, "rule2")
 
@@ -107,7 +108,8 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	changeNumber, _ = storage.ChangeNumber()
 	assert.Equal(t, int64(124), changeNumber)
 	assert.Len(t, storage.All(), 1)
-	assert.Contains(t, storage.RuleBasedSegmentNames(), "rule2")
+	names, _ = storage.RuleBasedSegmentNames()
+	assert.Contains(t, names, "rule2")
 }
 
 func TestRuleBasedSegmentsStorageReplaceAll(t *testing.T) {
@@ -311,7 +313,7 @@ func TestRuleBasedSegmentsStorageConcurrent(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			_ = storage.All()
-			_ = storage.RuleBasedSegmentNames()
+			_, _ = storage.RuleBasedSegmentNames()
 			_ = storage.Segments()
 			_ = storage.Contains([]string{"segment1"})
 		}()

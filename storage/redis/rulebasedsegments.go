@@ -165,10 +165,6 @@ func (r *RuleBasedSegmentStorage) ruleBasedSegmentsKeysClusterMode() ([]string, 
 	return result, nil
 }
 
-func (r *RuleBasedSegmentStorage) Clear() {
-	//not need implementation
-}
-
 func (r *RuleBasedSegmentStorage) Contains(ruleBasedSegmentNames []string) bool {
 
 	keys, err := r.RuleBasedSegmentNames()

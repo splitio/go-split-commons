@@ -273,7 +273,7 @@ type LargeSegmentsStorage interface {
 // RuleBasedSegmentStorageProducer interface should be implemented by all structs that offer writing rule-based segments
 type RuleBasedSegmentStorageProducer interface {
 	SetChangeNumber(till int64) error
-	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64)
+	Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) error
 	ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error
 }
 

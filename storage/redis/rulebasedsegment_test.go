@@ -95,7 +95,8 @@ func TestGetRuleBasedSegmentByName(t *testing.T) {
 	storage := NewRuleBasedStorage(mockPrefixedClient, logger)
 
 	// Test successful case
-	result := storage.GetRuleBasedSegmentByName("test-segment")
+	result, err := storage.GetRuleBasedSegmentByName("test-segment")
+	assert.Nil(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, rbs.Name, result.Name)
 
@@ -107,7 +108,8 @@ func TestGetRuleBasedSegmentByName(t *testing.T) {
 			},
 		}
 	}
-	result = storage.GetRuleBasedSegmentByName("test-segment")
+	result, _ = storage.GetRuleBasedSegmentByName("test-segment")
+	assert.Nil(t, err)
 	assert.Nil(t, result)
 
 	// Test unmarshal error
@@ -118,6 +120,7 @@ func TestGetRuleBasedSegmentByName(t *testing.T) {
 			},
 		}
 	}
-	result = storage.GetRuleBasedSegmentByName("test-segment")
+	result, _ = storage.GetRuleBasedSegmentByName("test-segment")
+	assert.Nil(t, err)
 	assert.Nil(t, result)
 }

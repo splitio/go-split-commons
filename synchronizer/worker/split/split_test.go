@@ -137,7 +137,7 @@ func TestSplitSynchronizer(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
@@ -198,7 +198,7 @@ func TestSplitSyncProcess(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(2).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(2).Return(nil)
 
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
@@ -259,7 +259,7 @@ func TestSplitTill(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(4).Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(2).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(2).Return(nil)
 
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -321,7 +321,7 @@ func TestByPassingCDN(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(13).Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(12).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(12).Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -384,7 +384,7 @@ func TestByPassingCDNLimit(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Times(22).Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(21).Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Times(21).Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -445,7 +445,7 @@ func TestAddOrUpdateFeatureFlagNil(t *testing.T) {
 	appMonitorMock.On("NotifyEvent", mock.Anything).Return().Once()
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
 	fetcher := NewSplitUpdater(ffStorageMock, ruleBasedSegmentMockStorage, splitMockFetcher, logger, telemetryStorage, appMonitorMock, flagsets.NewFlagSetFilter(nil), ruleBuilder, false, specs.FLAG_V1_3)
@@ -526,7 +526,7 @@ func TestAddOrUpdateFFCNFromStorageError(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, nil)
@@ -597,7 +597,7 @@ func TestSplitSyncWithSets(t *testing.T) {
 
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -641,7 +641,7 @@ func TestSplitSyncWithSetsInConfig(t *testing.T) {
 	telemetryStorage, _ := inmemory.NewTelemetryStorage()
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 	largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, ruleBasedSegmentMockStorage, largeSegmentStorage, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logging.NewLogger(&logging.LoggerOptions{}), nil)
@@ -664,12 +664,12 @@ func TestSynchronizeSplitsWithLowerTill(t *testing.T) {
 	// Mock split storage with higher change number
 	splitMockStorage := &mocks.SplitStorageMock{}
 	splitMockStorage.On("ChangeNumber").Return(int64(100), nil)
-	splitMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return()
+	splitMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	// Mock rule based segment storage with higher change number
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(150))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return()
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	// Mock fetcher
 	splitMockFetcher := &fetcherMock.MockSplitFetcher{}
@@ -842,7 +842,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 		ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, &pvChangeNumber, ruleBasedSegment)
 
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200), nil).Times(1)
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{*ruleBasedSegment}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return().Once()
+		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{*ruleBasedSegment}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return(nil).Once()
 		result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
 		assert.Nil(t, err)
 		assert.False(t, result.RequiresFetch)
@@ -905,7 +905,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 		ffChange := *dtos.NewRuleBasedSegmentChangeUpdate(baseUpdate, &pvChangeNumber, ruleBasedSegment)
 
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(200), nil).Times(3)
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return().Once()
+		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(300)).Return(nil).Once()
 		result, err := splitUpdater.SynchronizeFeatureFlags(&ffChange)
 		assert.Nil(t, err)
 		assert.False(t, result.RequiresFetch)
@@ -1004,7 +1004,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		splitMockStorage.On("Update", []dtos.SplitDTO{mockedSplit1}, []dtos.SplitDTO{}, int64(3)).Once()
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(-1)).Times(2)
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(0)).Once().Return(-1)
+		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(0)).Once().Return(nil)
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(-1).WithChangeNumberRB(-1)).Return(nil, &dtos.HTTPError{Code: http.StatusBadRequest}).Once()
@@ -1130,7 +1130,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 		ruleBasedSegmentMockStorage.On("ChangeNumber").Return(int64(3)).Times(2)
 		ruleBasedSegmentMockStorage.On("ReplaceAll", []dtos.RuleBasedSegmentDTO{mockedRuleBased1}, int64(3)).Once().Return(nil)
-		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(3)
+		ruleBasedSegmentMockStorage.On("Update", []dtos.RuleBasedSegmentDTO{}, []dtos.RuleBasedSegmentDTO{}, int64(3)).Once().Return(nil)
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(-1).WithChangeNumberRB(-1)).Return(response, nil).Once()
