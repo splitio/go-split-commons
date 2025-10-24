@@ -18,6 +18,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 func createSampleSplit(name string, sets []string) dtos.SplitDTO {
@@ -1371,4 +1372,50 @@ func TestLargeSegmentNames(t *testing.T) {
 		t.Error("Incorrect large segment")
 		t.Error(segments)
 	}
+}
+
+func TestReplaceAll(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_update_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{}), createSampleSplit("split2", []string{}), createSampleSplit("split3", []string{})}
+
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+
+	splits := splitStorage.All()
+	assert.Equal(t, 3, len(splits), "Unexpected amount of split")
+	till, _ := redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ := strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
+	toReplace := []dtos.SplitDTO{createSampleSplit("split4", []string{}), createSampleSplit("split5", []string{})}
+
+	splitStorage.ReplaceAll(toReplace, 1)
+
+	splits = splitStorage.All()
+	assert.Equal(t, 2, len(splits), "Unexpected size")
+
+	till, _ = redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ = strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
+	keys := []string{
+		"SPLITIO.split.split1",
+		"SPLITIO.split.split2",
+		"SPLITIO.split.split3",
+		"SPLITIO.split.split4",
+		"SPLITIO.split.split5",
+		"SPLITIO.splits.till",
+	}
+	redisClient.Del(keys...)
 }

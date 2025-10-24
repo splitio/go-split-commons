@@ -16,6 +16,8 @@ import (
 	"github.com/splitio/go-toolkit/v5/redis"
 )
 
+const rbsKey = "{rbsegment}"
+
 // RuleBasedSegmentStorage is a redis-based implementation of rule-based segment storage
 type RuleBasedSegmentStorage struct {
 	client *redis.PrefixedRedisClient
@@ -52,7 +54,7 @@ func (r *RuleBasedSegmentStorage) SetChangeNumber(till int64) error {
 }
 
 func (r *RuleBasedSegmentStorage) ruleBasedSegment(ruleBased string) (*dtos.RuleBasedSegmentDTO, error) {
-	keyToFetch := strings.Replace(KeyRuleBasedSegment, "{rbsegment}", ruleBased, 1)
+	keyToFetch := strings.Replace(KeyRuleBasedSegment, rbsKey, ruleBased, 1)
 	val, err := r.client.Get(keyToFetch)
 
 	if err != nil {
@@ -113,14 +115,14 @@ func (r *RuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cleanPrefixedKeys(keys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
+	return cleanPrefixedKeys(keys, strings.Replace(KeyRuleBasedSegment, rbsKey, "", 1)), nil
 }
 
 func (r *RuleBasedSegmentStorage) ruleBasedSegmentKeys() ([]string, error) {
 	if !r.client.ClusterMode() {
 		var cursor uint64
 		ruleBasedSegmentKeys := make([]string, 0)
-		scanKey := strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "*", 1)
+		scanKey := strings.Replace(KeyRuleBasedSegment, rbsKey, "*", 1)
 		for {
 			keys, rCursor, err := r.client.Scan(cursor, scanKey, DefaultScanCount)
 			if err != nil {
@@ -287,7 +289,7 @@ func (r *RuleBasedSegmentStorage) fetchCurrentRuleBasedSegments(toAdd []dtos.Rul
 	keys := make([]string, 0, len(toAdd)+len(toRemove))
 	for _, source := range [][]dtos.RuleBasedSegmentDTO{toAdd, toRemove} {
 		for idx := range source {
-			keys = append(keys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", source[idx].Name, 1))
+			keys = append(keys, strings.Replace(KeyRuleBasedSegment, rbsKey, source[idx].Name, 1))
 		}
 	}
 
