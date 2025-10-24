@@ -523,8 +523,10 @@ func (r *SplitStorage) splitKeysClusterMode() ([]string, error) {
 }
 
 func (r *SplitStorage) ReplaceAll(toAdd []dtos.SplitDTO, changeNumber int64) error {
-	//to do
-	return nil
+	toRemove := make([]dtos.SplitDTO, 0)
+	toRemove = append(toRemove, r.All()...)
+
+	return r.UpdateWithErrors(toAdd, toRemove, changeNumber)
 }
 
 var _ storage.SplitStorage = (*SplitStorage)(nil)

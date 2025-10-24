@@ -75,7 +75,7 @@ func (r *RuleBasedSegmentStorage) GetRuleBasedSegmentByName(ruleBased string) (*
 
 // All fetches all rule-based segments in redis and returns every rule-based segment
 func (r *RuleBasedSegmentStorage) All() []dtos.RuleBasedSegmentDTO {
-	keys, err := r.RuleBasedSegmentNames()
+	keys, err := r.ruleBasedSegmentKeys()
 	if err != nil {
 		r.logger.Error("Error fetching rule-based segment keys. Returning empty rule-based segment list: ", err)
 		return nil
@@ -109,6 +109,14 @@ func (r *RuleBasedSegmentStorage) All() []dtos.RuleBasedSegmentDTO {
 }
 
 func (r *RuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
+	keys, err := r.ruleBasedSegmentKeys()
+	if err != nil {
+		return nil, err
+	}
+	return cleanPrefixedKeys(keys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
+}
+
+func (r *RuleBasedSegmentStorage) ruleBasedSegmentKeys() ([]string, error) {
 	if !r.client.ClusterMode() {
 		var cursor uint64
 		ruleBasedSegmentKeys := make([]string, 0)
@@ -126,14 +134,9 @@ func (r *RuleBasedSegmentStorage) RuleBasedSegmentNames() ([]string, error) {
 				break
 			}
 		}
-		return cleanPrefixedKeys(ruleBasedSegmentKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
+		return ruleBasedSegmentKeys, nil
 	}
-
-	ruleBasedSegmentKeys, err := r.ruleBasedSegmentsKeysClusterMode()
-	if err == nil {
-		return cleanPrefixedKeys(ruleBasedSegmentKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", "", 1)), nil
-	}
-	return nil, err
+	return r.ruleBasedSegmentsKeysClusterMode()
 }
 
 func (r *RuleBasedSegmentStorage) ruleBasedSegmentsKeysClusterMode() ([]string, error) {
@@ -320,8 +323,10 @@ func (r *RuleBasedSegmentStorage) fetchCurrentRuleBasedSegments(toAdd []dtos.Rul
 }
 
 func (r *RuleBasedSegmentStorage) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
-	// todo implement!!!!!
-	return nil
+	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
+	toRemove = append(toRemove, r.All()...)
+
+	return r.Update(toAdd, toRemove, changeNumber)
 }
 
 func (r *RuleBasedSegmentStorage) executePipeline(pipeline redis.Pipeline, toAdd []string, toRemove []dtos.RuleBasedSegmentDTO) (map[string]error, map[string]error) {

@@ -333,11 +333,11 @@ func TestRuleBasedSegmentAllClusterMode(t *testing.T) {
 			if len(keys) > 2 {
 				t.Error("there should be 2 keys only")
 			}
-			if keys[0] != "someprefix.rbsegment1" {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.rbsegment1", keys[0])
+			if keys[0] != "someprefix.SPLITIO.rbsegment.rbsegment1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.rbsegment.rbsegment1", keys[0])
 			}
-			if keys[1] != "someprefix.rbsegment2" {
-				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.rbsegment2", keys[1])
+			if keys[1] != "someprefix.SPLITIO.rbsegment.rbsegment2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.rbsegment.rbsegment2", keys[1])
 			}
 			return &mocks.MockResultOutput{
 				MultiInterfaceCall: func() ([]interface{}, error) {
@@ -548,6 +548,52 @@ func TestUpdateRuleBased(t *testing.T) {
 	till, _ = redisClient.Get("SPLITIO.rbsegments.till")
 	tillInt, _ = strconv.ParseInt(till, 0, 64)
 	assert.Equal(t, int64(2), tillInt, "ChangeNumber should be 2")
+	keys := []string{
+		"SPLITIO.rbsegment.rulebased1",
+		"SPLITIO.rbsegment.rulebased2",
+		"SPLITIO.rbsegment.rulebased3",
+		"SPLITIO.rbsegment.rulebased4",
+		"SPLITIO.rbsegment.rulebased5",
+		"SPLITIO.rbsegments.till",
+	}
+	redisClient.Del(keys...)
+}
+
+func TestReplaceAllRuleBased(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_update_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+	toAdd := []dtos.RuleBasedSegmentDTO{createSampleRBSegment("rulebased1"), createSampleRBSegment("rulebased2"), createSampleRBSegment("rulebased3")}
+
+	ruleBasedStorage := NewRuleBasedStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}))
+	ruleBasedStorage.Update(toAdd, []dtos.RuleBasedSegmentDTO{}, 1)
+
+	ruleBasedSegments := ruleBasedStorage.All()
+	assert.Equal(t, 3, len(ruleBasedSegments), "Unexpected amount of rule-based")
+	till, _ := redisClient.Get("SPLITIO.rbsegments.till")
+	tillInt, _ := strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
+	toReplace := []dtos.RuleBasedSegmentDTO{createSampleRBSegment("rulebased4"), createSampleRBSegment("rulebased5")}
+
+	ruleBasedStorage.ReplaceAll(toReplace, 1)
+
+	ruleBasedSegments = ruleBasedStorage.All()
+	assert.Equal(t, 2, len(ruleBasedSegments), "Unexpected size")
+
+	till, _ = redisClient.Get("SPLITIO.rbsegments.till")
+	tillInt, _ = strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
 	keys := []string{
 		"SPLITIO.rbsegment.rulebased1",
 		"SPLITIO.rbsegment.rulebased2",

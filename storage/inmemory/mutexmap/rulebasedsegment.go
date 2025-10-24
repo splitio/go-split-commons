@@ -159,7 +159,6 @@ func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*
 }
 
 func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
-	// Get all current splits under read lock
 	r.mutex.RLock()
 	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
 	for _, ruleBased := range r.data {
