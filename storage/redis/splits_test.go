@@ -3,12 +3,11 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/splitio/go-split-commons/v8/conf"
 	"github.com/splitio/go-split-commons/v8/dtos"

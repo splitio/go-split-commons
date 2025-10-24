@@ -28,10 +28,11 @@ func NewRuleBasedSegmentsStorage() *RuleBasedSegmentsStorageImpl {
 }
 
 // Update atomically registers new rule-based segments, removes archived ones and updates the change number
-func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
+func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.update(toAdd, toRemove, till)
+	return nil
 }
 
 // Update atomically registers new rule-based, removes archived ones and updates the change number
