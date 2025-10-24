@@ -28,10 +28,11 @@ func NewRuleBasedSegmentsStorage() *RuleBasedSegmentsStorageImpl {
 }
 
 // Update atomically registers new rule-based segments, removes archived ones and updates the change number
-func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) {
+func (r *RuleBasedSegmentsStorageImpl) Update(toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO, till int64) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.update(toAdd, toRemove, till)
+	return nil
 }
 
 // Update atomically registers new rule-based, removes archived ones and updates the change number
@@ -77,14 +78,14 @@ func (r *RuleBasedSegmentsStorageImpl) All() []dtos.RuleBasedSegmentDTO {
 }
 
 // RuleBasedSegmentNames returns a slice with the names of all the current rule-baseds
-func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() []string {
+func (r *RuleBasedSegmentsStorageImpl) RuleBasedSegmentNames() ([]string, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	ruleBasedNames := make([]string, 0)
 	for key := range r.data {
 		ruleBasedNames = append(ruleBasedNames, key)
 	}
-	return ruleBasedNames
+	return ruleBasedNames, nil
 }
 
 // SegmentNames returns a slice with the names of all segments referenced in rule-based
@@ -159,7 +160,6 @@ func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*
 }
 
 func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
-	// Get all current splits under read lock
 	r.mutex.RLock()
 	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
 	for _, ruleBased := range r.data {

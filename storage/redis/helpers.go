@@ -83,3 +83,31 @@ func cleanPrefixedKeys(keys []string, toRemove string) []string {
 
 	return toReturn
 }
+
+func updateRuleBasedSegments(pipeline redis.Pipeline, toAdd []dtos.RuleBasedSegmentDTO, toRemove []dtos.RuleBasedSegmentDTO) (map[string]error, []string) {
+	failedToAdd := make(map[string]error)
+	addedInPipe := make([]string, 0, len(toAdd))
+
+	for _, ruleBased := range toAdd {
+		keyToStore := strings.Replace(KeyRuleBasedSegment, "{rbsegment}", ruleBased.Name, 1)
+		raw, err := json.Marshal(ruleBased)
+		if err != nil {
+			failedToAdd[ruleBased.Name] = fmt.Errorf("failed to serialize rule-based segment: %w", err)
+			continue
+		}
+
+		// Attach each Feature Flag update into Redis Pipeline
+		pipeline.Set(keyToStore, raw, 0)
+		addedInPipe = append(addedInPipe, ruleBased.Name)
+	}
+
+	if len(toRemove) > 0 {
+		toRemoveKeys := make([]string, 0, len(toRemove))
+		for idx := range toRemove {
+			toRemoveKeys = append(toRemoveKeys, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", toRemove[idx].Name, 1))
+		}
+		pipeline.Del(toRemoveKeys...)
+	}
+
+	return failedToAdd, addedInPipe
+}

@@ -3,20 +3,21 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/splitio/go-split-commons/v8/conf"
 	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
 	"github.com/splitio/go-split-commons/v8/flagsets"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 func createSampleSplit(name string, sets []string) dtos.SplitDTO {
@@ -29,6 +30,12 @@ func createSampleSplit(name string, sets []string) dtos.SplitDTO {
 						{
 							UserDefinedSegment: &dtos.UserDefinedSegmentMatcherDataDTO{
 								SegmentName: "segment",
+							},
+						},
+						{
+							MatcherType: constants.MatcherTypeInLargeSegment,
+							UserDefinedLargeSegment: &dtos.UserDefinedLargeSegmentMatcherDataDTO{
+								LargeSegmentName: "largeSegment",
 							},
 						},
 					},
@@ -1320,4 +1327,94 @@ func TestGetAllSplitKeys(t *testing.T) {
 	if keys[1] != "SPLITIO.split.split2" {
 		t.Errorf("Key should be 'SPLITIO.split.split2'. Actual: %s", keys[1])
 	}
+}
+
+func TestLargeSegmentNames(t *testing.T) {
+	expectedKey := "someprefix.SPLITIO.split.*"
+
+	mockedRedisClient := mocks.MockClient{
+		ScanCall: func(cursor uint64, match string, count int64) redis.Result {
+			if match != expectedKey {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", expectedKey, match)
+			}
+
+			return &mocks.MockResultOutput{
+				IntCall:   func() int64 { return 0 },
+				MultiCall: func() ([]string, error) { return []string{"SPLITIO.split1", "SPLITIO.split2"}, nil },
+				ErrCall:   func() error { return nil },
+			}
+		},
+		MGetCall: func(keys []string) redis.Result {
+			if keys[0] != "someprefix.SPLITIO.split1" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split1", keys[0])
+			}
+			if keys[1] != "someprefix.SPLITIO.split2" {
+				t.Errorf("Unexpected key. Expected: %s Actual: %s", "someprefix.SPLITIO.split2", keys[1])
+			}
+			return &mocks.MockResultOutput{
+				MultiInterfaceCall: func() ([]interface{}, error) {
+					return []interface{}{
+						marshalSplit(createSampleSplit("split1", []string{})),
+						marshalSplit(createSampleSplit("split2", []string{})),
+					}, nil
+				},
+			}
+		},
+		ClusterModeCall: func() bool { return false },
+	}
+	mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+
+	splitStorage := NewSplitStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+
+	segments := splitStorage.LargeSegmentNames()
+	if segments == nil || !segments.IsEqual(set.NewSet("largeSegment")) {
+		t.Error("Incorrect large segment")
+		t.Error(segments)
+	}
+}
+
+func TestReplaceAll(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	prefix := "commons_update_prefix"
+
+	redisClient, err := NewRedisClient(&conf.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Prefix:   prefix,
+		Database: 1,
+	}, logger)
+	if err != nil {
+		t.Error("It should be nil")
+	}
+	toAdd := []dtos.SplitDTO{createSampleSplit("split1", []string{}), createSampleSplit("split2", []string{}), createSampleSplit("split3", []string{})}
+
+	splitStorage := NewSplitStorage(redisClient, logging.NewLogger(&logging.LoggerOptions{}), flagsets.NewFlagSetFilter(nil))
+	splitStorage.Update(toAdd, []dtos.SplitDTO{}, 1)
+
+	splits := splitStorage.All()
+	assert.Equal(t, 3, len(splits), "Unexpected amount of split")
+	till, _ := redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ := strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
+	toReplace := []dtos.SplitDTO{createSampleSplit("split4", []string{}), createSampleSplit("split5", []string{})}
+
+	splitStorage.ReplaceAll(toReplace, 1)
+
+	splits = splitStorage.All()
+	assert.Equal(t, 2, len(splits), "Unexpected size")
+
+	till, _ = redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ = strconv.ParseInt(till, 0, 64)
+	assert.Equal(t, int64(1), tillInt, "ChangeNumber should be 1")
+
+	keys := []string{
+		"SPLITIO.split.split1",
+		"SPLITIO.split.split2",
+		"SPLITIO.split.split3",
+		"SPLITIO.split.split4",
+		"SPLITIO.split.split5",
+		"SPLITIO.splits.till",
+	}
+	redisClient.Del(keys...)
 }

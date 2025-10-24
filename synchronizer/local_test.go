@@ -106,7 +106,7 @@ func TestLocalSyncAllOk(t *testing.T) {
 	segmentMockStorage := mocks.MockSegmentStorage{}
 	ruleBasedSegmentMockStorage := &mocks.MockRuleBasedSegmentStorage{}
 	ruleBasedSegmentMockStorage.On("ChangeNumber").Twice().Return(int64(-1))
-	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(-1)
+	ruleBasedSegmentMockStorage.On("Update", mock.Anything, mock.Anything, mock.Anything).Once().Return(nil)
 	telemetryMockStorage := mocks.MockTelemetryStorage{
 		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
 		RecordSuccessfulSyncCall: func(resource int, when time.Time) {},
