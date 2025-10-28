@@ -256,7 +256,7 @@ func (s *UpdaterImpl) attemptLatestSync() (*UpdateResult, error) {
 	currentRBSince = splitChanges.RBTill()
 	s.runtimeTelemetry.RecordSyncLatency(telemetry.SplitSync, time.Since(before))
 	s.splitStorage.ReplaceAll(splitChanges.FeatureFlags(), currentSince)
-	s.ruleBasedSegmentStorage.ReplaceAll(splitChanges.RuleBasedSegments(), currentSince)
+	s.ruleBasedSegmentStorage.ReplaceAll(splitChanges.RuleBasedSegments(), currentRBSince)
 	segmentReferences := s.getSegmentsFromRuleBasedSegments(splitChanges.RuleBasedSegments())
 	segmentReferences = appendSegmentNames(segmentReferences, splitChanges.FeatureFlags())
 	updatedSplitNames = appendSplitNames(updatedSplitNames, splitChanges.FeatureFlags())
