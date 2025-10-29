@@ -159,6 +159,25 @@ func (r *RuleBasedSegmentsStorageImpl) GetRuleBasedSegmentByName(name string) (*
 	return nil, fmt.Errorf("rule-based segment %s not found in storage", name)
 }
 
+func (m *RuleBasedSegmentsStorageImpl) _get(splitName string) *dtos.RuleBasedSegmentDTO {
+	item, exists := m.data[splitName]
+	if !exists {
+		return nil
+	}
+	return &item
+}
+
+// FetchMany fetches rule-based segments in the storage and returns an array of rule-based segments dtos
+func (m *RuleBasedSegmentsStorageImpl) FetchMany(rbsNames []string) map[string]*dtos.RuleBasedSegmentDTO {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	rbSegments := make(map[string]*dtos.RuleBasedSegmentDTO)
+	for _, rbsName := range rbsNames {
+		rbSegments[rbsName] = m._get(rbsName)
+	}
+	return rbSegments
+}
+
 func (r *RuleBasedSegmentsStorageImpl) ReplaceAll(toAdd []dtos.RuleBasedSegmentDTO, changeNumber int64) error {
 	r.mutex.RLock()
 	toRemove := make([]dtos.RuleBasedSegmentDTO, 0)
