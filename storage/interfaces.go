@@ -281,6 +281,7 @@ type RuleBasedSegmentStorageProducer interface {
 type RuleBasedSegmentStorageConsumer interface {
 	ChangeNumber() (int64, error)
 	All() []dtos.RuleBasedSegmentDTO
+	FetchMany(rbsNames []string) map[string]*dtos.RuleBasedSegmentDTO
 	RuleBasedSegmentNames() ([]string, error)
 	Contains(ruleBasedSegmentNames []string) bool
 	Segments() *set.ThreadUnsafeSet

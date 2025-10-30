@@ -81,4 +81,9 @@ func (m *MockRuleBasedSegmentStorage) LargeSegments() *set.ThreadUnsafeSet {
 	return args.Get(0).(*set.ThreadUnsafeSet)
 }
 
+func (m *MockRuleBasedSegmentStorage) FetchMany(rbsNames []string) map[string]*dtos.RuleBasedSegmentDTO {
+	args := m.Called(rbsNames)
+	return args.Get(0).(map[string]*dtos.RuleBasedSegmentDTO)
+}
+
 var _ storage.RuleBasedSegmentsStorage = (*MockRuleBasedSegmentStorage)(nil)

@@ -89,6 +89,13 @@ func TestRuleBasedSegmentsStorage(t *testing.T) {
 	assert.Contains(t, names, "rule1")
 	assert.Contains(t, names, "rule2")
 
+	// Test FetchMany
+	rbsFetchMany := storage.FetchMany([]string{"rule1", "rule2", "nonexistent"})
+	assert.Len(t, rbsFetchMany, 3)
+	assert.Equal(t, "rule1", rbsFetchMany["rule1"].Name)
+	assert.Equal(t, "rule2", rbsFetchMany["rule2"].Name)
+	assert.Nil(t, rbsFetchMany["nonexistent"])
+
 	// Test GetSegments
 	segments := storage.Segments()
 	assert.True(t, segments.Has("segment1"), "segment1 should be in segments")

@@ -562,20 +562,20 @@ func TestUpdateRedis(t *testing.T) {
 	if len(splits) != 3 {
 		t.Error("Unexpected amount of splits")
 	}
-	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
+	set1, _ := redisClient.SMembers("SPLITIO.flagSet.set1")
 	if len(set1) != 2 {
 		t.Error("set size should be 2")
 	}
 	if !slices.Contains(set1, "split1") || !slices.Contains(set1, "split2") {
 		t.Error("Split missing in set")
 	}
-	tt, err := redisClient.Get("SPLITIO.trafficType.user")
-	ttCount, _ := strconv.ParseFloat(tt, 10)
+	tt, _ := redisClient.Get("SPLITIO.trafficType.user")
+	ttCount, _ := strconv.ParseFloat(tt, 64)
 	if ttCount != 3 {
 		t.Error("Split should exist")
 	}
-	till, err := redisClient.Get("SPLITIO.splits.till")
-	tillInt, _ := strconv.ParseFloat(till, 10)
+	till, _ := redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ := strconv.ParseFloat(till, 64)
 	if tillInt != 1 {
 		t.Error("ChangeNumber should be 1")
 	}
@@ -587,29 +587,29 @@ func TestUpdateRedis(t *testing.T) {
 	if len(splits) != 3 {
 		t.Error("Unexpected size")
 	}
-	set1, err = redisClient.SMembers("SPLITIO.flagSet.set1")
+	set1, _ = redisClient.SMembers("SPLITIO.flagSet.set1")
 	if len(set1) != 0 {
 		t.Error("set size should be 0")
 	}
-	set3, err := redisClient.SMembers("SPLITIO.flagSet.set3")
+	set3, _ := redisClient.SMembers("SPLITIO.flagSet.set3")
 	if len(set3) != 3 {
 		t.Error("set size should be 3")
 	}
 	if !slices.Contains(set3, "split3") || !slices.Contains(set3, "split4") || !slices.Contains(set3, "split5") {
 		t.Error("Split missing in set")
 	}
-	tt, err = redisClient.Get("SPLITIO.trafficType.user")
-	ttCount, _ = strconv.ParseFloat(tt, 10)
+	tt, _ = redisClient.Get("SPLITIO.trafficType.user")
+	ttCount, _ = strconv.ParseFloat(tt, 64)
 	if ttCount != 3 {
 		t.Error("Unexpected trafficType occurrences")
 	}
 
-	split1, err := redisClient.Get("SPLITIO.split.split1")
+	split1, _ := redisClient.Get("SPLITIO.split.split1")
 	if split1 != "" {
 		t.Error("Split should not exist")
 	}
-	till, err = redisClient.Get("SPLITIO.splits.till")
-	tillInt, _ = strconv.ParseFloat(till, 10)
+	till, _ = redisClient.Get("SPLITIO.splits.till")
+	tillInt, _ = strconv.ParseFloat(till, 64)
 	if tillInt != 2 {
 		t.Error("ChangeNumber should be 2")
 	}
@@ -649,15 +649,15 @@ func TestUpdateWithFlagSetFiltersRedis(t *testing.T) {
 	if len(splits) != 3 {
 		t.Error("Unexpected amount of splits")
 	}
-	set1, err := redisClient.SMembers("SPLITIO.flagSet.set1")
+	set1, _ := redisClient.SMembers("SPLITIO.flagSet.set1")
 	if len(set1) != 2 {
 		t.Error("set size should be 2")
 	}
-	set2, err := redisClient.SMembers("SPLITIO.flagSet.set2")
+	set2, _ := redisClient.SMembers("SPLITIO.flagSet.set2")
 	if len(set2) != 1 {
 		t.Error("set size should be 1")
 	}
-	set3, err := redisClient.SMembers("SPLITIO.flagSet.set3")
+	set3, _ := redisClient.SMembers("SPLITIO.flagSet.set3")
 	if len(set3) != 0 {
 		t.Error("set size should be 0")
 	}

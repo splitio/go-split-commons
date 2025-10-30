@@ -605,6 +605,54 @@ func TestReplaceAllRuleBased(t *testing.T) {
 	redisClient.Del(keys...)
 }
 
+func TestRBFetchMany(t *testing.T) {
+	t.Run("FetchMany Error", func(t *testing.T) {
+		expectedKey := "someprefix.SPLITIO.rbsegment.someRB1"
+		expectedKey2 := "someprefix.SPLITIO.rbsegment.someRB2"
+
+		mockedRedisClient := mocks.MockClient{
+			MGetCall: func(keys []string) redis.Result {
+				assert.ElementsMatch(t, []string{expectedKey, expectedKey2}, keys)
+				return &mocks.MockResultOutput{
+					MultiInterfaceCall: func() ([]interface{}, error) {
+						return []interface{}{}, errors.New("Some Error")
+					},
+				}
+			},
+		}
+		mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+		rbStorage := NewRuleBasedStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+		rbs := rbStorage.FetchMany([]string{"someRB1", "someRB2"})
+		assert.Nil(t, rbs)
+	})
+
+	t.Run("FetchMany Success", func(t *testing.T) {
+		expectedKey := "someprefix.SPLITIO.rbsegment.someRB1"
+		expectedKey2 := "someprefix.SPLITIO.rbsegment.someRB2"
+
+		mockedRedisClient := mocks.MockClient{
+			MGetCall: func(keys []string) redis.Result {
+				assert.ElementsMatch(t, []string{expectedKey, expectedKey2}, keys)
+				return &mocks.MockResultOutput{
+					MultiInterfaceCall: func() ([]interface{}, error) {
+						return []interface{}{
+							marshalRuleBasedSegment(createSampleRBSegment("someRB1")),
+							marshalRuleBasedSegment(createSampleRBSegment("someRB2")),
+						}, nil
+					},
+				}
+			},
+		}
+		mockPrefixedClient, _ := redis.NewPrefixedRedisClient(&mockedRedisClient, "someprefix")
+
+		rbStorage := NewRuleBasedStorage(mockPrefixedClient, logging.NewLogger(&logging.LoggerOptions{}))
+		rbs := rbStorage.FetchMany([]string{"someRB1", "someRB2"})
+		assert.Equal(t, 2, len(rbs))
+		assert.NotNil(t, rbs["someRB1"])
+		assert.NotNil(t, rbs["someRB2"])
+	})
+}
+
 func marshalRuleBasedSegment(rbSegment dtos.RuleBasedSegmentDTO) string {
 	json, _ := json.Marshal(rbSegment)
 	return string(json)
