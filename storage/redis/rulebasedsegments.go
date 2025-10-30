@@ -368,4 +368,36 @@ func (r *RuleBasedSegmentStorage) executePipeline(pipeline redis.Pipeline, toAdd
 	return failedToAdd, failedToRemove
 }
 
+func (r *RuleBasedSegmentStorage) FetchMany(names []string) map[string]*dtos.RuleBasedSegmentDTO {
+	if len(names) == 0 {
+		return nil
+	}
+
+	keysToFetch := make([]string, 0, len(names))
+	for _, name := range names {
+		keysToFetch = append(keysToFetch, strings.Replace(KeyRuleBasedSegment, "{rbsegment}", name, 1))
+	}
+	rawRBS, err := r.client.MGet(keysToFetch)
+	if err != nil {
+		r.logger.Error(fmt.Sprintf("Could not fetch rule-based segments from redis: %s", err.Error()))
+		return nil
+	}
+
+	rbs := make(map[string]*dtos.RuleBasedSegmentDTO)
+	for idx, rb := range names {
+		var rbSegment *dtos.RuleBasedSegmentDTO
+		rawRBSegment, ok := rawRBS[idx].(string)
+		if ok {
+			err = json.Unmarshal([]byte(rawRBSegment), &rbSegment)
+			if err != nil {
+				r.logger.Error("Could not parse rule-based segment \"%s\" fetched from redis", rb)
+				return nil
+			}
+		}
+		rbs[rb] = rbSegment
+	}
+
+	return rbs
+}
+
 var _ storage.RuleBasedSegmentsStorage = (*RuleBasedSegmentStorage)(nil)
