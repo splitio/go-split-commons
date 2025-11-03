@@ -1008,7 +1008,7 @@ func TestSplitProxyDowngrade(t *testing.T) {
 		largeSegmentStorage := &mocks.MockLargeSegmentStorage{}
 		splitMockFetcher := &fetcherMock.MockSplitFetcher{}
 		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_3)).WithChangeNumber(-1).WithChangeNumberRB(-1)).Return(nil, &dtos.HTTPError{Code: http.StatusBadRequest}).Once()
-		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_1)).WithChangeNumber(-1).WithChangeNumberRB(-1)).Return(response, nil).Once()
+		splitMockFetcher.On("Fetch", service.MakeFlagRequestParams().WithSpecVersion(common.StringRef(specs.FLAG_V1_1)).WithChangeNumber(-1)).Return(response, nil).Once()
 		telemetryMockStorage := mocks.MockTelemetryStorage{
 			RecordSuccessfulSyncCall: func(resource int, tm time.Time) {
 				assert.Equal(t, telemetry.SplitSync, resource)
