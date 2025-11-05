@@ -143,7 +143,12 @@ func (s *UpdaterImpl) fetchUntil(fetchOptions *service.FlagRequestParams) (*Upda
 		currentRBSince, _ = s.ruleBasedSegmentStorage.ChangeNumber()
 		before := time.Now()
 		var splitChanges dtos.FFResponse
-		splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(s.specVersion)))
+		if s.specVersion == specs.FLAG_V1_3 {
+			splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithChangeNumberRB(currentRBSince).WithSpecVersion(common.StringRef(s.specVersion)))
+		} else {
+			splitChanges, err = s.splitFetcher.Fetch(fetchOptions.WithChangeNumber(currentSince).WithSpecVersion(common.StringRef(s.specVersion)))
+		}
+
 		if err != nil {
 			if httpError, ok := err.(*dtos.HTTPError); ok {
 				if httpError.Code == http.StatusRequestURITooLong {
