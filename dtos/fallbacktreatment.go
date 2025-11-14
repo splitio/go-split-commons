@@ -6,7 +6,7 @@ const (
 
 type FallbackTreatment struct {
 	Treatment string
-	Config    string
+	Config    *string
 	Label     *string
 }
 
