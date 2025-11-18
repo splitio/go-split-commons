@@ -137,6 +137,7 @@ func TestDependencyMatcher(t *testing.T) {
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules,
+		nil,
 	)
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, evaluator)

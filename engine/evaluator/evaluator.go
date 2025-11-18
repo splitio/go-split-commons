@@ -37,10 +37,11 @@ type Results struct {
 
 // Evaluator struct is the main evaluator
 type Evaluator struct {
-	splitStorage storage.SplitStorageConsumer
-	eng          *engine.Engine
-	logger       logging.LoggerInterface
-	ruleBuilder  grammar.RuleBuilder
+	splitStorage               storage.SplitStorageConsumer
+	eng                        *engine.Engine
+	logger                     logging.LoggerInterface
+	ruleBuilder                grammar.RuleBuilder
+	fallbackTratmentCalculator dtos.FallbackTreatmentCalculator
 }
 
 // NewEvaluator instantiates an Evaluator struct and returns a reference to it
@@ -53,11 +54,13 @@ func NewEvaluator(
 	logger logging.LoggerInterface,
 	featureFlagRules []string,
 	ruleBasedSegmentRules []string,
+	fallbackTreatmentCalculator dtos.FallbackTreatmentCalculator,
 ) *Evaluator {
 	e := &Evaluator{
-		splitStorage: splitStorage,
-		eng:          eng,
-		logger:       logger,
+		splitStorage:               splitStorage,
+		eng:                        eng,
+		logger:                     logger,
+		fallbackTratmentCalculator: fallbackTreatmentCalculator,
 	}
 	e.ruleBuilder = grammar.NewRuleBuilder(segmentStorage, ruleBasedSegmentStorage, largeSegmentStorage, featureFlagRules, ruleBasedSegmentRules, logger, e)
 	return e
@@ -65,9 +68,11 @@ func NewEvaluator(
 
 func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFlag string, splitDto *dtos.SplitDTO, attributes map[string]interface{}) *Result {
 	var config *string
+	label := impressionlabels.SplitNotFound
 	if splitDto == nil {
-		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning control.", featureFlag))
-		return &Result{Treatment: Control, Label: impressionlabels.SplitNotFound, Config: config}
+		fallbackTratment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
+		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning fallback treatment.", featureFlag))
+		return &Result{Treatment: fallbackTratment.Treatment, Label: *fallbackTratment.Label, Config: fallbackTratment.Config}
 	}
 
 	split := grammar.NewSplit(splitDto, e.logger, e.ruleBuilder)
@@ -111,6 +116,15 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		defaultTreatment := split.DefaultTreatment()
 		treatment = &defaultTreatment
 		label = impressionlabels.NoConditionMatched
+	}
+
+	if *treatment == Control {
+		fallbackTreatment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
+		return &Result{
+			Treatment: fallbackTreatment.Treatment,
+			Label:     *fallbackTreatment.Label,
+			Config:    fallbackTreatment.Config,
+		}
 	}
 
 	if _, ok := split.Configurations()[*treatment]; ok {

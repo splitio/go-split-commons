@@ -12,26 +12,26 @@ type FallbackTreatment struct {
 
 type FallbackTreatmentConfig struct {
 	GlobalFallbackTreatment *FallbackTreatment
-	byFlagFallbackTreatment map[string]FallbackTreatment
+	ByFlagFallbackTreatment map[string]FallbackTreatment
 }
 
 type FallbackTreatmentCalculator interface {
-	Resolve(flagName string, label string) FallbackTreatment
+	Resolve(flagName string, label *string) FallbackTreatment
 }
 
 type FallbackTreatmentCalculatorImp struct {
 	fallbackTreatmentConfig *FallbackTreatmentConfig
 }
 
-func NewFallbackTreatmentCalculatorImp(fallbackTreatmentConfig *FallbackTreatmentConfig) FallbackTreatmentCalculatorImp {
-	return FallbackTreatmentCalculatorImp{
+func NewFallbackTreatmentCalculatorImp(fallbackTreatmentConfig *FallbackTreatmentConfig) FallbackTreatmentCalculator {
+	return &FallbackTreatmentCalculatorImp{
 		fallbackTreatmentConfig: fallbackTreatmentConfig,
 	}
 }
 
 func (f *FallbackTreatmentCalculatorImp) Resolve(flagName string, label *string) FallbackTreatment {
 	if f.fallbackTreatmentConfig != nil {
-		if byFlag := f.fallbackTreatmentConfig.byFlagFallbackTreatment; byFlag != nil {
+		if byFlag := f.fallbackTreatmentConfig.ByFlagFallbackTreatment; byFlag != nil {
 			if val, ok := byFlag[flagName]; ok {
 				return FallbackTreatment{
 					Treatment: val.Treatment,

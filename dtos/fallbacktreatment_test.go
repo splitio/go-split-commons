@@ -13,7 +13,7 @@ func TestFallbackTreatmentCalculatorResolve(t *testing.T) {
 		GlobalFallbackTreatment: &FallbackTreatment{
 			Treatment: "global_treatment",
 		},
-		byFlagFallbackTreatment: map[string]FallbackTreatment{
+		ByFlagFallbackTreatment: map[string]FallbackTreatment{
 			"flag1": {
 				Treatment: "flag1_treatment",
 				Config:    &stringConfig,
