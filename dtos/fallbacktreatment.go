@@ -5,7 +5,7 @@ const (
 )
 
 type FallbackTreatment struct {
-	Treatment string
+	Treatment *string
 	Config    *string
 	Label     *string
 }
@@ -48,8 +48,9 @@ func (f *FallbackTreatmentCalculatorImp) Resolve(flagName string, label *string)
 			}
 		}
 	}
+	controlTreatment := "control"
 	return FallbackTreatment{
-		Treatment: "control",
+		Treatment: &controlTreatment,
 		Label:     label,
 	}
 }

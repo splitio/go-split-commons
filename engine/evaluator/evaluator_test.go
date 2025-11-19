@@ -403,12 +403,14 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 
 func TestMultipleEvaluations(t *testing.T) {
 	logger := logging.NewLogger(nil)
+	fallback := "fallback"
+	on := "on"
 	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{GlobalFallbackTreatment: &dtos.FallbackTreatment{
-		Treatment: "fallback",
+		Treatment: &fallback,
 	},
 		ByFlagFallbackTreatment: map[string]dtos.FallbackTreatment{
 			"flag1": {
-				Treatment: "on",
+				Treatment: &on,
 			},
 		}}
 
@@ -522,12 +524,14 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		},
 	}
 
+	fallback := "fallback"
+	on := "on"
 	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{GlobalFallbackTreatment: &dtos.FallbackTreatment{
-		Treatment: "fallback",
+		Treatment: &fallback,
 	},
 		ByFlagFallbackTreatment: map[string]dtos.FallbackTreatment{
 			"mysplittest5": {
-				Treatment: "on",
+				Treatment: &on,
 			},
 		}}
 
