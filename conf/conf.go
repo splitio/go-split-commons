@@ -89,6 +89,7 @@ type AdvancedConfig struct {
 	FlagsSpecVersion       string
 	LargeSegment           *LargeSegmentConfig
 	RulesConfig            *RulesConfig
+	FallbackTreatment      FallbackTreatmentConf
 }
 
 type LargeSegmentConfig struct {
@@ -104,4 +105,14 @@ type LargeSegmentConfig struct {
 type RulesConfig struct {
 	FeatureFlagRules      []string
 	RuleBasedSegmentRules []string
+}
+
+type FallbackTreatmentConf struct {
+	GlobalFallbackTreatment *FallbackTreatmentForConf
+	ByFlagFallbackTreatment map[string]FallbackTreatmentForConf
+}
+
+type FallbackTreatmentForConf struct {
+	Treatment string
+	Config    *string
 }
