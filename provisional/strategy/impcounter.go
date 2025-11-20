@@ -3,7 +3,7 @@ package strategy
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v8/util"
+	"github.com/splitio/go-split-commons/v9/util"
 )
 
 // Key struct for mapping each key to an amount

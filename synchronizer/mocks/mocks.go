@@ -3,7 +3,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v9/dtos"
 )
 
 // MockSynchronizer mock implementation

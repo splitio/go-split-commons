@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v8/dtos"
+import "github.com/splitio/go-split-commons/v9/dtos"
 
 // MockAuthClient mocked implementation of auth
 type MockAuthClient struct {

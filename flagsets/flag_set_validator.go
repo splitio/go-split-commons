@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v9/dtos"
 	"golang.org/x/exp/slices"
 )
 

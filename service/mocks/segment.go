@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/service"
 )
 
 // MockSegmentFetcher mocked implementation of segment fetcher

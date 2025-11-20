@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v8/healthcheck/application"
+	"github.com/splitio/go-split-commons/v9/healthcheck/application"
 
 	"github.com/stretchr/testify/mock"
 )

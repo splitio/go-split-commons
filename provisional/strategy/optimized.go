@@ -3,10 +3,10 @@ package strategy
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/storage"
-	"github.com/splitio/go-split-commons/v8/telemetry"
-	"github.com/splitio/go-split-commons/v8/util"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/storage"
+	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v9/util"
 )
 
 // OptimizedImpl struct for optimized impression mode strategy.
