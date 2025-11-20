@@ -113,6 +113,6 @@ type FallbackTreatmentConf struct {
 }
 
 type FallbackTreatmentForConf struct {
-	Treatment string
+	Treatment *string
 	Config    *string
 }
