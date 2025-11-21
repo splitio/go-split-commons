@@ -1,6 +1,6 @@
 package flagsets
 
-import "github.com/splitio/go-split-commons/v8/dtos"
+import "github.com/splitio/go-split-commons/v9/dtos"
 
 type FeaturesBySet struct {
 	data map[string]map[string]struct{}

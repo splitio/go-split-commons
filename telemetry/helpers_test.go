@@ -3,7 +3,7 @@ package telemetry
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/conf"
+	"github.com/splitio/go-split-commons/v9/conf"
 )
 
 func TestGetURLOVerrides(t *testing.T) {

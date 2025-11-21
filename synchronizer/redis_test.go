@@ -3,7 +3,7 @@ package synchronizer
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/synchronizer/mocks"
+	"github.com/splitio/go-split-commons/v9/synchronizer/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

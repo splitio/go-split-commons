@@ -1,12 +1,12 @@
 package validator
 
 import (
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/engine/evaluator"
-	"github.com/splitio/go-split-commons/v8/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v8/engine/grammar"
-	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v8/engine/grammar/datatypes"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/engine/evaluator"
+	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v9/engine/grammar"
+	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v9/engine/grammar/datatypes"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

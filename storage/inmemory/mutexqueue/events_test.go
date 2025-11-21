@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/storage/inmemory"
-	"github.com/splitio/go-split-commons/v8/telemetry"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/storage/inmemory"
+	"github.com/splitio/go-split-commons/v9/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

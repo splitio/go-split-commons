@@ -3,8 +3,8 @@ package telemetry
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v8/conf"
-	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v9/conf"
+	"github.com/splitio/go-split-commons/v9/dtos"
 )
 
 // GetStreamingEvent get streaming event

@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v8/dtos"
+import "github.com/splitio/go-split-commons/v9/dtos"
 
 // MockTelemetryRecorder mocked implementation of telemetry recorder
 type MockTelemetryRecorder struct {

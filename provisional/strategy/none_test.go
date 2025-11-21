@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/storage/filter"
-	"github.com/splitio/go-split-commons/v8/util"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/storage/filter"
+	"github.com/splitio/go-split-commons/v9/util"
 )
 
 func TestNoneMode(t *testing.T) {

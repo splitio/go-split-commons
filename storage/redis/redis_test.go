@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/conf"
+	"github.com/splitio/go-split-commons/v9/conf"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
