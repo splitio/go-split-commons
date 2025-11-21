@@ -29,26 +29,26 @@ func TestFallbackTreatmentCalculatorResolve(t *testing.T) {
 	result := calc.Resolve("flag1", &label)
 	assert.Equal(t, "flag1_treatment", *result.Treatment)
 	assert.Equal(t, &stringConfig, result.Config)
-	assert.Equal(t, "fallback - some_label", *result.Label)
+	assert.Equal(t, "fallback - some_label", *result.label)
 
 	// Test fallback to global treatment when flag not found
 	result = calc.Resolve("flag2", &label)
 	assert.Equal(t, "global_treatment", *result.Treatment)
 	assert.Nil(t, result.Config)
-	assert.Equal(t, "fallback - some_label", *result.Label)
+	assert.Equal(t, "fallback - some_label", *result.label)
 
 	// Test nil label handling
 	result = calc.Resolve("flag1", nil)
 	assert.Equal(t, "flag1_treatment", *result.Treatment)
 	assert.Equal(t, &stringConfig, result.Config)
-	assert.Nil(t, result.Label)
+	assert.Nil(t, result.label)
 
 	// Test default control when no config
 	calcNoConfig := NewFallbackTreatmentCalculatorImp(nil)
 	result = calcNoConfig.Resolve("flag1", &label)
 	assert.Equal(t, "control", *result.Treatment)
 	assert.Nil(t, result.Config)
-	assert.Equal(t, "some_label", *result.Label)
+	assert.Equal(t, "some_label", *result.label)
 
 	// Test global treatment when no flag-specific treatments exist
 	configGlobalOnly := &FallbackTreatmentConfig{
@@ -61,5 +61,5 @@ func TestFallbackTreatmentCalculatorResolve(t *testing.T) {
 	result = calcGlobalOnly.Resolve("any_flag", &label)
 	assert.Equal(t, "global_treatment", *result.Treatment)
 	assert.Nil(t, result.Config)
-	assert.Equal(t, "fallback - some_label", *result.Label)
+	assert.Equal(t, "fallback - some_label", *result.label)
 }

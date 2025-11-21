@@ -2,6 +2,8 @@ package conf
 
 import (
 	"crypto/tls"
+
+	"github.com/splitio/go-split-commons/v8/dtos"
 )
 
 // RedisConfig struct is used to cofigure the redis parameters
@@ -89,7 +91,7 @@ type AdvancedConfig struct {
 	FlagsSpecVersion       string
 	LargeSegment           *LargeSegmentConfig
 	RulesConfig            *RulesConfig
-	FallbackTreatment      FallbackTreatmentConf
+	FallbackTreatment      dtos.FallbackTreatmentConfig
 }
 
 type LargeSegmentConfig struct {
@@ -105,14 +107,4 @@ type LargeSegmentConfig struct {
 type RulesConfig struct {
 	FeatureFlagRules      []string
 	RuleBasedSegmentRules []string
-}
-
-type FallbackTreatmentConf struct {
-	GlobalFallbackTreatment *FallbackTreatmentForConf
-	ByFlagFallbackTreatment map[string]FallbackTreatmentForConf
-}
-
-type FallbackTreatmentForConf struct {
-	Treatment *string
-	Config    *string
 }

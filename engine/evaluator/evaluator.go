@@ -72,7 +72,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	if splitDto == nil {
 		fallbackTratment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
 		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning fallback treatment.", featureFlag))
-		return &Result{Treatment: *fallbackTratment.Treatment, Label: *fallbackTratment.Label, Config: fallbackTratment.Config}
+		return &Result{Treatment: *fallbackTratment.Treatment, Label: *fallbackTratment.Label(), Config: fallbackTratment.Config}
 	}
 
 	split := grammar.NewSplit(splitDto, e.logger, e.ruleBuilder)
@@ -122,7 +122,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		fallbackTreatment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
 		return &Result{
 			Treatment: *fallbackTreatment.Treatment,
-			Label:     *fallbackTreatment.Label,
+			Label:     *fallbackTreatment.Label(),
 			Config:    fallbackTreatment.Config,
 		}
 	}
