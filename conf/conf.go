@@ -3,7 +3,7 @@ package conf
 import (
 	"crypto/tls"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
+	"github.com/splitio/go-split-commons/v9/dtos"
 )
 
 // RedisConfig struct is used to cofigure the redis parameters
