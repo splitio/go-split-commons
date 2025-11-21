@@ -3,16 +3,16 @@ package synchronizer
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/engine/grammar"
-	"github.com/splitio/go-split-commons/v8/flagsets"
-	"github.com/splitio/go-split-commons/v8/healthcheck/application"
-	"github.com/splitio/go-split-commons/v8/service/api"
-	"github.com/splitio/go-split-commons/v8/service/api/specs"
-	"github.com/splitio/go-split-commons/v8/storage"
-	"github.com/splitio/go-split-commons/v8/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v8/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v8/tasks"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/engine/grammar"
+	"github.com/splitio/go-split-commons/v9/flagsets"
+	"github.com/splitio/go-split-commons/v9/healthcheck/application"
+	"github.com/splitio/go-split-commons/v9/service/api"
+	"github.com/splitio/go-split-commons/v9/service/api/specs"
+	"github.com/splitio/go-split-commons/v9/storage"
+	"github.com/splitio/go-split-commons/v9/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v9/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v9/tasks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

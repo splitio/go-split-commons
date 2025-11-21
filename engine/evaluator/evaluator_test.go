@@ -3,14 +3,14 @@ package evaluator
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/engine"
-	"github.com/splitio/go-split-commons/v8/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v8/engine/grammar"
-	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v8/flagsets"
-	"github.com/splitio/go-split-commons/v8/storage/inmemory/mutexmap"
-	"github.com/splitio/go-split-commons/v8/storage/mocks"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/engine"
+	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v9/engine/grammar"
+	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v9/flagsets"
+	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v9/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
@@ -308,7 +308,8 @@ func TestSplitWithoutConfigurations(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest", nil)
@@ -333,7 +334,8 @@ func TestSplitWithtConfigurations(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest2", nil)
@@ -358,7 +360,8 @@ func TestSplitWithtConfigurationsButKilled(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest3", nil)
@@ -383,7 +386,8 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "mysplittest4", nil)
@@ -399,6 +403,16 @@ func TestSplitWithConfigurationsButKilledWithConfigsOnDefault(t *testing.T) {
 
 func TestMultipleEvaluations(t *testing.T) {
 	logger := logging.NewLogger(nil)
+	fallback := "fallback"
+	on := "on"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{GlobalFallbackTreatment: &dtos.FallbackTreatment{
+		Treatment: &fallback,
+	},
+		ByFlagFallbackTreatment: map[string]dtos.FallbackTreatment{
+			"flag1": {
+				Treatment: &on,
+			},
+		}}
 
 	evaluator := NewEvaluator(
 		&mockStorage{},
@@ -408,7 +422,8 @@ func TestMultipleEvaluations(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
 
 	key := "test"
 	splits := []string{"mysplittest", "mysplittest2", "mysplittest3", "mysplittest4", "mysplittest5"}
@@ -442,7 +457,7 @@ func TestMultipleEvaluations(t *testing.T) {
 		t.Error("Unexpected configs")
 	}
 
-	if result.Evaluations["mysplittest5"].Treatment != "control" {
+	if result.Evaluations["mysplittest5"].Treatment != "fallback" {
 		t.Error("Wrong treatment result")
 	}
 	if result.Evaluations["mysplittest5"].Config != nil {
@@ -467,7 +482,8 @@ func TestNoConditionMatched(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 
 	key := "test"
 	result := evaluator.EvaluateFeature(key, &key, "some", nil)
@@ -508,6 +524,17 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		},
 	}
 
+	fallback := "fallback"
+	on := "on"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{GlobalFallbackTreatment: &dtos.FallbackTreatment{
+		Treatment: &fallback,
+	},
+		ByFlagFallbackTreatment: map[string]dtos.FallbackTreatment{
+			"mysplittest5": {
+				Treatment: &on,
+			},
+		}}
+
 	evaluator := NewEvaluator(
 		mockedStorage,
 		nil,
@@ -516,7 +543,8 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set1", "set2", "set3"}, nil)
 
 	if result.Evaluations["mysplittest"].Treatment != "off" {
@@ -547,7 +575,7 @@ func TestEvaluationByFlagSets(t *testing.T) {
 		t.Error("Unexpected configs")
 	}
 
-	if result.Evaluations["mysplittest5"].Treatment != "control" {
+	if result.Evaluations["mysplittest5"].Treatment != "on" {
 		t.Error("Wrong treatment result")
 	}
 	if result.Evaluations["mysplittest5"].Config != nil {
@@ -652,6 +680,7 @@ func TestPrerequisitesMatching(t *testing.T) {
 				logging.NewLogger(nil),
 				syncProxyFeatureFlagsRules,
 				syncProxyRuleBasedSegmentRules,
+				nil,
 			)
 
 			// Create split DTO with prerequisites
@@ -747,7 +776,8 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 		nil,
 		logger,
 		syncProxyFeatureFlagsRules,
-		syncProxyRuleBasedSegmentRules)
+		syncProxyRuleBasedSegmentRules,
+		nil)
 	result := evaluator.EvaluateFeatureByFlagSets(key, &key, []string{"set2"}, nil)
 
 	if len(result.Evaluations) != 0 {

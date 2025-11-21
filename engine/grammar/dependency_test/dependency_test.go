@@ -7,13 +7,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/engine"
-	"github.com/splitio/go-split-commons/v8/engine/evaluator"
-	"github.com/splitio/go-split-commons/v8/engine/grammar"
-	"github.com/splitio/go-split-commons/v8/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v8/flagsets"
-	"github.com/splitio/go-split-commons/v8/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/engine"
+	"github.com/splitio/go-split-commons/v9/engine/evaluator"
+	"github.com/splitio/go-split-commons/v9/engine/grammar"
+	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v9/flagsets"
+	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexmap"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -137,6 +137,7 @@ func TestDependencyMatcher(t *testing.T) {
 		logger,
 		syncProxyFeatureFlagsRules,
 		syncProxyRuleBasedSegmentRules,
+		nil,
 	)
 
 	ruleBuilder := grammar.NewRuleBuilder(nil, nil, nil, syncProxyFeatureFlagsRules, syncProxyRuleBasedSegmentRules, logger, evaluator)

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v8/dtos"
-	"github.com/splitio/go-split-commons/v8/service"
+	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 
 	yaml "gopkg.in/yaml.v3"
