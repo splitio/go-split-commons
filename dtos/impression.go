@@ -28,6 +28,7 @@ type ImpressionDTO struct {
 	Label        string `json:"r"`
 	BucketingKey string `json:"b,omitempty"`
 	Pt           int64  `json:"pt,omitempty"`
+	Properties   string `json:"properties"`
 }
 
 // ImpressionsDTO struct mapping impressions to post
@@ -46,4 +47,8 @@ type ImpressionsInTimeFrameDTO struct {
 // ImpressionsCountDTO struct mapping impressions count to post
 type ImpressionsCountDTO struct {
 	PerFeature []ImpressionsInTimeFrameDTO `json:"pf"`
+}
+
+type EvaluationOptions struct {
+	properties map[string]interface{}
 }
