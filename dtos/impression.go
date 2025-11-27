@@ -11,6 +11,7 @@ type Impression struct {
 	Time         int64  `json:"m"`
 	Pt           int64  `json:"pt,omitempty"`
 	Disabled     bool   `json:"-"`
+	Properties   string `json:"properties"`
 }
 
 // ImpressionQueueObject struct mapping impressions
