@@ -11,7 +11,7 @@ type Impression struct {
 	Time         int64  `json:"m"`
 	Pt           int64  `json:"pt,omitempty"`
 	Disabled     bool   `json:"-"`
-	Properties   string `json:"properties"`
+	Properties   string `json:"properties,omitempty"`
 }
 
 // ImpressionQueueObject struct mapping impressions
@@ -29,7 +29,7 @@ type ImpressionDTO struct {
 	Label        string `json:"r"`
 	BucketingKey string `json:"b,omitempty"`
 	Pt           int64  `json:"pt,omitempty"`
-	Properties   string `json:"properties"`
+	Properties   string `json:"properties,omitempty"`
 }
 
 // ImpressionsDTO struct mapping impressions to post

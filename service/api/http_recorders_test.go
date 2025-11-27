@@ -15,7 +15,7 @@ import (
 )
 
 func TestImpressionRecord(t *testing.T) {
-	impressionTXT := `{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key","properties":""}`
+	impressionTXT := `{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key"}`
 	impressionRecord := &dtos.ImpressionDTO{
 		KeyName:      "some_key",
 		Treatment:    "off",
@@ -56,7 +56,7 @@ func TestImpressionRecordWithProperties(t *testing.T) {
 }
 
 func TestImpressionRecordBulk(t *testing.T) {
-	impressionTXT := `{"f":"some_feature","i":[{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key","properties":""}]}`
+	impressionTXT := `{"f":"some_feature","i":[{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key"}]}`
 	impressionRecords := &dtos.ImpressionsDTO{
 		TestName: "some_feature",
 		KeyImpressions: []dtos.ImpressionDTO{{
@@ -79,7 +79,7 @@ func TestImpressionRecordBulk(t *testing.T) {
 }
 
 func TestPostImpressions(t *testing.T) {
-	impressionsTXT := `[{"f":"some_test_2","i":[{"k":"some_key_1","t":"on","m":1234567890,"c":9876543210,"r":"some_label_1","b":"some_bucket_key_1","properties":""}]},{"f":"some_test","i":[{"k":"some_key_2","t":"off","m":1234567890,"c":9876543210,"r":"some_label_2","b":"some_bucket_key_2","properties":""}]}]`
+	impressionsTXT := `[{"f":"some_test_2","i":[{"k":"some_key_1","t":"on","m":1234567890,"c":9876543210,"r":"some_label_1","b":"some_bucket_key_1"}]},{"f":"some_test","i":[{"k":"some_key_2","t":"off","m":1234567890,"c":9876543210,"r":"some_label_2","b":"some_bucket_key_2"}]}]`
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
 	var expectedPT int64
