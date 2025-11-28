@@ -34,6 +34,27 @@ func TestImpressionRecord(t *testing.T) {
 	}
 }
 
+func TestImpressionRecordWithProperties(t *testing.T) {
+	impressionTXT := `{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key","properties":"value"}`
+	impressionRecord := &dtos.ImpressionDTO{
+		KeyName:      "some_key",
+		Treatment:    "off",
+		Time:         1234567890,
+		ChangeNumber: 55555555,
+		Label:        "some label",
+		BucketingKey: "some_bucket_key",
+		Properties:   "value"}
+
+	marshalImpression, err := json.Marshal(impressionRecord)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(marshalImpression) != impressionTXT {
+		t.Error("Error marshaling impression")
+	}
+}
+
 func TestImpressionRecordBulk(t *testing.T) {
 	impressionTXT := `{"f":"some_feature","i":[{"k":"some_key","t":"off","m":1234567890,"c":55555555,"r":"some label","b":"some_bucket_key"}]}`
 	impressionRecords := &dtos.ImpressionsDTO{
