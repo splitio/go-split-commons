@@ -51,5 +51,5 @@ type ImpressionsCountDTO struct {
 }
 
 type EvaluationOptions struct {
-	properties map[string]interface{}
+	Properties map[string]interface{}
 }
