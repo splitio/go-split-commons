@@ -6,6 +6,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v9/dtos"
 	"github.com/splitio/go-split-commons/v9/storage/inmemory"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOptimizedMode(t *testing.T) {
@@ -24,32 +25,55 @@ func TestOptimizedMode(t *testing.T) {
 	}
 
 	toLog, toListener := optimized.Apply([]dtos.Impression{imp})
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
 
-	if len(toLog) != 1 || len(toListener) != 1 {
-		t.Error("Should have 1 to log")
-	}
-
-	if len(counter.impressionsCounts) != 0 {
-		t.Error("Should not have counts")
-	}
+	assert.Equal(t, 0, len(counter.impressionsCounts), "Should not have counts")
 
 	toLog, toListener = optimized.Apply([]dtos.Impression{imp})
 
-	if len(toLog) != 0 || len(toListener) != 1 {
-		t.Error("Should not have to log")
-	}
+	assert.Equal(t, 0, len(toLog), "Should have 0 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
 
 	rawCounts := counter.PopAll()
-	if len(rawCounts) != 1 {
-		t.Error("Should have counts")
-	}
+	assert.Equal(t, 1, len(rawCounts), "Should have counts")
 	for key, counts := range counter.PopAll() {
-		if key.FeatureName != "feature-test" {
-			t.Error("Feature should be feature-test")
-		}
-		if counts != 1 {
-			t.Error("It should be tracked only once")
-		}
+		assert.Equal(t, "feature-test", key.FeatureName, "Feature should be feature-test")
+		assert.Equal(t, 1, counts, "It should be tracked only once")
+	}
+}
+
+func TestOptimizedModeWithProperties(t *testing.T) {
+	observer, _ := NewImpressionObserver(5000)
+	counter := NewImpressionsCounter()
+	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
+	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
+	imp := dtos.Impression{
+		BucketingKey: "someBuck",
+		ChangeNumber: 123,
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         time.Now().UTC().UnixNano(),
+		Treatment:    "on",
+		FeatureName:  "feature-test",
+		Properties:   "{'hello':'world'}",
+	}
+
+	toLog, toListener := optimized.Apply([]dtos.Impression{imp})
+
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
+
+	toLog, toListener = optimized.Apply([]dtos.Impression{imp})
+
+	assert.Equal(t, 1, len(toLog), "toLog should be 1")
+	assert.Equal(t, 1, len(toListener), "toListener should be 1")
+
+	rawCounts := counter.PopAll()
+	assert.Equal(t, 0, len(rawCounts), "Should doesn't have counts")
+	for key, counts := range counter.PopAll() {
+		assert.Equal(t, "feature-test", key.FeatureName, "Feature should be feature-test")
+		assert.Equal(t, 1, counts, "It should be tracked empty")
 	}
 }
 
@@ -70,13 +94,8 @@ func TestApplySingleOptimized(t *testing.T) {
 
 	toLog := optimized.ApplySingle(&imp)
 
-	if !toLog {
-		t.Error("Should be true")
-	}
-
+	assert.True(t, toLog, "Should be true")
 	toLog = optimized.ApplySingle(&imp)
 
-	if toLog {
-		t.Error("Should be false")
-	}
+	assert.False(t, toLog, "Should be false")
 }
