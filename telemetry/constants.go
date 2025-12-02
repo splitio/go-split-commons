@@ -19,6 +19,22 @@ const (
 	TreatmentsWithConfigByFlagSet = "treatmentsWithConfigByFlagSet"
 	// TreatmentsWithConfigByFlagSets getTreatmentsWithConfigByFlagSets
 	TreatmentsWithConfigByFlagSets = "treatmentsWithConfigByFlagSets"
+	// TreatmentWithEvaluationOptions getTreatmentWithEvaluationOptions
+	TreatmentWithEvaluationOptions = "treatmentWithEvaluationOptions"
+	// TreatmentsWithEvaluationOptions getTreatmentsWithEvaluationOptions
+	TreatmentsWithEvaluationOptions = "treatmentsWithEvaluationOptions"
+	// TreatmentWithConfigAndEvaluationOptions getTreatmentWithConfigAndEvaluationOptions
+	TreatmentWithConfigAndEvaluationOptions = "treatmentWithConfigAndEvaluationOptions"
+	// TreatmentsWithConfigAndEvaluationOptions getTreatmentsWithConfigAndEvaluationOptions
+	TreatmentsWithConfigAndEvaluationOptions = "treatmentsWithConfigAndEvaluationOptions"
+	// TreatmentsByFlagSetWithEvaluationOptions getTreatmentsByFlagSetWithEvaluationOptions
+	TreatmentsByFlagSetWithEvaluationOptions = "treatmentsByFlagSetWithEvaluationOptions"
+	// TreatmentsByFlagSetsWithEvaluationOptions getTreatmentsByFlagSetsWithEvaluationOptions
+	TreatmentsByFlagSetsWithEvaluationOptions = "treatmentsByFlagSetsWithEvaluationOptions"
+	// TreatmentsWithConfigByFlagSetAndEvaluationOptions getTreatmentsWithConfigByFlagSetAndEvaluationOptions
+	TreatmentsWithConfigByFlagSetAndEvaluationOptions = "treatmentsWithConfigByFlagSetAndEvaluationOptions"
+	// TreatmentsWithConfigByFlagSetsAndEvaluationOptions getTreatmentsWithConfigByFlagSetsAndEvaluationOptions
+	TreatmentsWithConfigByFlagSetsAndEvaluationOptions = "treatmentsWithConfigByFlagSetsAndEvaluationOptions"
 	// Track track
 	Track = "track"
 )
@@ -42,6 +58,22 @@ func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 		return TreatmentsWithConfigByFlagSet, true
 	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
 		return TreatmentsWithConfigByFlagSets, true
+	case "getTreatmentWithEvaluationOptions", "get_treatment_with_evaluation_options", "treatmentWithEvaluationOptions", "TreatmentWithEvaluationOptions":
+		return TreatmentWithEvaluationOptions, true
+	case "getTreatmentsWithEvaluationOptions", "get_treatments_with_evaluation_options", "treatmentsWithEvaluationOptions", "TreatmentsWithEvaluationOptions":
+		return TreatmentsWithEvaluationOptions, true
+	case "getTreatmentWithConfigAndEvaluationOptions", "get_treatment_with_config_and_evaluation_options", "treatment_with_config_and_evaluation_options", "treatmentWithConfigAndEvaluationOptions", "TreatmentWithConfigAndEvaluationOptions":
+		return TreatmentWithConfigAndEvaluationOptions, true
+	case "getTreatmentsWithConfigAndEvaluationOption", "get_treatments_with_config_and_evaluation_options", "treatments_with_config_and_evaluation_options", "treatmentsWithConfigAndEvaluationOptions", "TreatmentsWithConfigAndEvaluationOptions":
+		return TreatmentsWithConfigAndEvaluationOptions, true
+	case "getTreatmentsByFlagSetWithEvaluationOptions", "get_treatments_by_flag_set_with_evaluation_options", "treatments_by_flag_set_with_evaluation_options", "treatmentsByFlagSetWithEvaluationOptions", "TreatmentsByFlagSetWithEvaluationOptions":
+		return TreatmentsByFlagSetWithEvaluationOptions, true
+	case "getTreatmentsByFlagSetsWithEvaluationOptions", "get_treatments_by_flag_sets_with_evaluation_options", "treatments_by_flag_sets_with_evaluation_options", "treatmentsByFlagSetsWithEvaluationOptions", "TreatmentsByFlagSetsWithEvaluationOptions":
+		return TreatmentsByFlagSetsWithEvaluationOptions, true
+	case "getTreatmentsWithConfigByFlagSetAndEvaluationOptions", "get_treatments_with_config_by_flag_set_and_evaluation_options", "treatments_with_config_by_flag_set_and_evaluation_options", "treatmentsWithConfigByFlagSetAndEvaluationOptions", "TreatmentsWithConfigByFlagSetAndEvaluationOptions":
+		return TreatmentsWithConfigByFlagSetAndEvaluationOptions, true
+	case "getTreatmentsWithConfigByFlagSetsAndEvaluationOptions", "get_treatments_with_config_by_flag_sets_and_evaluation_options", "treatments_with_config_by_flag_sets_and_evaluation_options", "treatmentsWithConfigByFlagSetsAndEvaluationOptions", "TreatmentsWithConfigByFlagSetsAndEvaluationOptions":
+		return TreatmentsWithConfigByFlagSetsAndEvaluationOptions, true
 	case "track", "Track":
 		return Track, true
 	default:
@@ -60,6 +92,14 @@ func IsMethodValid(method *string) bool {
 	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
 	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
 	case "getTreatmentsWithConfigByFlagSets", "get_treatments_with_config_by_flag_sets", "treatmentsWithConfigByFlagSets", "TreatmentsWithConfigByFlagSets":
+	case "getTreatmentWithEvaluationOptions", "get_treatment_with_evaluation_options", "treatmentWithEvaluationOptions", "TreatmentWithEvaluationOptions":
+	case "getTreatmentsWithEvaluationOptions", "get_treatments_with_evaluation_options", "treatmentsWithEvaluationOptions", "TreatmentsWithEvaluationOptions":
+	case "getTreatmentWithConfigAndEvaluationOptions", "get_treatment_with_config_and_evaluation_options", "treatment_with_config_and_evaluation_options", "treatmentWithConfigAndEvaluationOptions", "TreatmentWithConfigAndEvaluationOptions":
+	case "getTreatmentsWithConfigAndEvaluationOption", "get_treatments_with_config_and_evaluation_options", "treatments_with_config_and_evaluation_options", "treatmentsWithConfigAndEvaluationOptions", "TreatmentsWithConfigAndEvaluationOptions":
+	case "getTreatmentsByFlagSetWithEvaluationOptions", "get_treatments_by_flag_set_with_evaluation_options", "treatments_by_flag_set_with_evaluation_options", "treatmentsByFlagSetWithEvaluationOptions", "TreatmentsByFlagSetWithEvaluationOptions":
+	case "getTreatmentsByFlagSetsWithEvaluationOptions", "get_treatments_by_flag_sets_with_evaluation_options", "treatments_by_flag_sets_with_evaluation_options", "treatmentsByFlagSetsWithEvaluationOptions", "TreatmentsByFlagSetsWithEvaluationOptions":
+	case "getTreatmentsWithConfigByFlagSetAndEvaluationOptions", "get_treatments_with_config_by_flag_set_and_evaluation_options", "treatments_with_config_by_flag_set_and_evaluation_options", "treatmentsWithConfigByFlagSetAndEvaluationOptions", "TreatmentsWithConfigByFlagSetAndEvaluationOptions":
+	case "getTreatmentsWithConfigByFlagSetsAndEvaluationOptions", "get_treatments_with_config_by_flag_sets_and_evaluation_options", "treatments_with_config_by_flag_sets_and_evaluation_options", "treatmentsWithConfigByFlagSetsAndEvaluationOptions", "TreatmentsWithConfigByFlagSetsAndEvaluationOptions":
 	case "track", "Track":
 	default:
 		return false

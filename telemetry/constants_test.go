@@ -45,6 +45,46 @@ func TestMethodMapping(t *testing.T) {
 			t.Error("expected `treatmentWithConfigByFlagSets`. Got: ", v)
 		}
 	}
+	for _, method := range []string{"getTreatmentWithEvaluationOptions", "get_treatment_with_evaluation_options", "treatmentWithEvaluationOptions", "TreatmentWithEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentWithEvaluationOptions {
+			t.Error("expected `TreatmentWithEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsWithEvaluationOptions", "get_treatments_with_evaluation_options", "treatmentsWithEvaluationOptions", "TreatmentsWithEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsWithEvaluationOptions {
+			t.Error("expected `TreatmentsWithEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentWithConfigAndEvaluationOptions", "get_treatment_with_config_and_evaluation_options", "treatment_with_config_and_evaluation_options", "treatmentWithConfigAndEvaluationOptions", "TreatmentWithConfigAndEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentWithConfigAndEvaluationOptions {
+			t.Error("expected `TreatmentWithConfigAndEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsWithConfigAndEvaluationOption", "get_treatments_with_config_and_evaluation_options", "treatments_with_config_and_evaluation_options", "treatmentsWithConfigAndEvaluationOptions", "TreatmentsWithConfigAndEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsWithConfigAndEvaluationOptions {
+			t.Error("expected `TreatmentsWithConfigAndEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsByFlagSetWithEvaluationOptions", "get_treatments_by_flag_set_with_evaluation_options", "treatments_by_flag_set_with_evaluation_options", "treatmentsByFlagSetWithEvaluationOptions", "TreatmentsByFlagSetWithEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsByFlagSetWithEvaluationOptions {
+			t.Error("expected `TreatmentsByFlagSetWithEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsByFlagSetsWithEvaluationOptions", "get_treatments_by_flag_sets_with_evaluation_options", "treatments_by_flag_sets_with_evaluation_options", "treatmentsByFlagSetsWithEvaluationOptions", "TreatmentsByFlagSetsWithEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsByFlagSetsWithEvaluationOptions {
+			t.Error("expected `TreatmentsByFlagSetsWithEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsWithConfigByFlagSetAndEvaluationOptions", "get_treatments_with_config_by_flag_set_and_evaluation_options", "treatments_with_config_by_flag_set_and_evaluation_options", "treatmentsWithConfigByFlagSetAndEvaluationOptions", "TreatmentsWithConfigByFlagSetAndEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsWithConfigByFlagSetAndEvaluationOptions {
+			t.Error("expected `TreatmentsWithConfigByFlagSetAndEvaluationOptions`. Got: ", v)
+		}
+	}
+	for _, method := range []string{"getTreatmentsWithConfigByFlagSetsAndEvaluationOptions", "get_treatments_with_config_by_flag_sets_and_evaluation_options", "treatments_with_config_by_flag_sets_and_evaluation_options", "treatmentsWithConfigByFlagSetsAndEvaluationOptions", "TreatmentsWithConfigByFlagSetsAndEvaluationOptions"} {
+		if v, ok := ParseMethodFromRedisHash(method); !ok || v != TreatmentsWithConfigByFlagSetsAndEvaluationOptions {
+			t.Error("expected `TreatmentsWithConfigByFlagSetsAndEvaluationOptions`. Got: ", v)
+		}
+	}
 	for _, method := range []string{"track", "Track"} {
 		if v, ok := ParseMethodFromRedisHash(method); !ok || v != Track {
 			t.Error("expented `track`. Got: ", method)
