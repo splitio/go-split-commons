@@ -74,6 +74,7 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			Label:        impression.Label,
 			BucketingKey: impression.BucketingKey,
 			Pt:           impression.Pt,
+			Properties:   impression.Properties,
 		}
 		v, ok := impressionsToPost[impression.FeatureName]
 		if ok {

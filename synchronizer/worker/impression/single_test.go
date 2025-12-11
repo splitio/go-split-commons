@@ -19,6 +19,7 @@ import (
 	"github.com/splitio/go-split-commons/v9/storage/mocks"
 	"github.com/splitio/go-split-commons/v9/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestImpressionRecorderError(t *testing.T) {
@@ -63,7 +64,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 
 func TestSynhronizeEventErrorRecorder(t *testing.T) {
 	impression := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1", Properties: "{'prop':'val'}",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 
@@ -104,7 +105,7 @@ func TestImpressionRecorder(t *testing.T) {
 	before := time.Now().UTC()
 	impression1 := dtos.Impression{
 		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
-		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
+		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1", Properties: "{'prop':'val'}",
 	}
 	impression2 := dtos.Impression{
 		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
@@ -215,6 +216,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 		if !ok || len(imp1.KeyImpressions) != 2 {
 			t.Error("Incorrect impressions received")
 		}
+		assert.Equal(t, "{'prop':'val'}", imp1.KeyImpressions[0].Properties)
 		imp2, ok := result["someFeature2"]
 		if !ok || len(imp2.KeyImpressions) != 1 {
 			t.Error("Incorrect impressions received")
@@ -227,7 +229,7 @@ func TestImpressionRecorderSync(t *testing.T) {
 
 	impression1 := dtos.Impression{
 		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
-		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
+		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1", Properties: "{'prop':'val'}",
 	}
 	impression2 := dtos.Impression{
 		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
