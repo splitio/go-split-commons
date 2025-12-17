@@ -1,25 +1,29 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v9/engine/evaluator"
+import (
+	"github.com/splitio/go-split-commons/v9/engine/evaluator"
+	"github.com/stretchr/testify/mock"
+)
 
 // MockEvaluator mock evaluator
 type MockEvaluator struct {
-	EvaluateFeatureCall           func(key string, bucketingKey *string, feature string, attributes map[string]interface{}) *evaluator.Result
-	EvaluateFeaturesCall          func(key string, bucketingKey *string, features []string, attributes map[string]interface{}) evaluator.Results
-	EvaluateFeatureByFlagSetsCall func(key string, bucketingKey *string, flagSets []string, attributes map[string]interface{}) evaluator.Results
+	mock.Mock
 }
 
 // EvaluateFeature mock
 func (m MockEvaluator) EvaluateFeature(key string, bucketingKey *string, feature string, attributes map[string]interface{}) *evaluator.Result {
-	return m.EvaluateFeatureCall(key, bucketingKey, feature, attributes)
+	args := m.Called(key, bucketingKey, feature, attributes)
+	return args.Get(0).(*evaluator.Result)
 }
 
 // EvaluateFeatures mock
 func (m MockEvaluator) EvaluateFeatures(key string, bucketingKey *string, features []string, attributes map[string]interface{}) evaluator.Results {
-	return m.EvaluateFeaturesCall(key, bucketingKey, features, attributes)
+	args := m.Called(key, bucketingKey, features, attributes)
+	return args.Get(0).(evaluator.Results)
 }
 
 // EvaluateFeaturesByFlagSets mock
 func (m MockEvaluator) EvaluateFeatureByFlagSets(key string, bucketingKey *string, flagSets []string, attributes map[string]interface{}) evaluator.Results {
-	return m.EvaluateFeatureByFlagSetsCall(key, bucketingKey, flagSets, attributes)
+	args := m.Called(key, bucketingKey, flagSets, attributes)
+	return args.Get(0).(evaluator.Results)
 }

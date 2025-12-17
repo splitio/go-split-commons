@@ -17,7 +17,9 @@ func NewDebugImpl(impressionObserver ImpressionObserver, listenerEnabled bool) P
 }
 
 func (s *DebugImpl) apply(impression *dtos.Impression) bool {
-	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+	if len(impression.Properties) == 0 {
+		impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+	}
 
 	return true
 }

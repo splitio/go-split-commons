@@ -28,6 +28,9 @@ func NewOptimizedImpl(impressionObserver ImpressionObserver, impressionCounter *
 }
 
 func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
+	if len(impression.Properties) != 0 {
+		return true
+	}
 	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
 	if impression.Pt != 0 {
 		s.impressionsCounter.Inc(impression.FeatureName, now, 1)

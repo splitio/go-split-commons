@@ -11,6 +11,7 @@ type Impression struct {
 	Time         int64  `json:"m"`
 	Pt           int64  `json:"pt,omitempty"`
 	Disabled     bool   `json:"-"`
+	Properties   string `json:"properties,omitempty"`
 }
 
 // ImpressionQueueObject struct mapping impressions
@@ -28,6 +29,7 @@ type ImpressionDTO struct {
 	Label        string `json:"r"`
 	BucketingKey string `json:"b,omitempty"`
 	Pt           int64  `json:"pt,omitempty"`
+	Properties   string `json:"properties,omitempty"`
 }
 
 // ImpressionsDTO struct mapping impressions to post
@@ -46,4 +48,8 @@ type ImpressionsInTimeFrameDTO struct {
 // ImpressionsCountDTO struct mapping impressions count to post
 type ImpressionsCountDTO struct {
 	PerFeature []ImpressionsInTimeFrameDTO `json:"pf"`
+}
+
+type EvaluationOptions struct {
+	Properties map[string]interface{}
 }

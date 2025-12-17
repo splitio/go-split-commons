@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDebugMode(t *testing.T) {
@@ -22,15 +23,39 @@ func TestDebugMode(t *testing.T) {
 
 	toLog, toListener := debug.Apply([]dtos.Impression{imp})
 
-	if len(toLog) != 1 || len(toListener) != 1 {
-		t.Error("Should have 1 to log")
-	}
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
 
 	toLog, toListener = debug.Apply([]dtos.Impression{imp})
 
-	if len(toLog) != 1 || len(toListener) != 1 {
-		t.Error("Should have 1 to log")
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
+}
+
+func TestDebugModeWithProperties(t *testing.T) {
+	observer, _ := NewImpressionObserver(5000)
+	debug := NewDebugImpl(observer, true)
+
+	imp := dtos.Impression{
+		BucketingKey: "someBuck",
+		ChangeNumber: 123,
+		KeyName:      "someKey",
+		Label:        "someLabel",
+		Time:         123456,
+		Treatment:    "on",
+		FeatureName:  "feature-test",
+		Properties:   "{'hello':'world'}",
 	}
+
+	toLog, toListener := debug.Apply([]dtos.Impression{imp})
+
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
+
+	toLog, toListener = debug.Apply([]dtos.Impression{imp})
+
+	assert.Equal(t, 1, len(toLog), "Should have 1 to log")
+	assert.Equal(t, 1, len(toListener), "Should have 1 to listener")
 }
 
 func TestApplySingleDebug(t *testing.T) {
@@ -48,13 +73,9 @@ func TestApplySingleDebug(t *testing.T) {
 
 	toLog := debug.ApplySingle(&imp)
 
-	if !toLog {
-		t.Error("Should be true")
-	}
+	assert.True(t, toLog, "Should be true")
 
 	toLog = debug.ApplySingle(&imp)
 
-	if !toLog {
-		t.Error("Should be true")
-	}
+	assert.True(t, toLog, "Should be true")
 }
