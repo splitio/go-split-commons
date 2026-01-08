@@ -14,8 +14,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/redis/go-redis/v9 v9.0.4 h1:FC82T+CHJ/Q/PdyLW++GeCO+Ol59Y4T7R4jbgjvktgc=
 github.com/redis/go-redis/v9 v9.0.4/go.mod h1:WqMKv5vnQbRuZstUwxQI195wHy+t4PuXDOjzMvcuQHk=
-github.com/splitio/go-toolkit/v5 v5.4.1-0.20260108152701-4e1897f52ba6 h1:IItm1N7SdDQrdNHWipKMSXisTLXaK0Kq8MgNrGmRv7M=
-github.com/splitio/go-toolkit/v5 v5.4.1-0.20260108152701-4e1897f52ba6/go.mod h1:SifzysrOVDbzMcOE8zjX02+FG5az4FrR3Us/i5SeStw=
+github.com/splitio/go-toolkit/v5 v5.4.1-0.20260108202236-672f4f0ffe86 h1:zr7ryh9plI1SlY3o/qJM8oQ+O5e/iIsSUG9Aa+3mjbk=
+github.com/splitio/go-toolkit/v5 v5.4.1-0.20260108202236-672f4f0ffe86/go.mod h1:SifzysrOVDbzMcOE8zjX02+FG5az4FrR3Us/i5SeStw=
 github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=
 github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
