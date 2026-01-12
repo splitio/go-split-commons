@@ -151,10 +151,10 @@ func (s *ManagerImpl) Start() {
 	if !s.config.StreamingEnabled {
 		s.logger.Info("SDK initialized in polling mode")
 		s.startPolling()
-		go func() { // create a goroutine that stops everything (the same way the streaming status watcher would)
-			<-s.lifecycle.ShutdownRequested()
-			s.stop()
-		}()
+		// go func() { // create a goroutine that stops everything (the same way the streaming status watcher would)
+		// 	<-s.lifecycle.ShutdownRequested()
+		// 	s.stop()
+		// }()
 		return
 	}
 
