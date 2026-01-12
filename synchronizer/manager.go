@@ -181,11 +181,11 @@ func (s *ManagerImpl) Stop() {
 	}
 
 	s.logger.Info("Stopping all synchronization tasks")
+	s.stop()
 	s.lifecycle.AwaitShutdownComplete()
 }
 
 func (s *ManagerImpl) pushStatusWatcher() {
-	defer s.stop()
 	for {
 		select {
 		case <-s.lifecycle.ShutdownRequested():
