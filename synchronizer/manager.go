@@ -165,11 +165,16 @@ func (s *ManagerImpl) Start() {
 }
 
 func (s *ManagerImpl) stop() {
+	fmt.Println("---Inside stop---")
 	if s.pushManager != nil {
+		fmt.Println("---Inside stop--- s.pushManager != nil ")
 		s.pushManager.Stop()
 	}
+	fmt.Println("---Inside stop---StopPeriodicFetching()")
 	s.synchronizer.StopPeriodicFetching()
+	fmt.Println("---Inside stop---StopPeriodicDataRecording()")
 	s.synchronizer.StopPeriodicDataRecording()
+	fmt.Println("---Inside stop---ShutdownComplete()")
 	s.lifecycle.ShutdownComplete()
 }
 
@@ -185,12 +190,16 @@ func (s *ManagerImpl) Stop() {
 }
 
 func (s *ManagerImpl) pushStatusWatcher() {
+	fmt.Println("---Inside pushStatusWatcher before stop---")
 	defer s.stop()
+	fmt.Println("---Inside pushStatusWatcher---After stop")
 	for {
 		select {
 		case <-s.lifecycle.ShutdownRequested():
+			fmt.Println("---Inside pushStatusWatcher---ShutdownRequested")
 			return
 		case status := <-s.streamingStatus:
+			fmt.Println("---Inside pushStatusWatcher---streamingStatus ", status)
 			switch status {
 			case push.StatusUp:
 				s.stopPolling()

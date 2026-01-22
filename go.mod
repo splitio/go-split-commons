@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.3.1
-	github.com/splitio/go-toolkit/v5 v5.4.1
+	github.com/splitio/go-toolkit/v5 v5.4.1-0.20260122194008-238694c3e6f4
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sync v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
