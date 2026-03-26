@@ -212,3 +212,33 @@ func (e *Evaluator) EvaluateDependency(key string, bucketingKey *string, feature
 	res := e.EvaluateFeature(key, bucketingKey, featureFlag, attributes)
 	return res.Treatment
 }
+
+// EvaluateDefault returns the default treatment and its configuration for a given definition name.
+// This method is designed for cases where no target (key) is provided.
+func (e *Evaluator) EvaluateDefault(definitionName string) *Result {
+	definition := e.splitStorage.Split(definitionName)
+
+	if definition == nil {
+		label := impressionlabels.SplitNotFound
+		fallbackTratment := e.fallbackTratmentCalculator.Resolve(definitionName, &label)
+		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback treatment.", definitionName))
+		return &Result{
+			Treatment: *fallbackTratment.Treatment,
+			Config:    nil,
+			Label:     *fallbackTratment.Label(),
+		}
+	}
+
+	var config *string
+	if definition.Configurations != nil {
+		if val, ok := definition.Configurations[definition.DefaultTreatment]; ok {
+			config = &val
+		}
+	}
+
+	return &Result{
+		Treatment: definition.DefaultTreatment,
+		Config:    config,
+		Label:     impressionlabels.NoConditionMatched,
+	}
+}
