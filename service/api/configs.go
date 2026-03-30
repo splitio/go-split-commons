@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/splitio/go-split-commons/v9/conf"
@@ -16,7 +15,7 @@ type HTTPConfigsFetcher struct {
 }
 
 // NewHTTPConfigsFetcher instantiates and returns an HTTPConfigsFetcher
-func NewHTTPConfigsFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) *HTTPConfigsFetcher {
+func NewHTTPConfigsFetcher(apikey string, cfg conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata) service.SplitFetcher {
 	return &HTTPConfigsFetcher{
 		httpFetcherBase: httpFetcherBase{
 			client: NewHTTPClient(apikey, cfg, cfg.SdkURL, logger, metadata),
@@ -25,49 +24,31 @@ func NewHTTPConfigsFetcher(apikey string, cfg conf.AdvancedConfig, logger loggin
 	}
 }
 
-// Fetch makes an HTTP call to the /configs endpoint and returns the converted RuleChangesDTO
-func (f *HTTPConfigsFetcher) Fetch(since int64) (*dtos.RuleChangesDTO, error) {
-	// Build query parameters
-	params := &service.FlagRequestParams{}
-	params.WithChangeNumber(since)
-
-	// Fetch raw data from /configs endpoint
-	data, err := f.fetchRaw("/configs", params)
+// Fetch makes an HTTP call to the /configs endpoint and returns the FFResponse
+func (f *HTTPConfigsFetcher) Fetch(fetchOptions *service.FlagRequestParams) (dtos.FFResponse, error) {
+	// Fetch raw data from /configs endpoint using the provided fetchOptions
+	data, err := f.fetchRaw("/configs", fetchOptions)
 	if err != nil {
 		f.logger.Error("Error fetching configs: ", err)
 		return nil, err
 	}
 
-	// Unmarshal into ConfigsResponseDTO
-	var configsResponse dtos.ConfigsResponseDTO
-	err = json.Unmarshal(data, &configsResponse)
+	// Parse and wrap the response in FFResponseConfigs
+	ffResponse, err := dtos.NewFFResponseConfigs(data)
 	if err != nil {
 		f.logger.Error("Error parsing configs JSON: ", err)
 		return nil, err
 	}
 
-	// Convert ConfigDTOs to SplitDTOs
-	splits := make([]dtos.SplitDTO, 0, len(configsResponse.Configs.Configs))
-	for _, config := range configsResponse.Configs.Configs {
-		splitDTO := dtos.ConvertConfigToSplit(config)
-		splits = append(splits, splitDTO)
-	}
+	f.logger.Debug(fmt.Sprintf("Fetched %d configs from /configs endpoint", len(ffResponse.FeatureFlags())))
 
-	f.logger.Debug(fmt.Sprintf("Fetched %d configs, converted to %d splits", len(configsResponse.Configs.Configs), len(splits)))
-
-	// Build and return RuleChangesDTO
-	ruleChanges := &dtos.RuleChangesDTO{
-		FeatureFlags: dtos.FeatureFlagsDTO{
-			Since:  configsResponse.Configs.Since,
-			Till:   configsResponse.Configs.Till,
-			Splits: splits,
-		},
-		RuleBasedSegments: dtos.RuleBasedSegmentsDTO{
-			Since:             configsResponse.Configs.Since,
-			Till:              configsResponse.Configs.Till,
-			RuleBasedSegments: configsResponse.RBS,
-		},
-	}
-
-	return ruleChanges, nil
+	return ffResponse, nil
 }
+
+// IsProxy returns false as HTTPConfigsFetcher is not a proxy
+func (f *HTTPConfigsFetcher) IsProxy() bool {
+	return false
+}
+
+// Verify that HTTPConfigsFetcher implements SplitFetcher interface
+var _ service.SplitFetcher = (*HTTPConfigsFetcher)(nil)

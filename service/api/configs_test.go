@@ -8,6 +8,7 @@ import (
 
 	"github.com/splitio/go-split-commons/v9/conf"
 	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v9/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -91,20 +92,29 @@ func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 	metadata := dtos.Metadata{}
 	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
 
+	// Create fetch options
+	fetchOptions := service.MakeFlagRequestParams().WithChangeNumber(123)
+
 	// Execute fetch
-	result, err := fetcher.Fetch(123)
+	result, err := fetcher.Fetch(fetchOptions)
 
 	// Assertions
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
+	// Verify FFResponse methods
+	assert.Equal(t, int64(123), result.FFSince())
+	assert.Equal(t, int64(456), result.FFTill())
+	assert.Equal(t, int64(123), result.RBSince())
+	assert.Equal(t, int64(456), result.RBTill())
+	assert.False(t, result.NeedsAnotherFetch())
+
 	// Verify FeatureFlags
-	assert.Equal(t, int64(123), result.FeatureFlags.Since)
-	assert.Equal(t, int64(456), result.FeatureFlags.Till)
-	assert.Equal(t, 2, len(result.FeatureFlags.Splits))
+	splits := result.FeatureFlags()
+	assert.Equal(t, 2, len(splits))
 
 	// Verify first split (with all fields)
-	split1 := result.FeatureFlags.Splits[0]
+	split1 := splits[0]
 	assert.Equal(t, "config1", split1.Name)
 	assert.Equal(t, "ACTIVE", split1.Status)
 	assert.Equal(t, false, split1.Killed)
@@ -119,7 +129,7 @@ func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(split1.Conditions))
 
 	// Verify second split (with defaults)
-	split2 := result.FeatureFlags.Splits[1]
+	split2 := splits[1]
 	assert.Equal(t, "config2", split2.Name)
 	assert.Equal(t, "ACTIVE", split2.Status)        // Default
 	assert.Equal(t, "user", split2.TrafficTypeName) // Default
@@ -130,11 +140,10 @@ func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 	assert.Equal(t, 1, len(split2.Conditions)) // Default condition created
 
 	// Verify RuleBasedSegments
-	assert.Equal(t, int64(123), result.RuleBasedSegments.Since)
-	assert.Equal(t, int64(456), result.RuleBasedSegments.Till)
-	assert.Equal(t, 1, len(result.RuleBasedSegments.RuleBasedSegments))
-	assert.Equal(t, "segment1", result.RuleBasedSegments.RuleBasedSegments[0].Name)
-	assert.Equal(t, int64(300), result.RuleBasedSegments.RuleBasedSegments[0].ChangeNumber)
+	rbs := result.RuleBasedSegments()
+	assert.Equal(t, 1, len(rbs))
+	assert.Equal(t, "segment1", rbs[0].Name)
+	assert.Equal(t, int64(300), rbs[0].ChangeNumber)
 }
 
 func TestHTTPConfigsFetcherFetchEmptyConfigs(t *testing.T) {
@@ -167,16 +176,19 @@ func TestHTTPConfigsFetcherFetchEmptyConfigs(t *testing.T) {
 	metadata := dtos.Metadata{}
 	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
 
+	// Create fetch options
+	fetchOptions := service.MakeFlagRequestParams().WithChangeNumber(100)
+
 	// Execute fetch
-	result, err := fetcher.Fetch(100)
+	result, err := fetcher.Fetch(fetchOptions)
 
 	// Assertions
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, int64(100), result.FeatureFlags.Since)
-	assert.Equal(t, int64(200), result.FeatureFlags.Till)
-	assert.Equal(t, 0, len(result.FeatureFlags.Splits))
-	assert.Equal(t, 0, len(result.RuleBasedSegments.RuleBasedSegments))
+	assert.Equal(t, int64(100), result.FFSince())
+	assert.Equal(t, int64(200), result.FFTill())
+	assert.Equal(t, 0, len(result.FeatureFlags()))
+	assert.Equal(t, 0, len(result.RuleBasedSegments()))
 }
 
 func TestHTTPConfigsFetcherFetchHTTPError(t *testing.T) {
@@ -197,8 +209,11 @@ func TestHTTPConfigsFetcherFetchHTTPError(t *testing.T) {
 	metadata := dtos.Metadata{}
 	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
 
+	// Create fetch options
+	fetchOptions := service.MakeFlagRequestParams().WithChangeNumber(123)
+
 	// Execute fetch
-	result, err := fetcher.Fetch(123)
+	result, err := fetcher.Fetch(fetchOptions)
 
 	// Assertions
 	assert.Error(t, err)
@@ -223,8 +238,11 @@ func TestHTTPConfigsFetcherFetchInvalidJSON(t *testing.T) {
 	metadata := dtos.Metadata{}
 	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
 
+	// Create fetch options
+	fetchOptions := service.MakeFlagRequestParams().WithChangeNumber(123)
+
 	// Execute fetch
-	result, err := fetcher.Fetch(123)
+	result, err := fetcher.Fetch(fetchOptions)
 
 	// Assertions
 	assert.Error(t, err)
@@ -268,15 +286,20 @@ func TestHTTPConfigsFetcherFetchWithDefaultConditions(t *testing.T) {
 	metadata := dtos.Metadata{}
 	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
 
+	// Create fetch options
+	fetchOptions := service.MakeFlagRequestParams().WithChangeNumber(1)
+
 	// Execute fetch
-	result, err := fetcher.Fetch(1)
+	result, err := fetcher.Fetch(fetchOptions)
 
 	// Assertions
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, 1, len(result.FeatureFlags.Splits))
 
-	split := result.FeatureFlags.Splits[0]
+	splits := result.FeatureFlags()
+	assert.Equal(t, 1, len(splits))
+
+	split := splits[0]
 	assert.Equal(t, "config_no_conditions", split.Name)
 	assert.Equal(t, "control", split.DefaultTreatment)
 
@@ -286,4 +309,30 @@ func TestHTTPConfigsFetcherFetchWithDefaultConditions(t *testing.T) {
 	assert.Equal(t, "default rule", split.Conditions[0].Label)
 	assert.Equal(t, "control", split.Conditions[0].Partitions[0].Treatment)
 	assert.Equal(t, 100, split.Conditions[0].Partitions[0].Size)
+}
+
+func TestHTTPConfigsFetcherIsProxy(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	cfg := conf.AdvancedConfig{
+		SdkURL:      "http://localhost",
+		HTTPTimeout: 10,
+	}
+	metadata := dtos.Metadata{}
+	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
+
+	assert.False(t, fetcher.IsProxy())
+}
+
+func TestHTTPConfigsFetcherImplementsSplitFetcher(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	cfg := conf.AdvancedConfig{
+		SdkURL:      "http://localhost",
+		HTTPTimeout: 10,
+	}
+	metadata := dtos.Metadata{}
+	fetcher := NewHTTPConfigsFetcher("test-api-key", cfg, logger, metadata)
+
+	// Verify it implements the interface
+	var _ service.SplitFetcher = fetcher
+	assert.NotNil(t, fetcher)
 }
