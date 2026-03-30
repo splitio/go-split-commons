@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHTTPConfigsFetcher_Fetch_Success(t *testing.T) {
+func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	// Create mock response
@@ -121,7 +121,7 @@ func TestHTTPConfigsFetcher_Fetch_Success(t *testing.T) {
 	// Verify second split (with defaults)
 	split2 := result.FeatureFlags.Splits[1]
 	assert.Equal(t, "config2", split2.Name)
-	assert.Equal(t, "ACTIVE", split2.Status) // Default
+	assert.Equal(t, "ACTIVE", split2.Status)        // Default
 	assert.Equal(t, "user", split2.TrafficTypeName) // Default
 	assert.Equal(t, "off", split2.DefaultTreatment)
 	assert.Equal(t, int64(200), split2.ChangeNumber)
@@ -137,7 +137,7 @@ func TestHTTPConfigsFetcher_Fetch_Success(t *testing.T) {
 	assert.Equal(t, int64(300), result.RuleBasedSegments.RuleBasedSegments[0].ChangeNumber)
 }
 
-func TestHTTPConfigsFetcher_Fetch_EmptyConfigs(t *testing.T) {
+func TestHTTPConfigsFetcherFetchEmptyConfigs(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	// Create mock response with no configs
@@ -179,7 +179,7 @@ func TestHTTPConfigsFetcher_Fetch_EmptyConfigs(t *testing.T) {
 	assert.Equal(t, 0, len(result.RuleBasedSegments.RuleBasedSegments))
 }
 
-func TestHTTPConfigsFetcher_Fetch_HTTPError(t *testing.T) {
+func TestHTTPConfigsFetcherFetchHTTPError(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	// Create test server that returns error
@@ -205,7 +205,7 @@ func TestHTTPConfigsFetcher_Fetch_HTTPError(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestHTTPConfigsFetcher_Fetch_InvalidJSON(t *testing.T) {
+func TestHTTPConfigsFetcherFetchInvalidJSON(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	// Create test server that returns invalid JSON
@@ -231,7 +231,7 @@ func TestHTTPConfigsFetcher_Fetch_InvalidJSON(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestHTTPConfigsFetcher_Fetch_WithDefaultConditions(t *testing.T) {
+func TestHTTPConfigsFetcherFetchWithDefaultConditions(t *testing.T) {
 	logger := logging.NewLogger(nil)
 
 	// Create mock response with config that has no conditions
