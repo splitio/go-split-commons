@@ -3,6 +3,7 @@ package sse
 import (
 	"errors"
 	"strings"
+	"sync/atomic"
 
 	"github.com/splitio/go-split-commons/v9/conf"
 	"github.com/splitio/go-split-commons/v9/dtos"
@@ -16,6 +17,13 @@ import (
 const (
 	version   = "1.1"
 	keepAlive = 70
+)
+
+// Client state constants for atomic state management
+const (
+	StateIdle      int32 = 0  // Client is idle/not started
+	StateRunning   int32 = 1  // Client is running
+	StateDestroyed int32 = -1 // Client is destroyed/stopped
 )
 
 // StreamingClient interface
@@ -32,6 +40,7 @@ type StreamingClientImpl struct {
 	lifecycle lifecycle.Manager
 	metadata  dtos.Metadata
 	clientKey *string
+	state     atomic.Int32 // Atomic state: 0=Idle, 1=Running, -1=Destroyed
 }
 
 // Status constants
@@ -54,6 +63,7 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface
 		metadata:  metadata,
 		clientKey: clientKey,
 	}
+	client.state.Store(StateIdle)
 	client.lifecycle.Setup()
 	return client
 }
@@ -61,8 +71,15 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface
 // ConnectStreaming connects to streaming
 func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus chan int, channelList []string, handleIncomingMessage func(IncomingMessage)) {
 
+	// Atomic state check: Only proceed if state is Idle (0)
+	if !s.state.CompareAndSwap(StateIdle, StateRunning) {
+		s.logger.Info("Client is not in idle state (already running or destroyed). Ignoring")
+		return
+	}
+
 	if !s.lifecycle.BeginInitialization() {
 		s.logger.Info("Connection is already in process/running. Ignoring")
+		s.state.Store(StateIdle) // Reset state since lifecycle check failed
 		return
 	}
 
@@ -72,20 +89,53 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 	params["v"] = version
 
 	go func() {
-		defer s.lifecycle.ShutdownComplete()
+		defer func() {
+			s.lifecycle.ShutdownComplete()
+			// Reset to idle if not destroyed
+			if s.state.Load() != StateDestroyed {
+				s.state.Store(StateIdle)
+			}
+		}()
+
+		// Early exit if client was destroyed while goroutine was starting
+		if s.state.Load() <= StateIdle {
+			s.logger.Info("Client state is not valid (destroyed or idle). Exiting goroutine")
+			return
+		}
+
 		if !s.lifecycle.InitializationComplete() {
 			return
 		}
+
+		// Helper to send status without blocking
+		sendStatus := func(status int) {
+			// Only send if client is still running
+			if s.state.Load() != StateRunning {
+				return
+			}
+			select {
+			case streamingStatus <- status:
+			default:
+				s.logger.Debug("streamingStatus channel full or closed, skipping send")
+			}
+		}
+
+		// Final check before starting connection - prevent race if Destroy was called
+		if s.state.Load() != StateRunning {
+			s.logger.Info("Client destroyed before connection started. Exiting goroutine")
+			return
+		}
+
 		firstEventReceived := gtSync.NewAtomicBool(false)
 		out := s.sseClient.Do(params, api.AddMetadataToHeaders(s.metadata, nil, s.clientKey), func(m IncomingMessage) {
 			if firstEventReceived.TestAndSet() && !m.IsError() {
-				streamingStatus <- StatusFirstEventOk
+				sendStatus(StatusFirstEventOk)
 			}
 			handleIncomingMessage(m)
 		})
 
 		if out == nil { // all good
-			streamingStatus <- StatusDisconnected
+			sendStatus(StatusDisconnected)
 			return
 		}
 
@@ -94,18 +144,18 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 
 		asConnectionFailedError := &sse.ErrConnectionFailed{}
 		if errors.As(out, &asConnectionFailedError) {
-			streamingStatus <- StatusConnectionFailed
+			sendStatus(StatusConnectionFailed)
 			return
 		}
 
 		switch out {
 		case sse.ErrNotIdle:
 			// If this happens we have a bug
-			streamingStatus <- StatusUnderlyingClientInUse
+			sendStatus(StatusUnderlyingClientInUse)
 		case sse.ErrReadingStream:
-			streamingStatus <- StatusDisconnected
+			sendStatus(StatusDisconnected)
 		case sse.ErrTimeout:
-			streamingStatus <- StatusDisconnected
+			sendStatus(StatusDisconnected)
 		default:
 		}
 	}()
@@ -113,6 +163,9 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 
 // StopStreaming stops streaming
 func (s *StreamingClientImpl) StopStreaming() {
+	// Set atomic state to destroyed immediately to prevent new goroutines
+	s.state.Store(StateDestroyed)
+
 	if !s.lifecycle.BeginShutdown() {
 		s.logger.Info("SSE client wrapper not running. Ignoring")
 		return
@@ -124,5 +177,5 @@ func (s *StreamingClientImpl) StopStreaming() {
 
 // IsRunning returns true if the client is running
 func (s *StreamingClientImpl) IsRunning() bool {
-	return s.lifecycle.IsRunning()
+	return s.lifecycle.IsRunning() && s.state.Load() == StateRunning
 }
