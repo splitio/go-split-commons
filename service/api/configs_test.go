@@ -18,53 +18,54 @@ func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 
 	// Create mock response
 	mockResponse := dtos.ConfigsResponseDTO{
-		Configs: dtos.ConfigsDataDTO{
-			Since: 123,
-			Till:  456,
-			Configs: []dtos.ConfigDTO{
-				{
-					Name:                  "config1",
-					Status:                "ACTIVE",
-					Killed:                false,
-					TrafficTypeName:       "user",
-					DefaultTreatment:      "on",
-					ChangeNumber:          100,
+		Updated: []dtos.ConfigDTO{
+			{
+				Name:            "config1",
+				Status:          "ACTIVE",
+				Killed:          false,
+				TrafficTypeName: "user",
+				ChangeNumber:    100,
+				Sets:            []string{},
+				Variants: []dtos.VariantDTO{
+					{
+						Name:       "on",
+						Definition: map[string]interface{}{"color": "blue"},
+					},
+				},
+				Targeting: dtos.TargetingDTO{
+					Default:               "on",
+					Seed:                  777,
 					TrafficAllocation:     100,
 					TrafficAllocationSeed: 999,
-					Seed:                  777,
-					Configurations: map[string]string{
-						"on": "{\"color\": \"blue\"}",
-					},
-					Conditions: []dtos.ConditionDTO{
+					Conditions: []dtos.RawConditionDTO{
 						{
-							ConditionType: "ROLLOUT",
-							Label:         "custom",
-							MatcherGroup: dtos.MatcherGroupDTO{
-								Combiner: "AND",
-								Matchers: []dtos.MatcherDTO{
-									{
-										MatcherType: "ALL_KEYS",
-										Negate:      false,
-									},
+							Label: "custom",
+							Partitions: []dtos.RawPartitionDTO{
+								{
+									Variant: "on",
+									Size:    100,
 								},
 							},
-							Partitions: []dtos.PartitionDTO{
+							Matchers: []dtos.RawMatcherDTO{
 								{
-									Treatment: "on",
-									Size:      100,
+									Type: "ALL_KEYS",
 								},
 							},
 						},
 					},
 				},
-				{
-					Name:             "config2",
-					DefaultTreatment: "off",
-					ChangeNumber:     200,
-					Seed:             888,
+			},
+			{
+				Name:         "config2",
+				ChangeNumber: 200,
+				Targeting: dtos.TargetingDTO{
+					Default: "off",
+					Seed:    888,
 				},
 			},
 		},
+		Since: 123,
+		Till:  456,
 		RBS: []dtos.RuleBasedSegmentDTO{
 			{
 				Name:         "segment1",
@@ -126,7 +127,8 @@ func TestHTTPConfigsFetcherFetchSuccess(t *testing.T) {
 	assert.Equal(t, int64(777), split1.Seed)
 	assert.Equal(t, 2, split1.Algo)
 	assert.NotNil(t, split1.Configurations)
-	assert.Equal(t, 1, len(split1.Conditions))
+	// Should have 2 conditions: 1 from targeting + 1 default rule
+	assert.Equal(t, 2, len(split1.Conditions))
 
 	// Verify second split (with defaults)
 	split2 := splits[1]
@@ -151,12 +153,10 @@ func TestHTTPConfigsFetcherFetchEmptyConfigs(t *testing.T) {
 
 	// Create mock response with no configs
 	mockResponse := dtos.ConfigsResponseDTO{
-		Configs: dtos.ConfigsDataDTO{
-			Since:   100,
-			Till:    200,
-			Configs: []dtos.ConfigDTO{},
-		},
-		RBS: []dtos.RuleBasedSegmentDTO{},
+		Updated: []dtos.ConfigDTO{},
+		Since:   100,
+		Till:    200,
+		RBS:     []dtos.RuleBasedSegmentDTO{},
 	}
 
 	responseJSON, _ := json.Marshal(mockResponse)
@@ -254,19 +254,19 @@ func TestHTTPConfigsFetcherFetchWithDefaultConditions(t *testing.T) {
 
 	// Create mock response with config that has no conditions
 	mockResponse := dtos.ConfigsResponseDTO{
-		Configs: dtos.ConfigsDataDTO{
-			Since: 1,
-			Till:  2,
-			Configs: []dtos.ConfigDTO{
-				{
-					Name:             "config_no_conditions",
-					DefaultTreatment: "control",
-					ChangeNumber:     100,
-					Seed:             555,
+		Updated: []dtos.ConfigDTO{
+			{
+				Name:         "config_no_conditions",
+				ChangeNumber: 100,
+				Targeting: dtos.TargetingDTO{
+					Default: "control",
+					Seed:    555,
 				},
 			},
 		},
-		RBS: []dtos.RuleBasedSegmentDTO{},
+		Since: 1,
+		Till:  2,
+		RBS:   []dtos.RuleBasedSegmentDTO{},
 	}
 
 	responseJSON, _ := json.Marshal(mockResponse)
