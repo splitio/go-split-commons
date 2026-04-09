@@ -600,9 +600,11 @@ func TestConvertConfigWithWhitelistMatcher(t *testing.T) {
 	assert.Equal(t, "on", split.Conditions[0].Partitions[0].Treatment)
 }
 
-func TestConvertConfigWithNumericMatcher(t *testing.T) {
+func TestConvertConfigWithUnknownMatcherType(t *testing.T) {
+	// Per spec, only WHITELIST and IS_EQUAL_TO are supported
+	// Any other matcher type (like GREATER_THAN_OR_EQUAL_TO) should become ALL_KEYS
 	config := ConfigDTO{
-		Name:         "test_numeric",
+		Name:         "test_unknown_matcher",
 		ChangeNumber: 123456,
 		Variants: []VariantDTO{
 			{Name: "treatment", Definition: map[string]interface{}{"discount": 15}},
@@ -638,16 +640,15 @@ func TestConvertConfigWithNumericMatcher(t *testing.T) {
 	assert.Equal(t, "ROLLOUT", split.Conditions[0].ConditionType)
 	assert.Equal(t, "high_value_segment", split.Conditions[0].Label)
 
-	// Verify matcher conversion
+	// Verify matcher conversion - GREATER_THAN_OR_EQUAL_TO becomes ALL_KEYS (per spec)
 	matcher := split.Conditions[0].MatcherGroup.Matchers[0]
-	assert.Equal(t, "GREATER_THAN_OR_EQUAL_TO", matcher.MatcherType)
+	assert.Equal(t, "ALL_KEYS", matcher.MatcherType)
 	assert.False(t, matcher.Negate)
 	assert.NotNil(t, matcher.KeySelector)
 	assert.Equal(t, "user", matcher.KeySelector.TrafficType)
 	assert.Equal(t, "total_purchases", *matcher.KeySelector.Attribute)
-	assert.NotNil(t, matcher.UnaryNumeric)
-	assert.Equal(t, "NUMERIC", matcher.UnaryNumeric.DataType)
-	assert.Equal(t, int64(5), matcher.UnaryNumeric.Value)
+	// ALL_KEYS matchers don't have unary numeric data
+	assert.Nil(t, matcher.UnaryNumeric)
 }
 
 func TestConvertConfigWithIsEqualToMatcher(t *testing.T) {
@@ -751,10 +752,12 @@ func TestConvertConfigWithMultipleConditions(t *testing.T) {
 	assert.Equal(t, "WHITELIST", split.Conditions[0].ConditionType)
 	assert.Equal(t, "whitelist_condition", split.Conditions[0].Label)
 
-	// Second condition should be ROLLOUT
+	// Second condition should be ROLLOUT (GREATER_THAN_OR_EQUAL_TO is not WHITELIST)
 	assert.Equal(t, "ROLLOUT", split.Conditions[1].ConditionType)
 	assert.Equal(t, "rollout_condition", split.Conditions[1].Label)
 	assert.Equal(t, 2, len(split.Conditions[1].Partitions))
+	// Per spec, GREATER_THAN_OR_EQUAL_TO becomes ALL_KEYS
+	assert.Equal(t, "ALL_KEYS", split.Conditions[1].MatcherGroup.Matchers[0].MatcherType)
 
 	// Third condition should be default rule
 	assert.Equal(t, "ROLLOUT", split.Conditions[2].ConditionType)

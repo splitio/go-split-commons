@@ -175,45 +175,6 @@ func convertMatcher(raw RawMatcherDTO) MatcherDTO {
 			},
 		}
 
-	case "GREATER_THAN_OR_EQUAL_TO":
-		// Keep the type as-is, use unary numeric data
-		var dataType string
-		var value int64
-		if dt, ok := raw.Data["type"].(string); ok {
-			dataType = dt
-		}
-		if num, ok := raw.Data["number"].(float64); ok {
-			value = int64(num)
-		}
-		return MatcherDTO{
-			MatcherType: "GREATER_THAN_OR_EQUAL_TO",
-			Negate:      false,
-			KeySelector: keySelector,
-			UnaryNumeric: &UnaryNumericMatcherDataDTO{
-				DataType: dataType,
-				Value:    value,
-			},
-		}
-
-	case "LESS_THAN_OR_EQUAL_TO":
-		var dataType string
-		var value int64
-		if dt, ok := raw.Data["type"].(string); ok {
-			dataType = dt
-		}
-		if num, ok := raw.Data["number"].(float64); ok {
-			value = int64(num)
-		}
-		return MatcherDTO{
-			MatcherType: "LESS_THAN_OR_EQUAL_TO",
-			Negate:      false,
-			KeySelector: keySelector,
-			UnaryNumeric: &UnaryNumericMatcherDataDTO{
-				DataType: dataType,
-				Value:    value,
-			},
-		}
-
 	default:
 		// Default to ALL_KEYS for unknown types
 		return MatcherDTO{
