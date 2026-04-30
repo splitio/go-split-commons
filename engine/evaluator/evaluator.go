@@ -71,7 +71,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	label := impressionlabels.SplitNotFound
 	if splitDto == nil {
 		fallbackTratment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
-		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning fallback treatment.", featureFlag))
+		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback.", featureFlag))
 		return &Result{Treatment: *fallbackTratment.Treatment, Label: *fallbackTratment.Label(), Config: fallbackTratment.Config}
 	}
 
@@ -221,7 +221,7 @@ func (e *Evaluator) EvaluateDefault(definitionName string) *Result {
 	if definition == nil {
 		label := impressionlabels.SplitNotFound
 		fallbackTratment := e.fallbackTratmentCalculator.Resolve(definitionName, &label)
-		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback treatment.", definitionName))
+		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback.", definitionName))
 		return &Result{
 			Treatment: *fallbackTratment.Treatment,
 			Config:    nil,

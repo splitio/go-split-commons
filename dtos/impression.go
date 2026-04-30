@@ -2,16 +2,17 @@ package dtos
 
 // Impression struct to map an impression
 type Impression struct {
-	KeyName      string `json:"k"`
-	BucketingKey string `json:"b"`
-	FeatureName  string `json:"f"`
-	Treatment    string `json:"t"`
-	Label        string `json:"r"`
-	ChangeNumber int64  `json:"c"`
-	Time         int64  `json:"m"`
-	Pt           int64  `json:"pt,omitempty"`
-	Disabled     bool   `json:"-"`
-	Properties   string `json:"properties,omitempty"`
+	KeyName        string `json:"k"`
+	BucketingKey   string `json:"b"`
+	DefinitionName string `json:"f"`
+	Treatment      string `json:"t"`
+	Label          string `json:"r"`
+	ChangeNumber   int64  `json:"c"`
+	Time           int64  `json:"m"`
+	Pt             int64  `json:"pt,omitempty"`
+	Disabled       bool   `json:"-"`
+	Properties     string `json:"properties,omitempty"`
+	EntityType     string `json:"et,omitempty"`
 }
 
 // ImpressionQueueObject struct mapping impressions
@@ -30,6 +31,7 @@ type ImpressionDTO struct {
 	BucketingKey string `json:"b,omitempty"`
 	Pt           int64  `json:"pt,omitempty"`
 	Properties   string `json:"properties,omitempty"`
+	EntityType   string `json:"et,omitempty"`
 }
 
 // ImpressionsDTO struct mapping impressions to post

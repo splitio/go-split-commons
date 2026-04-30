@@ -75,14 +75,15 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			BucketingKey: impression.BucketingKey,
 			Pt:           impression.Pt,
 			Properties:   impression.Properties,
+			EntityType:   impression.EntityType,
 		}
-		v, ok := impressionsToPost[impression.FeatureName]
+		v, ok := impressionsToPost[impression.DefinitionName]
 		if ok {
 			v = append(v, keyImpression)
 		} else {
 			v = []dtos.ImpressionDTO{keyImpression}
 		}
-		impressionsToPost[impression.FeatureName] = v
+		impressionsToPost[impression.DefinitionName] = v
 	}
 
 	bulkImpressions := make([]dtos.ImpressionsDTO, 0)

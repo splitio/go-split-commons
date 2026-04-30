@@ -23,7 +23,7 @@ func TestNoneMode(t *testing.T) {
 		Label:        "someLabel",
 		Time:         now,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog, toListener := none.Apply([]dtos.Impression{imp})
@@ -40,8 +40,8 @@ func TestNoneMode(t *testing.T) {
 
 	counts := counter.PopAll()
 	value := counts[Key{
-		FeatureName: imp.FeatureName,
-		TimeFrame:   util.TruncateTimeFrame(now),
+		DefinitionName: imp.DefinitionName,
+		TimeFrame:      util.TruncateTimeFrame(now),
 	}]
 
 	if value != 2 {
@@ -63,7 +63,7 @@ func TestApplySingleNone(t *testing.T) {
 		Label:        "someLabel",
 		Time:         now,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog := none.ApplySingle(&imp)

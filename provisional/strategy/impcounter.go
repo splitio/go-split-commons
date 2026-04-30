@@ -8,8 +8,8 @@ import (
 
 // Key struct for mapping each key to an amount
 type Key struct {
-	FeatureName string
-	TimeFrame   int64
+	DefinitionName string
+	TimeFrame      int64
 }
 
 // ImpressionsCounter struct for storing generated impressions counts
@@ -28,8 +28,8 @@ func NewImpressionsCounter() *ImpressionsCounter {
 
 func makeKey(splitName string, timeFrame int64) Key {
 	return Key{
-		FeatureName: splitName,
-		TimeFrame:   util.TruncateTimeFrame(timeFrame),
+		DefinitionName: splitName,
+		TimeFrame:      util.TruncateTimeFrame(timeFrame),
 	}
 }
 

@@ -32,7 +32,7 @@ func TestLogImpressionsError(t *testing.T) {
 	impression := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         123456789,
@@ -76,7 +76,7 @@ func TestLogImpressions(t *testing.T) {
 	impression := dtos.Impression{
 		BucketingKey: "someBuck",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         123456789,
@@ -97,7 +97,7 @@ func wrapImpression(feature string) dtos.Impression {
 		Label:        "someLabel",
 		Time:         123456789,
 		Treatment:    "someTreatment",
-		FeatureName:  feature,
+		DefinitionName:  feature,
 	}
 }
 

@@ -21,7 +21,7 @@ func TestOptimizedMode(t *testing.T) {
 		Label:        "someLabel",
 		Time:         time.Now().UTC().UnixNano(),
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog, toListener := optimized.Apply([]dtos.Impression{imp})
@@ -38,7 +38,7 @@ func TestOptimizedMode(t *testing.T) {
 	rawCounts := counter.PopAll()
 	assert.Equal(t, 1, len(rawCounts), "Should have counts")
 	for key, counts := range counter.PopAll() {
-		assert.Equal(t, "feature-test", key.FeatureName, "Feature should be feature-test")
+		assert.Equal(t, "feature-test", key.DefinitionName, "Feature should be feature-test")
 		assert.Equal(t, 1, counts, "It should be tracked only once")
 	}
 }
@@ -55,7 +55,7 @@ func TestOptimizedModeWithProperties(t *testing.T) {
 		Label:        "someLabel",
 		Time:         time.Now().UTC().UnixNano(),
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 		Properties:   "{'hello':'world'}",
 	}
 
@@ -72,7 +72,7 @@ func TestOptimizedModeWithProperties(t *testing.T) {
 	rawCounts := counter.PopAll()
 	assert.Equal(t, 0, len(rawCounts), "Should doesn't have counts")
 	for key, counts := range counter.PopAll() {
-		assert.Equal(t, "feature-test", key.FeatureName, "Feature should be feature-test")
+		assert.Equal(t, "feature-test", key.DefinitionName, "Feature should be feature-test")
 		assert.Equal(t, 1, counts, "It should be tracked empty")
 	}
 }
@@ -89,7 +89,7 @@ func TestApplySingleOptimized(t *testing.T) {
 		Label:        "someLabel",
 		Time:         time.Now().UTC().UnixNano(),
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog := optimized.ApplySingle(&imp)

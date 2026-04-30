@@ -18,7 +18,7 @@ func TestDebugMode(t *testing.T) {
 		Label:        "someLabel",
 		Time:         123456,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog, toListener := debug.Apply([]dtos.Impression{imp})
@@ -43,7 +43,7 @@ func TestDebugModeWithProperties(t *testing.T) {
 		Label:        "someLabel",
 		Time:         123456,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 		Properties:   "{'hello':'world'}",
 	}
 
@@ -68,7 +68,7 @@ func TestApplySingleDebug(t *testing.T) {
 		Label:        "someLabel",
 		Time:         123456,
 		Treatment:    "on",
-		FeatureName:  "feature-test",
+		DefinitionName:  "feature-test",
 	}
 
 	toLog := debug.ApplySingle(&imp)
