@@ -65,7 +65,7 @@ func impressionsCountMapper(impressionsCount map[strategy.Key]int64) dtos.Impres
 	impressionsInTimeFrame := make([]dtos.ImpressionsInTimeFrameDTO, 0)
 	for key, count := range impressionsCount {
 		impressionInTimeFrame := dtos.ImpressionsInTimeFrameDTO{
-			FeatureName: key.FeatureName,
+			FeatureName: key.DefinitionName,
 			RawCount:    count,
 			TimeFrame:   key.TimeFrame,
 		}

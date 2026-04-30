@@ -18,7 +18,7 @@ func getImpressions(amount int) []dtos.Impression {
 		impressions = append(impressions, dtos.Impression{
 			BucketingKey: fmt.Sprintf("someBucketingKey%d", i),
 			ChangeNumber: 123456789,
-			FeatureName:  fmt.Sprintf("someFeature%d", i),
+			DefinitionName:  fmt.Sprintf("someFeature%d", i),
 			KeyName:      fmt.Sprintf("someKey%d", i),
 			Label:        "someLabel",
 			Time:         123456789,

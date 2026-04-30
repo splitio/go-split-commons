@@ -20,7 +20,7 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         now,
@@ -53,7 +53,7 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         now,
@@ -88,7 +88,7 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         now,
@@ -130,7 +130,7 @@ func TestImpManagerInMemoryNone(t *testing.T) {
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         now,
@@ -159,7 +159,7 @@ func TestImpManagerRedis(t *testing.T) {
 	imp1 := &dtos.Impression{
 		BucketingKey: "someBucketingKey",
 		ChangeNumber: 123456789,
-		FeatureName:  "someFeature",
+		DefinitionName:  "someFeature",
 		KeyName:      "someKey",
 		Label:        "someLabel",
 		Time:         now,
@@ -199,7 +199,7 @@ func TestProcess(t *testing.T) {
 		{
 			BucketingKey: "someBucketingKey",
 			ChangeNumber: 123456789,
-			FeatureName:  "someFeature",
+			DefinitionName:  "someFeature",
 			KeyName:      "someKey",
 			Label:        "someLabel",
 			Time:         now,
@@ -209,7 +209,7 @@ func TestProcess(t *testing.T) {
 		{
 			BucketingKey: "someBucketingKey",
 			ChangeNumber: 123456789,
-			FeatureName:  "harnessFlag",
+			DefinitionName:  "harnessFlag",
 			KeyName:      "someKey",
 			Label:        "someLabel",
 			Time:         now,
@@ -219,7 +219,7 @@ func TestProcess(t *testing.T) {
 		{
 			BucketingKey: "someBucketingKey",
 			ChangeNumber: 123456789,
-			FeatureName:  "featureTest",
+			DefinitionName:  "featureTest",
 			KeyName:      "someKey",
 			Label:        "someLabel",
 			Time:         now,

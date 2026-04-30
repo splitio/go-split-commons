@@ -31,9 +31,9 @@ func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
 	if len(impression.Properties) != 0 {
 		return true
 	}
-	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.DefinitionName, impression)
 	if impression.Pt != 0 {
-		s.impressionsCounter.Inc(impression.FeatureName, now, 1)
+		s.impressionsCounter.Inc(impression.DefinitionName, now, 1)
 	}
 
 	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {

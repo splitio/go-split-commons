@@ -378,7 +378,7 @@ func TestPeriodicRecording(t *testing.T) {
 			return []dtos.Impression{{
 				BucketingKey: "someBucketingKey",
 				ChangeNumber: 123456789,
-				FeatureName:  "someFeature",
+				DefinitionName:  "someFeature",
 				KeyName:      "someKey",
 				Label:        "someLabel",
 				Time:         123456789,
