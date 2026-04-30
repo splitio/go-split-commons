@@ -1,0 +1,321 @@
+dtos/impression.go
+  47c69111-d03a-474f-8b00-af33da3a557d 5-15,34
+provisional/strategy/optimized.go
+  47c69111-d03a-474f-8b00-af33da3a557d 34,36
+provisional/strategy/none.go
+  47c69111-d03a-474f-8b00-af33da3a557d 26-27
+storage/redis/impressions_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 35,79,100
+tasks/impressionsync_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 21,25,29,33,116,120,124
+provisional/strategy/impcounter.go
+  47c69111-d03a-474f-8b00-af33da3a557d 11-12,31-32
+provisional/strategy/impcounter_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 13,19,25
+synchronizer/worker/impressionscount/single.go
+  47c69111-d03a-474f-8b00-af33da3a557d 68
+provisional/impmanager_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 23,56,91,133,162,202,212,222
+synchronizer/worker/impression/single.go
+  47c69111-d03a-474f-8b00-af33da3a557d 78,80,86
+provisional/strategy/optimized_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 24,41,58,75,92
+synchronizer/synchronizer_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 381
+storage/inmemory/mutexqueue/impressions_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 17-26,52-53,69
+synchronizer/worker/impression/redis_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 21
+provisional/strategy/none_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 26,43-44,66
+provisional/strategy/debug_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 21,46,71
+provisional/strategy/debug.go
+  47c69111-d03a-474f-8b00-af33da3a557d 21
+synchronizer/worker/impression/single_test.go
+  47c69111-d03a-474f-8b00-af33da3a557d 67,107,111,231,235,239,314
+engine/evaluator/evaluator.go
+  human 74,224
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 12,
+          "added_lines": 12,
+          "deleted_lines": 11,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "5-15,34",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "dtos/impression.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 2,
+          "added_lines": 2,
+          "deleted_lines": 1,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "34,36",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/optimized.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 2,
+          "added_lines": 2,
+          "deleted_lines": 1,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "26-27",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/none.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 3,
+          "added_lines": 3,
+          "deleted_lines": 2,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "35,79,100",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "storage/redis/impressions_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 7,
+          "added_lines": 7,
+          "deleted_lines": 6,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "21,25,29,33,116,120,124",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "tasks/impressionsync_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 4,
+          "added_lines": 4,
+          "deleted_lines": 3,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "11-12,31-32",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/impcounter.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 3,
+          "added_lines": 3,
+          "deleted_lines": 2,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "13,19,25",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/impcounter_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "68",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "synchronizer/worker/impressionscount/single.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 8,
+          "added_lines": 8,
+          "deleted_lines": 7,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "23,56,91,133,162,202,212,222",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/impmanager_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 3,
+          "added_lines": 3,
+          "deleted_lines": 2,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "78,80,86",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "synchronizer/worker/impression/single.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 5,
+          "added_lines": 5,
+          "deleted_lines": 4,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "24,41,58,75,92",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/optimized_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "381",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "synchronizer/synchronizer_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 13,
+          "added_lines": 13,
+          "deleted_lines": 12,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "17-26,52-53,69",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "storage/inmemory/mutexqueue/impressions_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "21",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "synchronizer/worker/impression/redis_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 4,
+          "added_lines": 4,
+          "deleted_lines": 3,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "26,43-44,66",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/none_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 3,
+          "added_lines": 3,
+          "deleted_lines": 2,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "21,46,71",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/debug_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "21",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "provisional/strategy/debug.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 7,
+          "added_lines": 7,
+          "deleted_lines": 21,
+          "hash": "47c69111-d03a-474f-8b00-af33da3a557d",
+          "lines": "67,107,111,231,235,239,314",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "synchronizer/worker/impression/single_test.go"
+    },
+    {
+      "entries": [
+        {
+          "accepted_lines": 2,
+          "added_lines": 2,
+          "deleted_lines": 0,
+          "hash": "human",
+          "lines": "74,224",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "engine/evaluator/evaluator.go"
+    }
+  ],
+  "base_commit_sha": "385dbe654441c43dac87a8d3b98d35d23388be9b",
+  "branch": "FME-15368",
+  "commit_sha": "16c7083331c29dff54a3791ebb46b67b7a2a0a83",
+  "commit_time": "2026-04-30T12:51:31-03:00",
+  "git_ai_version": "1.2.6",
+  "prompts": {
+    "47c69111-d03a-474f-8b00-af33da3a557d": {
+      "accepted_lines": 80,
+      "agent_id": {
+        "id": "47c69111-d03a-474f-8b00-af33da3a557d",
+        "model": "claude-sonnet-4-5-20250929",
+        "tool": "claude"
+      },
+      "human_author": "Nadia Mayor <nadia.mayor@split.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 80,
+      "total_deletions": 77
+    },
+    "human": {
+      "accepted_lines": 2,
+      "agent_id": null,
+      "human_author": "Nadia Mayor <nadia.mayor@split.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 2,
+      "total_deletions": 0
+    }
+  },
+  "repo": "git@github.com:splitio/go-split-commons.git",
+  "schema_version": "authorship/3.0.0"
+}
