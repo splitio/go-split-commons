@@ -121,9 +121,10 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	if *treatment == Control {
 		fallbackTreatment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
 		return &Result{
-			Treatment: *fallbackTreatment.Treatment,
-			Label:     *fallbackTreatment.Label(),
-			Config:    fallbackTreatment.Config,
+			Treatment:         *fallbackTreatment.Treatment,
+			Label:             *fallbackTreatment.Label(),
+			Config:            fallbackTreatment.Config,
+			SplitChangeNumber: split.ChangeNumber(),
 		}
 	}
 
