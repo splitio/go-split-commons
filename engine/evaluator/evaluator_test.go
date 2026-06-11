@@ -1026,3 +1026,88 @@ func TestEvaluateDefaultWithPerFlagFallback(t *testing.T) {
 	assert.Equal(t, "fallback - "+impressionlabels.SplitNotFound, result.Label, "Should return prefixed SplitNotFound label")
 	assert.Nil(t, result.Config, "Config should be nil for definition not found")
 }
+
+// TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber tests that when a split
+// has an unsupported matcher and returns Control treatment with fallback, the SplitChangeNumber
+// from the original split is preserved in the evaluation result for proper impression tracking
+func TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a split with an unsupported matcher that will return Control
+	// This simulates what happens when validator replaces unsupported matchers
+	splitWithUnsupportedMatcher := &dtos.SplitDTO{
+		Name:             "split_with_unsupported_matcher",
+		ChangeNumber:     123456789, // This should be preserved in the result
+		DefaultTreatment: "off",
+		Status:           "ACTIVE",
+		Killed:           false,
+		TrafficAllocation: 100,
+		Conditions: []dtos.ConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				Label:         impressionlabels.UnsupportedMatcherType,
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							MatcherType: constants.MatcherTypeAllKeys,
+							Negate:      false,
+						},
+					},
+				},
+				Partitions: []dtos.PartitionDTO{
+					{
+						Treatment: Control, // This will trigger the fallback path
+						Size:      100,
+					},
+				},
+			},
+		},
+	}
+
+	// Setup fallback treatment calculator with a global fallback
+	fallbackTreatment := "fallback_treatment"
+	fallbackConfig := "{\"fallback\": true}"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{
+		GlobalFallbackTreatment: &dtos.FallbackTreatment{
+			Treatment: &fallbackTreatment,
+			Config:    &fallbackConfig,
+		},
+	}
+
+	// Mock storage that returns our split
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "split_with_unsupported_matcher" {
+				return splitWithUnsupportedMatcher
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
+
+	// Evaluate with a key and bucketing key
+	bucketingKey := "bucketing_key"
+	result := evaluator.EvaluateFeature("test_key", &bucketingKey, "split_with_unsupported_matcher", nil)
+
+	// Verify the fallback treatment is returned
+	assert.Equal(t, "fallback_treatment", result.Treatment, "Should return fallback treatment")
+	assert.Equal(t, "fallback - "+impressionlabels.UnsupportedMatcherType, result.Label, "Should return prefixed UnsupportedMatcherType label")
+	assert.NotNil(t, result.Config, "Config should be set from fallback")
+
+	// CRITICAL: Verify that SplitChangeNumber is preserved from the original split
+	// This is essential for proper impression tracking - even when using fallback,
+	// the impression should record the actual split's change number, not 0
+	assert.Equal(t, int64(123456789), result.SplitChangeNumber, "SplitChangeNumber should be preserved from the original split, not default to 0")
+}
+
