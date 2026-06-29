@@ -1,7 +1,7 @@
 package tasks
 
 import (
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/asynctask"
 	"github.com/splitio/go-toolkit/v5/logging"
 )

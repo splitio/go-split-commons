@@ -7,13 +7,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine"
-	"github.com/splitio/go-split-commons/v9/engine/evaluator"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v9/flagsets"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine"
+	"github.com/splitio/go-split-commons/v10/engine/evaluator"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v10/flagsets"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory/mutexmap"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )

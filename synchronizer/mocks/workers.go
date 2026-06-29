@@ -1,12 +1,12 @@
 package mocks
 
 import (
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/largesegment"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/largesegment"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/split"
 	"github.com/stretchr/testify/mock"
 )
 

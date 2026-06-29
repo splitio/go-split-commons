@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/splitio/go-split-commons/v9/dtos"
+import "github.com/splitio/go-split-commons/v10/dtos"
 
 type LocalSyncMock struct {
 	SyncAllCall                       func() error

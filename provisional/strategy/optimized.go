@@ -3,10 +3,10 @@ package strategy
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/storage"
-	"github.com/splitio/go-split-commons/v9/telemetry"
-	"github.com/splitio/go-split-commons/v9/util"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/storage"
+	"github.com/splitio/go-split-commons/v10/telemetry"
+	"github.com/splitio/go-split-commons/v10/util"
 )
 
 // OptimizedImpl struct for optimized impression mode strategy.
@@ -31,9 +31,9 @@ func (s *OptimizedImpl) apply(impression *dtos.Impression, now int64) bool {
 	if len(impression.Properties) != 0 {
 		return true
 	}
-	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+	impression.Pt, _ = s.impressionObserver.TestAndSet(impression.DefinitionName, impression)
 	if impression.Pt != 0 {
-		s.impressionsCounter.Inc(impression.FeatureName, now, 1)
+		s.impressionsCounter.Inc(impression.DefinitionName, now, 1)
 	}
 
 	if impression.Pt == 0 || impression.Pt < util.TruncateTimeFrame(now) {

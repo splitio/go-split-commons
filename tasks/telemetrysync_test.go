@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/service/mocks"
-	st "github.com/splitio/go-split-commons/v9/storage/mocks"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/service/mocks"
+	st "github.com/splitio/go-split-commons/v10/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 )

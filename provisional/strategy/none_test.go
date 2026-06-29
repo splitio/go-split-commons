@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/storage/filter"
-	"github.com/splitio/go-split-commons/v9/util"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/storage/filter"
+	"github.com/splitio/go-split-commons/v10/util"
 )
 
 func TestNoneMode(t *testing.T) {
@@ -17,13 +17,13 @@ func TestNoneMode(t *testing.T) {
 	none := NewNoneImpl(counter, tracker, true)
 
 	imp := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "on",
-		FeatureName:  "feature-test",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "on",
+		DefinitionName: "feature-test",
 	}
 
 	toLog, toListener := none.Apply([]dtos.Impression{imp})
@@ -40,8 +40,8 @@ func TestNoneMode(t *testing.T) {
 
 	counts := counter.PopAll()
 	value := counts[Key{
-		FeatureName: imp.FeatureName,
-		TimeFrame:   util.TruncateTimeFrame(now),
+		DefinitionName: imp.DefinitionName,
+		TimeFrame:      util.TruncateTimeFrame(now),
 	}]
 
 	if value != 2 {
@@ -57,13 +57,13 @@ func TestApplySingleNone(t *testing.T) {
 	none := NewNoneImpl(counter, tracker, true)
 
 	imp := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "on",
-		FeatureName:  "feature-test",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "on",
+		DefinitionName: "feature-test",
 	}
 
 	toLog := none.ApplySingle(&imp)

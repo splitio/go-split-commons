@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine"
-	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/storage"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine"
+	"github.com/splitio/go-split-commons/v10/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/storage"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )
@@ -71,7 +71,7 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	label := impressionlabels.SplitNotFound
 	if splitDto == nil {
 		fallbackTratment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
-		e.logger.Warning(fmt.Sprintf("Feature flag %s not found, returning fallback treatment.", featureFlag))
+		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback.", featureFlag))
 		return &Result{Treatment: *fallbackTratment.Treatment, Label: *fallbackTratment.Label(), Config: fallbackTratment.Config}
 	}
 
@@ -121,9 +121,10 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 	if *treatment == Control {
 		fallbackTreatment := e.fallbackTratmentCalculator.Resolve(featureFlag, &label)
 		return &Result{
-			Treatment: *fallbackTreatment.Treatment,
-			Label:     *fallbackTreatment.Label(),
-			Config:    fallbackTreatment.Config,
+			Treatment:         *fallbackTreatment.Treatment,
+			Label:             *fallbackTreatment.Label(),
+			Config:            fallbackTreatment.Config,
+			SplitChangeNumber: split.ChangeNumber(),
 		}
 	}
 
@@ -211,4 +212,34 @@ func (e *Evaluator) getFeatureFlagNamesByFlagSets(flagSets []string) []string {
 func (e *Evaluator) EvaluateDependency(key string, bucketingKey *string, featureFlag string, attributes map[string]interface{}) string {
 	res := e.EvaluateFeature(key, bucketingKey, featureFlag, attributes)
 	return res.Treatment
+}
+
+// EvaluateDefault returns the default treatment and its configuration for a given definition name.
+// This method is designed for cases where no target (key) is provided.
+func (e *Evaluator) EvaluateDefault(definitionName string) *Result {
+	definition := e.splitStorage.Split(definitionName)
+
+	if definition == nil {
+		label := impressionlabels.SplitNotFound
+		fallbackTratment := e.fallbackTratmentCalculator.Resolve(definitionName, &label)
+		e.logger.Warning(fmt.Sprintf("Definition %s not found, returning fallback.", definitionName))
+		return &Result{
+			Treatment: *fallbackTratment.Treatment,
+			Config:    nil,
+			Label:     *fallbackTratment.Label(),
+		}
+	}
+
+	var config *string
+	if definition.Configurations != nil {
+		if val, ok := definition.Configurations[definition.DefaultTreatment]; ok {
+			config = &val
+		}
+	}
+
+	return &Result{
+		Treatment: definition.DefaultTreatment,
+		Config:    config,
+		Label:     impressionlabels.NoConditionMatched,
+	}
 }

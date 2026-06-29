@@ -3,14 +3,14 @@ package evaluator
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine"
-	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v9/flagsets"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexmap"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine"
+	"github.com/splitio/go-split-commons/v10/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v10/flagsets"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
@@ -783,4 +783,330 @@ func TestEvaluationByFlagSetsASetEmpty(t *testing.T) {
 	if len(result.Evaluations) != 0 {
 		t.Error("evaluations size should be 0")
 	}
+}
+
+func TestEvaluateDefaultDefinitionNotFound(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Setup fallback treatment calculator
+	fallbackTreatment := "control"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{
+		GlobalFallbackTreatment: &dtos.FallbackTreatment{
+			Treatment: &fallbackTreatment,
+		},
+	}
+
+	// Mock storage that returns nil for unknown definition
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
+
+	result := evaluator.EvaluateDefault("nonexistent_definition")
+
+	// Verify fallback treatment is returned
+	assert.Equal(t, "control", result.Treatment, "Should return fallback treatment")
+	assert.Equal(t, "fallback - "+impressionlabels.SplitNotFound, result.Label, "Should return prefixed SplitNotFound label")
+	assert.Nil(t, result.Config, "Config should be nil for definition not found")
+}
+
+func TestEvaluateDefaultDefinitionExistsWithConfig(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a definition with config for default treatment
+	definitionWithConfig := &dtos.SplitDTO{
+		Name:             "definition_with_config",
+		DefaultTreatment: "on",
+		Configurations: map[string]string{
+			"on":  "{\"color\": \"red\", \"size\": 15}",
+			"off": "{\"color\": \"blue\", \"size\": 10}",
+		},
+		Status: "ACTIVE",
+	}
+
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "definition_with_config" {
+				return definitionWithConfig
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		nil)
+
+	result := evaluator.EvaluateDefault("definition_with_config")
+
+	// Verify default treatment and config are returned
+	assert.Equal(t, "on", result.Treatment, "Should return default treatment")
+	assert.Equal(t, impressionlabels.NoConditionMatched, result.Label, "Should return NoConditionMatched label")
+	assert.NotNil(t, result.Config, "Config should not be nil")
+	assert.Equal(t, "{\"color\": \"red\", \"size\": 15}", *result.Config, "Should return config for default treatment")
+}
+
+func TestEvaluateDefaultDefinitionExistsWithoutConfig(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a definition without any configurations
+	definitionWithoutConfig := &dtos.SplitDTO{
+		Name:             "definition_without_config",
+		DefaultTreatment: "off",
+		Configurations:   nil,
+		Status:           "ACTIVE",
+	}
+
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "definition_without_config" {
+				return definitionWithoutConfig
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		nil)
+
+	result := evaluator.EvaluateDefault("definition_without_config")
+
+	// Verify default treatment is returned without config
+	assert.Equal(t, "off", result.Treatment, "Should return default treatment")
+	assert.Equal(t, impressionlabels.NoConditionMatched, result.Label, "Should return NoConditionMatched label")
+	assert.Nil(t, result.Config, "Config should be nil when Configurations map is nil")
+}
+
+func TestEvaluateDefaultDefinitionExistsConfigMapMissingDefaultTreatmentKey(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a definition with configs but missing the default treatment key
+	definitionMissingKey := &dtos.SplitDTO{
+		Name:             "definition_missing_key",
+		DefaultTreatment: "default",
+		Configurations: map[string]string{
+			"on":  "{\"color\": \"green\", \"size\": 20}",
+			"off": "{\"color\": \"yellow\", \"size\": 5}",
+		},
+		Status: "ACTIVE",
+	}
+
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "definition_missing_key" {
+				return definitionMissingKey
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		nil)
+
+	result := evaluator.EvaluateDefault("definition_missing_key")
+
+	// Verify default treatment is returned without config
+	assert.Equal(t, "default", result.Treatment, "Should return default treatment")
+	assert.Equal(t, impressionlabels.NoConditionMatched, result.Label, "Should return NoConditionMatched label")
+	assert.Nil(t, result.Config, "Config should be nil when default treatment key is not in Configurations map")
+}
+
+func TestEvaluateDefaultDefinitionExistsEmptyConfigMap(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a definition with empty configurations map
+	definitionEmptyMap := &dtos.SplitDTO{
+		Name:             "definition_empty_map",
+		DefaultTreatment: "control",
+		Configurations:   map[string]string{},
+		Status:           "ACTIVE",
+	}
+
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "definition_empty_map" {
+				return definitionEmptyMap
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		nil)
+
+	result := evaluator.EvaluateDefault("definition_empty_map")
+
+	// Verify default treatment is returned without config
+	assert.Equal(t, "control", result.Treatment, "Should return default treatment")
+	assert.Equal(t, impressionlabels.NoConditionMatched, result.Label, "Should return NoConditionMatched label")
+	assert.Nil(t, result.Config, "Config should be nil when Configurations map is empty")
+}
+
+func TestEvaluateDefaultWithPerFlagFallback(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Setup fallback treatment calculator with per-flag fallback
+	globalFallback := "control"
+	perFlagFallback := "special_fallback"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{
+		GlobalFallbackTreatment: &dtos.FallbackTreatment{
+			Treatment: &globalFallback,
+		},
+		ByFlagFallbackTreatment: map[string]dtos.FallbackTreatment{
+			"special_definition": {
+				Treatment: &perFlagFallback,
+			},
+		},
+	}
+
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
+
+	result := evaluator.EvaluateDefault("special_definition")
+
+	// Verify per-flag fallback is used
+	assert.Equal(t, "special_fallback", result.Treatment, "Should return per-flag fallback treatment")
+	assert.Equal(t, "fallback - "+impressionlabels.SplitNotFound, result.Label, "Should return prefixed SplitNotFound label")
+	assert.Nil(t, result.Config, "Config should be nil for definition not found")
+}
+
+// TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber tests that when a split
+// has an unsupported matcher and returns Control treatment with fallback, the SplitChangeNumber
+// from the original split is preserved in the evaluation result for proper impression tracking
+func TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber(t *testing.T) {
+	logger := logging.NewLogger(nil)
+
+	// Create a split with an unsupported matcher that will return Control
+	// This simulates what happens when validator replaces unsupported matchers
+	splitWithUnsupportedMatcher := &dtos.SplitDTO{
+		Name:              "split_with_unsupported_matcher",
+		ChangeNumber:      123456789, // This should be preserved in the result
+		DefaultTreatment:  "off",
+		Status:            "ACTIVE",
+		Killed:            false,
+		TrafficAllocation: 100,
+		Conditions: []dtos.ConditionDTO{
+			{
+				ConditionType: "WHITELIST",
+				Label:         impressionlabels.UnsupportedMatcherType,
+				MatcherGroup: dtos.MatcherGroupDTO{
+					Combiner: "AND",
+					Matchers: []dtos.MatcherDTO{
+						{
+							MatcherType: constants.MatcherTypeAllKeys,
+							Negate:      false,
+						},
+					},
+				},
+				Partitions: []dtos.PartitionDTO{
+					{
+						Treatment: Control, // This will trigger the fallback path
+						Size:      100,
+					},
+				},
+			},
+		},
+	}
+
+	// Setup fallback treatment calculator with a global fallback
+	fallbackTreatment := "fallback_treatment"
+	fallbackConfig := "{\"fallback\": true}"
+	fallbackTreatmentConfig := dtos.FallbackTreatmentConfig{
+		GlobalFallbackTreatment: &dtos.FallbackTreatment{
+			Treatment: &fallbackTreatment,
+			Config:    &fallbackConfig,
+		},
+	}
+
+	// Mock storage that returns our split
+	mockedStorage := mocks.MockSplitStorage{
+		SplitCall: func(splitName string) *dtos.SplitDTO {
+			if splitName == "split_with_unsupported_matcher" {
+				return splitWithUnsupportedMatcher
+			}
+			return nil
+		},
+	}
+
+	evaluator := NewEvaluator(
+		mockedStorage,
+		nil,
+		nil,
+		nil,
+		nil,
+		logger,
+		syncProxyFeatureFlagsRules,
+		syncProxyRuleBasedSegmentRules,
+		dtos.NewFallbackTreatmentCalculatorImp(&fallbackTreatmentConfig))
+
+	// Evaluate with a key and bucketing key
+	bucketingKey := "bucketing_key"
+	result := evaluator.EvaluateFeature("test_key", &bucketingKey, "split_with_unsupported_matcher", nil)
+
+	// Verify the fallback treatment is returned
+	assert.Equal(t, "fallback_treatment", result.Treatment, "Should return fallback treatment")
+	assert.Equal(t, "fallback - "+impressionlabels.UnsupportedMatcherType, result.Label, "Should return prefixed UnsupportedMatcherType label")
+	assert.NotNil(t, result.Config, "Config should be set from fallback")
+
+	// CRITICAL: Verify that SplitChangeNumber is preserved from the original split
+	// This is essential for proper impression tracking - even when using fallback,
+	// the impression should record the actual split's change number, not 0
+	assert.Equal(t, int64(123456789), result.SplitChangeNumber, "SplitChangeNumber should be preserved from the original split, not default to 0")
 }

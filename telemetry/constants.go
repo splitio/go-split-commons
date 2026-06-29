@@ -1,6 +1,6 @@
 package telemetry
 
-import "github.com/splitio/go-split-commons/v9/conf"
+import "github.com/splitio/go-split-commons/v10/conf"
 
 const (
 	// Treatment getTreatment

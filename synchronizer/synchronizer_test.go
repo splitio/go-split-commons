@@ -7,28 +7,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/conf"
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/flagsets"
-	hcMock "github.com/splitio/go-split-commons/v9/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v9/push"
-	"github.com/splitio/go-split-commons/v9/service"
-	"github.com/splitio/go-split-commons/v9/service/api"
-	"github.com/splitio/go-split-commons/v9/service/api/specs"
-	httpMocks "github.com/splitio/go-split-commons/v9/service/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	storageMock "github.com/splitio/go-split-commons/v9/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/conf"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/flagsets"
+	hcMock "github.com/splitio/go-split-commons/v10/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v10/push"
+	"github.com/splitio/go-split-commons/v10/service"
+	"github.com/splitio/go-split-commons/v10/service/api"
+	"github.com/splitio/go-split-commons/v10/service/api/specs"
+	httpMocks "github.com/splitio/go-split-commons/v10/service/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	storageMock "github.com/splitio/go-split-commons/v10/storage/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	syncMocks "github.com/splitio/go-split-commons/v9/synchronizer/mocks"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/segment"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/split"
-	"github.com/splitio/go-split-commons/v9/tasks"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	syncMocks "github.com/splitio/go-split-commons/v10/synchronizer/mocks"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/segment"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/split"
+	"github.com/splitio/go-split-commons/v10/tasks"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 
 	"github.com/splitio/go-toolkit/v5/common"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
@@ -376,13 +376,13 @@ func TestPeriodicRecording(t *testing.T) {
 		PopNCall: func(n int64) ([]dtos.Impression, error) {
 			assert.Equal(t, int64(100), n)
 			return []dtos.Impression{{
-				BucketingKey: "someBucketingKey",
-				ChangeNumber: 123456789,
-				FeatureName:  "someFeature",
-				KeyName:      "someKey",
-				Label:        "someLabel",
-				Time:         123456789,
-				Treatment:    "someTreatment",
+				BucketingKey:   "someBucketingKey",
+				ChangeNumber:   123456789,
+				DefinitionName: "someFeature",
+				KeyName:        "someKey",
+				Label:          "someLabel",
+				Time:           123456789,
+				Treatment:      "someTreatment",
 			}}, nil
 		},
 		EmptyCall: func() bool { return atomic.LoadInt64(&impressionsCalled) != 1 },

@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/conf"
-	"github.com/splitio/go-split-commons/v9/dtos"
-	recorderMock "github.com/splitio/go-split-commons/v9/service/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/impression"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/conf"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v10/service/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/impression"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -18,19 +18,19 @@ func TestImpressionSyncTask(t *testing.T) {
 	call := 0
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName: "someFeature2",
 		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature3",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, DefinitionName: "someFeature3",
 		KeyName: "someKey3", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 	impression4 := dtos.Impression{
-		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, DefinitionName: "someFeature2",
 		KeyName: "someKey22", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 
@@ -113,15 +113,15 @@ func TestImpressionSyncTaskMultiple(t *testing.T) {
 	var call int64
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, FeatureName: "someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, FeatureName: "someFeature2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName: "someFeature2",
 		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, FeatureName: "someFeature3",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, DefinitionName: "someFeature3",
 		KeyName: "someKey3", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 

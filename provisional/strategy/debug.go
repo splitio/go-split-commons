@@ -1,6 +1,6 @@
 package strategy
 
-import "github.com/splitio/go-split-commons/v9/dtos"
+import "github.com/splitio/go-split-commons/v10/dtos"
 
 // DebugImpl struct for debug impression mode strategy.
 type DebugImpl struct {
@@ -18,7 +18,7 @@ func NewDebugImpl(impressionObserver ImpressionObserver, listenerEnabled bool) P
 
 func (s *DebugImpl) apply(impression *dtos.Impression) bool {
 	if len(impression.Properties) == 0 {
-		impression.Pt, _ = s.impressionObserver.TestAndSet(impression.FeatureName, impression)
+		impression.Pt, _ = s.impressionObserver.TestAndSet(impression.DefinitionName, impression)
 	}
 
 	return true

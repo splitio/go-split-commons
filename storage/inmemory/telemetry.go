@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/storage"
-	constants "github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/storage"
+	constants "github.com/splitio/go-split-commons/v10/telemetry"
 )
 
 type latencies struct {

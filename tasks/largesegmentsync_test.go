@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	hcMock "github.com/splitio/go-split-commons/v9/healthcheck/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	syncMocks "github.com/splitio/go-split-commons/v9/synchronizer/mocks"
+	hcMock "github.com/splitio/go-split-commons/v10/healthcheck/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	syncMocks "github.com/splitio/go-split-commons/v10/synchronizer/mocks"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"

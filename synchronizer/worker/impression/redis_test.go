@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -16,13 +16,13 @@ func getImpressions(amount int) []dtos.Impression {
 	i := 1
 	for i <= amount {
 		impressions = append(impressions, dtos.Impression{
-			BucketingKey: fmt.Sprintf("someBucketingKey%d", i),
-			ChangeNumber: 123456789,
-			FeatureName:  fmt.Sprintf("someFeature%d", i),
-			KeyName:      fmt.Sprintf("someKey%d", i),
-			Label:        "someLabel",
-			Time:         123456789,
-			Treatment:    fmt.Sprintf("someTreatment%d", i),
+			BucketingKey:   fmt.Sprintf("someBucketingKey%d", i),
+			ChangeNumber:   123456789,
+			DefinitionName: fmt.Sprintf("someFeature%d", i),
+			KeyName:        fmt.Sprintf("someKey%d", i),
+			Label:          "someLabel",
+			Time:           123456789,
+			Treatment:      fmt.Sprintf("someTreatment%d", i),
 		})
 
 		i++

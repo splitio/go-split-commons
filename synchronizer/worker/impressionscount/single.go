@@ -3,11 +3,11 @@ package impressionscount
 import (
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/provisional/strategy"
-	"github.com/splitio/go-split-commons/v9/service"
-	"github.com/splitio/go-split-commons/v9/storage"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/provisional/strategy"
+	"github.com/splitio/go-split-commons/v10/service"
+	"github.com/splitio/go-split-commons/v10/storage"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -65,7 +65,7 @@ func impressionsCountMapper(impressionsCount map[strategy.Key]int64) dtos.Impres
 	impressionsInTimeFrame := make([]dtos.ImpressionsInTimeFrameDTO, 0)
 	for key, count := range impressionsCount {
 		impressionInTimeFrame := dtos.ImpressionsInTimeFrameDTO{
-			FeatureName: key.FeatureName,
+			FeatureName: key.DefinitionName,
 			RawCount:    count,
 			TimeFrame:   key.TimeFrame,
 		}

@@ -1,8 +1,8 @@
 package provisional
 
 import (
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/provisional/strategy"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/provisional/strategy"
 )
 
 // ImpressionManager interface

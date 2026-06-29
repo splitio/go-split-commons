@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/service"
-	"github.com/splitio/go-split-commons/v9/storage"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/service"
+	"github.com/splitio/go-split-commons/v10/storage"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
@@ -75,14 +75,15 @@ func (i *RecorderSingle) SynchronizeImpressions(bulkSize int64) error {
 			BucketingKey: impression.BucketingKey,
 			Pt:           impression.Pt,
 			Properties:   impression.Properties,
+			EntityType:   impression.EntityType,
 		}
-		v, ok := impressionsToPost[impression.FeatureName]
+		v, ok := impressionsToPost[impression.DefinitionName]
 		if ok {
 			v = append(v, keyImpression)
 		} else {
 			v = []dtos.ImpressionDTO{keyImpression}
 		}
-		impressionsToPost[impression.FeatureName] = v
+		impressionsToPost[impression.DefinitionName] = v
 	}
 
 	bulkImpressions := make([]dtos.ImpressionsDTO, 0)
