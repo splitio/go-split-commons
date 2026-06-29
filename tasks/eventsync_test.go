@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	recorderMock "github.com/splitio/go-split-commons/v9/service/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	"github.com/splitio/go-split-commons/v9/synchronizer/worker/event"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	recorderMock "github.com/splitio/go-split-commons/v10/service/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/synchronizer/worker/event"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

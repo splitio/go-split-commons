@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/conf"
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/service/api"
-	recorderMock "github.com/splitio/go-split-commons/v9/service/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexqueue"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/conf"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/service/api"
+	recorderMock "github.com/splitio/go-split-commons/v10/service/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

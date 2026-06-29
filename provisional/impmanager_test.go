@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/provisional/strategy"
-	"github.com/splitio/go-split-commons/v9/storage/filter"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/provisional/strategy"
+	"github.com/splitio/go-split-commons/v10/storage/filter"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 )
 
 func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
@@ -18,13 +18,13 @@ func TestImpManagerInMemoryDebugListenerDisabled(t *testing.T) {
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "someTreatment",
 	}
 
 	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
@@ -51,13 +51,13 @@ func TestImpManagerInMemoryDebug(t *testing.T) {
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "someTreatment",
 	}
 
 	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
@@ -86,13 +86,13 @@ func TestImpManagerInMemoryOptimized(t *testing.T) {
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "someTreatment",
 	}
 
 	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
@@ -128,13 +128,13 @@ func TestImpManagerInMemoryNone(t *testing.T) {
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "someTreatment",
 	}
 
 	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
@@ -157,13 +157,13 @@ func TestImpManagerRedis(t *testing.T) {
 
 	now := time.Now().UTC().UnixNano()
 	imp1 := &dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         now,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           now,
+		Treatment:      "someTreatment",
 	}
 
 	impressionsForLog, impressionsForListener := impManager.ProcessImpressions([]dtos.Impression{*imp1})
@@ -197,34 +197,34 @@ func TestProcess(t *testing.T) {
 	now := time.Now().UTC().UnixNano()
 	impressions := []dtos.Impression{
 		{
-			BucketingKey: "someBucketingKey",
-			ChangeNumber: 123456789,
-			DefinitionName:  "someFeature",
-			KeyName:      "someKey",
-			Label:        "someLabel",
-			Time:         now,
-			Treatment:    "someTreatment",
-			Disabled:     true,
+			BucketingKey:   "someBucketingKey",
+			ChangeNumber:   123456789,
+			DefinitionName: "someFeature",
+			KeyName:        "someKey",
+			Label:          "someLabel",
+			Time:           now,
+			Treatment:      "someTreatment",
+			Disabled:       true,
 		},
 		{
-			BucketingKey: "someBucketingKey",
-			ChangeNumber: 123456789,
-			DefinitionName:  "harnessFlag",
-			KeyName:      "someKey",
-			Label:        "someLabel",
-			Time:         now,
-			Treatment:    "someTreatment",
-			Disabled:     true,
+			BucketingKey:   "someBucketingKey",
+			ChangeNumber:   123456789,
+			DefinitionName: "harnessFlag",
+			KeyName:        "someKey",
+			Label:          "someLabel",
+			Time:           now,
+			Treatment:      "someTreatment",
+			Disabled:       true,
 		},
 		{
-			BucketingKey: "someBucketingKey",
-			ChangeNumber: 123456789,
-			DefinitionName:  "featureTest",
-			KeyName:      "someKey",
-			Label:        "someLabel",
-			Time:         now,
-			Treatment:    "someTreatment",
-			Disabled:     false,
+			BucketingKey:   "someBucketingKey",
+			ChangeNumber:   123456789,
+			DefinitionName: "featureTest",
+			KeyName:        "someKey",
+			Label:          "someLabel",
+			Time:           now,
+			Treatment:      "someTreatment",
+			Disabled:       false,
 		},
 	}
 

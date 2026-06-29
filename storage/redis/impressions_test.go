@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v10/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/redis"
 	"github.com/splitio/go-toolkit/v5/redis/mocks"
@@ -30,13 +30,13 @@ func TestLogImpressionsError(t *testing.T) {
 	impressionStorage := NewImpressionStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
 	impression := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           123456789,
+		Treatment:      "someTreatment",
 	}
 
 	err := impressionStorage.LogImpressions([]dtos.Impression{impression})
@@ -74,13 +74,13 @@ func TestLogImpressions(t *testing.T) {
 	impressionStorage := NewImpressionStorage(mockPrefixedClient, dtos.Metadata{}, logging.NewLogger(&logging.LoggerOptions{}))
 
 	impression := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123456789,
-		DefinitionName:  "someFeature",
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123456789,
+		DefinitionName: "someFeature",
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           123456789,
+		Treatment:      "someTreatment",
 	}
 
 	err := impressionStorage.LogImpressions([]dtos.Impression{impression})
@@ -91,13 +91,13 @@ func TestLogImpressions(t *testing.T) {
 
 func wrapImpression(feature string) dtos.Impression {
 	return dtos.Impression{
-		BucketingKey: "someBucketingKey",
-		ChangeNumber: 123456789,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         123456789,
-		Treatment:    "someTreatment",
-		DefinitionName:  feature,
+		BucketingKey:   "someBucketingKey",
+		ChangeNumber:   123456789,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           123456789,
+		Treatment:      "someTreatment",
+		DefinitionName: feature,
 	}
 }
 

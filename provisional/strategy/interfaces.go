@@ -1,6 +1,6 @@
 package strategy
 
-import "github.com/splitio/go-split-commons/v9/dtos"
+import "github.com/splitio/go-split-commons/v10/dtos"
 
 // ProcessStrategyInterface interface
 type ProcessStrategyInterface interface {

@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/conf"
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/service/api"
-	recorderMock "github.com/splitio/go-split-commons/v9/service/mocks"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexqueue"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
-	"github.com/splitio/go-split-commons/v9/telemetry"
+	"github.com/splitio/go-split-commons/v10/conf"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/service/api"
+	recorderMock "github.com/splitio/go-split-commons/v10/service/mocks"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory/mutexqueue"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/telemetry"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
 )
@@ -64,7 +64,7 @@ func TestImpressionRecorderWithoutImpressions(t *testing.T) {
 
 func TestSynhronizeEventErrorRecorder(t *testing.T) {
 	impression := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName:"someFeature1", Properties: "{'prop':'val'}",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1", Properties: "{'prop':'val'}",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 
@@ -104,11 +104,11 @@ func TestSynhronizeEventErrorRecorder(t *testing.T) {
 func TestImpressionRecorder(t *testing.T) {
 	before := time.Now().UTC()
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName:"someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1", Properties: "{'prop':'val'}",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName:"someFeature2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName: "someFeature2",
 		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 
@@ -228,15 +228,15 @@ func TestImpressionRecorderSync(t *testing.T) {
 	impressionRecorder := api.NewHTTPImpressionRecorder("", conf.AdvancedConfig{EventsURL: ts.URL}, logger)
 
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName:"someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1", Properties: "{'prop':'val'}",
 	}
 	impression2 := dtos.Impression{
-		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName:"someFeature2",
+		BucketingKey: "someBucketingKey2", ChangeNumber: 123456789, DefinitionName: "someFeature2",
 		KeyName: "someKey2", Label: "someLabel", Time: 123456789, Treatment: "someTreatment2",
 	}
 	impression3 := dtos.Impression{
-		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, DefinitionName:"someFeature1",
+		BucketingKey: "someBucketingKey3", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey3", Label: "someLabel", Time: 123456789, Treatment: "someTreatment3",
 	}
 
@@ -311,7 +311,7 @@ func TestImpressionLastSeen(t *testing.T) {
 	impressionRecorder := api.NewHTTPImpressionRecorder("", conf.AdvancedConfig{EventsURL: ts.URL}, logger)
 
 	impression1 := dtos.Impression{
-		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName:"someFeature1",
+		BucketingKey: "someBucketingKey1", ChangeNumber: 123456789, DefinitionName: "someFeature1",
 		KeyName: "someKey1", Label: "someLabel", Time: 123456789, Treatment: "someTreatment1",
 	}
 

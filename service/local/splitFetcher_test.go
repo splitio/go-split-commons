@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/service"
-	"github.com/splitio/go-split-commons/v9/service/local/mocks"
+	"github.com/splitio/go-split-commons/v10/service"
+	"github.com/splitio/go-split-commons/v10/service/local/mocks"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

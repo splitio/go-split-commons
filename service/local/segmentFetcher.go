@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/service"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/service"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 

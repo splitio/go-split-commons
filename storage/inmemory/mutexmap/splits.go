@@ -3,10 +3,10 @@ package mutexmap
 import (
 	"sync"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v9/flagsets"
-	"github.com/splitio/go-split-commons/v9/storage"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v10/flagsets"
+	"github.com/splitio/go-split-commons/v10/storage"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
 

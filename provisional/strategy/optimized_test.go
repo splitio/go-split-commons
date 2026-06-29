@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,13 +15,13 @@ func TestOptimizedMode(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
 	imp := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         time.Now().UTC().UnixNano(),
-		Treatment:    "on",
-		DefinitionName:  "feature-test",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           time.Now().UTC().UnixNano(),
+		Treatment:      "on",
+		DefinitionName: "feature-test",
 	}
 
 	toLog, toListener := optimized.Apply([]dtos.Impression{imp})
@@ -49,14 +49,14 @@ func TestOptimizedModeWithProperties(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
 	imp := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         time.Now().UTC().UnixNano(),
-		Treatment:    "on",
-		DefinitionName:  "feature-test",
-		Properties:   "{'hello':'world'}",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           time.Now().UTC().UnixNano(),
+		Treatment:      "on",
+		DefinitionName: "feature-test",
+		Properties:     "{'hello':'world'}",
 	}
 
 	toLog, toListener := optimized.Apply([]dtos.Impression{imp})
@@ -83,13 +83,13 @@ func TestApplySingleOptimized(t *testing.T) {
 	runtimeTelemetry, _ := inmemory.NewTelemetryStorage()
 	optimized := NewOptimizedImpl(observer, counter, runtimeTelemetry, true)
 	imp := dtos.Impression{
-		BucketingKey: "someBuck",
-		ChangeNumber: 123,
-		KeyName:      "someKey",
-		Label:        "someLabel",
-		Time:         time.Now().UTC().UnixNano(),
-		Treatment:    "on",
-		DefinitionName:  "feature-test",
+		BucketingKey:   "someBuck",
+		ChangeNumber:   123,
+		KeyName:        "someKey",
+		Label:          "someLabel",
+		Time:           time.Now().UTC().UnixNano(),
+		Treatment:      "on",
+		DefinitionName: "feature-test",
 	}
 
 	toLog := optimized.ApplySingle(&imp)

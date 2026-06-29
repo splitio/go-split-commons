@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine"
-	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/storage"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine"
+	"github.com/splitio/go-split-commons/v10/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/storage"
 
 	"github.com/splitio/go-toolkit/v5/logging"
 )

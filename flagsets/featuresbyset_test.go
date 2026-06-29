@@ -3,7 +3,7 @@ package flagsets
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v10/dtos"
 )
 
 func TestFeaturesBySet(t *testing.T) {

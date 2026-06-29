@@ -3,14 +3,14 @@ package evaluator
 import (
 	"testing"
 
-	"github.com/splitio/go-split-commons/v9/dtos"
-	"github.com/splitio/go-split-commons/v9/engine"
-	"github.com/splitio/go-split-commons/v9/engine/evaluator/impressionlabels"
-	"github.com/splitio/go-split-commons/v9/engine/grammar"
-	"github.com/splitio/go-split-commons/v9/engine/grammar/constants"
-	"github.com/splitio/go-split-commons/v9/flagsets"
-	"github.com/splitio/go-split-commons/v9/storage/inmemory/mutexmap"
-	"github.com/splitio/go-split-commons/v9/storage/mocks"
+	"github.com/splitio/go-split-commons/v10/dtos"
+	"github.com/splitio/go-split-commons/v10/engine"
+	"github.com/splitio/go-split-commons/v10/engine/evaluator/impressionlabels"
+	"github.com/splitio/go-split-commons/v10/engine/grammar"
+	"github.com/splitio/go-split-commons/v10/engine/grammar/constants"
+	"github.com/splitio/go-split-commons/v10/flagsets"
+	"github.com/splitio/go-split-commons/v10/storage/inmemory/mutexmap"
+	"github.com/splitio/go-split-commons/v10/storage/mocks"
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/stretchr/testify/assert"
@@ -1036,11 +1036,11 @@ func TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber(t *testing.T
 	// Create a split with an unsupported matcher that will return Control
 	// This simulates what happens when validator replaces unsupported matchers
 	splitWithUnsupportedMatcher := &dtos.SplitDTO{
-		Name:             "split_with_unsupported_matcher",
-		ChangeNumber:     123456789, // This should be preserved in the result
-		DefaultTreatment: "off",
-		Status:           "ACTIVE",
-		Killed:           false,
+		Name:              "split_with_unsupported_matcher",
+		ChangeNumber:      123456789, // This should be preserved in the result
+		DefaultTreatment:  "off",
+		Status:            "ACTIVE",
+		Killed:            false,
 		TrafficAllocation: 100,
 		Conditions: []dtos.ConditionDTO{
 			{
@@ -1110,4 +1110,3 @@ func TestEvaluateFeatureWithUnsupportedMatcherPreservesChangeNumber(t *testing.T
 	// the impression should record the actual split's change number, not 0
 	assert.Equal(t, int64(123456789), result.SplitChangeNumber, "SplitChangeNumber should be preserved from the original split, not default to 0")
 }
-

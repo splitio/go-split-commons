@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/splitio/go-split-commons/v9/conf"
-	"github.com/splitio/go-split-commons/v9/dtos"
+	"github.com/splitio/go-split-commons/v10/conf"
+	"github.com/splitio/go-split-commons/v10/dtos"
 	"github.com/splitio/go-toolkit/v5/logging"
 )
 
