@@ -59,6 +59,7 @@ pipeline:
                     image: golang:1.21
                     shell: Bash
                     command: |-
+                      apt-get update -qq && apt-get install -y -qq --no-install-recommends unzip
                       export SONAR_SCANNER_VERSION=6.2.1.4610
                       curl -sSLo sonar-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
                       unzip -q sonar-scanner.zip
