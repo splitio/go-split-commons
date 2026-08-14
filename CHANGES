@@ -1,3 +1,6 @@
+10.0.1 (Aug 18, 2025)
+- Added type and subtype in definition dto.
+
 10.0.0 (Jun 29, 2025)
 - Updated license.
 - Added logic for configs.
