@@ -109,6 +109,59 @@ func TestStreamingOk(t *testing.T) {
 	mutexTest.RUnlock()
 }
 
+func TestStreamingOkForceHTTP1(t *testing.T) {
+	// Same as TestStreamingOk but with StreamingForceHTTP1 enabled: the SSE client is
+	// built with the HTTP/1.1-only transport and must still connect and receive events.
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	sseMock, _ := ioutil.ReadFile("../../../testdata/sse.json")
+	var mockedData map[string]interface{}
+	_ = json.Unmarshal(sseMock, &mockedData)
+	mockedStr, _ := json.Marshal(mockedData)
+
+	streamingStatus := make(chan int, 10)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, err := w.(http.Flusher)
+		if !err {
+			t.Error("Unexpected error")
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		fmt.Fprintf(w, "data: %s\n\n", string(mockedStr))
+		flusher.Flush()
+	}))
+	defer ts.Close()
+
+	mocked := &conf.AdvancedConfig{
+		StreamingServiceURL: ts.URL,
+		StreamingForceHTTP1: true,
+	}
+	mockedClient := NewStreamingClient(mocked, logger, dtos.Metadata{}, nil)
+
+	var result sse.RawEvent
+	mutexTest := sync.RWMutex{}
+	go mockedClient.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {
+		defer mutexTest.Unlock()
+		mutexTest.Lock()
+		result = e
+	})
+
+	time.Sleep(1000 * time.Millisecond)
+
+	mockedClient.StopStreaming()
+	if mockedClient.IsRunning() {
+		t.Error("It should not be running")
+	}
+
+	mutexTest.RLock()
+	if result.Data() != string(mockedStr) {
+		t.Error("Unexpected data", result.Data(), "---", string(sseMock))
+	}
+	mutexTest.RUnlock()
+}
+
 func TestStreamingClientDisconnect(t *testing.T) {
 	logger := logging.NewLogger(&logging.LoggerOptions{})
 
