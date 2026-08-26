@@ -9,6 +9,7 @@ const (
 	defaultImpressionsQueueSize        = 10000
 	defaultImpressionsBulkSize         = 5000
 	defaultStreamingEnabled            = true
+	defaultStreamingForceHTTP1         = false
 	defaultSplitUpdateQueueSize        = 5000
 	defaultSegmentUpdateQueueSize      = 5000
 	defaultLargeSegmentUpdateQueueSize = 5000
@@ -52,6 +53,7 @@ func GetDefaultAdvancedConfig() AdvancedConfig {
 		SegmentWorkers:         defaultSegmentWorkers,
 		SplitUpdateQueueSize:   defaultSplitUpdateQueueSize,
 		StreamingEnabled:       defaultStreamingEnabled,
+		StreamingForceHTTP1:    defaultStreamingForceHTTP1,
 		AuthServiceURL:         defaultAuthServiceURL,
 		EventsURL:              defaultEventsURL,
 		SdkURL:                 defaultSdkURL,

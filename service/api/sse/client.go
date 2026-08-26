@@ -1,7 +1,9 @@
 package sse
 
 import (
+	"crypto/tls"
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/splitio/go-split-commons/v10/conf"
@@ -47,7 +49,18 @@ type IncomingMessage = sse.RawEvent
 
 // NewStreamingClient creates new SSE Client
 func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface, metadata dtos.Metadata, clientKey *string) *StreamingClientImpl {
-	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, cfg.HTTPTimeout, logger)
+	var opts []sse.Option
+	if cfg.StreamingForceHTTP1 {
+		// Streaming (SSE) is a single long-lived stream; HTTP/2 provides no benefit here
+		// and its client stack emits noisy "protocol error: received DATA after
+		// END_STREAM" logs. Force HTTP/1.1 for this connection only.
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.Proxy = http.ProxyFromEnvironment
+		transport.ForceAttemptHTTP2 = false
+		transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{} // non-nil empty => no h2
+		opts = append(opts, sse.WithCustomTransport(transport))
+	}
+	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, cfg.HTTPTimeout, logger, opts...)
 	client := &StreamingClientImpl{
 		sseClient: sseClient,
 		logger:    logger,

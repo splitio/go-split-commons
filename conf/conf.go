@@ -82,6 +82,7 @@ type AdvancedConfig struct {
 	StreamingEnabled       bool
 	AuthServiceURL         string
 	StreamingServiceURL    string
+	StreamingForceHTTP1    bool
 	SplitUpdateQueueSize   int64
 	SegmentUpdateQueueSize int64
 	SplitsRefreshRate      int
