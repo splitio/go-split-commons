@@ -46,6 +46,10 @@ type SplitDTO struct {
 	Sets                  []string          `json:"sets"`
 	ImpressionsDisabled   bool              `json:"impressionsDisabled"`
 	Prerequisites         []Prerequisite    `json:"prerequisites"`
+	// Type/Subtype classify AI configs vs. standard definitions. An empty Type means a standard
+	// definition; both are omitempty so existing (non-AI) payloads serialize unchanged.
+	Type                  string            `json:"type,omitempty"`
+	Subtype               string            `json:"subtype,omitempty"`
 }
 
 // MarshalBinary exports SplitDTO to JSON string

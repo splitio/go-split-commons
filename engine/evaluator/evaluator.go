@@ -27,6 +27,10 @@ type Result struct {
 	SplitChangeNumber   int64
 	Config              *string
 	ImpressionsDisabled bool
+	// Type/Subtype carry the evaluated definition's classification (AI config vs. standard) so
+	// callers can distinguish them without a second lookup. Empty Type means a standard definition.
+	Type                string
+	Subtype             string
 }
 
 // Results represents the result of multiple evaluations at once
@@ -95,6 +99,8 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			SplitChangeNumber:   split.ChangeNumber(),
 			Config:              config,
 			ImpressionsDisabled: split.ImpressionsDisabled(),
+			Type:                splitDto.Type,
+			Subtype:             splitDto.Subtype,
 		}
 	}
 
@@ -104,6 +110,8 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			Label:               impressionlabels.PrerequisitesNotMet,
 			SplitChangeNumber:   split.ChangeNumber(),
 			ImpressionsDisabled: split.ImpressionsDisabled(),
+			Type:                splitDto.Type,
+			Subtype:             splitDto.Subtype,
 		}
 	}
 
@@ -125,6 +133,8 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 			Label:             *fallbackTreatment.Label(),
 			Config:            fallbackTreatment.Config,
 			SplitChangeNumber: split.ChangeNumber(),
+			Type:              splitDto.Type,
+			Subtype:           splitDto.Subtype,
 		}
 	}
 
@@ -139,6 +149,8 @@ func (e *Evaluator) evaluateTreatment(key string, bucketingKey string, featureFl
 		SplitChangeNumber:   split.ChangeNumber(),
 		Config:              config,
 		ImpressionsDisabled: split.ImpressionsDisabled(),
+		Type:                splitDto.Type,
+		Subtype:             splitDto.Subtype,
 	}
 }
 
@@ -241,5 +253,7 @@ func (e *Evaluator) EvaluateDefault(definitionName string) *Result {
 		Treatment: definition.DefaultTreatment,
 		Config:    config,
 		Label:     impressionlabels.NoConditionMatched,
+		Type:      definition.Type,
+		Subtype:   definition.Subtype,
 	}
 }
