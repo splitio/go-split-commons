@@ -2,6 +2,7 @@ package push
 
 import (
 	"testing"
+	"time"
 
 	"github.com/splitio/go-split-commons/v10/conf"
 	"github.com/splitio/go-split-commons/v10/dtos"
@@ -32,7 +33,7 @@ func TestProcessor(t *testing.T) {
 	processor, err := NewProcessor(5000, 5000, syncMock, logger, &conf.LargeSegmentConfig{
 		Enable:          true,
 		UpdateQueueSize: 5000,
-	})
+	}, 0)
 	if err != nil {
 		t.Error("It should not return err")
 	}
@@ -101,4 +102,70 @@ func TestProcessor(t *testing.T) {
 	if len(processor.largeSegment.queue) != 1 {
 		t.Error("lsQueue should be 1")
 	}
+}
+
+func TestProcessorConfigDisabled(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	syncMock := &mocks.LocalSyncMock{}
+	processor, err := NewProcessor(5000, 5000, syncMock, logger, nil, 0)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if processor.config != nil {
+		t.Error("config should be nil when configQueueSize is 0")
+	}
+
+	err = processor.ProcessConfigChangeUpdate(dtos.NewConfigChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "config_channel"), 100), nil, nil, nil))
+	if err != nil {
+		t.Error("It should not return error when config streaming is disabled")
+	}
+}
+
+func TestProcessorConfigQueueTooSmall(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	syncMock := &mocks.LocalSyncMock{}
+	_, err := NewProcessor(5000, 5000, syncMock, logger, nil, 10)
+	if err == nil {
+		t.Error("It should return an error for an undersized configQueue")
+	}
+}
+
+func TestProcessorConfigEnabled(t *testing.T) {
+	changeNumber := int64(100)
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+	done := make(chan struct{}, 1)
+	syncMock := &mocks.LocalSyncMock{
+		SynchronizeConfigCall: func(update *dtos.ConfigChangeUpdate) error {
+			if update.ChangeNumber() != changeNumber {
+				t.Error("Wrong changeNumber passed")
+			}
+			done <- struct{}{}
+			return nil
+		},
+	}
+	processor, err := NewProcessor(5000, 5000, syncMock, logger, nil, 5000)
+	if err != nil {
+		t.Error("It should not return err")
+	}
+	if processor.config == nil {
+		t.Error("config should not be nil when configQueueSize > 0")
+	}
+
+	err = processor.ProcessConfigChangeUpdate(dtos.NewConfigChangeUpdate(
+		dtos.NewBaseUpdate(dtos.NewBaseMessage(0, "config_channel"), changeNumber), nil, nil, nil))
+	if err != nil {
+		t.Error("It should not return error")
+	}
+	if len(processor.config.queue) != 1 {
+		t.Error("configQueue should be 1")
+	}
+
+	processor.StartWorkers()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Error("SynchronizeConfig should have been called")
+	}
+	processor.StopWorkers()
 }

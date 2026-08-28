@@ -1,6 +1,7 @@
 package push
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -862,4 +863,105 @@ func TestEventForwardingReturnsNewStatus(t *testing.T) {
 	if message != StatusNonRetryableError {
 		t.Error("should have gotten no message after an expected disconnection. Got: ", message)
 	}
+}
+
+func TestConfigUpdateEndToEnd(t *testing.T) {
+	cfg := &conf.AdvancedConfig{
+		SplitUpdateQueueSize:   10000,
+		SegmentUpdateQueueSize: 10000,
+		ConfigUpdateQueueSize:  5000,
+	}
+	logger := logging.NewLogger(nil)
+
+	var receivedCN int64
+	var receivedDefinition string
+	done := make(chan struct{}, 1)
+	synchronizer := &pushMocks.LocalSyncMock{
+		SynchronizeConfigCall: func(update *dtos.ConfigChangeUpdate) error {
+			receivedCN = update.ChangeNumber()
+			if update.Definition() != nil {
+				receivedDefinition = *update.Definition()
+			}
+			done <- struct{}{}
+			return nil
+		},
+	}
+	token := &dtos.Token{
+		Token:       `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`,
+		PushEnabled: true,
+	}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	feedback := make(chan int64, 100)
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, latency time.Duration) {},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+
+	manager, err := NewManager(logger, synchronizer, cfg, feedback, authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	if err != nil {
+		t.Error("no error should be returned upon manager instantiation", err)
+		return
+	}
+
+	configDefinition := "eyJrZXkiOiJ2YWx1ZSJ9" // base64("{\"key\":\"value\"}")
+	waiter := make(chan struct{}, 1)
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			go func() {
+				status <- sse.StatusFirstEventOk
+				<-waiter
+				updateJSON, _ := json.Marshal(genericMessageData{
+					Type:                 dtos.UpdateTypeConfigChange,
+					ChangeNumber:         555,
+					PreviousChangeNumber: 1,
+					CompressType:         common.IntRef(0),
+					Definition:           common.StringRef(configDefinition),
+				})
+				mainJSON, _ := json.Marshal(genericData{
+					Timestamp: 123,
+					Data:      string(updateJSON),
+					Channel:   "sarasa_configs",
+				})
+				handler(&rawSseMocks.RawEventMock{
+					IDCall:    func() string { return "abc" },
+					EventCall: func() string { return dtos.SSEEventTypeMessage },
+					DataCall:  func() string { return string(mainJSON) },
+				})
+				<-waiter
+				status <- sse.StatusDisconnected
+			}()
+		},
+		StopStreamingCall: func() {
+			waiter <- struct{}{}
+		},
+	}
+
+	manager.StartWorkers()
+	manager.Start()
+	message := <-feedback
+	if message != StatusUp {
+		t.Error("push manager should have propagated a push up status. Got: ", message)
+	}
+
+	waiter <- struct{}{} // free the goroutine to send the config update event
+
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("SynchronizeConfig should have been called once")
+	}
+
+	if receivedCN != 555 {
+		t.Error("wrong change number received: ", receivedCN)
+	}
+	if receivedDefinition != "{\"key\":\"value\"}" {
+		t.Error("wrong definition received: ", receivedDefinition)
+	}
+
+	waiter <- struct{}{} // free the goroutine to disconnect
+	manager.StopWorkers()
 }
