@@ -13,11 +13,17 @@ const (
 	splitQueueMinSize        = 5000
 	segmentQueueMinSize      = 5000
 	largeSegmentQueueMinSize = 5000
+	configQueueMinSize       = 5000
 )
 
 type LargeSegment struct {
 	queue  chan dtos.LargeSegmentChangeUpdate
 	worker *LargeSegmentUpdateWorker
+}
+
+type Config struct {
+	queue  chan dtos.ConfigChangeUpdate
+	worker *ConfigUpdateWorker
 }
 
 // Processor provides the interface for an update-message processor
@@ -26,6 +32,7 @@ type Processor interface {
 	ProcessSplitKillUpdate(update *dtos.SplitKillUpdate) error
 	ProcessSegmentChangeUpdate(update *dtos.SegmentChangeUpdate) error
 	ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmentChangeUpdate) error
+	ProcessConfigChangeUpdate(update *dtos.ConfigChangeUpdate) error
 	StartWorkers()
 	StopWorkers()
 }
@@ -39,6 +46,7 @@ type ProcessorImpl struct {
 	synchronizer  synchronizerInterface
 	logger        logging.LoggerInterface
 	largeSegment  *LargeSegment
+	config        *Config
 }
 
 // NewProcessor creates new processor
@@ -48,6 +56,7 @@ func NewProcessor(
 	synchronizer synchronizerInterface,
 	logger logging.LoggerInterface,
 	lscfg *conf.LargeSegmentConfig,
+	configQueueSize int64,
 ) (*ProcessorImpl, error) {
 	if segmentQueueSize < segmentQueueMinSize {
 		return nil, errors.New("small size of segmentQueue")
@@ -85,6 +94,23 @@ func NewProcessor(
 		}
 	}
 
+	var cfg *Config
+	if configQueueSize > 0 {
+		if configQueueSize < configQueueMinSize {
+			return nil, errors.New("small size of configQueue")
+		}
+		configQueue := make(chan dtos.ConfigChangeUpdate, configQueueSize)
+		configWorker, err := NewConfigUpdateWorker(configQueue, synchronizer, logger)
+		if err != nil {
+			return nil, fmt.Errorf("error instantiating config worker: %w", err)
+		}
+
+		cfg = &Config{
+			queue:  configQueue,
+			worker: configWorker,
+		}
+	}
+
 	return &ProcessorImpl{
 		splitQueue:    splitQueue,
 		splitWorker:   splitWorker,
@@ -93,6 +119,7 @@ func NewProcessor(
 		synchronizer:  synchronizer,
 		logger:        logger,
 		largeSegment:  largeSegment,
+		config:        cfg,
 	}, nil
 }
 
@@ -135,12 +162,28 @@ func (p *ProcessorImpl) ProcessLargeSegmentChangeUpdate(update *dtos.LargeSegmen
 	return nil
 }
 
+// ProcessConfigChangeUpdate accepts a config change notification and schedules a fetch
+func (p *ProcessorImpl) ProcessConfigChangeUpdate(update *dtos.ConfigChangeUpdate) error {
+	if p.config == nil {
+		return nil
+	}
+
+	if update == nil {
+		return errors.New("config change update cannot be nil")
+	}
+	p.config.queue <- *update
+	return nil
+}
+
 // StartWorkers enables split & segments workers
 func (p *ProcessorImpl) StartWorkers() {
 	p.splitWorker.Start()
 	p.segmentWorker.Start()
 	if p.largeSegment != nil {
 		p.largeSegment.worker.Start()
+	}
+	if p.config != nil {
+		p.config.worker.Start()
 	}
 }
 
@@ -150,5 +193,8 @@ func (p *ProcessorImpl) StopWorkers() {
 	p.segmentWorker.Stop()
 	if p.largeSegment != nil {
 		p.largeSegment.worker.Stop()
+	}
+	if p.config != nil {
+		p.config.worker.Stop()
 	}
 }

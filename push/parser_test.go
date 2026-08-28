@@ -17,6 +17,8 @@ const CN_SHOULD_BE_123 = "change number should be 123. Is: "
 const CHANNEL_SHOULD_BE = "channel should be sarasa_splits. Is: "
 const ERROR_SHOULD_RETURNED = "no error should have been returned. Got: "
 const FF_SHOULD_BE_MAURO_JAVA = "feature flag should be mauro_java"
+const CONFIG_SHOULD_BE_NIL = "config definition should be nil"
+const CONFIG_NOT_SHOULD_BE_NIL = "config definition should be not nil"
 const FF_DEFINITION_ZLIB = "eJzMk99u2kwQxV8lOtdryQZj8N6hD5QPlThSTVNVEUKDPYZt1jZar1OlyO9emf8lVFWv2ss5zJyd82O8hTWUZSqZvW04opwhUVdsIKBSSKR+10vS1HWW7pIdz2NyBjRwHS8IXEopTLgbQqDYT+ZUm3LxlV4J4mg81LpMyKqygPRc94YeM6eQTtjphp4fegLVXvD6Qdjt9wPXF6gs2bqCxPC/2eRpDIEXpXXblpGuWCDljGptZ4bJ5lxYSJRZBoFkTcWKozpfsoH0goHfCXpB6PfcngDpVQnZEUjKIlOr2uwWqiC3zU5L1aF+3p7LFhUkPv8/mY2nk3gGgZxssmZzb8p6A9n25ktVtA9iGI3ODXunQ3HDp+AVWT6F+rZWlrWq7MN+YkSWWvuTDvkMSnNV7J6oTdl6qKTEvGnmjcCGjL2IYC/ovPYgUKnvvPtbmrmApiVryLM7p2jE++AfH6fTx09/HvuF32LWnNjStM0Xh3c8ukZcsZlEi3h8/zCObsBpJ0acqYLTmFdtqitK1V6NzrfpdPBbLmVx4uK26e27izpDu/r5yf/16AXun2Cr4u6w591xw7+LfDidLj6Mv8TXwP8xbofv/c7UmtHMmx8BAAD//0fclvU="
 const FF_DEFINITION_GZIP = "H4sIAAAAAAAA/8yT327aTBDFXyU612vJxoTgvUMfKB8qcaSapqoihAZ7DNusvWi9TpUiv3tl/pdQVb1qL+cwc3bOj/EGzlKeq3T6tuaYCoZEXbGFgMogkXXDIM0y31v4C/aCgMnrU9/3gl7Pp4yilMMIAuVusqDamvlXeiWIg/FAa5OSU6aEDHz/ip4wZ5Be1AmjoBsFAtVOCO56UXh31/O7ApUjV1eQGPw3HT+NIPCitG7bctIVC2ScU63d1DK5gksHCZPnEEhXVC45rosFW8ig1++GYej3g85tJEB6aSA7Aqkpc7Ws7XahCnLTbLVM7evnzalsUUHi8//j6WgyTqYQKMilK7b31tRryLa3WKiyfRCDeHhq2Dntiys+JS/J8THUt5VyrFXlHnYTQ3LU2h91yGdQVqhy+0RtTeuhUoNZ08wagTVZdxbBndF5vYVApb7z9m9pZgKaFqwhT+6coRHvg398nEweP/157Bd+S1hz6oxtm88O73B0jbhgM47nyej+YRRfgdNODDlXJWcJL9tUF5SqnRqfbtPr4LdcTHnk4rfp3buLOkG7+Pmp++vRM9w/wVblzX7Pm8OGfxf5YDKZfxh9SS6B/2Pc9t/7ja01o5k1PwIAAP//uTipVskEAAA="
 
@@ -757,6 +759,7 @@ func TestNewNotificationParserImpl(t *testing.T) {
 			return common.Int64Ref(123)
 		},
 		nil,
+		nil,
 		nil)
 
 	if status, err := parser.ParseAndForward(event); *status != 123 || err != nil {
@@ -1093,5 +1096,302 @@ func TestLargeParseSegmentChangeWrongLsDefinition(t *testing.T) {
 
 	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
 		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestParseConfigUpdate(t *testing.T) {
+	compressType := 0
+	configDefinition := "eyJrZXkiOiJ2YWx1ZSJ9"
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:                 dtos.UpdateTypeConfigChange,
+				ChangeNumber:         123,
+				PreviousChangeNumber: 1,
+				CompressType:         common.IntRef(compressType),
+				Definition:           common.StringRef(configDefinition),
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_configs",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+		onConfigUpdate: func(u *dtos.ConfigChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.Channel() != "sarasa_configs" {
+				t.Error("channel should be sarasa_configs. Is: ", u.Channel())
+			}
+			if u.UpdateType() != dtos.UpdateTypeConfigChange {
+				t.Error("update type should be CONFIG_UPDATE. Is: ", u.UpdateType())
+			}
+			if u.PreviousChangeNumber() == nil || *u.PreviousChangeNumber() != 1 {
+				t.Error("previous change number should be 1")
+			}
+			if u.Definition() == nil || *u.Definition() != "{\"key\":\"value\"}" {
+				t.Error(CONFIG_NOT_SHOULD_BE_NIL)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestParseConfigUpdateNoDefinition(t *testing.T) {
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:         dtos.UpdateTypeConfigChange,
+				ChangeNumber: 123,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_configs",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+		onConfigUpdate: func(u *dtos.ConfigChangeUpdate) error {
+			if u.ChangeNumber() != 123 {
+				t.Error(CN_SHOULD_BE_123, u.ChangeNumber())
+			}
+			if u.PreviousChangeNumber() != nil {
+				t.Error("previous change number should be nil")
+			}
+			if u.Definition() != nil {
+				t.Error(CONFIG_SHOULD_BE_NIL)
+			}
+			return nil
+		},
+	}
+
+	if status, err := parser.ParseAndForward(event); status != nil || err != nil {
+		t.Error(ERROR_SHOULD_RETURNED, err)
+	}
+}
+
+func TestParseUnknownUpdateType(t *testing.T) {
+	event := &sseMocks.RawEventMock{
+		IDCall:    func() string { return "abc" },
+		EventCall: func() string { return dtos.SSEEventTypeMessage },
+		DataCall: func() string {
+			updateJSON, _ := json.Marshal(genericMessageData{
+				Type:         "SOME_UNKNOWN_UPDATE",
+				ChangeNumber: 123,
+			})
+			mainJSON, _ := json.Marshal(genericData{
+				Timestamp: 123,
+				Data:      string(updateJSON),
+				Channel:   "sarasa_configs",
+			})
+			return string(mainJSON)
+		},
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+
+	if _, err := parser.ParseAndForward(event); err == nil {
+		t.Error("an error should have been returned for an unknown update type")
+	}
+}
+
+func TestParseConfigDtoNotCompress(t *testing.T) {
+	compressType := 0
+	configDefinition := "eyJrZXkiOiJ2YWx1ZSJ9"
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition == nil {
+		t.Error(CONFIG_NOT_SHOULD_BE_NIL)
+	}
+	if *definition != "{\"key\":\"value\"}" {
+		t.Error("definition should be '{\"key\":\"value\"}'. Is: ", *definition)
+	}
+}
+
+func TestParseConfigDtoGzipCompress(t *testing.T) {
+	compressType := 1
+	configDefinition := FF_DEFINITION_GZIP
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition == nil {
+		t.Error(CONFIG_NOT_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoZlibCompress(t *testing.T) {
+	compressType := 2
+	configDefinition := FF_DEFINITION_ZLIB
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition == nil {
+		t.Error(CONFIG_NOT_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoZlibCompressWrongCompressType(t *testing.T) {
+	compressType := 2
+	configDefinition := FF_DEFINITION_GZIP
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition != nil {
+		t.Error(CONFIG_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoCompressTypeGreaterTwo(t *testing.T) {
+	compressType := 3
+	configDefinition := FF_DEFINITION_ZLIB
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition != nil {
+		t.Error(CONFIG_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoCompressTypeNil(t *testing.T) {
+	configDefinition := FF_DEFINITION_ZLIB
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		Definition:           common.StringRef(configDefinition),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition != nil {
+		t.Error(CONFIG_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoDefinitionNil(t *testing.T) {
+	compressType := 1
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition != nil {
+		t.Error(CONFIG_SHOULD_BE_NIL)
+	}
+}
+
+func TestParseConfigDtoMalformedBase64(t *testing.T) {
+	compressType := 0
+	data := genericMessageData{
+		Type:                 dtos.UpdateTypeConfigChange,
+		ChangeNumber:         123,
+		PreviousChangeNumber: 1,
+		CompressType:         common.IntRef(compressType),
+		Definition:           common.StringRef("!!!not-valid-base64!!!"),
+	}
+	logger := logging.NewLogger(nil)
+	parser := &NotificationParserImpl{
+		dataUtils: NewDataUtilsImpl(),
+		logger:    logger,
+	}
+	definition := parser.processConfigMessage(&data)
+	if definition != nil {
+		t.Error(CONFIG_SHOULD_BE_NIL)
 	}
 }

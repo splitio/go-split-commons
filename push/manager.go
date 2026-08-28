@@ -71,14 +71,15 @@ func NewManager(
 	metadata dtos.Metadata,
 	clientKey *string,
 ) (*ManagerImpl, error) {
-	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegment)
+	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegment, cfg.ConfigUpdateQueueSize)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}
 
 	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
 	parser := NewNotificationParserImpl(logger, processor.ProcessSplitChangeUpdate, processor.ProcessSplitKillUpdate, processor.ProcessSegmentChangeUpdate,
-		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate)
+		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate,
+		processor.ProcessConfigChangeUpdate)
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,

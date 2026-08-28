@@ -12,6 +12,7 @@ const (
 	defaultStreamingForceHTTP1         = false
 	defaultSplitUpdateQueueSize        = 5000
 	defaultSegmentUpdateQueueSize      = 5000
+	defaultConfigUpdateQueueSize       = 0 // 0 disables config streaming (CONFIG_UPDATE)
 	defaultLargeSegmentUpdateQueueSize = 5000
 	defaultLargeSegmentQueueSize       = 5000
 	defaultLargeSegmentWorkers         = 5
@@ -50,6 +51,7 @@ func GetDefaultAdvancedConfig() AdvancedConfig {
 		ImpressionsQueueSize:   defaultImpressionsQueueSize,
 		SegmentQueueSize:       defaultSegmentQueueSize,
 		SegmentUpdateQueueSize: defaultSegmentUpdateQueueSize,
+		ConfigUpdateQueueSize:  defaultConfigUpdateQueueSize,
 		SegmentWorkers:         defaultSegmentWorkers,
 		SplitUpdateQueueSize:   defaultSplitUpdateQueueSize,
 		StreamingEnabled:       defaultStreamingEnabled,

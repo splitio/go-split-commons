@@ -56,6 +56,7 @@ type Synchronizer interface {
 	RefreshRates() (splits time.Duration, segments time.Duration)
 	SynchronizeLargeSegment(name string, till *int64) error
 	SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
+	SynchronizeConfig(update *dtos.ConfigChangeUpdate) error
 }
 
 // SynchronizerImpl implements Synchronizer
@@ -227,6 +228,12 @@ func (s *SynchronizerImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.
 		return err
 	}
 
+	return nil
+}
+
+// SynchronizeConfig is a no-op for the feature-flag synchronizer; config streaming is
+// handled by an SDK-specific Synchronizer that overrides this method.
+func (s *SynchronizerImpl) SynchronizeConfig(update *dtos.ConfigChangeUpdate) error {
 	return nil
 }
 

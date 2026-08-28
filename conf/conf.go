@@ -85,14 +85,16 @@ type AdvancedConfig struct {
 	StreamingForceHTTP1    bool
 	SplitUpdateQueueSize   int64
 	SegmentUpdateQueueSize int64
-	SplitsRefreshRate      int
-	SegmentsRefreshRate    int
-	FlagSetsFilter         []string
-	AuthSpecVersion        string
-	FlagsSpecVersion       string
-	LargeSegment           *LargeSegmentConfig
-	RulesConfig            *RulesConfig
-	FallbackTreatment      dtos.FallbackTreatmentConfig
+	// ConfigUpdateQueueSize enables config streaming (CONFIG_UPDATE) when > 0; 0 disables it.
+	ConfigUpdateQueueSize int64
+	SplitsRefreshRate     int
+	SegmentsRefreshRate   int
+	FlagSetsFilter        []string
+	AuthSpecVersion       string
+	FlagsSpecVersion      string
+	LargeSegment          *LargeSegmentConfig
+	RulesConfig           *RulesConfig
+	FallbackTreatment     dtos.FallbackTreatmentConfig
 }
 
 type LargeSegmentConfig struct {
