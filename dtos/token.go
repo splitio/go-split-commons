@@ -19,6 +19,36 @@ type Token struct {
 	PushEnabled bool   `json:"pushEnabled"`
 }
 
+// UnmarshalJSON parses the legacy `pushEnabled` boolean when present, and otherwise falls back to
+// `config.streaming.enabled` - some auth backends (e.g. the Configs auth service) have moved
+// streaming capability there instead of the top-level field. When neither is present, PushEnabled
+// defaults to false, matching the pre-existing zero-value behavior.
+func (t *Token) UnmarshalJSON(raw []byte) error {
+	var shadow struct {
+		Token       string `json:"token"`
+		PushEnabled *bool  `json:"pushEnabled"`
+		Config      *struct {
+			Streaming *struct {
+				Enabled *bool `json:"enabled"`
+			} `json:"streaming"`
+		} `json:"config"`
+	}
+	if err := json.Unmarshal(raw, &shadow); err != nil {
+		return err
+	}
+
+	t.Token = shadow.Token
+	switch {
+	case shadow.PushEnabled != nil:
+		t.PushEnabled = *shadow.PushEnabled
+	case shadow.Config != nil && shadow.Config.Streaming != nil && shadow.Config.Streaming.Enabled != nil:
+		t.PushEnabled = *shadow.Config.Streaming.Enabled
+	default:
+		t.PushEnabled = false
+	}
+	return nil
+}
+
 // TokenPayload payload dto
 type TokenPayload struct {
 	Capabilitites string `json:"x-ably-capability"`
