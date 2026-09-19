@@ -118,7 +118,7 @@ type Config struct {
 	FlagSetsInvalid            int64         `json:"fsI,omitempty"`
 }
 
-// Stats data sent by sdks pereiodically
+// Stats data sent by sdks periodically
 type Stats struct {
 	LastSynchronizations *LastSynchronization `json:"lS,omitempty"`
 	MethodLatencies      *MethodLatencies     `json:"mL,omitempty"`
