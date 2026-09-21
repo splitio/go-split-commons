@@ -17,19 +17,23 @@ const occupancy = "[?occupancy=metrics.publishers]"
 type Token struct {
 	Token       string `json:"token"`
 	PushEnabled bool   `json:"pushEnabled"`
+	ConnDelay   int64  `json:"connDelay"`
 }
 
-// UnmarshalJSON parses the legacy `pushEnabled` boolean when present, and otherwise falls back to
-// `config.streaming.enabled` - some auth backends (e.g. the Configs auth service) have moved
-// streaming capability there instead of the top-level field. When neither is present, PushEnabled
-// defaults to false, matching the pre-existing zero-value behavior.
+// UnmarshalJSON parses the legacy `pushEnabled` boolean and `connDelay` seconds when present, and
+// otherwise falls back to `config.streaming.enabled` and `config.streaming.delay` respectively -
+// some auth backends (e.g. the Configs auth service) have moved streaming capability there instead
+// of the top-level fields. When neither is present, PushEnabled defaults to false and ConnDelay
+// defaults to 0, matching the pre-existing zero-value behavior.
 func (t *Token) UnmarshalJSON(raw []byte) error {
 	var shadow struct {
 		Token       string `json:"token"`
 		PushEnabled *bool  `json:"pushEnabled"`
+		ConnDelay   *int64 `json:"connDelay"`
 		Config      *struct {
 			Streaming *struct {
-				Enabled *bool `json:"enabled"`
+				Enabled *bool  `json:"enabled"`
+				Delay   *int64 `json:"delay"`
 			} `json:"streaming"`
 		} `json:"config"`
 	}
@@ -45,6 +49,14 @@ func (t *Token) UnmarshalJSON(raw []byte) error {
 		t.PushEnabled = *shadow.Config.Streaming.Enabled
 	default:
 		t.PushEnabled = false
+	}
+	switch {
+	case shadow.ConnDelay != nil:
+		t.ConnDelay = *shadow.ConnDelay
+	case shadow.Config != nil && shadow.Config.Streaming != nil && shadow.Config.Streaming.Delay != nil:
+		t.ConnDelay = *shadow.Config.Streaming.Delay
+	default:
+		t.ConnDelay = 0
 	}
 	return nil
 }
