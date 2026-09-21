@@ -1,11 +1,81 @@
 package dtos
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/splitio/go-toolkit/v5/datastructures/set"
 )
+
+func TestTokenUnmarshalJSON(t *testing.T) {
+	// Legacy shape: top-level pushEnabled wins, config.streaming.enabled is ignored if present.
+	var legacy Token
+	if err := json.Unmarshal([]byte(`{"token":"abc","pushEnabled":true,"config":{"streaming":{"enabled":false}}}`), &legacy); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !legacy.PushEnabled {
+		t.Error("expected top-level pushEnabled to take precedence")
+	}
+
+	var legacyFalse Token
+	if err := json.Unmarshal([]byte(`{"token":"abc","pushEnabled":false}`), &legacyFalse); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if legacyFalse.PushEnabled {
+		t.Error("expected pushEnabled=false to be honored")
+	}
+
+	// New shape: no top-level pushEnabled, fall back to config.streaming.enabled.
+	var viaConfig Token
+	if err := json.Unmarshal([]byte(`{"token":"abc","config":{"streaming":{"enabled":true}}}`), &viaConfig); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !viaConfig.PushEnabled {
+		t.Error("expected config.streaming.enabled fallback to enable push")
+	}
+	if viaConfig.Token != "abc" {
+		t.Error("expected token field to still be parsed")
+	}
+
+	// Neither field present: defaults to false, same as the zero value.
+	var neither Token
+	if err := json.Unmarshal([]byte(`{"token":"abc"}`), &neither); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if neither.PushEnabled {
+		t.Error("expected PushEnabled to default to false")
+	}
+}
+
+func TestTokenUnmarshalJSONConnDelay(t *testing.T) {
+	// Legacy shape: top-level connDelay wins, config.streaming.delay is ignored if present.
+	var legacy Token
+	if err := json.Unmarshal([]byte(`{"token":"abc","connDelay":30,"config":{"streaming":{"delay":90}}}`), &legacy); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if legacy.ConnDelay != 30 {
+		t.Errorf("expected top-level connDelay to take precedence, got %d", legacy.ConnDelay)
+	}
+
+	// New shape: no top-level connDelay, fall back to config.streaming.delay.
+	var viaConfig Token
+	if err := json.Unmarshal([]byte(`{"token":"abc","config":{"streaming":{"delay":90}}}`), &viaConfig); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if viaConfig.ConnDelay != 90 {
+		t.Errorf("expected config.streaming.delay fallback, got %d", viaConfig.ConnDelay)
+	}
+
+	// Neither field present: defaults to 0, same as the zero value.
+	var neither Token
+	if err := json.Unmarshal([]byte(`{"token":"abc"}`), &neither); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if neither.ConnDelay != 0 {
+		t.Errorf("expected ConnDelay to default to 0, got %d", neither.ConnDelay)
+	}
+}
 
 func TestTokenChannels(t *testing.T) {
 	token := Token{
