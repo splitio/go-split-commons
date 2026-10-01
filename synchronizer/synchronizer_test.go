@@ -1276,3 +1276,16 @@ func TestSynchronizeLargeSegmentUpdateNotCached(t *testing.T) {
 
 	lsUpdater.AssertExpectations(t)
 }
+
+func TestSynchronizeFeatureFlagsNilResultOnError(t *testing.T) {
+	expectedErr := errors.New("fetch failed")
+	splitUpdater := &syncMocks.SplitUpdaterMock{}
+	splitUpdater.On("SynchronizeFeatureFlags", (*dtos.SplitChangeUpdate)(nil)).Return((*split.UpdateResult)(nil), expectedErr).Once()
+
+	sync := &SynchronizerImpl{workers: Workers{SplitUpdater: splitUpdater}}
+
+	assert.NotPanics(t, func() {
+		assert.Equal(t, expectedErr, sync.SynchronizeFeatureFlags(nil))
+	})
+	splitUpdater.AssertExpectations(t)
+}
