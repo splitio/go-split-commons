@@ -233,6 +233,10 @@ func (s *SynchronizerImpl) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.
 // SynchronizeFeatureFlags syncs featureFlags
 func (s *SynchronizerImpl) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error {
 	result, err := s.workers.SplitUpdater.SynchronizeFeatureFlags(ffChange)
+	if err != nil || result == nil {
+		// the fetch failed (the updater may also return no result at all); nothing to synchronize
+		return err
+	}
 	s.synchronizeSegmentsAfterSplitAndRBSync(result.ReferencedSegments)
 	s.synchronizeLargeSegmentsAfterSplitSync(result.ReferencedLargeSegments)
 	return err

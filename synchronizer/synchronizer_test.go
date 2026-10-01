@@ -1276,3 +1276,31 @@ func TestSynchronizeLargeSegmentUpdateNotCached(t *testing.T) {
 
 	lsUpdater.AssertExpectations(t)
 }
+
+func TestSynchronizeFeatureFlagsNilResultOnError(t *testing.T) {
+	expectedErr := errors.New("fetch failed")
+	splitUpdater := &syncMocks.SplitUpdaterMock{}
+	splitUpdater.On("SynchronizeFeatureFlags", (*dtos.SplitChangeUpdate)(nil)).Return((*split.UpdateResult)(nil), expectedErr).Once()
+
+	sync := &SynchronizerImpl{workers: Workers{SplitUpdater: splitUpdater}}
+
+	assert.NotPanics(t, func() {
+		assert.Equal(t, expectedErr, sync.SynchronizeFeatureFlags(nil))
+	})
+	splitUpdater.AssertExpectations(t)
+}
+
+func TestSynchronizeFeatureFlagsErrorSkipsSegmentSync(t *testing.T) {
+	expectedErr := errors.New("fetch failed")
+	splitUpdater := &syncMocks.SplitUpdaterMock{}
+	splitUpdater.On("SynchronizeFeatureFlags", (*dtos.SplitChangeUpdate)(nil)).
+		Return(&split.UpdateResult{ReferencedSegments: []string{"seg1"}}, expectedErr).Once()
+	// no expectations set: any call to the segment updater fails the test
+	segmentUpdater := &syncMocks.SegmentUpdaterMock{}
+
+	sync := &SynchronizerImpl{workers: Workers{SplitUpdater: splitUpdater, SegmentUpdater: segmentUpdater}}
+
+	assert.Equal(t, expectedErr, sync.SynchronizeFeatureFlags(nil))
+	splitUpdater.AssertExpectations(t)
+	segmentUpdater.AssertNotCalled(t, "SynchronizeSegment")
+}
