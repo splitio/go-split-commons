@@ -1,3 +1,7 @@
+10.2.1 (Oct 5, 2026)
+- Fixed streaming retry handling so a shutdown requested while waiting to retry no longer blocks until the backoff expires.
+- Updated go-toolkit to v5.5.1 (fixes a duration overflow in `backoff` that turned long backoffs into zero or negative waits).
+
 10.2.0 (Aug 26, 2025)
 - Added type and subtype in definition dto.
 
