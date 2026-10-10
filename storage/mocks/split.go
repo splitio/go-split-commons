@@ -92,7 +92,7 @@ func (m MockSplitStorage) TrafficTypeExists(trafficType string) bool {
 	return m.TrafficTypeExistsCall(trafficType)
 }
 
-// GetNamesByFLagSets mock
+// GetNamesByFlagSets mock
 func (m MockSplitStorage) GetNamesByFlagSets(sets []string) map[string][]string {
 	return m.GetNamesByFlagSetsCall(sets)
 }
@@ -195,7 +195,7 @@ func (m *SplitStorageMock) TrafficTypeExists(trafficType string) bool {
 	return args.Bool(0)
 }
 
-// GetNamesByFLagSets mock
+// GetNamesByFlagSets mock
 func (m *SplitStorageMock) GetNamesByFlagSets(sets []string) map[string][]string {
 	args := m.Called(sets)
 	if args.Get(0) == nil {

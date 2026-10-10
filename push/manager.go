@@ -18,7 +18,7 @@ import (
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
 )
 
-// Status update contants that will be propagated to the push manager's user
+// Status update constants that will be propagated to the push manager's user
 const (
 	StatusUp = iota
 	StatusDown
@@ -57,7 +57,7 @@ type ManagerImpl struct {
 	runtimeTelemetry  storage.TelemetryRuntimeProducer
 }
 
-// FeedbackLoop is a type alias for the type of chan that must be supplied for push status tobe propagated
+// FeedbackLoop is a type alias for the type of chan that must be supplied for push status to be propagated
 type FeedbackLoop = chan<- int64
 
 // NewManager constructs a new push manager
@@ -103,7 +103,7 @@ func (m *ManagerImpl) Start() error {
 	return nil
 }
 
-// Stop method stops the sse client and it's status monitoring goroutine
+// Stop method stops the sse client and its status monitoring goroutine
 func (m *ManagerImpl) Stop() error {
 	if !m.lifecycle.BeginShutdown() {
 		return ErrNotRunning

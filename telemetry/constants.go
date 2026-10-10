@@ -23,7 +23,7 @@ const (
 	Track = "track"
 )
 
-// ParseMethodFromRedisHash parses the method in a latency/exception hash from redis and returns it's normalized version, or `ok` set to false
+// ParseMethodFromRedisHash parses the method in a latency/exception hash from redis and returns its normalized version, or `ok` set to false
 func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 	switch method {
 	case "getTreatment", "get_treatment", "treatment", "Treatment":
@@ -49,13 +49,13 @@ func ParseMethodFromRedisHash(method string) (normalized string, ok bool) {
 	}
 }
 
-// IsMethodValid returs true if the supplied method name is valid
+// IsMethodValid returns true if the supplied method name is valid
 func IsMethodValid(method *string) bool {
 	switch *method {
 	case "getTreatment", "get_treatment", "treatment", "Treatment":
 	case "getTreatments", "get_treatments", "treatments", "Treatments":
-	case "getTreatmentWithConfig", "get_treatment_with_config", "treatmentWithConfig", "TreatmentWithWconfig":
-	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatmentsWithConfig", "TreatmentsWithWconfig":
+	case "getTreatmentWithConfig", "get_treatment_with_config", "treatmentWithConfig", "TreatmentWithConfig":
+	case "getTreatmentsWithConfig", "get_treatments_with_config", "treatmentsWithConfig", "TreatmentsWithConfig":
 	case "getTreatmentsByFlagSet", "get_treatments_by_flag_set", "treatmentsByFlagSet", "TreatmentsByFlagSet":
 	case "getTreatmentsByFlagSets", "get_treatments_by_flag_sets", "treatmentsByFlagSets", "TreatmentsByFlagSets":
 	case "getTreatmentsWithConfigByFlagSet", "get_treatments_with_config_by_flag_set", "treatmentsWithConfigByFlagSet", "TreatmentsWithConfigByFlagSet":
@@ -63,7 +63,7 @@ func IsMethodValid(method *string) bool {
 	case "getTreatmentWithEvaluationOptions", "get_treatment_with_evaluation_options", "treatmentWithEvaluationOptions", "TreatmentWithEvaluationOptions":
 	case "getTreatmentsWithEvaluationOptions", "get_treatments_with_evaluation_options", "treatmentsWithEvaluationOptions", "TreatmentsWithEvaluationOptions":
 	case "getTreatmentWithConfigAndEvaluationOptions", "get_treatment_with_config_and_evaluation_options", "treatment_with_config_and_evaluation_options", "treatmentWithConfigAndEvaluationOptions", "TreatmentWithConfigAndEvaluationOptions":
-	case "getTreatmentsWithConfigAndEvaluationOption", "get_treatments_with_config_and_evaluation_options", "treatments_with_config_and_evaluation_options", "treatmentsWithConfigAndEvaluationOptions", "TreatmentsWithConfigAndEvaluationOptions":
+	case "getTreatmentsWithConfigAndEvaluationOptions", "get_treatments_with_config_and_evaluation_options", "treatments_with_config_and_evaluation_options", "treatmentsWithConfigAndEvaluationOptions", "TreatmentsWithConfigAndEvaluationOptions":
 	case "getTreatmentsByFlagSetWithEvaluationOptions", "get_treatments_by_flag_set_with_evaluation_options", "treatments_by_flag_set_with_evaluation_options", "treatmentsByFlagSetWithEvaluationOptions", "TreatmentsByFlagSetWithEvaluationOptions":
 	case "getTreatmentsByFlagSetsWithEvaluationOptions", "get_treatments_by_flag_sets_with_evaluation_options", "treatments_by_flag_sets_with_evaluation_options", "treatmentsByFlagSetsWithEvaluationOptions", "TreatmentsByFlagSetsWithEvaluationOptions":
 	case "getTreatmentsWithConfigByFlagSetAndEvaluationOptions", "get_treatments_with_config_by_flag_set_and_evaluation_options", "treatments_with_config_by_flag_set_and_evaluation_options", "treatmentsWithConfigByFlagSetAndEvaluationOptions", "TreatmentsWithConfigByFlagSetAndEvaluationOptions":
