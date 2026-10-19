@@ -1020,3 +1020,78 @@ func TestStartBGSyncFailWithSnapshot(t *testing.T) {
 		t.Error("onReady should not have been called on first attempt")
 	}
 }
+
+type fixedBackoff struct{ wait time.Duration }
+
+func (f *fixedBackoff) Next() time.Duration { return f.wait }
+func (f *fixedBackoff) Reset()              {}
+
+// A shutdown requested while the manager is waiting to retry the streaming connection
+// must not be delayed until the backoff expires.
+func TestStopDuringStreamingRetryBackoff(t *testing.T) {
+	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall:               func() (time.Duration, time.Duration) { return 1 * time.Minute, 1 * time.Minute },
+		SyncAllCall:                    func() error { return nil },
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
+	}
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = true
+	telemetryStorage := storageMocks.MockTelemetryStorage{RecordStreamingEventCall: func(*dtos.StreamingEvent) {}}
+
+	status := make(chan int, 1)
+	manager, err := NewSynchronizerManager(syncMock, logging.NewLogger(nil), cfg, &apiMocks.MockAuthClient{}, &storageMocks.MockSplitStorage{}, status, telemetryStorage, dtos.Metadata{}, nil, &application.Dummy{})
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	manager.backoff = &fixedBackoff{wait: 1 * time.Hour}
+
+	startCalls := int32(0)
+	stopCalls := int32(0)
+	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
+		StartCall: func() error {
+			atomic.AddInt32(&startCalls, 1)
+			go func() { manager.streamingStatus <- push.StatusRetryableError }()
+			return nil
+		},
+		StopCall:         func() error { atomic.AddInt32(&stopCalls, 1); return nil },
+		StartWorkersCall: func() {},
+	}
+
+	manager.Start()
+	if msg := <-status; msg != Ready {
+		t.Fatal("first message should be SDK ready")
+	}
+
+	// wait until the watcher handled the error and is sleeping on the backoff
+	deadline := time.Now().Add(2 * time.Second)
+	for atomic.LoadInt32(&stopCalls) < 1 {
+		if time.Now().After(deadline) {
+			t.Fatal("retryable error was never handled")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	time.Sleep(100 * time.Millisecond)
+
+	stopped := make(chan struct{})
+	go func() {
+		manager.Stop()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop() should not wait for the streaming retry backoff to expire")
+	}
+
+	if manager.IsRunning() {
+		t.Error("manager should not be running")
+	}
+	if c := atomic.LoadInt32(&startCalls); c != 1 {
+		t.Error("push manager must not be restarted after shutdown was requested. Start() calls: ", c)
+	}
+}

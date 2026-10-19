@@ -208,7 +208,13 @@ func (s *ManagerImpl) pushStatusWatcher() {
 				s.pushManager.Stop()
 				s.synchronizer.SyncAll()
 				s.startPolling()
-				time.Sleep(howLong)
+				timer := time.NewTimer(howLong)
+				select {
+				case <-timer.C:
+				case <-s.lifecycle.ShutdownRequested():
+					timer.Stop()
+					return
+				}
 				s.pushManager.Start()
 			case push.StatusNonRetryableError:
 				s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
