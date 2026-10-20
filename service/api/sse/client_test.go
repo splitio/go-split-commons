@@ -216,3 +216,36 @@ func TestStreamingClientDisconnect(t *testing.T) {
 		t.Error("next status should be disconnected. Is: ", status)
 	}
 }
+
+func TestStreamingReportsConnectedBeforeFirstEvent(t *testing.T) {
+	logger := logging.NewLogger(&logging.LoggerOptions{})
+
+	release := make(chan struct{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		<-release
+	}))
+	defer ts.Close()
+	defer close(release)
+
+	cfg := &conf.AdvancedConfig{StreamingServiceURL: ts.URL}
+	client := NewStreamingClient(cfg, logger, dtos.Metadata{SDKVersion: "go-some", MachineIP: "1.1.1.1", MachineName: "name"}, nil)
+
+	streamingStatus := make(chan int, 10)
+	client.ConnectStreaming("someToken", streamingStatus, []string{}, func(e sse.RawEvent) {
+		t.Error("no event is sent by the server")
+	})
+
+	select {
+	case status := <-streamingStatus:
+		if status != StatusFirstEventOk {
+			t.Error("first status should be connected. Is: ", status)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("connected status should be reported without waiting for an event")
+	}
+
+	client.StopStreaming()
+}

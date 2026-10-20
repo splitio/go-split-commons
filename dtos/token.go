@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -115,6 +116,8 @@ func (t *Token) ChannelList() ([]string, error) {
 			channelList = append(channelList, channelName)
 		}
 	}
+	// Capabilities is a map: sort for a deterministic channel order across connections.
+	sort.Strings(channelList)
 
 	return channelList, nil
 }

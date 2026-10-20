@@ -73,13 +73,19 @@ func NewNotificationParserImpl(
 // ParseAndForward accepts an incoming RAW event and returns a properly parsed & typed event
 func (p *NotificationParserImpl) ParseAndForward(raw sse.IncomingMessage) (*int64, error) {
 
-	if raw.Event() == "" {
-		if raw.ID() == "" {
+	eventType := raw.Event()
+	if eventType == "" {
+		switch {
+		case raw.ID() != "":
+			// If it has ID its a sync event, which we're not using not. Ignore.
+			p.logger.Debug("Ignoring sync event")
+			return nil, nil
+		case raw.Data() != "":
+			// Per the SSE spec, an event without an `event:` field defaults to "message"
+			eventType = dtos.SSEEventTypeMessage
+		default:
 			return nil, ErrEmptyEvent
 		}
-		// If it has ID its a sync event, which we're not using not. Ignore.
-		p.logger.Debug("Ignoring sync event")
-		return nil, nil
 	}
 
 	data := genericData{}
@@ -88,7 +94,7 @@ func (p *NotificationParserImpl) ParseAndForward(raw sse.IncomingMessage) (*int6
 		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
-	switch raw.Event() {
+	switch eventType {
 	case dtos.SSEEventTypeError:
 		return p.parseError(&data)
 	case dtos.SSEEventTypeMessage:
@@ -144,11 +150,11 @@ func (p *NotificationParserImpl) parseUpdate(data *genericData, nested *genericM
 	case dtos.UpdateTypeControl:
 		return p.onControlUpdate(dtos.NewControlUpdate(base.BaseMessage, nested.ControlType)), nil
 	case dtos.UpdateTypeRuleBasedChange:
-		ruleBased := p.processRuleBasedMessage(nested)
+		ruleBased, rawDefinition := p.processRuleBasedMessage(nested)
 		if ruleBased == nil {
 			return nil, p.onSplitUpdate(dtos.NewRuleBasedSegmentChangeUpdate(base, nil, nil))
 		}
-		return nil, p.onSplitUpdate(dtos.NewRuleBasedSegmentChangeUpdate(base, &nested.PreviousChangeNumber, ruleBased))
+		return nil, p.onSplitUpdate(dtos.NewRuleBasedSegmentChangeUpdate(base, &nested.PreviousChangeNumber, ruleBased).WithRawDefinition(rawDefinition))
 	case dtos.UpdateTypeConfigChange:
 		definition := p.processConfigMessage(nested)
 		if definition == nil {
@@ -198,21 +204,21 @@ func (p *NotificationParserImpl) processMessage(nested *genericMessageData) *dto
 	return &featureFlag
 }
 
-func (p *NotificationParserImpl) processRuleBasedMessage(nested *genericMessageData) *dtos.RuleBasedSegmentDTO {
+func (p *NotificationParserImpl) processRuleBasedMessage(nested *genericMessageData) (*dtos.RuleBasedSegmentDTO, string) {
 	compressType := getCompressType(nested.CompressType)
 	if nested.Definition == nil || compressType == nil {
-		return nil
+		return nil, ""
 	}
 	ruleBasedDecoded, err := p.dataUtils.Decode(common.StringFromRef(nested.Definition))
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error decoding RuleBasedSegmentDefinition: '%s'", err.Error()))
-		return nil
+		return nil, ""
 	}
 	if common.IntFromRef(compressType) != datautils.None {
 		ruleBasedDecoded, err = p.dataUtils.Decompress(ruleBasedDecoded, common.IntFromRef(compressType))
 		if err != nil {
 			p.logger.Debug(fmt.Sprintf("error decompressing RulebasedSegmentDefinition: '%s'", err.Error()))
-			return nil
+			return nil, ""
 		}
 	}
 
@@ -220,9 +226,9 @@ func (p *NotificationParserImpl) processRuleBasedMessage(nested *genericMessageD
 	err = json.Unmarshal([]byte(ruleBasedDecoded), &ruleBased)
 	if err != nil {
 		p.logger.Debug(fmt.Sprintf("error parsing rule-based segment json definition: '%s'", err.Error()))
-		return nil
+		return nil, ""
 	}
-	return &ruleBased
+	return &ruleBased, string(ruleBasedDecoded)
 }
 
 // processConfigMessage decodes and decompresses a config definition into an opaque JSON

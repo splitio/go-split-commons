@@ -2,6 +2,7 @@ package dtos
 
 import (
 	"encoding/json"
+	"sort"
 	"testing"
 	"time"
 
@@ -162,5 +163,21 @@ func TestTokenRefresh(t *testing.T) {
 	}
 	if result != 50*time.Minute {
 		t.Error("It should be 50m")
+	}
+}
+
+func TestTokenChannelListIsSorted(t *testing.T) {
+	token := Token{
+		PushEnabled: true,
+		Token:       "eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE1OTE3NDQzOTksImlhdCI6MTU5MTc0MDc5OX0.EcWYtI0rlA7LCVJ5tYldX-vpfMRIc_1HT68-jhXseCo",
+	}
+	for i := 0; i < 20; i++ {
+		result, err := token.ChannelList()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !sort.StringsAreSorted(result) {
+			t.Error("channel list should be sorted, got", result)
+		}
 	}
 }

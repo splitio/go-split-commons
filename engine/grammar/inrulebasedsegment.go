@@ -30,8 +30,9 @@ func NewInRuleBasedSegmentMatcher(negate bool, name string, attributeName *strin
 func (m *InRuleBasedSegmentMatcher) Match(key string, attributes map[string]interface{}, bucketingKey *string) bool {
 
 	ruleBasedSegment, err := m.ruleBuilder.ruleBasedSegmentStorage.GetRuleBasedSegmentByName(m.name)
-	if err != nil {
-		m.logger.Error(fmt.Printf("InRuleBasedSegmentMatcher: Rule-based Segment %s not found", m.name))
+	if err != nil || ruleBasedSegment == nil {
+		m.logger.Error(fmt.Sprintf("InRuleBasedSegmentMatcher: Rule-based Segment %s not found", m.name))
+		return false
 	}
 	if m.keyIsExcluded(*ruleBasedSegment, key) {
 		return false
