@@ -1395,3 +1395,30 @@ func TestParseConfigDtoMalformedBase64(t *testing.T) {
 		t.Error(CONFIG_SHOULD_BE_NIL)
 	}
 }
+
+func TestEventWithoutTypeDefaultsToMessage(t *testing.T) {
+	event := &sseMocks.RawEventMock{
+		IDCall:      func() string { return "" },
+		EventCall:   func() string { return "" },
+		DataCall:    func() string { return `{"data":"{\"type\":\"CONTROL\",\"controlType\":\"STREAMING_PAUSED\"}","channel":"control_pri"}` },
+		IsErrorCall: func() bool { return false },
+		IsEmptyCall: func() bool { return false },
+		RetryCall:   func() int64 { return 0 },
+	}
+
+	called := false
+	parser := &NotificationParserImpl{
+		logger: logging.NewLogger(nil),
+		onControlUpdate: func(*dtos.ControlUpdate) *int64 {
+			called = true
+			return nil
+		},
+	}
+
+	if _, err := parser.ParseAndForward(event); err != nil {
+		t.Error("unexpected error", err)
+	}
+	if !called {
+		t.Error("event without type should be parsed as a message")
+	}
+}

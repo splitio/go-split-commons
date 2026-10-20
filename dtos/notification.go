@@ -204,6 +204,7 @@ type SplitChangeUpdate struct {
 	previousChangeNumber *int64
 	featureFlag          *SplitDTO
 	ruleBasedSegment     *RuleBasedSegmentDTO
+	rawDefinition        *string
 }
 
 func NewSplitChangeUpdate(baseUpdate BaseUpdate, pcn *int64, featureFlag *SplitDTO) *SplitChangeUpdate {
@@ -221,6 +222,16 @@ func NewRuleBasedSegmentChangeUpdate(baseUpdate BaseUpdate, pcn *int64, ruleBase
 		ruleBasedSegment:     ruleBasedSegment,
 	}
 }
+
+// WithRawDefinition attaches the decoded (decompressed) JSON definition carried by the notification,
+// for consumers whose definition wire format differs from RuleBasedSegmentDTO.
+func (u *SplitChangeUpdate) WithRawDefinition(raw string) *SplitChangeUpdate {
+	u.rawDefinition = &raw
+	return u
+}
+
+// RawDefinition returns the decoded JSON definition carried by the notification, or nil
+func (u *SplitChangeUpdate) RawDefinition() *string { return u.rawDefinition }
 
 // UpdateType returns the type of update
 func (u *SplitChangeUpdate) UpdateType() string {

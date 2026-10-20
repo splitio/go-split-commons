@@ -826,6 +826,7 @@ func TestSynchronizeFeatureFlagsRuleBasedUpdateSecond(t *testing.T) {
 
 		ruleBasedSegment := &dtos.RuleBasedSegmentDTO{
 			Name:         "test-segment",
+			Status:       Active,
 			ChangeNumber: int64(300),
 			Conditions: []dtos.RuleBasedConditionDTO{
 				{
