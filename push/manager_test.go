@@ -965,3 +965,99 @@ func TestConfigUpdateEndToEnd(t *testing.T) {
 	waiter <- struct{}{} // free the goroutine to disconnect
 	manager.StopWorkers()
 }
+
+// connDelayTestToken is a valid token (any exp/iat) with channels in its capabilities
+const connDelayTestToken = `eyJhbGciOiJIUzI1NiIsImtpZCI6IjVZOU05US45QnJtR0EiLCJ0eXAiOiJKV1QifQ.eyJ4LWFibHktY2FwYWJpbGl0eSI6IntcIk56TTJNREk1TXpjMF9NVGd5TlRnMU1UZ3dOZz09X3NlZ21lbnRzXCI6W1wic3Vic2NyaWJlXCJdLFwiTnpNMk1ESTVNemMwX01UZ3lOVGcxTVRnd05nPT1fc3BsaXRzXCI6W1wic3Vic2NyaWJlXCJdLFwiY29udHJvbF9wcmlcIjpbXCJzdWJzY3JpYmVcIixcImNoYW5uZWwtbWV0YWRhdGE6cHVibGlzaGVyc1wiXSxcImNvbnRyb2xfc2VjXCI6W1wic3Vic2NyaWJlXCIsXCJjaGFubmVsLW1ldGFkYXRhOnB1Ymxpc2hlcnNcIl19IiwieC1hYmx5LWNsaWVudElkIjoiY2xpZW50SWQiLCJleHAiOjE2MTMzNDUyMzAsImlhdCI6MTYxMzM0MTYzMH0.Z3jKyiJq6t00hWFV_xIlh5w4xAYF3Rj0gfcTxgLjcOc`
+
+func newConnDelayManager(t *testing.T, connDelay int64, connectedAt chan<- time.Time) *ManagerImpl {
+	cfg := &conf.AdvancedConfig{SplitUpdateQueueSize: 10000, SegmentUpdateQueueSize: 10000}
+	token := &dtos.Token{Token: connDelayTestToken, PushEnabled: true, ConnDelay: connDelay}
+	authMock := &serviceMocks.MockAuthClient{
+		AuthenticateCall: func() (*dtos.Token, error) { return token, nil },
+	}
+	telemetryStorageMock := mocks.MockTelemetryStorage{
+		RecordSuccessfulSyncCall: func(resource int, tm time.Time) {},
+		RecordSyncLatencyCall:    func(resource int, tm time.Duration) {},
+		RecordTokenRefreshesCall: func() {},
+		RecordStreamingEventCall: func(streamingEvent *dtos.StreamingEvent) {},
+	}
+	manager, err := NewManager(logging.NewLogger(nil), &pushMocks.LocalSyncMock{}, cfg, make(chan int64, 100), authMock, telemetryStorageMock, dtos.Metadata{}, nil)
+	if err != nil {
+		t.Fatal("no error should be returned upon manager instantiation", err)
+	}
+	var sseStatus chan int
+	manager.sseClient = &sseMocks.StreamingClientMock{
+		ConnectStreamingCall: func(tok string, status chan int, channels []string, handler func(sse.IncomingMessage)) {
+			sseStatus = status
+			connectedAt <- time.Now()
+		},
+		StopStreamingCall: func() {
+			if sseStatus != nil {
+				sseStatus <- sse.StatusDisconnected
+			}
+		},
+	}
+	return manager
+}
+
+func TestConnectionDelay(t *testing.T) {
+	connectedAt := make(chan time.Time, 1)
+	manager := newConnDelayManager(t, 1, connectedAt)
+
+	startedAt := time.Now()
+	manager.Start()
+	select {
+	case at := <-connectedAt:
+		if elapsed := at.Sub(startedAt); elapsed < time.Second {
+			t.Error("streaming should connect after the connection delay. Elapsed: ", elapsed)
+		}
+	case <-time.After(3 * time.Second):
+		t.Error("streaming should have connected after the connection delay")
+	}
+	manager.Stop()
+}
+
+func TestNoConnectionDelay(t *testing.T) {
+	connectedAt := make(chan time.Time, 1)
+	manager := newConnDelayManager(t, 0, connectedAt)
+
+	startedAt := time.Now()
+	manager.Start()
+	select {
+	case at := <-connectedAt:
+		if elapsed := at.Sub(startedAt); elapsed > 200*time.Millisecond {
+			t.Error("streaming should connect right away if there is no connection delay. Elapsed: ", elapsed)
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("streaming should have connected")
+	}
+	manager.Stop()
+}
+
+func TestStopDuringConnectionDelay(t *testing.T) {
+	connectedAt := make(chan time.Time, 1)
+	manager := newConnDelayManager(t, 60, connectedAt)
+
+	manager.Start()
+	time.Sleep(100 * time.Millisecond)
+	stopped := make(chan struct{})
+	go func() {
+		manager.Stop()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop should interrupt the connection delay")
+	}
+	select {
+	case <-connectedAt:
+		t.Error("streaming should not connect after being stopped during the connection delay")
+	default:
+	}
+	if err := manager.Start(); err != nil {
+		t.Error("manager should be restartable after being stopped during the connection delay. Got: ", err)
+	}
+	manager.Stop()
+}
