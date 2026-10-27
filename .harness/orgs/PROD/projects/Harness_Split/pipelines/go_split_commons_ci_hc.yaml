@@ -1,0 +1,68 @@
+pipeline:
+  name: go_split_commons_ci hc
+  identifier: go_split_commons_ci_hc
+  projectIdentifier: Harness_Split
+  orgIdentifier: PROD
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        repoName: go-split-commons
+        build: <+input>
+        depth: 0
+  stages:
+    - stage:
+        name: CI
+        identifier: CI
+        type: CI
+        spec:
+          cloneCodebase: true
+          envVariables:
+            CI_ENABLE_HCLI_FOR_TESTS: "true"
+          caching:
+            enabled: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec:
+              size: flex
+          execution:
+            steps:
+              - step:
+                  identifier: test
+                  name: Run tests
+                  type: Run
+                  spec:
+                    connectorRef: dockerhub
+                    image: golang:1.21
+                    shell: Bash
+                    # Redis tests hardcode localhost:6379 and do not skip on failure.
+                    # A Harness Cloud Background step runs in a separate container (not
+                    # localhost). Fix: run redis-server inside this container so it shares
+                    # the real localhost, matching GHA `services:` behavior.
+                    command: |-
+                      apt-get update -qq && apt-get install -y -qq --no-install-recommends redis-server
+                      redis-server --daemonize yes
+                      for i in $(seq 1 30); do
+                        redis-cli ping 2>/dev/null | grep -q PONG && { echo "Redis is up"; break; }
+                        echo "Waiting for Redis... ($i/30)"; sleep 1
+                      done
+                      go mod tidy
+                      go test -coverprofile=coverage.out -count=1 -race ./...
+              - step:
+                  name: harnessCoverage
+                  identifier: harnessCoverage
+                  template:
+                    templateRef: account.codeCoverage
+                    versionLabel: v1
+                    templateInputs:
+                      type: Run
+                      spec:
+                        envVariables:
+                          patch_coverage_percent: "80"
+                          file_path: "coverage.out"
+                          overall_coverage_percent: ""
+                          ignore_failure: "true"
+                          exclude: "**/*_test.go,**/vendor/**"
