@@ -26,7 +26,7 @@ type ImpressionDTO struct {
 	KeyName      string `json:"k"`
 	Treatment    string `json:"t"`
 	Time         int64  `json:"m"`
-	ChangeNumber int64  `json:"c"`
+	ChangeNumber int64  `json:"c,omitempty"`
 	Label        string `json:"r"`
 	BucketingKey string `json:"b,omitempty"`
 	Pt           int64  `json:"pt,omitempty"`

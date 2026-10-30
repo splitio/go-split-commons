@@ -14,4 +14,5 @@ type synchronizerInterface interface {
 	StopPeriodicDataRecording()
 	SynchronizeLargeSegment(name string, till *int64) error
 	SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
+	SynchronizeConfig(update *dtos.ConfigChangeUpdate) error
 }

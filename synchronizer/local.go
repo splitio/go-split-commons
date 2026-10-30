@@ -127,5 +127,8 @@ func (s *Local) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmen
 // LocalKill local kill without any logic for localhost mode
 func (s *Local) LocalKill(splitName string, defaultTreatment string, changeNumber int64) {}
 
+// SynchronizeConfig no logic attached for localhost mode
+func (s *Local) SynchronizeConfig(update *dtos.ConfigChangeUpdate) error { return nil }
+
 // SynchronizeFeatureFlags no logic attached for localhost mode
 func (s *Local) SynchronizeFeatureFlags(ffChange *dtos.SplitChangeUpdate) error { return nil }

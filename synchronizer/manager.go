@@ -216,6 +216,10 @@ func (s *ManagerImpl) pushStatusWatcher() {
 					return
 				}
 				s.pushManager.Start()
+			case push.StatusReset:
+				s.logger.Info("streaming reset requested, re-authenticating and reconnecting")
+				s.pushManager.Stop()
+				s.pushManager.Start()
 			case push.StatusNonRetryableError:
 				s.logger.Error("non retryable error in streaming subsystem. Switching to polling until next SDK initialization")
 				s.pushManager.Stop()
@@ -243,7 +247,7 @@ func (s *ManagerImpl) stopPolling() {
 }
 
 func (s *ManagerImpl) pauseStreaming() {
-	s.pushManager.StartWorkers()
+	s.pushManager.StopWorkers()
 	s.runtimeTelemetry.RecordStreamingEvent(telemetry.GetStreamingEvent(telemetry.EventTypeStreamingStatus, telemetry.StreamingPaused))
 }
 

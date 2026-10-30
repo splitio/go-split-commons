@@ -113,6 +113,12 @@ func (p *StatusTrackerImpl) HandleControl(controlUpdate *dtos.ControlUpdate) *in
 		return nil // we don't care about occupancy if we're disconnecting
 	}
 
+	if controlUpdate.ControlType() == dtos.ControlTypeStreamingReset {
+		// a command, not a state change (so it is not ordered by timestamp): the connection is replaced, and the tracker is reset when the new one is established
+		p.logger.Info("Received STREAMING_RESET. Reconnecting")
+		return common.Int64Ref(StatusReset)
+	}
+
 	if p.lastControlTimestamp > controlUpdate.Timestamp() {
 		p.logger.Warning("Received an old control update. Ignoring")
 		return nil
@@ -161,7 +167,7 @@ func (p *StatusTrackerImpl) updateStatus() *int64 {
 		}
 	}
 	if p.lastStatusPropagated == StatusDown {
-		if p.occupancyOk() && p.lastControlMessage == dtos.ControlTypeStreamingEnabled {
+		if p.occupancyOk() && (p.lastControlMessage == dtos.ControlTypeStreamingEnabled || p.lastControlMessage == dtos.ControlTypeStreamingResumed) {
 			return p.propagateStatus(StatusUp)
 		}
 		if p.lastControlMessage == dtos.ControlTypeStreamingDisabled {

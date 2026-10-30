@@ -168,3 +168,41 @@ func TestStatusTrackerCombinations(t *testing.T) {
 		t.Error("should be a push up")
 	}
 }
+
+func TestStatusTrackerStreamingResumed(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	mockedTelemetryStorage := mocks.MockTelemetryStorage{}
+	tracker := NewStatusTracker(logger, mockedTelemetryStorage)
+
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(1, ""), dtos.ControlTypeStreamingPaused)) != StatusDown {
+		t.Error("should be a push down")
+	}
+
+	if *tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(2, ""), dtos.ControlTypeStreamingResumed)) != StatusUp {
+		t.Error("should be a push up")
+	}
+}
+
+func TestStatusTrackerStreamingReset(t *testing.T) {
+	logger := logging.NewLogger(nil)
+	tracker := NewStatusTracker(logger, mocks.MockTelemetryStorage{})
+
+	// reset while up
+	if s := tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(10, ""), dtos.ControlTypeStreamingReset)); s == nil || *s != StatusReset {
+		t.Error("should request a reset")
+	}
+
+	// reset is not ordered by timestamp: an older one is still honored
+	if s := tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(0, ""), dtos.ControlTypeStreamingReset)); s == nil || *s != StatusReset {
+		t.Error("should request a reset even with an old timestamp")
+	}
+
+	// reset while down: the previous state is kept, so a later ENABLED control still brings it up
+	tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(2, ""), dtos.ControlTypeStreamingPaused))
+	if s := tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(3, ""), dtos.ControlTypeStreamingReset)); s == nil || *s != StatusReset {
+		t.Error("should request a reset")
+	}
+	if s := tracker.HandleControl(dtos.NewControlUpdate(dtos.NewBaseMessage(4, ""), dtos.ControlTypeStreamingEnabled)); s == nil || *s != StatusUp {
+		t.Error("should be a push up")
+	}
+}

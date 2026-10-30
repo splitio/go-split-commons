@@ -24,6 +24,7 @@ const (
 	StatusDown
 	StatusRetryableError
 	StatusNonRetryableError
+	StatusReset // the server asked to re-authenticate and open a new connection
 )
 
 // ErrAlreadyRunning is the error to be returned when .Start() is called on an already running instance
@@ -71,14 +72,15 @@ func NewManager(
 	metadata dtos.Metadata,
 	clientKey *string,
 ) (*ManagerImpl, error) {
-	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegment)
+	processor, err := NewProcessor(cfg.SplitUpdateQueueSize, cfg.SegmentUpdateQueueSize, synchronizer, logger, cfg.LargeSegment, cfg.ConfigUpdateQueueSize)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating processor: %w", err)
 	}
 
 	statusTracker := NewStatusTracker(logger, runtimeTelemetry)
 	parser := NewNotificationParserImpl(logger, processor.ProcessSplitChangeUpdate, processor.ProcessSplitKillUpdate, processor.ProcessSegmentChangeUpdate,
-		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate)
+		statusTracker.HandleControl, statusTracker.HandleOccupancy, statusTracker.HandleAblyError, processor.ProcessLargeSegmentChangeUpdate,
+		processor.ProcessConfigChangeUpdate)
 
 	manager := &ManagerImpl{
 		authAPI:          authAPI,
@@ -195,11 +197,19 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 
 	m.statusTracker.Reset()
 	sseStatus := make(chan int, 100)
-	m.sseClient.ConnectStreaming(token.Token, sseStatus, tokenList, m.eventHandler)
 	go func() {
 		defer m.lifecycle.ShutdownComplete()
 		if !m.lifecycle.InitializationComplete() {
 			return
+		}
+		if !m.waitConnDelay(token.ConnDelay) {
+			return
+		}
+		m.sseClient.ConnectStreaming(token.Token, sseStatus, tokenList, m.eventHandler)
+		select {
+		case <-m.lifecycle.ShutdownRequested(): // Stop() arrived while connecting: make sure the connection is closed
+			m.sseClient.StopStreaming()
+		default:
 		}
 		for {
 			message := <-sseStatus
@@ -242,6 +252,23 @@ func (m *ManagerImpl) triggerConnectionFlow() {
 			}
 		}
 	}()
+}
+
+// waitConnDelay waits for the connection delay given by the auth response (in seconds).
+// It returns false if a shutdown was requested in the meantime.
+func (m *ManagerImpl) waitConnDelay(seconds int64) bool {
+	if seconds <= 0 {
+		return true
+	}
+	m.logger.Debug(fmt.Sprintf("Waiting %v seconds before connecting to streaming", seconds))
+	timer := time.NewTimer(time.Duration(seconds) * time.Second)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return true
+	case <-m.lifecycle.ShutdownRequested():
+		return false
+	}
 }
 
 func (m *ManagerImpl) withRefreshTokenLock(f func()) {

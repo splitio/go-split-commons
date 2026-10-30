@@ -13,6 +13,7 @@ type LocalSyncMock struct {
 	StopPeriodicDataRecordingCall     func()
 	SynchronizeLargeSegmentCall       func(name string, till *int64) error
 	SynchronizeLargeSegmentUpdateCall func(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error
+	SynchronizeConfigCall             func(update *dtos.ConfigChangeUpdate) error
 }
 
 func (l *LocalSyncMock) SyncAll() error {
@@ -53,4 +54,8 @@ func (l *LocalSyncMock) SynchronizeLargeSegment(name string, till *int64) error 
 
 func (l *LocalSyncMock) SynchronizeLargeSegmentUpdate(lsRFDResponseDTO *dtos.LargeSegmentRFDResponseDTO) error {
 	return l.SynchronizeLargeSegmentUpdateCall(lsRFDResponseDTO)
+}
+
+func (l *LocalSyncMock) SynchronizeConfig(update *dtos.ConfigChangeUpdate) error {
+	return l.SynchronizeConfigCall(update)
 }

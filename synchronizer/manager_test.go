@@ -286,6 +286,7 @@ func TestStreamingEnabledInitOk(t *testing.T) {
 			return nil
 		},
 		StartWorkersCall: func() { atomic.AddInt32(&startWorkersCalls, 1) },
+		StopWorkersCall:  func() {},
 	}
 
 	manager.Start()
@@ -436,6 +437,7 @@ func TestStreamingEnabledRetryableError(t *testing.T) {
 			return nil
 		},
 		StartWorkersCall: func() { atomic.AddInt32(&startWorkersCalls, 1) },
+		StopWorkersCall:  func() {},
 	}
 
 	manager.Start()
@@ -584,6 +586,7 @@ func TestStreamingEnabledNonRetryableError(t *testing.T) {
 			return nil
 		},
 		StartWorkersCall: func() { atomic.AddInt32(&startWorkersCalls, 1) },
+		StopWorkersCall:  func() {},
 	}
 
 	manager.Start()
@@ -695,6 +698,8 @@ func TestStreamingPaused(t *testing.T) {
 		t.Error("push manager should NOT be nil")
 	}
 
+	stopWorkersCalls := int32(0)
+
 	// Replace push manager with a mock
 	manager.pushManager = &pushMocks.MockManager{
 		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
@@ -709,6 +714,7 @@ func TestStreamingPaused(t *testing.T) {
 		},
 		StopCall:         func() error { return nil },
 		StartWorkersCall: func() {},
+		StopWorkersCall:  func() { atomic.AddInt32(&stopWorkersCalls, 1) },
 	}
 
 	manager.Start()
@@ -727,6 +733,9 @@ func TestStreamingPaused(t *testing.T) {
 
 	if manager.IsRunning() {
 		t.Error("manager should not be running")
+	}
+	if c := atomic.LoadInt32(&stopWorkersCalls); c != 1 {
+		t.Error("workers should be stopped once when streaming goes down. got: ", c)
 	}
 }
 
@@ -791,6 +800,7 @@ func TestOccupancyFlicker(t *testing.T) {
 			return nil
 		},
 		StartWorkersCall: func() { atomic.AddInt32(&startWorkersCalls, 1) },
+		StopWorkersCall:  func() {},
 	}
 
 	manager.Start()
@@ -1059,6 +1069,7 @@ func TestStopDuringStreamingRetryBackoff(t *testing.T) {
 		},
 		StopCall:         func() error { atomic.AddInt32(&stopCalls, 1); return nil },
 		StartWorkersCall: func() {},
+		StopWorkersCall:  func() {},
 	}
 
 	manager.Start()
@@ -1094,4 +1105,56 @@ func TestStopDuringStreamingRetryBackoff(t *testing.T) {
 	if c := atomic.LoadInt32(&startCalls); c != 1 {
 		t.Error("push manager must not be restarted after shutdown was requested. Start() calls: ", c)
 	}
+}
+
+func TestStreamingReset(t *testing.T) {
+	syncMock := &mocks.MockSynchronizer{
+		RefreshRatesCall: func() (time.Duration, time.Duration) {
+			return 1 * time.Minute, 1 * time.Minute
+		},
+		SyncAllCall:                    func() error { return nil },
+		StartPeriodicFetchingCall:      func() {},
+		StopPeriodicFetchingCall:       func() {},
+		StartPeriodicDataRecordingCall: func() {},
+		StopPeriodicDataRecordingCall:  func() {},
+	}
+	cfg := conf.GetDefaultAdvancedConfig()
+	cfg.StreamingEnabled = true
+	status := make(chan int, 1)
+	manager, err := NewSynchronizerManager(syncMock, logging.NewLogger(nil), cfg, &apiMocks.MockAuthClient{}, &storageMocks.MockSplitStorage{}, status, storageMocks.MockTelemetryStorage{RecordStreamingEventCall: func(*dtos.StreamingEvent) {}}, dtos.Metadata{}, nil, &application.Dummy{})
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+
+	var starts, stops int32
+	manager.pushManager = &pushMocks.MockManager{
+		NextRefreshCall: func() time.Time { return time.Now().Add(1 * time.Hour) },
+		StartCall: func() error {
+			if atomic.AddInt32(&starts, 1) == 1 {
+				go func() {
+					time.Sleep(200 * time.Millisecond)
+					manager.streamingStatus <- push.StatusReset
+				}()
+			}
+			return nil
+		},
+		StopCall:         func() error { atomic.AddInt32(&stops, 1); return nil },
+		StartWorkersCall: func() {},
+		StopWorkersCall:  func() {},
+	}
+
+	manager.Start()
+	if <-status != Ready {
+		t.Error("first message should be SDK ready")
+	}
+	time.Sleep(1 * time.Second)
+
+	// the reset replaces the connection: stop + start, on top of the initial start
+	if c := atomic.LoadInt32(&starts); c != 2 {
+		t.Error("push manager should be started twice. got: ", c)
+	}
+	if c := atomic.LoadInt32(&stops); c != 1 {
+		t.Error("push manager should be stopped once by the reset. got: ", c)
+	}
+	manager.Stop()
 }

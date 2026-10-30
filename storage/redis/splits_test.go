@@ -1415,6 +1415,7 @@ func TestReplaceAll(t *testing.T) {
 		"SPLITIO.split.split4",
 		"SPLITIO.split.split5",
 		"SPLITIO.splits.till",
+		"SPLITIO.trafficType.user",
 	}
 	redisClient.Del(keys...)
 }

@@ -519,7 +519,7 @@ func (s *UpdaterImpl) processRuleBasedChangeUpdate(ruleBasedChange dtos.SplitCha
 	if ruleBasedChange.RuleBasedSegment() != nil && *ruleBasedChange.PreviousChangeNumber() == changeNumber {
 		ruleBasedSegments := make([]dtos.RuleBasedSegmentDTO, 0, 1)
 		ruleBasedSegments = append(ruleBasedSegments, *ruleBasedChange.RuleBasedSegment())
-		toRemove, toAdd := s.processRuleBasedSegmentChanges(ruleBasedSegments)
+		toAdd, toRemove := s.processRuleBasedSegmentChanges(ruleBasedSegments)
 		segments := s.getSegmentsFromRuleBasedSegments(ruleBasedSegments)
 		largeSegments := s.getLargeSegmentsFromRuleBasedSegments(ruleBasedSegments)
 		s.ruleBasedSegmentStorage.Update(toAdd, toRemove, ruleBasedChange.BaseUpdate.ChangeNumber())

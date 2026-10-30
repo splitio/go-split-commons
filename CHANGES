@@ -1,3 +1,18 @@
+10.3.0 (Oct 30, 2026)
+- Added support for config streaming updates:
+    - Added the `CONFIG_UPDATE` update type and the `ConfigChangeUpdate` DTO, a new `ConfigUpdateWorker`, and the `ConfigUpdateQueueSize` push config option.
+    - Added `SynchronizeConfig` to the `Synchronizer` interface (no-op in the feature-flag synchronizer, to be overridden by SDK-specific synchronizers).
+    - Added `RawDefinition` to `SplitChangeUpdate` to expose the decoded rule-based segment definition.
+- Added handling of the `STREAMING_RESUMED` and `STREAMING_RESET` control notifications; a reset now stops and restarts the push manager to re-authenticate and reconnect.
+- Updated the auth token parsing to fall back to `config.streaming.enabled` and `config.streaming.delay` when `pushEnabled` and `connDelay` are absent.
+- Updated the push manager to wait for the auth `connDelay` before connecting to streaming.
+- Updated the SSE parser to treat events without an `event:` field as `message` events.
+- Updated the streaming client to report the connection as established (`StatusFirstEventOk`) as soon as it connects, instead of when the first event arrives.
+- Updated go-toolkit to v5.6.0.
+- Fixed `InRuleBasedSegmentMatcher` panicking when the rule-based segment is not found, and a malformed error log in it.
+- Fixed the channel list order built from token capabilities, which is now deterministic.
+- Fixed streaming e2e tests for occupancy and control notifications.
+
 10.2.1 (Oct 5, 2026)
 - Fixed streaming retry handling so a shutdown requested while waiting to retry no longer blocks until the backoff expires.
 - Updated go-toolkit to v5.5.1 (fixes a duration overflow in `backoff` that turned long backoffs into zero or negative waits).

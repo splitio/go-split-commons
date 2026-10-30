@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/splitio/go-split-commons/v10/conf"
 	"github.com/splitio/go-split-commons/v10/dtos"
@@ -12,7 +13,6 @@ import (
 	"github.com/splitio/go-toolkit/v5/logging"
 	"github.com/splitio/go-toolkit/v5/sse"
 	"github.com/splitio/go-toolkit/v5/struct/traits/lifecycle"
-	gtSync "github.com/splitio/go-toolkit/v5/sync"
 )
 
 const (
@@ -34,13 +34,16 @@ type StreamingClientImpl struct {
 	lifecycle lifecycle.Manager
 	metadata  dtos.Metadata
 	clientKey *string
+
+	statusMu sync.Mutex
+	status   chan int // status channel of the connection currently being established
 }
 
 // Status constants
 const (
 	StatusConnectionFailed = iota
 	StatusUnderlyingClientInUse
-	StatusFirstEventOk
+	StatusFirstEventOk // the streaming connection has been established (reported before any event is read)
 	StatusDisconnected
 )
 
@@ -60,15 +63,25 @@ func NewStreamingClient(cfg *conf.AdvancedConfig, logger logging.LoggerInterface
 		transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{} // non-nil empty => no h2
 		opts = append(opts, sse.WithCustomTransport(transport))
 	}
-	sseClient, _ := sse.NewClient(cfg.StreamingServiceURL, keepAlive, cfg.HTTPTimeout, logger, opts...)
 	client := &StreamingClientImpl{
-		sseClient: sseClient,
 		logger:    logger,
 		metadata:  metadata,
 		clientKey: clientKey,
 	}
+	opts = append(opts, sse.WithOnConnected(client.notifyConnected))
+	client.sseClient, _ = sse.NewClient(cfg.StreamingServiceURL, keepAlive, cfg.HTTPTimeout, logger, opts...)
 	client.lifecycle.Setup()
 	return client
+}
+
+// notifyConnected reports the established connection to the status channel of the ongoing ConnectStreaming call
+func (s *StreamingClientImpl) notifyConnected() {
+	s.statusMu.Lock()
+	status := s.status
+	s.statusMu.Unlock()
+	if status != nil {
+		status <- StatusFirstEventOk
+	}
 }
 
 // ConnectStreaming connects to streaming
@@ -78,6 +91,10 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 		s.logger.Info("Connection is already in process/running. Ignoring")
 		return
 	}
+
+	s.statusMu.Lock()
+	s.status = streamingStatus
+	s.statusMu.Unlock()
 
 	params := make(map[string]string)
 	params["channels"] = strings.Join(append(channelList), ",")
@@ -89,13 +106,7 @@ func (s *StreamingClientImpl) ConnectStreaming(token string, streamingStatus cha
 		if !s.lifecycle.InitializationComplete() {
 			return
 		}
-		firstEventReceived := gtSync.NewAtomicBool(false)
-		out := s.sseClient.Do(params, api.AddMetadataToHeaders(s.metadata, nil, s.clientKey), func(m IncomingMessage) {
-			if firstEventReceived.TestAndSet() && !m.IsError() {
-				streamingStatus <- StatusFirstEventOk
-			}
-			handleIncomingMessage(m)
-		})
+		out := s.sseClient.Do(params, api.AddMetadataToHeaders(s.metadata, nil, s.clientKey), handleIncomingMessage)
 
 		if out == nil { // all good
 			streamingStatus <- StatusDisconnected
