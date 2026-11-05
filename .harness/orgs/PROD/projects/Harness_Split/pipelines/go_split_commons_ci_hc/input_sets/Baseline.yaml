@@ -1,0 +1,14 @@
+inputSet:
+  name: Baseline
+  identifier: Baseline
+  orgIdentifier: PROD
+  projectIdentifier: Harness_Split
+  pipeline:
+    identifier: go_split_commons_ci_hc
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
